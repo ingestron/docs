@@ -54,6 +54,7 @@ const evidence = JSON.parse(
 );
 assert.equal(evidence.publicSource, true);
 assert.equal(evidence.core, "0.12.1");
+assert.equal(evidence.cli, "0.14.0");
 writeFileSync(
   resolve(work, "evidence.json"),
   JSON.stringify({ ...evidence, archiveSha, harnessCommit: commit }, null, 2) +

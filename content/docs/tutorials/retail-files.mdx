@@ -10,7 +10,7 @@ newlines and decimal prices.
 
 You need [the CLI, Git and Python](/docs/start/installation), internet access for
 the first package installation, and a writable local directory. Files 1.0.1 works
-with CLI 0.13.2 and core 0.12.1 using the full install reference below.
+with CLI 0.14.0 and core 0.12.1 using the `files` shortcut below.
 
 ## 1. Download and prepare the project
 
@@ -32,7 +32,7 @@ three connections, three flows and three ODCS contracts. Nothing has run yet.
 
 ```sh
 ingestron plugin install local@0.4.1
-ingestron plugin install ingestron/connectors/connectors/files/connector.yaml@1.0.1 --tag-prefix files-
+ingestron plugin install files@1.0.1
 ingestron check
 ingestron build
 ingestron runtime prepare
