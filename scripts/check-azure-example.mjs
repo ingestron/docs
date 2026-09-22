@@ -40,8 +40,8 @@ run([
 ]);
 const repo = resolve(work, "connectors");
 run(["git", "checkout", "--detach", commit], repo);
-run(["pnpm", "install", "--frozen-lockfile"], repo);
-run(["pnpm", "runtime:prepare"], repo);
+// The harness needs only locked Python dependencies, not the connector JS dev package.
+run(["node", "scripts/prepare-python.mjs"], repo);
 run(
   ["build/singer-github/bin/python", "scripts/azure-blob-acceptance.py"],
   repo,
