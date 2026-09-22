@@ -40,16 +40,21 @@ cpSync(
   resolve("public/examples/github/project.yaml"),
   resolve(repo, "examples/github/project.yaml"),
 );
-run(["pnpm", "install", "--frozen-lockfile"], repo);
-run(["pnpm", "runtime:prepare"], repo);
-run(["pnpm", "acceptance"], repo, {
-  ...process.env,
-  INGESTRON_TEST_CLI: resolve(
-    root,
-    "node_modules/ingestron/build/cli/cli/index.js",
-  ),
-  INGESTRON_TEST_PUBLIC_SOURCE: "1",
-});
+// Only the pinned Python harness is needed; use this site's published CLI.
+// Do not install the connector repository's older development CLI.
+run([process.execPath, "scripts/prepare-python.mjs"], repo);
+run(
+  ["build/singer-github/bin/python", "scripts/installed-acceptance.py"],
+  repo,
+  {
+    ...process.env,
+    INGESTRON_TEST_CLI: resolve(
+      root,
+      "node_modules/ingestron/build/cli/cli/index.js",
+    ),
+    INGESTRON_TEST_PUBLIC_SOURCE: "1",
+  },
+);
 const evidence = JSON.parse(
   readFileSync(resolve(repo, "build/installed-acceptance/evidence.json")),
 );
