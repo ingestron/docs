@@ -11,7 +11,7 @@ import { execFileSync } from "node:child_process";
 import assert from "node:assert/strict";
 const root = process.cwd(),
   work = resolve("build/github-example");
-const commit = "a6deeeaaf4b394df93d327e985e5f34f555023c3";
+const commit = "18ab8d266b7230a8c399e75aec321d407c9010a4";
 // This checkout is disposable test output, never part of a user's project.
 rmSync(work, { recursive: true, force: true });
 mkdirSync(work, { recursive: true });
@@ -58,7 +58,7 @@ run(
 const evidence = JSON.parse(
   readFileSync(resolve(repo, "build/installed-acceptance/evidence.json")),
 );
-assert.equal(evidence.cli, "0.13.1");
+assert.equal(evidence.cli, "0.13.2");
 assert.equal(evidence.core, "0.12.1");
 assert.equal(evidence.liveGitHub, false);
 // Run the reader's output-inspection download on the same produced file.

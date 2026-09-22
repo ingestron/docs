@@ -1,22 +1,23 @@
 ---
 title: "GitHub connector"
-description: "Source support and limits for connector 1.32.1."
+description: "Source support and limits for connector 1.33.0."
 ---
 
-The connector uses Meltano's GitHub tap to read GitHub.com through the local
-provider. The qualified walkthrough selects the `issues` stream and projects
+The connector uses Meltano's GitHub issue reader with an Ingestron REST repository
+lookup and explicit authentication. It runs through the local provider. The qualified walkthrough selects the `issues` stream and projects
 `id` as int64 and `title` as string.
 
 ```sh
-ingestron plugin install github@1.32.1
+ingestron plugin install github@1.33.0
 ```
 
-| Setting         | Value in the example                                  |
-| --------------- | ----------------------------------------------------- |
-| `repositories`  | An array containing an authorised `owner/repository`. |
-| `auth_token`    | A `$secret.env` reference to a read token.            |
-| Selected stream | `issues`.                                             |
-| Output          | A full Parquet snapshot with the reviewed projection. |
+| Setting          | Value in the example                                                   |
+| ---------------- | ---------------------------------------------------------------------- |
+| `repositories`   | An array containing an authorised `owner/repository`.                  |
+| `authentication` | `anonymous` in the public example; `token` for authenticated access.   |
+| `auth_token`     | Omitted for anonymous access; a `$secret.env` reference in token mode. |
+| Selected stream  | `issues`.                                                              |
+| Output           | A full Parquet snapshot with the reviewed projection.                  |
 
 ## Behaviour to account for
 
@@ -24,7 +25,7 @@ ingestron plugin install github@1.32.1
 - A snapshot is not a transactionally consistent view or a complete issue event history.
 - Retries of incomplete work do not restore an incremental cursor.
 - API limits, source permissions and the configured flow timeout can stop a run.
-- Other upstream streams may appear in discovery but are not accepted by this release.
+- Discovery includes the parent repository schema; only `issues` is accepted as output.
 - Other projections have not been individually qualified by this walkthrough.
 - GitHub Enterprise and GitHub App authentication are not supported here.
 
@@ -35,3 +36,36 @@ published throughput guarantee; use a small source first and measure your own wo
 Use [the tutorial](/docs/tutorials/github-to-parquet) for the complete procedure and
 [the source repository](https://github.com/ingestron/connectors) for implementation
 and upstream licence details.
+
+## Use a token
+
+Anonymous reads work for public repositories. GitHub allows 60 unauthenticated
+REST requests per hour per originating IP. See [GitHub's rate limits](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api).
+Use a token for private repositories or a higher request allowance.
+
+Create a fine-grained personal access token with the intended resource owner,
+selected repository access and read-only Issues permission. Metadata read access
+is included by GitHub. Organisation policies can require approval; follow
+[GitHub's token guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
+
+Change the connection's settings to:
+
+```yaml
+settings:
+  authentication: token
+  auth_token:
+    $secret:
+      env: INGESTRON_GITHUB_TOKEN
+  repositories:
+    - your-owner/your-repository
+```
+
+Put `INGESTRON_GITHUB_TOKEN=your_token` in an untracked `.env` file. Build into a new
+directory and repeat discovery, review and approval as described in
+[change a project](/docs/guides/update-project). Add `--secrets-file .env` to discovery
+and extraction commands. Keep the same `--from` directory throughout.
+
+A rejected token fails; the connector never retries anonymously. Anonymous mode
+rejects an `auth_token` setting. If `authentication` is omitted, the presence of
+`auth_token` selects token mode; otherwise it selects anonymous mode. Ambient
+`GITHUB_TOKEN` values are not used.

@@ -9,13 +9,14 @@ extraction. The result is a full snapshot; this example does not keep an increme
 
 You need:
 
-- [CLI 0.13.1, Git and Python 3.12](/docs/start/installation) on macOS or Linux.
-- A repository you are allowed to read and a token with the required read access.
+- [CLI 0.13.2, Git and Python 3.12](/docs/start/installation) on macOS or Linux.
+- Internet access to GitHub.com. No account or token is needed for this public example.
 - A local directory for the project, downloaded dependencies and output.
 
 No cloud compute is created. The first runtime preparation downloads Python packages.
-The procedure is exercised with synthetic GitHub responses; live row counts, rate
-limits and permissions depend on the repository you choose.
+Live row counts change as issues and pull requests are added. GitHub permits
+60 unauthenticated REST requests per hour per originating IP; other users on your
+network share that allowance. Start with this small public repository.
 
 ## 1. Download the project
 
@@ -26,43 +27,35 @@ mkdir github-project
 cd github-project
 ```
 
-Save these files inside it:
+Download the three example files:
 
-- [project.yaml](/examples/github/project.yaml) — the complete project.
-- [gitignore.txt](/examples/github/gitignore.txt) — rename this file to `.gitignore`.
-- [inspect-output.py](/examples/github/inspect-output.py) — a small output check.
+```sh
+curl --fail --location --output project.yaml https://docs.ingestron.io/examples/github/project.yaml
+curl --fail --location --output .gitignore https://docs.ingestron.io/examples/github/gitignore.txt
+curl --fail --location --output inspect-output.py https://docs.ingestron.io/examples/github/inspect-output.py
+```
 
-Open `project.yaml` and replace `demo/repo` under `connections.github.settings.repositories`
-with your authorised `owner/repository`. Start with a small repository.
+You can also save [project.yaml](/examples/github/project.yaml),
+[gitignore.txt](/examples/github/gitignore.txt) (rename it to `.gitignore`) and
+[inspect-output.py](/examples/github/inspect-output.py) using your browser.
 
-The project already selects the local provider, GitHub connector and an `issues_local`
+## 2. Inspect the project
+
+Open `project.yaml`. It selects the public `ingestron/cli` repository and
+`authentication: anonymous`. Leave those values unchanged for your first run.
+There is no `.env` file to create. To read another public repository later, change
+`connections.github.settings.repositories` and use a fresh reviewed build.
+
+The project selects the local provider, GitHub connector and an `issues_local`
 flow. The contract at the bottom selects only `id` and `title`. The `sourceId` and
 `tenantId` values label the output; they are not credentials. Keep them stable for
 this exercise. See [project configuration](/docs/reference/project) for a field guide.
 
-## 2. Add your token
-
-Create `.env` in this directory with your editor:
-
-```dotenv
-INGESTRON_GITHUB_TOKEN=replace_with_your_token
-```
-
-Replace the placeholder with a token authorised for the selected repository.
-Use read access to issues and metadata; avoid an organisation administrator token.
-The [GitHub token documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
-explains how to create and limit a token. Organisation policies may require approval.
-
-The YAML stores the environment variable name, not the token. Keep `.env` untracked.
-Treat the project output as repository data too; a local file is not automatically
-safe to share. Read [secrets and local execution](/docs/guides/secrets) if you need
-to understand which process receives the token.
-
 ## 3. Install the two plugins
 
 ```sh
-ingestron plugin install local@0.4.0
-ingestron plugin install github@1.32.1
+ingestron plugin install local@0.4.1
+ingestron plugin install github@1.33.0
 ingestron plugin list
 ```
 
@@ -90,16 +83,17 @@ Python 3.12. Do not edit the generated runtime files to fix configuration; chang
 ## 5. Discover and review
 
 ```sh
-ingestron run --action discover --secrets-file .env
+ingestron run --action discover
 ingestron run --action review
 ```
 
 Open `build/generated/flows/issues_local/review.json`. Check the source identity,
 selected `issues` stream and projected `id`/`title` fields against your contract.
-Discovery can require the token. Review uses the discovered information locally.
+Discovery describes the supported schemas. Review uses that information locally;
+extraction contacts the selected repository after approval.
 
-The upstream catalogue may list other streams, but this connector release accepts
-only `issues`. GitHub's issues endpoint can also include pull requests; the connector
+Discovery includes the supporting repository schema, but the selected output stream
+is `issues`. GitHub's issues endpoint can also include pull requests; the connector
 does not remove those entries. See [connector behaviour](/docs/reference/github)
 before treating the output as an issues-only business dataset.
 
@@ -109,7 +103,7 @@ When the review matches your intended source and fields:
 
 ```sh
 ingestron run --action approve
-ingestron run --run-id issues-001 --secrets-file .env
+ingestron run --run-id issues-001
 ingestron run status issues-001
 ```
 
@@ -120,7 +114,7 @@ trying it before approval should fail without publishing output.
 ## 7. Inspect the result
 
 ```sh
-python3.12 inspect-output.py
+python3 inspect-output.py
 ```
 
 The helper uses the prepared Python environment to print the Parquet schema and
@@ -141,15 +135,16 @@ ingestron run --retry issues-001
 ```
 
 For a completed, unchanged snapshot, retry verifies and reuses the output without
-reading GitHub again. The example's token is not needed for that completed retry.
+reading GitHub again. This completed retry needs no source access.
 A new run ID requests a new extraction. Incomplete runs can need source access;
 see [run and retry behaviour](/docs/guides/runs).
 
 ## If something goes wrong
 
-For authentication errors, check the repository name, token access and any required
-organisation approval. For rate limits, wait until the source allows another request.
-Do not paste your token or unredacted source logs into an issue.
+For rate limits, wait before retrying or add an authorised token using the
+[connector authentication guide](/docs/reference/github#use-a-token). A missing or
+inaccessible repository fails the run; it is not treated as an empty dataset.
+Never put a token in a command, project YAML or issue report.
 
 If the project or generated files changed, rebuild and review before starting new
 work. If a review already exists, use a fresh build directory as described in
@@ -157,5 +152,5 @@ work. If a review already exists, use a fresh build directory as described in
 preserve it for investigation; do not edit the receipt to make verification pass.
 
 Keep any Parquet and receipts you need before removing this disposable directory.
-Remove or revoke the token when you no longer need it. Deleting `.ingestron` also
+Deleting `.ingestron` also
 removes the local runtime environments and run records.
