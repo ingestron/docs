@@ -1,4 +1,13 @@
 {
   "title": "Reference",
-  "pages": ["cli", "project", "local", "github", "core", "mcp", "releases"]
+  "pages": [
+    "cli",
+    "project",
+    "local",
+    "github",
+    "core",
+    "mcp",
+    "releases",
+    "files"
+  ]
 }

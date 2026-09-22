@@ -96,3 +96,17 @@ test("downloads match tutorial versions, projection and inline metadata", () => 
     /\.env/,
   );
 });
+
+test("retail guide selects the immutable package and tested workflow", () => {
+  const guide = readFileSync("content/docs/tutorials/retail-files.mdx", "utf8");
+  for (const step of [
+    "retail-files-1.0.1.zip",
+    "python3 setup.py",
+    "run --action review",
+    "run --action approve",
+    "python3 inspect-output.py",
+    "run --retry rejected-001",
+  ])
+    assert.ok(guide.includes(step));
+  assert.ok(guide.includes("61.95"));
+});

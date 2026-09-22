@@ -1,0 +1,121 @@
+---
+title: "Read your first files"
+description: "Turn fictional retail files into three reviewed Parquet snapshots."
+---
+
+Read customers, products and orders from local files, then verify the result.
+This exercise needs no cloud account, source token or Labs access. It uses a small
+fictional NZ retailer with known results, including nulls, quoted names, embedded
+newlines and decimal prices.
+
+You need [the CLI, Git and Python](/docs/start/installation), internet access for
+the first package installation, and a writable local directory. Files 1.0.1 works
+with CLI 0.13.2 and core 0.12.1 using the full install reference below.
+
+## 1. Download and prepare the project
+
+In an empty directory, download the
+[retail exercise](https://github.com/ingestron/connectors/releases/download/files-1.0.1/retail-files-1.0.1.zip):
+
+```sh
+curl --fail --location --output retail.zip https://github.com/ingestron/connectors/releases/download/files-1.0.1/retail-files-1.0.1.zip
+python3 -m zipfile -e retail.zip retail
+cd retail
+python3 setup.py
+```
+
+Setup verifies the fixture hashes and creates `project.yaml` with your absolute
+input paths. It refuses to replace an existing project. Open the YAML: it contains
+three connections, three flows and three ODCS contracts. Nothing has run yet.
+
+## 2. Install and build
+
+```sh
+ingestron plugin install local@0.4.1
+ingestron plugin install ingestron/connectors/connectors/files/connector.yaml@1.0.1 --tag-prefix files-
+ingestron check
+ingestron build
+ingestron runtime prepare
+```
+
+The local provider runs Python on your machine; the files connector reads your
+selected inputs. Preparation downloads the locked dependencies once and reuses a
+matching environment later. Building does not read your source data.
+
+## 3. Discover and review
+
+```sh
+ingestron run --action discover
+ingestron run --action review
+```
+
+Discovery reads the files to determine their schemas. Open each review under
+`build/generated/flows/`: `customers_local`, `products_local` and `orders_local`.
+Compare the selected columns with the corresponding contract in `project.yaml`.
+Check that email allows null and product price uses `DECIMAL(10,2)`.
+
+The CSV settings explicitly convert IDs and quantities to integers, and prices to
+decimals. Other CSV fields remain text. Empty CSV fields become null. Review these
+choices before using the same settings with your own files.
+
+## 4. Approve, run and verify
+
+```sh
+ingestron run --action approve
+ingestron run --run-id retail-001
+ingestron run status retail-001
+python3 inspect-output.py
+```
+
+Expect three customers, three products and three orders, total quantity 7 and order
+value NZD 61.95. The helper checks the output and calculates the value from products
+and orders. That calculation is an inspection step; the connector itself does not
+join tables or build a sales model.
+
+Each flow writes `records.parquet` and `commit.json` below
+`build/generated/data/<flow>/<identity-hash>/retail-001/`. Flows commit separately;
+this is not a transaction covering all three tables.
+
+## 5. Retry and compare formats
+
+```sh
+ingestron run --retry retail-001
+```
+
+A completed retry verifies and reuses the existing output. It does not read changed
+input files. Use a new run ID when you want a new snapshot.
+
+To try TSV, JSON, JSONL or Parquet, extract the zip into another empty directory
+and use, for example, `python3 setup.py --format parquet`. Follow the same steps.
+The fixture rows and expected business results are the same across formats.
+
+## 6. Practise a rejected input
+
+In your CSV exercise, save a backup of `data/csv/orders.csv`. Change the first order
+ID to `oops`, then run only that flow with a new ID:
+
+```sh
+ingestron run --flow orders_local --run-id rejected-001
+```
+
+Expect failure and no committed snapshot for `rejected-001`. Your successful
+`retail-001` remains intact. Restore the original CSV, then recover the failed run:
+
+```sh
+ingestron run --retry rejected-001
+```
+
+For schema changes, work in a fresh exercise copy: change the input and contract,
+then build, discover, review and approve again. Adding a column does not implicitly
+approve it. See [updating a project](/docs/guides/update-project).
+
+## Use your own files
+
+Change a connection's absolute `path`, its `format` and explicit `types`, then
+review its contract. Read the [files reference](/docs/reference/files) for type
+rules and limits. Start with a stable file that no other process is modifying.
+This release supports individual flat files, not folders, nested JSON or live feeds.
+
+The download contains fictional data licensed by Otrera Limited under Apache-2.0.
+It includes the licence and byte provenance; no Labs endpoints or credentials are
+included. Keep any output you need before deleting the disposable exercise folder.

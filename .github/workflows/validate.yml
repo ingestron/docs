@@ -15,3 +15,4 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm validate
       - run: pnpm samples:github
+      - run: pnpm samples:files

@@ -1,0 +1,46 @@
+---
+title: "Files connector"
+description: "Configure explicit local files and reviewed snapshot types."
+---
+
+Files 1.0.1 reads one local file per connection through local provider 0.4.1. It
+exposes the `records` stream and writes reviewed Parquet snapshots. Start with
+[the retail exercise](/docs/tutorials/retail-files).
+
+| Setting  | Meaning                                                                                  |
+| -------- | ---------------------------------------------------------------------------------------- |
+| `path`   | Absolute regular file path. No URLs, symlinks, traversal segments, directories or globs. |
+| `format` | `csv`, `tsv`, `json`, `jsonl` or `parquet`.                                              |
+| `types`  | Optional column-to-type mapping: `string`, `integer`, `decimal`, `number`, `boolean`.    |
+
+File access is explicit; a relative path is not resolved from your project root.
+Update the path and rebuild/review when moving a project. Multiple connections
+can read different files in one project.
+
+CSV/TSV uses UTF-8, an optional initial BOM, a header and double-quoted escaping.
+Empty delimited fields become null. Text stays text unless `types` explicitly
+converts it. Integer text cannot contain leading zeroes; booleans are exactly
+`true` or `false`. Decimals accept exact text or integer values, not floats.
+
+JSON uses an array of flat objects; JSONL uses one object per line. Every row must
+have the same fields. Duplicate keys, nested values, blank JSONL records, mixed
+undeclared types and nonfinite numbers fail. Empty JSON/JSONL requires explicit
+`types`; empty CSV/TSV requires headers. Parquet supports flat string, integer,
+decimal, boolean and floating-point fields. Temporal, binary and nested Parquet
+fields are not supported in this release.
+
+Discovery scans the input. Extraction rechecks the schema and rejects changes
+until you rediscover and review. Changes to values with the same schema can be
+read with a new run ID. Completed retries verify previous output without source
+access. Multiple flows commit independently.
+
+Inputs are limited to 64 MiB and one million rows, with at most 500 columns and
+2 MB per output record. JSON arrays are loaded within that file bound; the other
+formats use streamed or batched reads. Records are validated into a temporary disk
+spool before commit. These limits describe the preview; no large-volume throughput
+claim has been established. Provide stable source files and space for temporary
+and final output.
+
+Azure Blob/ADLS access, Excel, XML, incremental reads and partition-directory
+scanning remain separate work. The existence of those demo datasets does not mean
+this connector supports them.
