@@ -1,0 +1,107 @@
+---
+title: "Read files from Azure Storage"
+description: "Read retail files from Blob Storage or ADLS Gen2 and verify local Parquet output."
+---
+
+Use the same retail data as the [local files exercise](/docs/tutorials/retail-files),
+this time reading from your Azure storage account. Ingestron runs on your machine
+and saves three reviewed Parquet snapshots locally.
+
+You need CLI 0.14.0, Git, Python 3.12, and an existing Azure public-cloud storage
+account and container that your machine can reach. This exercise uses a read-only,
+HTTPS-only SAS token with an expiry date. Azure storage and transfer charges can
+apply. Ingestron does not create cloud resources in this exercise.
+
+## 1. Prepare the files
+
+Download into an empty directory:
+
+```sh
+curl --fail --location --output azure-retail.zip https://github.com/ingestron/connectors/releases/download/azure-blob-1.0.0/azure-blob-retail-1.0.0.zip
+python3 -m zipfile -e azure-retail.zip azure-retail
+cd azure-retail
+```
+
+If the retail data is already in your container, keep its existing prefix. Otherwise,
+upload the download's `data/csv` folder to `retail/v1/csv` in your container using
+Azure Storage Explorer or the portal. Keep the filenames unchanged. For example,
+`customers.csv` must be at `retail/v1/csv/customers.csv`.
+
+Replace the account and container below with yours. Use `--prefix` if your files
+use a different folder; the default is `retail/v1`.
+
+```sh
+python3 setup-azure.py --account yourstorageaccount --container samples
+```
+
+This creates `project.yaml` with three connections and data contracts. It refuses
+to overwrite an existing project. Review the account, container and blob paths.
+For ADLS Gen2, use the storage account name and file system name as the container.
+The connector reads through the account's Blob endpoint.
+
+## 2. Supply read access
+
+Obtain a container SAS from your Azure administrator or the portal. It must allow
+read, use HTTPS only, and have an expiry date. Read/list is also accepted; write and
+delete permissions are rejected by this connector.
+
+Create `.env` in this directory with the following entry, replacing the placeholder
+with the SAS token only, not a complete URL:
+
+```dotenv
+AZURE_STORAGE_SAS=your-sas-token
+```
+
+The download's `.gitignore` excludes `.env`. Keep that file private. The project
+contains only a reference to `AZURE_STORAGE_SAS`; the local runtime resolves it
+when reading the source. Pass `--secrets-file .env` on commands that read the source;
+the CLI does not load this file automatically. An Azure CLI login does not supply this credential.
+
+## 3. Install and review
+
+```sh
+ingestron plugin install local@0.4.1
+ingestron plugin install ingestron/connectors/connectors/azure-blob/connector.yaml@1.0.0 --tag-prefix azure-blob-
+ingestron check
+ingestron build
+ingestron runtime prepare
+ingestron run --action discover --secrets-file .env
+ingestron run --action review
+```
+
+Azure Blob uses an explicit install reference in this release. Open each
+`review.json` under `build/generated/flows` and check the source fields against
+its contract. Discovery reads each selected object to infer and check its schema.
+
+Approve the reviewed contracts and run:
+
+```sh
+ingestron run --action approve
+ingestron run --run-id retail-001 --secrets-file .env
+python3 inspect-output.py
+```
+
+The output check should report three customers, three products, three orders,
+a quantity of seven and an order value of **NZD 61.95**. It also checks decimal
+prices, nulls and a name containing a newline.
+
+## 4. Retry and clean up
+
+```sh
+ingestron run --retry retail-001 --secrets-file .env
+```
+
+A completed snapshot is reused. If a read fails because the SAS expired, replace
+its value in `.env`, then retry the failed run ID. If an object changes during a
+download, retry after the source stops changing. For schema changes, keep the existing output and start in a fresh project directory
+to discover, review and approve the changed contract. Existing review files are
+protected from silent replacement.
+
+Delete `.env` when finished and revoke the SAS if you no longer need it. Remove
+only the sample blobs you uploaded; leave pre-existing data in place. Local output
+is under `build/generated/data`.
+
+To try TSV, JSON, JSONL or Parquet, start in a fresh extracted directory, upload the
+matching data folder, and pass `--format tsv`, `json`, `jsonl` or `parquet` to setup.
+See [Azure Blob settings and limits](/docs/reference/azure-blob) before using your
+own files.

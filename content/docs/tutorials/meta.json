@@ -1,4 +1,4 @@
 {
   "title": "Tutorials",
-  "pages": ["github-to-parquet", "retail-files"]
+  "pages": ["github-to-parquet", "retail-files", "azure-blob"]
 }

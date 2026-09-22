@@ -8,6 +8,7 @@
     "core",
     "mcp",
     "releases",
-    "files"
+    "files",
+    "azure-blob"
   ]
 }
