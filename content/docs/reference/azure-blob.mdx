@@ -1,0 +1,35 @@
+---
+title: "Azure Blob connector"
+description: "Settings and limits for reading one Azure storage object with the local provider."
+---
+
+Azure Blob 1.0.0 reads one CSV, TSV, JSON, JSONL or Parquet object per connection.
+It uses core 0.12.1 and local provider 0.4.1. Start with the
+[Azure retail exercise](/docs/tutorials/azure-blob).
+
+| Setting     | Value                                                                     |
+| ----------- | ------------------------------------------------------------------------- |
+| `account`   | Azure public-cloud storage account name, not a URL                        |
+| `container` | Blob container or ADLS Gen2 file system name                              |
+| `blob`      | Exact path inside the container, without a leading slash                  |
+| `format`    | `csv`, `tsv`, `json`, `jsonl` or `parquet`                                |
+| `sas_token` | Secret reference: `{ $secret: { env: AZURE_STORAGE_SAS } }`               |
+| `types`     | Optional column types, as in the [files connector](/docs/reference/files) |
+
+Use a time-limited HTTPS-only SAS with read or read/list permission. Plaintext tokens
+in project configuration, account keys and ambient Azure login are unsupported.
+Tokens must contain explicit permissions and expiry; stored-policy-only SAS tokens
+are not supported. Credentials are resolved only in the local runtime.
+
+The connector checks size and ETag before downloading and uses a conditional read.
+It rejects redirects, incomplete downloads and objects that change during the read.
+Downloaded input is temporary; the final output follows the normal reviewed snapshot
+and retry rules. Discovery and execution are separate reads, so data may change
+between them if its schema still matches the approved contract.
+
+The [file format limits](/docs/reference/files) apply, including 64 MiB and one million
+rows per object. This release has no directory scans, wildcards, incremental sync,
+version pinning, managed identity, custom endpoints or sovereign-cloud support.
+ADLS Gen2 files use the Blob endpoint; native DFS operations and ACL management are
+not implemented. Your machine still needs network access allowed by the account's
+firewall or private endpoint.

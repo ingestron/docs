@@ -11,6 +11,7 @@ pnpm dev
 pnpm validate
 pnpm samples:github
 pnpm samples:files
+pnpm samples:azure
 ```
 
 Pages live in `content/docs`. GitHub downloads live in `public/examples`; the
@@ -26,3 +27,8 @@ home page, search, example downloads and a retired route after deployment.
 
 Original code and documentation are Apache-2.0, licensed by Otrera Limited.
 See [LICENSE](LICENSE) and [NOTICE](NOTICE). Framework packages retain their own terms.
+
+The Azure sample check downloads the immutable retail archive and installs public
+source packages. It uses loopback transport for repeatable authentication and
+conditional-read failure tests; it needs no Azure account or token. Live-source
+qualification is recorded separately in the programme repository.

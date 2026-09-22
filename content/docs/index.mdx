@@ -30,12 +30,18 @@ flow, and a connector reads the source.
     href="/docs/tutorials/github-to-parquet"
     description="Review two fields and save a local Parquet snapshot."
   />
+  <Card
+    title="Read files from Azure Storage"
+    href="/docs/tutorials/azure-blob"
+    description="Use read-only source access and keep execution local."
+  />
 </Cards>
 
 ## What you can use today
 
 The published local provider runs ingestion on macOS and Linux. The files connector
-reads local CSV, TSV, flat JSON/JSONL and Parquet. The GitHub connector
+reads local CSV, TSV, flat JSON/JSONL and Parquet. Azure Blob reads the same formats
+from selected storage objects, including ADLS Gen2 files. The GitHub connector
 reads the `issues` stream from GitHub.com. The walkthrough projects issue IDs and
 titles into a Parquet file. It includes an explicit review and approval before extraction.
 

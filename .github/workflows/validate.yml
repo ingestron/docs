@@ -16,3 +16,4 @@ jobs:
       - run: pnpm validate
       - run: pnpm samples:github
       - run: pnpm samples:files
+      - run: pnpm samples:azure
