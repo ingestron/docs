@@ -62,3 +62,11 @@ Use `--json` for structured diagnostics and `--verbose` for supported detailed v
 Include the command, package versions and a minimal redacted configuration when
 reporting a problem in the [owning repository](https://github.com/ingestron).
 Do not include `.env`, tokens, private issue titles or full data files.
+
+## A documented plugin name is unknown
+
+Run `ingestron --version`. The `files` name requires CLI 0.14.0 or newer;
+`azure-blob` requires 0.14.1 or newer.
+An npm publication does not upgrade your installed command. Follow
+[upgrade an existing installation](/docs/start/installation#upgrade-an-existing-installation)
+and check for multiple Node installations if the version stays old.
