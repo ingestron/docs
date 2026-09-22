@@ -1,0 +1,34 @@
+---
+title: "GitHub example configuration"
+description: "Find the value you need to change in the supplied project."
+---
+
+The [downloadable project](/examples/github/project.yaml) is the complete example.
+It deliberately keeps one environment, one connection and one flow in a single file.
+
+| Path                                       | Meaning                                                     |
+| ------------------------------------------ | ----------------------------------------------------------- |
+| `apiVersion`                               | Project format, `ingestron.project/v1`.                     |
+| `id`                                       | Local project identifier, `github_issues`.                  |
+| `providers.packages.local`                 | Exact local provider package reference.                     |
+| `providers.packages.github`                | Exact GitHub connector manifest reference.                  |
+| `providers.configurations.local`           | Named provider configuration and its `runtime` binding.     |
+| `defaults.provider`                        | Provider configuration used when one is not specified.      |
+| `environments.dev.bindings.runtime.kind`   | `local`, selecting execution on this machine.               |
+| `connections.github.package`               | Connector package key, `github`.                            |
+| `connections.github.sourceId`              | Stable source label used in output identity.                |
+| `connections.github.tenantId`              | Stable grouping label, not a cloud tenant credential.       |
+| `connections.github.settings.repositories` | Authorised `owner/repository` values. Start with one.       |
+| `connections.github.settings.auth_token`   | Reference to `INGESTRON_GITHUB_TOKEN` in the secret file.   |
+| `flows[0].id`                              | `issues_local`, used in generated paths and flow selection. |
+| `flows[0].ingestion.timeoutSeconds`        | Flow timeout; the supplied example uses 120 seconds.        |
+| `flows[0].tables.issues.source.stream`     | The supported `issues` stream.                              |
+| `flows[0].tables.issues.contract`          | ODCS contract selecting the two published columns.          |
+
+Change the repository and credential before using a live source. Keep package
+versions fixed while learning the workflow. A larger or slower repository may
+exceed the example's timeout; review the run result before choosing another bound.
+
+This table explains the example, not every possible project schema field. Use the
+published [core schemas](https://github.com/ingestron/core/tree/main/docs) and
+`ingestron --help` for application development, and validate changes with `ingestron check`.

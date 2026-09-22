@@ -1,0 +1,61 @@
+{
+  "name": "@ingestron/docs",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.15.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "build:cloudflare": "opennextjs-cloudflare build",
+    "preview:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "start": "next start",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "fumadocs-mdx && tsc --noEmit",
+    "test": "node --test test/*.test.mjs scripts/*.test.mjs",
+    "secrets:check": "node scripts/scan-secrets.mjs",
+    "validate": "pnpm format:check && pnpm typecheck && pnpm test && pnpm samples:check && pnpm build && pnpm secrets:check",
+    "samples:check": "node scripts/check-examples.mjs",
+    "samples:github": "node scripts/check-github-example.mjs"
+  },
+  "dependencies": {
+    "fumadocs-core": "16.14.3",
+    "fumadocs-mdx": "15.2.3",
+    "fumadocs-ui": "16.14.3",
+    "next": "16.3.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@opennextjs/cloudflare": "1.20.2",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/mdx": "2.0.13",
+    "@types/node": "22.20.1",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "postcss": "8.5.26",
+    "prettier": "3.9.6",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "wrangler": "4.122.0",
+    "ingestron": "0.13.1",
+    "yaml": "2.9.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "workerd"
+    ]
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ingestron/docs.git"
+  }
+}

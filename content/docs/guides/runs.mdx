@@ -1,0 +1,43 @@
+---
+title: "Run again or retry"
+description: "Choose between reusing a snapshot and reading the source again."
+---
+
+Each run has an ID. In the GitHub tutorial, `issues-001` identifies one extraction
+and its receipt. Use the receipt to check what happened:
+
+```sh
+ingestron run status issues-001
+```
+
+## Retry the same work
+
+```sh
+ingestron run --retry issues-001
+```
+
+A completed run with unchanged inputs and output reuses its committed snapshot.
+An interrupted run without a valid commit may read the source again. Supply the
+secret file if source access is needed. This is not incremental ingestion: the
+connector does not restore a bookmark or resume from a specific GitHub page.
+
+Retry checks the build, selection and committed files. If any changed, fix the
+underlying problem or prepare a new reviewed build rather than bypassing the check.
+
+## Read a fresh snapshot
+
+After the same build has been approved, choose a new ID:
+
+```sh
+ingestron run --run-id issues-002 --secrets-file .env
+```
+
+This requests a new extraction. Keep output from earlier IDs if you need to compare
+snapshots. Do not reuse an old ID to mean different work.
+
+## After an interruption
+
+Execution runs in the foreground. If interrupted, inspect its status before retrying.
+Keep the build and source selection unchanged for a retry. If you need to change
+configuration, follow [change a project](/docs/guides/update-project) and use a new
+run ID. There is no background scheduler or remote cancellation service in this release.

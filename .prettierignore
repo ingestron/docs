@@ -1,0 +1,10 @@
+node_modules
+.next
+.source
+.open-next
+.wrangler
+build
+coverage
+pnpm-lock.yaml
+cloudflare-env.d.ts
+.vercel

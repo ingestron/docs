@@ -1,0 +1,161 @@
+---
+title: "Read GitHub issues into Parquet"
+description: "Build, review and run a local snapshot of issue IDs and titles."
+---
+
+This tutorial reads a GitHub.com repository and writes `id` and `title` columns
+to a local Parquet file. You choose the repository and review the projection before
+extraction. The result is a full snapshot; this example does not keep an incremental cursor.
+
+You need:
+
+- [CLI 0.13.1, Git and Python 3.12](/docs/start/installation) on macOS or Linux.
+- A repository you are allowed to read and a token with the required read access.
+- A local directory for the project, downloaded dependencies and output.
+
+No cloud compute is created. The first runtime preparation downloads Python packages.
+The procedure is exercised with synthetic GitHub responses; live row counts, rate
+limits and permissions depend on the repository you choose.
+
+## 1. Download the project
+
+Create an empty directory:
+
+```sh
+mkdir github-project
+cd github-project
+```
+
+Save these files inside it:
+
+- [project.yaml](/examples/github/project.yaml) — the complete project.
+- [gitignore.txt](/examples/github/gitignore.txt) — rename this file to `.gitignore`.
+- [inspect-output.py](/examples/github/inspect-output.py) — a small output check.
+
+Open `project.yaml` and replace `demo/repo` under `connections.github.settings.repositories`
+with your authorised `owner/repository`. Start with a small repository.
+
+The project already selects the local provider, GitHub connector and an `issues_local`
+flow. The contract at the bottom selects only `id` and `title`. The `sourceId` and
+`tenantId` values label the output; they are not credentials. Keep them stable for
+this exercise. See [project configuration](/docs/reference/project) for a field guide.
+
+## 2. Add your token
+
+Create `.env` in this directory with your editor:
+
+```dotenv
+INGESTRON_GITHUB_TOKEN=replace_with_your_token
+```
+
+Replace the placeholder with a token authorised for the selected repository.
+Use read access to issues and metadata; avoid an organisation administrator token.
+The [GitHub token documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
+explains how to create and limit a token. Organisation policies may require approval.
+
+The YAML stores the environment variable name, not the token. Keep `.env` untracked.
+Treat the project output as repository data too; a local file is not automatically
+safe to share. Read [secrets and local execution](/docs/guides/secrets) if you need
+to understand which process receives the token.
+
+## 3. Install the two plugins
+
+```sh
+ingestron plugin install local@0.4.0
+ingestron plugin install github@1.32.1
+ingestron plugin list
+```
+
+These are short names for the published packages already selected in `project.yaml`.
+Installation writes the package cache and `packages.lock.yaml`. It does not change
+project configuration or start a flow. Commit the lock alongside your configuration.
+
+## 4. Build and prepare
+
+```sh
+ingestron check
+ingestron build
+ingestron runtime prepare
+```
+
+`check` validates the project. `build` writes the files the provider needs under
+`build/generated`, without reading GitHub. `runtime prepare` installs the locked
+Python dependencies under `.ingestron/runtimes`. Running preparation again reuses
+a matching environment.
+
+If Python cannot be found, retry preparation with `--python` and the full path to
+Python 3.12. Do not edit the generated runtime files to fix configuration; change
+`project.yaml` and rebuild.
+
+## 5. Discover and review
+
+```sh
+ingestron run --action discover --secrets-file .env
+ingestron run --action review
+```
+
+Open `build/generated/flows/issues_local/review.json`. Check the source identity,
+selected `issues` stream and projected `id`/`title` fields against your contract.
+Discovery can require the token. Review uses the discovered information locally.
+
+The upstream catalogue may list other streams, but this connector release accepts
+only `issues`. GitHub's issues endpoint can also include pull requests; the connector
+does not remove those entries. See [connector behaviour](/docs/reference/github)
+before treating the output as an issues-only business dataset.
+
+## 6. Approve and run
+
+When the review matches your intended source and fields:
+
+```sh
+ingestron run --action approve
+ingestron run --run-id issues-001 --secrets-file .env
+ingestron run status issues-001
+```
+
+Expect a succeeded receipt and a row count. The count depends on the selected
+repository; an empty repository may produce no rows. Extraction requires approval;
+trying it before approval should fail without publishing output.
+
+## 7. Inspect the result
+
+```sh
+python3.12 inspect-output.py
+```
+
+The helper uses the prepared Python environment to print the Parquet schema and
+row count, without displaying titles. Expect `id` as int64 and `title` as string.
+Compare the count with the receipt. The file is under:
+
+```text
+build/generated/data/issues_local/<identity-hash>/issues-001/issues.parquet
+```
+
+The adjacent `commit.json` describes the committed snapshot. The identity hash
+separates the source and tenant labels; you do not need to choose it yourself.
+
+## 8. Retry without another extraction
+
+```sh
+ingestron run --retry issues-001
+```
+
+For a completed, unchanged snapshot, retry verifies and reuses the output without
+reading GitHub again. The example's token is not needed for that completed retry.
+A new run ID requests a new extraction. Incomplete runs can need source access;
+see [run and retry behaviour](/docs/guides/runs).
+
+## If something goes wrong
+
+For authentication errors, check the repository name, token access and any required
+organisation approval. For rate limits, wait until the source allows another request.
+Do not paste your token or unredacted source logs into an issue.
+
+If the project or generated files changed, rebuild and review before starting new
+work. If a review already exists, use a fresh build directory as described in
+[updating a project](/docs/guides/update-project). If committed output changed,
+preserve it for investigation; do not edit the receipt to make verification pass.
+
+Keep any Parquet and receipts you need before removing this disposable directory.
+Remove or revoke the token when you no longer need it. Deleting `.ingestron` also
+removes the local runtime environments and run records.

@@ -1,0 +1,52 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+:root {
+  --color-fd-primary: #096e63;
+  --color-fd-background: #ffffff;
+  --color-fd-foreground: #172b2b;
+  --color-fd-muted: #f3f6f5;
+  --color-fd-muted-foreground: #546663;
+  --color-fd-border: #dce5e2;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.docs-brand {
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  font-size: 1.2rem;
+}
+.docs-brand span {
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  margin-left: 0.5rem;
+  color: #546663;
+}
+.prose {
+  line-height: 1.8;
+}
+.prose h2 {
+  letter-spacing: -0.02em;
+}
+.prose a {
+  text-underline-offset: 0.2em;
+}
+:focus-visible {
+  outline: 2px solid #096e63;
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

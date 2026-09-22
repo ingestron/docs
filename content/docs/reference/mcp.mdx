@@ -1,0 +1,40 @@
+---
+title: "Connect an MCP client"
+description: "Expose the same project operations through a local stdio server."
+---
+
+The CLI includes an MCP adapter. Start it for a trusted project directory:
+
+```sh
+ingestron --project /absolute/path/to/project advanced mcp serve
+```
+
+Replace the path with your project. The process speaks JSON-RPC over standard input
+and output. Do not add `--json`; that flag is for terminal command results.
+
+A client configuration usually supplies the executable and arguments separately:
+
+```json
+{
+  "command": "ingestron",
+  "args": ["--project", "/absolute/path/to/project", "advanced", "mcp", "serve"]
+}
+```
+
+The exact configuration file and enclosing keys depend on your MCP client.
+
+## Enable only the actions you need
+
+By default, the server exposes inspection and change proposals. Applying changes
+requires `--allow-write`. Package downloads require `--allow-network`. Local runtime
+execution requires the separate `--allow-execute` option as well as write access.
+
+The root and environment are fixed for the session. A returned proposal does not
+apply itself; inspect it before authorising an apply operation. Network permission
+does not add a cloud deployment capability.
+
+Tools use the `ingestron_<operation>` naming convention. Let your client list the
+tools instead of maintaining a parallel list. `ingestron_packages_install` accepts
+`github`, `local` and exact versions through the same resolver as the CLI.
+
+For transport details and examples, see [CLI automation](https://github.com/ingestron/cli/blob/main/docs/automation.md).

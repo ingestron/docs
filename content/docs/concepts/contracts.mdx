@@ -1,0 +1,26 @@
+---
+title: "What a data contract does"
+description: "Describe the columns you intend to publish, then review them."
+---
+
+A data contract describes the shape and meaning of a dataset. Ingestron uses ODCS
+files for contracts. In the GitHub example, the contract selects a required integer
+`id` and a required string `title`.
+
+Discovery tells you what a source exposes. A contract tells Ingestron what you
+intend to use. The review connects the two before extraction. It is a checkpoint
+for the source identity, stream and projected fields, not a substitute for deciding
+whether those fields mean the right thing for your users.
+
+## Draft and review are different steps
+
+The contract walkthrough drafts a file from imported metadata. You still need to
+review it. The execution walkthrough includes a contract in its project and asks
+you to inspect the generated review before approving the run.
+
+A file can pass schema validation and still describe the wrong repository or
+business field. Read it, keep it in version control and review changes with the
+people who use the resulting data.
+
+Start with [your first contract](/docs/start/first-contract), or inspect the inline
+contract in the [GitHub example](/examples/github/project.yaml).

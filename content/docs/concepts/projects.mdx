@@ -1,0 +1,38 @@
+---
+title: "Projects, providers and connectors"
+description: "Understand the three pieces of a local pipeline."
+---
+
+A **project** is a set of files describing your sources, contracts, environments
+and flows. `project.yaml` is its entry point. You can keep it in Git and review
+changes before running them.
+
+A **provider** supplies build or execution behaviour. The local provider runs the
+Python runtime on your machine. A **connector** supplies the source definition and
+reader. The GitHub connector reads the supported GitHub stream.
+
+```text
+Project + contract
+        ↓ build
+Generated runtime files
+        ↓ review and approve
+Local provider → GitHub connector → Parquet snapshot
+```
+
+## Package versus configuration
+
+A package is installed code at an exact version. A provider configuration gives
+that package a name and an environment binding inside your project. A connection
+selects a connector and its source settings, including secret references.
+
+In the GitHub example, `local` is the provider configuration used by the flow.
+`github` is the connection it reads. Their package names appear in `providers.packages`.
+The names can look similar because the example keeps them short, but they serve
+different purposes. [The project reference](/docs/reference/project) shows where
+each value belongs.
+
+## Files to keep
+
+Commit authored configuration, contracts and `packages.lock.yaml`. Keep secret files,
+runtime caches and generated data out of Git unless you have deliberately chosen
+an appropriate storage policy. A lock selects code; it does not contain source credentials.

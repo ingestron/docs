@@ -1,0 +1,46 @@
+---
+title: "Install Ingestron"
+description: "Install the CLI and check the tools you need for local execution."
+---
+
+You need Node.js **22.12 or newer**. Node 24.12 is tested alongside Node 22.
+You also need Git to install plugins. Local pipeline execution currently uses
+macOS or Linux and Python **3.12**; you can try the contract walkthrough without Python.
+
+## Install the CLI
+
+Run these commands in your terminal:
+
+```sh
+node --version
+git --version
+npm install --global ingestron@0.13.1
+ingestron --version
+```
+
+The last command should print `0.13.1`. This version includes core `0.12.1`;
+you do not need to install core separately.
+
+If your shell cannot find `ingestron`, open a new terminal and check that your npm
+global executable directory is on `PATH`. If npm reports `EBADENGINE`, check the
+Node version in this same terminal and make sure you installed CLI 0.13.1 or newer.
+Older CLI releases restricted the Node major version.
+
+## Prepare for a local pipeline
+
+For the GitHub tutorial, also check:
+
+```sh
+python3.12 --version
+```
+
+Expect Python 3.12.x. If it is installed elsewhere, you can pass its full executable
+path to `ingestron runtime prepare --python /path/to/python3.12` later. Ingestron
+creates a project runtime environment rather than asking you to install the connector's
+Python packages globally. The first preparation downloads dependencies.
+
+## Choose your first task
+
+[Create a contract](/docs/start/first-contract) to learn the files and commands
+without credentials. If you already know what a data contract is, go straight to
+[GitHub issues to Parquet](/docs/tutorials/github-to-parquet).

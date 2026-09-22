@@ -1,0 +1,51 @@
+---
+title: "Build your first Ingestron project"
+description: "Describe your data, review a contract and run a local pipeline."
+---
+
+Ingestron keeps pipeline configuration and data contracts in files you can review
+and version in Git. The CLI checks your project and builds it. A provider runs the
+flow, and a connector reads the source.
+
+## Start with a small task
+
+<Cards>
+  <Card
+    title="Install Ingestron"
+    href="/docs/start/installation"
+    description="Set up the CLI and check your environment."
+  />
+  <Card
+    title="Create your first contract"
+    href="/docs/start/first-contract"
+    description="Try the workflow with a tiny metadata file. No account or token needed."
+  />
+  <Card
+    title="Read GitHub issues"
+    href="/docs/tutorials/github-to-parquet"
+    description="Review two fields and save a local Parquet snapshot."
+  />
+</Cards>
+
+## What you can use today
+
+The published local provider runs ingestion on macOS and Linux. The GitHub connector
+reads the `issues` stream from GitHub.com. The walkthrough projects issue IDs and
+titles into a Parquet file. It includes an explicit review and approval before extraction.
+
+You can also use the CLI to author projects and contracts, build with installed
+plugins, or expose project tools to an MCP client. Application developers can use
+the separate core package.
+
+Cloud deployment, scheduled runs, SQL ingestion and a files connector are not part
+of this walkthrough. See [supported versions and limits](/docs/reference/releases)
+before choosing an execution environment.
+
+## Find a specific task
+
+- [Install and update plugins](/docs/guides/plugins)
+- [Store a source token](/docs/guides/secrets)
+- [Retry a run](/docs/guides/runs)
+- [Change a project safely](/docs/guides/update-project)
+- [Connect an MCP client](/docs/reference/mcp)
+- [Fix a failed command](/docs/troubleshooting)

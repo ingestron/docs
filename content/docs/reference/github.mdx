@@ -1,0 +1,37 @@
+---
+title: "GitHub connector"
+description: "Source support and limits for connector 1.32.1."
+---
+
+The connector uses Meltano's GitHub tap to read GitHub.com through the local
+provider. The qualified walkthrough selects the `issues` stream and projects
+`id` as int64 and `title` as string.
+
+```sh
+ingestron plugin install github@1.32.1
+```
+
+| Setting         | Value in the example                                  |
+| --------------- | ----------------------------------------------------- |
+| `repositories`  | An array containing an authorised `owner/repository`. |
+| `auth_token`    | A `$secret.env` reference to a read token.            |
+| Selected stream | `issues`.                                             |
+| Output          | A full Parquet snapshot with the reviewed projection. |
+
+## Behaviour to account for
+
+- The issues API can include pull-request entries. This connector does not filter them out.
+- A snapshot is not a transactionally consistent view or a complete issue event history.
+- Retries of incomplete work do not restore an incremental cursor.
+- API limits, source permissions and the configured flow timeout can stop a run.
+- Other upstream streams may appear in discovery but are not accepted by this release.
+- Other projections have not been individually qualified by this walkthrough.
+- GitHub Enterprise and GitHub App authentication are not supported here.
+
+The runtime bounds metadata/catalogue input to 2 MB and individual upstream messages
+to 16 MB. Large fields can fail even when a repository has few issues. There is no
+published throughput guarantee; use a small source first and measure your own workload.
+
+Use [the tutorial](/docs/tutorials/github-to-parquet) for the complete procedure and
+[the source repository](https://github.com/ingestron/connectors) for implementation
+and upstream licence details.

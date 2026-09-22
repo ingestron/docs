@@ -1,0 +1,71 @@
+---
+title: "CLI commands"
+description: "Find the command for your next task."
+---
+
+Commands use resource groups. Add `--help` at any level for arguments and defaults:
+
+```sh
+ingestron --help
+ingestron plugin install --help
+ingestron run --help
+```
+
+## Project work
+
+| Command            | Purpose                                                 |
+| ------------------ | ------------------------------------------------------- |
+| `init [directory]` | Create project and environment files.                   |
+| `config show`      | Inspect the selected project configuration.             |
+| `config set`       | Change a non-secret value.                              |
+| `source add`       | Describe a source; it does not read data.               |
+| `source import`    | Import metadata from a supplied file.                   |
+| `contract draft`   | Draft a contract from imported metadata.                |
+| `contract check`   | Validate a contract.                                    |
+| `flow add`         | Add a flow using a standard from an installed provider. |
+| `check --draft`    | Check a project that is still being authored.           |
+| `check`            | Check strict build readiness.                           |
+| `build`            | Generate the configured provider's files.               |
+
+## Packages and execution
+
+| Command                 | Purpose                                                     |
+| ----------------------- | ----------------------------------------------------------- |
+| `plugin install`        | Cache and lock a package.                                   |
+| `plugin update`         | Explicitly check for an official package update.            |
+| `plugin configure`      | Register an installed provider in a project.                |
+| `plugin list`           | Show locked packages.                                       |
+| `plugin browse`         | Inspect installed packages; it is not a remote marketplace. |
+| `plugin versions`       | List stable repository tags.                                |
+| `runtime prepare`       | Prepare locked Python dependencies.                         |
+| `run --action discover` | Discover source metadata.                                   |
+| `run --action review`   | Create the local review.                                    |
+| `run --action approve`  | Approve the reviewed work.                                  |
+| `run --run-id <id>`     | Execute with an explicit run ID.                            |
+| `run status <id>`       | Inspect a run receipt.                                      |
+| `run --retry <id>`      | Retry the same work or reuse verified output.               |
+
+Replace angle-bracket placeholders with your own values. `advanced mcp serve`
+starts the local [MCP adapter](/docs/reference/mcp). Installed providers can add
+namespaced commands; their help appears only when the required package is configured.
+
+## Common options
+
+| Option                  | Meaning                                                                              |
+| ----------------------- | ------------------------------------------------------------------------------------ |
+| `--project <directory>` | Project root; defaults to the current directory.                                     |
+| `--environment <name>`  | Environment; defaults to `dev`.                                                      |
+| `--json`                | Structured results without interactive prompts.                                      |
+| `--verbose`             | Include detailed result information where supported.                                 |
+| `--no-input`            | Disable prompts in scripts.                                                          |
+| `--dry-run`             | Preview supported authoring changes. Not supported for installation, builds or runs. |
+| `--secrets-file <file>` | Project-relative secret file for a source run.                                       |
+| `--from <directory>`    | Select a generated build for runtime operations.                                     |
+
+Use `--secrets-file` rather than Node's `--env-file`. Read the diagnostic code and
+message when a command fails; exit status alone may not explain the corrective action.
+
+For the complete implemented command table, see the
+[CLI reference](https://github.com/ingestron/cli/blob/main/docs/commands.md).
+These guides do not add commands such as `deploy` or `source discover` that the
+published CLI does not implement.

@@ -1,0 +1,42 @@
+---
+title: "Change a project safely"
+description: "Keep reviewed inputs and generated output in step."
+---
+
+Edit authored files such as `project.yaml` and contracts, then review the diff.
+Do not patch generated Python or JavaScript to change a pipeline: the next build
+can replace it, and integrity checks can reject the modified output.
+
+## Build into a new directory
+
+After changing a repository selection, contract or package version:
+
+```sh
+ingestron check
+ingestron build --out build/review-002
+ingestron runtime prepare --from build/review-002
+ingestron run --from build/review-002 --action discover --secrets-file .env
+ingestron run --from build/review-002 --action review
+```
+
+Read the new review under `build/review-002/flows/issues_local/review.json`.
+When it matches your intent:
+
+```sh
+ingestron run --from build/review-002 --action approve
+ingestron run --from build/review-002 --run-id issues-002 --secrets-file .env
+```
+
+Use the same `--from` for operations on that build. A new directory keeps the old
+review and committed output available while you check the change. Use a new name
+if `build/review-002` already contains work you want to preserve.
+
+## Update a package selection
+
+Install the target version first, then change the matching exact reference in
+`providers.packages`. Commit the project and lock together. `plugin update` only
+caches an available upgrade; it does not make this selection for you.
+
+To roll back, restore the previous authored files and lock from Git, restore the
+locked packages and create a reviewed build. Keep old receipts as records; do not
+rewrite their digests or use them to approve a different configuration.

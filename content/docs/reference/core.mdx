@@ -1,0 +1,26 @@
+---
+title: "Use core in an application"
+description: "Share project operations without shelling out to the CLI."
+---
+
+`@ingestron/core` contains the project schemas, compiler, operation API and plugin
+host. Use it when building an editor or application integration. You do not need
+to install it separately to use the CLI.
+
+```sh
+npm install @ingestron/core@0.12.1
+```
+
+Core's runtime operations require Node 22.12 or newer. It is a trusted local library,
+not a multi-tenant execution sandbox. Your application owns its access policy and
+must explicitly enable writes, package-network access and execution where needed.
+
+Start with the maintained [core API reference](https://github.com/ingestron/core/blob/main/docs/api.md)
+and [schemas](https://github.com/ingestron/core/blob/main/docs/api.md#editor-entry-point). Prefer the
+versioned operation API to importing internal modules. Review the package's exported
+entry points before designing a browser/editor integration; Node runtime operations
+and editor schema validation have different dependencies.
+
+Official short plugin names are resolved by the CLI/MCP adapter. Core itself uses
+explicit immutable package references. Keep that distinction if your application
+adds an installation UI.

@@ -1,0 +1,16 @@
+{
+  "table": "customers",
+  "columns": [
+    {
+      "name": "id",
+      "logicalType": "integer",
+      "physicalType": "BIGINT",
+      "required": true
+    },
+    {
+      "name": "name",
+      "logicalType": "string",
+      "physicalType": "STRING"
+    }
+  ]
+}

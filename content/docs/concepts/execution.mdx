@@ -1,0 +1,30 @@
+---
+title: "From build to output"
+description: "See which steps read your source and which stay local."
+---
+
+The local workflow separates preparing a pipeline from extracting data.
+
+| Step     | What happens                                                      |
+| -------- | ----------------------------------------------------------------- |
+| Check    | Validate project configuration locally.                           |
+| Build    | Write the provider's generated files. No source read occurs.      |
+| Prepare  | Download and install locked Python dependencies.                  |
+| Discover | Ask the connector for source metadata; credentials may be needed. |
+| Review   | Compare the discovered fields with the selected contract.         |
+| Approve  | Record approval for the reviewed build and selection.             |
+| Run      | Read the source and publish the committed snapshot.               |
+
+The GitHub example writes Parquet and a commit record. Run receipts let you inspect
+status and retry without silently changing the meaning of the run.
+
+## Why keep these steps separate?
+
+You can review generated work before granting it access to data. If a project,
+contract or runtime file changes, old approval and retry records must not be treated
+as approval for the new work. This is why editing generated files or reusing a run
+ID after changing a build can fail.
+
+The local runtime is a foreground process using your operating-system account.
+It has no hosted scheduler. Read [secrets and execution](/docs/guides/secrets) before
+running third-party packages, and [retry behaviour](/docs/guides/runs) for recovery.

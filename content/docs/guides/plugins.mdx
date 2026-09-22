@@ -1,0 +1,72 @@
+---
+title: "Install and update plugins"
+description: "Choose a package version without changing the project behind your back."
+---
+
+A provider decides where and how a flow runs. A connector reads a source.
+The GitHub tutorial needs both `local` and `github`.
+
+## Install an official plugin
+
+From the project directory:
+
+```sh
+ingestron plugin install local
+ingestron plugin install github
+```
+
+On first install, an omitted version selects the latest release in the official
+catalogue qualified for your CLI's core version. `github@latest` has the same
+meaning. Ingestron then records an exact version, commit and file hashes in
+`packages.lock.yaml`. It caches files under `.ingestron/packages`.
+
+Installation does not edit `project.yaml`. The old `--cache-only` option is accepted
+but unnecessary. Use the exact versions in a tutorial when reproducing its result:
+
+```sh
+ingestron plugin install github@1.32.1
+ingestron plugin list
+```
+
+## Reuse or update a lock
+
+```sh
+ingestron plugin install github --frozen
+ingestron plugin update github
+```
+
+`--frozen` requires an existing lock. A repeated normal installation also reuses
+the highest stable version already locked for that name. It does not silently
+check for an upgrade. `update` explicitly checks the catalogue and caches a newer
+qualified version if available. It does not change a project's selected version
+or replace an existing version's commit.
+
+To adopt another version, update the exact reference in your project, check it,
+and build and review again. Keep the previous configuration and lock in Git so
+you can restore them. See [change a project](/docs/guides/update-project).
+
+## Configure a provider
+
+The GitHub example already includes provider configuration. For a project without
+it, inspect the installed package and use its exact reference:
+
+```sh
+ingestron plugin configure ingestron/provider-local@0.4.0 --name local
+```
+
+This is a separate authoring step. Review its files and add any required connection
+settings before building. The old `plugin install --name` spelling reports this
+new step instead of registering a provider implicitly.
+
+## Other repositories
+
+Full references remain available for third-party packages and custom manifest paths:
+
+```text
+ingestron plugin install owner/repository@1.2.3
+```
+
+`owner/repository` is a placeholder. A package must implement the supported plugin
+contract. Custom repositories do not get official `@latest` resolution. Use
+`plugin versions owner/repository` to inspect stable tags; tag availability alone
+does not establish compatibility.

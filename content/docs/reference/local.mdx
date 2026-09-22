@@ -1,0 +1,30 @@
+---
+title: "Local provider"
+description: "Execution behaviour for provider-local 0.4.0."
+---
+
+The local provider builds and runs supported ingestion flows using a prepared
+Python 3.12 environment on macOS or Linux. Install it with:
+
+```sh
+ingestron plugin install local@0.4.0
+```
+
+| Behaviour           | Current support                                                           |
+| ------------------- | ------------------------------------------------------------------------- |
+| Execution           | Foreground, sequential local work.                                        |
+| Runtime preparation | Locked dependencies in a project-managed Python environment.              |
+| Source credentials  | Declared secret references passed to the runtime.                         |
+| Review              | Discover, review and approve before extraction.                           |
+| Output              | Snapshot files and commit records for supported source flows.             |
+| Retry               | Reuse verified completed output; re-extract incomplete work where needed. |
+
+There is no cloud deployment, scheduler, native Windows qualification or distributed
+execution in this provider release. Python executes as your OS user. Package
+preparation can run upstream build code.
+
+The provider owns execution; the connector owns source settings and stream support.
+Installing the local provider does not make every source available. Follow the
+[GitHub tutorial](/docs/tutorials/github-to-parquet) for the qualified pair.
+
+[Source and release notes](https://github.com/ingestron/provider-local)

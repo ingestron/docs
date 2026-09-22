@@ -1,0 +1,84 @@
+---
+title: "Create your first contract"
+description: "Turn a small metadata file into a contract you can review."
+---
+
+This walkthrough creates a project, describes a source and drafts a contract for
+two columns. It does not connect to a database or read a CSV file. You need the
+[installed CLI](/docs/start/installation) and a directory where you can create files.
+
+## 1. Create a project
+
+```sh
+ingestron init retail --no-input
+cd retail
+ingestron config show
+```
+
+You should see `project.yaml` and environment files for `dev`, `test` and `prod`.
+If `retail` already contains a project, choose a different name. Initialisation
+will not replace existing project files.
+
+## 2. Describe the source
+
+Preview a change before saving it:
+
+```sh
+ingestron --dry-run source add customers --type csv
+ingestron source add customers --type csv
+ingestron source list
+```
+
+The preview lists proposed files. The second command writes the source definition.
+Here `csv` describes the data you intend to use; it does not install a CSV connector.
+
+## 3. Import metadata
+
+[Download metadata.json](/examples/contracts/metadata.json) into the `retail`
+directory, or save this content as `metadata.json`:
+
+```json
+{
+  "table": "customers",
+  "columns": [
+    {
+      "name": "id",
+      "logicalType": "integer",
+      "physicalType": "BIGINT",
+      "required": true
+    },
+    { "name": "name", "logicalType": "string", "physicalType": "STRING" }
+  ]
+}
+```
+
+```sh
+ingestron source import customers --metadata metadata.json
+ingestron contract draft customers --source customers
+ingestron contract check customers
+ingestron contract show customers --verbose
+ingestron check --draft
+```
+
+Open `contracts/customers.odcs.yaml`. It should describe `id` as an integer and
+`name` as a string. Ingestron also records where the draft metadata came from.
+Review the names, types and meaning before using the contract in a flow. A schema
+check confirms the file is valid; it does not approve your modelling choices.
+
+## 4. Check overwrite protection
+
+Run this again:
+
+```sh
+ingestron contract draft customers --source customers
+```
+
+It should refuse to replace the existing contract. Your reviewed file should be
+unchanged. Edit it deliberately, review the diff in Git, and run `contract check`
+again instead of redrafting over it.
+
+There is no pipeline in this project yet, so use `check --draft`; a strict build
+needs a configured provider and flow. To clean up, remove only the disposable
+`retail` directory you created.
+
+Next, [run the GitHub tutorial](/docs/tutorials/github-to-parquet) in a separate directory.
