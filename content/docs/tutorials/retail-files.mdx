@@ -9,16 +9,16 @@ fictional NZ retailer with known results, including nulls, quoted names, embedde
 newlines and decimal prices.
 
 You need [the CLI, Git and Python](/docs/start/installation), internet access for
-the first package installation, and a writable local directory. Files 1.0.0 works
+the first package installation, and a writable local directory. Files 1.0.1 works
 with CLI 0.13.2 and core 0.12.1 using the full install reference below.
 
 ## 1. Download and prepare the project
 
 In an empty directory, download the
-[retail exercise](https://github.com/ingestron/connectors/releases/download/files-1.0.0/retail-files-1.0.0.zip):
+[retail exercise](https://github.com/ingestron/connectors/releases/download/files-1.0.1/retail-files-1.0.1.zip):
 
 ```sh
-curl --fail --location --output retail.zip https://github.com/ingestron/connectors/releases/download/files-1.0.0/retail-files-1.0.0.zip
+curl --fail --location --output retail.zip https://github.com/ingestron/connectors/releases/download/files-1.0.1/retail-files-1.0.1.zip
 python3 -m zipfile -e retail.zip retail
 cd retail
 python3 setup.py
@@ -32,7 +32,7 @@ three connections, three flows and three ODCS contracts. Nothing has run yet.
 
 ```sh
 ingestron plugin install local@0.4.1
-ingestron plugin install ingestron/connectors/connectors/files/connector.yaml@1.0.0 --tag-prefix files-
+ingestron plugin install ingestron/connectors/connectors/files/connector.yaml@1.0.1 --tag-prefix files-
 ingestron check
 ingestron build
 ingestron runtime prepare

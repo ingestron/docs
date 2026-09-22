@@ -6,9 +6,9 @@ import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 const root = process.cwd(),
   work = resolve("build/files-example");
-const commit = "6c4a522c55936e4cba43cef044be64e23320cbda";
+const commit = "8be969d759b84339832bd563f703019b6bf3946d";
 const archiveSha =
-  "50f8fc3c8602f75139b407edf2daead32821c9abae03ec2a1bbf27d1cc5b12a2";
+  "8c6b4d8b5fa3cc14c28ca7346e34dc83f191dbff8b18e6f2874724a2791d2b9f";
 rmSync(work, { recursive: true, force: true });
 mkdirSync(work, { recursive: true });
 const run = (args, cwd = work, env = process.env) =>
@@ -25,7 +25,7 @@ run([
   "--location",
   "--output",
   archive,
-  "https://github.com/ingestron/connectors/releases/download/files-1.0.0/retail-files-1.0.0.zip",
+  "https://github.com/ingestron/connectors/releases/download/files-1.0.1/retail-files-1.0.1.zip",
 ]);
 assert.equal(
   createHash("sha256").update(readFileSync(archive)).digest("hex"),
