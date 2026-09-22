@@ -46,8 +46,8 @@ importers:
         specifier: 19.2.3
         version: 19.2.3(@types/react@19.2.14)
       ingestron:
-        specifier: 0.13.1
-        version: 0.13.1(zod@4.5.4)
+        specifier: 0.13.2
+        version: 0.13.2(zod@4.5.4)
       postcss:
         specifier: 8.5.26
         version: 8.5.26
@@ -2807,8 +2807,8 @@ packages:
     resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
     engines: {node: '>= 4'}
 
-  ingestron@0.13.1:
-    resolution: {integrity: sha512-257U5jDsMSYgVCcvOy0gZEx1LxpFdAOniePlJkTmlTVcttRRDQaI9Le395D/OJI3YkY0c1eaxKQuQKED9pqipw==}
+  ingestron@0.13.2:
+    resolution: {integrity: sha512-T6lTrrJ+9XSzsYVaEc7dUkJrjmUd1pSemk87BjDIJfbqU8AKPkMCVH6Q2ZXK81kUjvj5SLqcLgRKh17yeKRATg==}
     engines: {node: '>=22.12.0'}
     hasBin: true
 
@@ -6787,7 +6787,7 @@ snapshots:
 
   ignore@5.3.2: {}
 
-  ingestron@0.13.1(zod@4.5.4):
+  ingestron@0.13.2(zod@4.5.4):
     dependencies:
       '@clack/prompts': 1.7.0
       '@ingestron/core': 0.12.1

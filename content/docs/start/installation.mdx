@@ -14,30 +14,48 @@ Run these commands in your terminal:
 ```sh
 node --version
 git --version
-npm install --global ingestron@0.13.1
+npm install --global ingestron@0.13.2
 ingestron --version
 ```
 
-The last command should print `0.13.1`. This version includes core `0.12.1`;
+The last command should print `0.13.2`. This version includes core `0.12.1`;
 you do not need to install core separately.
 
 If your shell cannot find `ingestron`, open a new terminal and check that your npm
 global executable directory is on `PATH`. If npm reports `EBADENGINE`, check the
-Node version in this same terminal and make sure you installed CLI 0.13.1 or newer.
+Node version in this same terminal and make sure you installed CLI 0.13.2 or newer.
 Older CLI releases restricted the Node major version.
 
 ## Prepare for a local pipeline
 
-For the GitHub tutorial, also check:
+The local provider needs `python3` to start its execution adapter and Python 3.12
+for the connector environment. Python 3.12 does not have to be on your shell's PATH.
+Preparation looks for `python3.12`, an already-running Python 3.12, or an existing
+3.12 installation known to uv. It does not download Python itself.
 
 ```sh
-python3.12 --version
+python3 --version
 ```
 
-Expect Python 3.12.x. If it is installed elsewhere, you can pass its full executable
-path to `ingestron runtime prepare --python /path/to/python3.12` later. Ingestron
-creates a project runtime environment rather than asking you to install the connector's
-Python packages globally. The first preparation downloads dependencies.
+If you already have Python 3.12 installed, continue to the tutorial and run
+`ingestron runtime prepare`. Its result reports the Python version and whether the
+environment was prepared or reused. Use the suggested verbose status command to
+see its path.
+
+If preparation cannot find Python 3.12, install it first. On macOS or Linux with
+[uv installed](https://docs.astral.sh/uv/getting-started/installation/):
+
+```sh
+uv python install 3.12
+uv python find 3.12 --no-python-downloads
+```
+
+See [uv's Python installation guide](https://docs.astral.sh/uv/guides/install-python/)
+for details. Alternatively use a Python installation managed by your organisation.
+For an explicit override, copy its executable path and run
+`ingestron runtime prepare --python /absolute/path/to/python3.12` in your project.
+Preparation downloads locked connector dependencies into `.ingestron/runtimes`;
+it does not install them globally.
 
 ## Choose your first task
 

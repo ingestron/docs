@@ -7,10 +7,10 @@ These guides use the following published releases:
 
 | Component        | Version | Distribution                             |
 | ---------------- | ------- | ---------------------------------------- |
-| CLI              | 0.13.1  | `npm install -g ingestron@0.13.1`        |
+| CLI              | 0.13.2  | `npm install -g ingestron@0.13.2`        |
 | Core             | 0.12.1  | Included as an exact CLI dependency.     |
-| Local provider   | 0.4.0   | `ingestron plugin install local@0.4.0`   |
-| GitHub connector | 1.32.1  | `ingestron plugin install github@1.32.1` |
+| Local provider   | 0.4.1   | `ingestron plugin install local@0.4.1`   |
+| GitHub connector | 1.33.0  | `ingestron plugin install github@1.33.0` |
 
 The CLI and core require Node 22.12 or newer. CI covers Node 22.12, 22.23 and 24.12.
 Local execution is qualified on macOS/Linux with Python 3.12. A wider Node engine
@@ -25,8 +25,9 @@ components retain their own licence terms.
 
 Files and SQL connectors, native cloud execution, scheduling and hosted enterprise
 services are not offered by these guides. The local GitHub procedure is a preview:
-its automated execution evidence uses synthetic API responses, not live-source
-performance or independent-user acceptance.
+automated tests use synthetic API responses, and a bounded anonymous live run against
+the public Ingestron CLI repository has passed. Neither establishes throughput or
+independent-user acceptance.
 
 ## Updating
 
