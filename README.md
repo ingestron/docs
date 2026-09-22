@@ -10,9 +10,11 @@ pnpm install --frozen-lockfile
 pnpm dev
 pnpm validate
 pnpm samples:github
+pnpm samples:files
 ```
 
-Pages live in `content/docs`. Downloadable examples live in `public/examples`.
+Pages live in `content/docs`. GitHub downloads live in `public/examples`; the
+retail archive is pinned to an immutable connector release and verified by hash.
 Follow [the writing guide](CONTRIBUTING.md). Tests check local links, navigation,
 release references and the actual example files against the published CLI.
 The GitHub example check downloads dependencies and uses synthetic loopback HTTP;

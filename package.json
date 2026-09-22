@@ -22,7 +22,8 @@
     "secrets:check": "node scripts/scan-secrets.mjs",
     "validate": "pnpm format:check && pnpm typecheck && pnpm test && pnpm samples:check && pnpm build && pnpm secrets:check",
     "samples:check": "node scripts/check-examples.mjs",
-    "samples:github": "node scripts/check-github-example.mjs"
+    "samples:github": "node scripts/check-github-example.mjs",
+    "samples:files": "node scripts/check-files-example.mjs"
   },
   "dependencies": {
     "fumadocs-core": "16.14.3",
