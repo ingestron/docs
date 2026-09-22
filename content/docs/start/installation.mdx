@@ -14,17 +14,40 @@ Run these commands in your terminal:
 ```sh
 node --version
 git --version
-npm install --global ingestron@0.14.0
+npm install --global ingestron@0.14.1
 ingestron --version
 ```
 
-The last command should print `0.14.0`. This version includes core `0.12.1`;
+The last command should print `0.14.1`. This version includes core `0.12.1`;
 you do not need to install core separately.
 
 If your shell cannot find `ingestron`, open a new terminal and check that your npm
 global executable directory is on `PATH`. If npm reports `EBADENGINE`, check the
-Node version in this same terminal and make sure you installed CLI 0.14.0 or newer.
+Node version in this same terminal and make sure you installed CLI 0.14.1 or newer.
 Older CLI releases restricted the Node major version.
+
+## Upgrade an existing installation
+
+Run the install command again, then check `ingestron --version`. Publishing a new
+release to npm does not update an already installed CLI.
+
+If the version stays old, check which executable your shell selects:
+
+```sh
+command -v ingestron
+command -v node
+command -v npm
+npm prefix --global
+```
+
+On macOS and Linux, npm's global executable directory is the printed prefix plus
+`/bin`. If `ingestron` comes from a different directory, you have another copy on
+`PATH`. With fnm or nvm, select the Node version you use for this project and
+reinstall the CLI in that environment. Open a new terminal and check the version.
+
+`Unknown official plugin 'files'` usually means a CLI older than 0.14.0 is running.
+Check the installed version before changing the plugin reference. Keep full
+repository paths for custom packages; official connectors use short names.
 
 ## Prepare for a local pipeline
 

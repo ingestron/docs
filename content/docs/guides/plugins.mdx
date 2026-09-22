@@ -8,17 +8,31 @@ The GitHub tutorial needs both `local` and `github`.
 
 ## Install an official plugin
 
-From the project directory:
+From the project directory, install `local` and the connectors your project uses.
+CLI 0.14.1 supports these official names:
+
+| Name         | Purpose                             |
+| ------------ | ----------------------------------- |
+| `local`      | Execute flows on your machine       |
+| `files`      | Read local files                    |
+| `github`     | Read GitHub issues                  |
+| `azure-blob` | Read Azure Blob and ADLS Gen2 files |
+
+For example:
 
 ```sh
 ingestron plugin install local
-ingestron plugin install github
+ingestron plugin install files
 ```
 
 On first install, an omitted version selects the latest release in the official
 catalogue qualified for your CLI's core version. `github@latest` has the same
 meaning. Ingestron then records an exact version, commit and file hashes in
 `packages.lock.yaml`. It caches files under `.ingestron/packages`.
+
+Official names do not need `--tag-prefix` or a repository path. Project and lock
+files keep the full versioned reference so the selected package remains explicit
+and portable. Use full references when installing custom packages.
 
 Installation does not edit `project.yaml`. The old `--cache-only` option is accepted
 but unnecessary. Use the exact versions in a tutorial when reproducing its result:
