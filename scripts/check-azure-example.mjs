@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 const root = process.cwd(),
   work = resolve("build/azure-example");
-const commit = "920d2cf5d8e9c2117331cea1ffb6bd8730b19fb7";
+const commit = "61703515c2db7b1d992df8c0d189ecdda1a9b7e3";
 const archiveSha =
   "6072581a644ff345cba214ce86337b12e44b7e10a205ca63e83c2fdb7cc891aa";
 rmSync(work, { recursive: true, force: true });
@@ -59,8 +59,8 @@ const evidence = JSON.parse(
   readFileSync(resolve(repo, "build/azure-blob-acceptance/evidence.json")),
 );
 assert.equal(evidence.publicSource, true);
-assert.equal(evidence.core, "0.12.1");
-assert.equal(evidence.cli, "0.14.1");
+assert.equal(evidence.core, "0.12.2");
+assert.equal(evidence.cli, "0.15.0");
 writeFileSync(
   resolve(work, "evidence.json"),
   JSON.stringify({ ...evidence, archiveSha, harnessCommit: commit }, null, 2) +

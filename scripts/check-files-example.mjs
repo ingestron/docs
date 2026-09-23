@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 const root = process.cwd(),
   work = resolve("build/files-example");
-const commit = "8be969d759b84339832bd563f703019b6bf3946d";
+const commit = "61703515c2db7b1d992df8c0d189ecdda1a9b7e3";
 const archiveSha =
   "8c6b4d8b5fa3cc14c28ca7346e34dc83f191dbff8b18e6f2874724a2791d2b9f";
 rmSync(work, { recursive: true, force: true });
@@ -53,8 +53,8 @@ const evidence = JSON.parse(
   readFileSync(resolve(repo, "build/files-acceptance/evidence.json")),
 );
 assert.equal(evidence.publicSource, true);
-assert.equal(evidence.core, "0.12.1");
-assert.equal(evidence.cli, "0.14.1");
+assert.equal(evidence.core, "0.12.2");
+assert.equal(evidence.cli, "0.15.0");
 writeFileSync(
   resolve(work, "evidence.json"),
   JSON.stringify({ ...evidence, archiveSha, harnessCommit: commit }, null, 2) +

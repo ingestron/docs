@@ -7,7 +7,7 @@ Use the same retail data as the [local files exercise](/docs/tutorials/retail-fi
 this time reading from your Azure storage account. Ingestron runs on your machine
 and saves three reviewed Parquet snapshots locally.
 
-You need CLI 0.14.1, Git, Python 3.12, and an existing Azure public-cloud storage
+You need CLI 0.15.0, Git, Python 3.12, and an existing Azure public-cloud storage
 account and container that your machine can reach. This exercise uses a read-only,
 HTTPS-only SAS token with an expiry date. Azure storage and transfer charges can
 apply. Ingestron does not create cloud resources in this exercise.
@@ -60,8 +60,8 @@ the CLI does not load this file automatically. An Azure CLI login does not suppl
 ## 3. Install and review
 
 ```sh
-ingestron plugin install local@0.4.1
-ingestron plugin install azure-blob@1.0.0
+ingestron provider install local@0.4.1
+ingestron connector install azure-blob@1.0.0
 ingestron check
 ingestron build
 ingestron runtime prepare

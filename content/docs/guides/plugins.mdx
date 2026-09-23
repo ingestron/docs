@@ -1,15 +1,15 @@
 ---
-title: "Install and update plugins"
+title: "Install providers and connectors"
 description: "Choose a package version without changing the project behind your back."
 ---
 
 A provider decides where and how a flow runs. A connector reads a source.
 The GitHub tutorial needs both `local` and `github`.
 
-## Install an official plugin
+## Install a provider or connector
 
 From the project directory, install `local` and the connectors your project uses.
-CLI 0.14.1 supports these official names:
+CLI 0.15.0 supports these official names:
 
 | Name         | Purpose                             |
 | ------------ | ----------------------------------- |
@@ -17,12 +17,13 @@ CLI 0.14.1 supports these official names:
 | `files`      | Read local files                    |
 | `github`     | Read GitHub issues                  |
 | `azure-blob` | Read Azure Blob and ADLS Gen2 files |
+| `sql-server` | Read SQL Server or Azure SQL tables |
 
 For example:
 
 ```sh
-ingestron plugin install local
-ingestron plugin install files
+ingestron provider install local
+ingestron connector install files
 ```
 
 On first install, an omitted version selects the latest release in the official
@@ -33,20 +34,22 @@ meaning. Ingestron then records an exact version, commit and file hashes in
 Official names do not need `--tag-prefix` or a repository path. Project and lock
 files keep the full versioned reference so the selected package remains explicit
 and portable. Use full references when installing custom packages.
+The commands reject a package of the wrong type before changing the lock.
 
 Installation does not edit `project.yaml`. The old `--cache-only` option is accepted
 but unnecessary. Use the exact versions in a tutorial when reproducing its result:
 
 ```sh
-ingestron plugin install github@1.33.0
-ingestron plugin list
+ingestron connector install github@1.33.0
+ingestron provider list
+ingestron connector list
 ```
 
 ## Reuse or update a lock
 
 ```sh
-ingestron plugin install github --frozen
-ingestron plugin update github
+ingestron connector install github --frozen
+ingestron connector update github
 ```
 
 `--frozen` requires an existing lock. A repeated normal installation also reuses
@@ -77,10 +80,13 @@ new step instead of registering a provider implicitly.
 Full references remain available for third-party packages and custom manifest paths:
 
 ```text
-ingestron plugin install owner/repository@1.2.3
+ingestron provider install owner/repository@1.2.3
+ingestron connector install owner/repository/connector.yaml@1.2.3
 ```
 
-`owner/repository` is a placeholder. A package must implement the supported plugin
-contract. Custom repositories do not get official `@latest` resolution. Use
+`owner/repository` and `connector.yaml` are placeholders for your repository and
+manifest path. A package must implement the matching provider or connector
+contract. `plugin install` remains available for older scripts and other package
+types. Custom repositories do not get official `@latest` resolution. Use
 `plugin versions owner/repository` to inspect stable tags; tag availability alone
 does not establish compatibility.

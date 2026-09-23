@@ -79,8 +79,8 @@ test("downloads match tutorial versions, projection and inline metadata", () => 
     "utf8",
   );
   for (const command of [
-    "plugin install local@0.4.1",
-    "plugin install github@1.33.0",
+    "provider install local@0.4.1",
+    "connector install github@1.33.0",
     "run --action review",
     "run --action approve",
     "run --retry issues-001",
