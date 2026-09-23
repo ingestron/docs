@@ -1,45 +1,78 @@
 ---
-title: "Files connector"
-description: "Configure explicit local files and reviewed snapshot types."
+title: "Read local files"
+description: "Read several files through one connection and use each table's contract for types."
 ---
 
-Files 1.0.1 reads one local file per connection through local provider 0.4.1. It
-exposes the `records` stream and writes reviewed Parquet snapshots. Start with
-[the retail exercise](/docs/tutorials/retail-files).
+Files connector 1.1.0 reads CSV, TSV, flat JSON, JSON Lines and Parquet through
+local provider 0.4.1. One connection can serve several files. Each table in the
+ingestion flow names its file and format; its ODCS data contract selects the
+columns and types for the reviewed Parquet snapshot.
 
-| Setting  | Meaning                                                                                  |
-| -------- | ---------------------------------------------------------------------------------------- |
-| `path`   | Absolute regular file path. No URLs, symlinks, traversal segments, directories or globs. |
-| `format` | `csv`, `tsv`, `json`, `jsonl` or `parquet`.                                              |
-| `types`  | Optional column-to-type mapping: `string`, `integer`, `decimal`, `number`, `boolean`.    |
+Install the provider and connector in your project directory:
 
-File access is explicit; a relative path is not resolved from your project root.
-Update the path and rebuild/review when moving a project. Multiple connections
-can read different files in one project.
+```sh
+ingestron provider install local@0.4.1
+ingestron connector install files@1.1.0
+```
 
-CSV/TSV uses UTF-8, an optional initial BOM, a header and double-quoted escaping.
-Empty delimited fields become null. Text stays text unless `types` explicitly
-converts it. Integer text cannot contain leading zeroes; booleans are exactly
-`true` or `false`. Decimals accept exact text or integer values, not floats.
+This is the relevant part of a two-file `project.yaml`:
 
-JSON uses an array of flat objects; JSONL uses one object per line. Every row must
-have the same fields. Duplicate keys, nested values, blank JSONL records, mixed
-undeclared types and nonfinite numbers fail. Empty JSON/JSONL requires explicit
-`types`; empty CSV/TSV requires headers. Parquet supports flat string, integer,
-decimal, boolean and floating-point fields. Temporal, binary and nested Parquet
-fields are not supported in this release.
+```yaml
+packages:
+  local: local@0.4.1
+  files: files@1.1.0
+connections:
+  local_files:
+    package: files
+    sourceId: retail
+    tenantId: training
+    settings: {}
+flows:
+  - apiVersion: ingestron.flow/v1
+    kind: ingestion
+    id: retail_files_local
+    provider: local
+    ingestion:
+      connection: local_files
+      execution: { mode: local }
+    tables:
+      customers:
+        source: { path: /absolute/data/customers.csv, format: csv }
+        contract: { $resolve: ./contracts/customers.odcs.yaml }
+      orders:
+        source: { path: /absolute/data/orders.csv, format: csv }
+        contract: { $resolve: ./contracts/orders.odcs.yaml }
+```
 
-Discovery scans the input. Extraction rechecks the schema and rejects changes
-until you rediscover and review. Changes to values with the same schema can be
-read with a new run ID. Completed retries verify previous output without source
-access. Multiple flows commit independently.
+The [complete two-file template](https://github.com/ingestron/connectors/blob/files-1.1.0/examples/files/project.template.yaml)
+includes provider configuration, an environment and draft contracts. Replace its
+absolute path placeholders before checking it. You can also keep one file per
+flow when they need different run schedules; the flows can share the connection.
 
-Inputs are limited to 64 MiB and one million rows, with at most 500 columns and
-2 MB per output record. JSON arrays are loaded within that file bound; the other
-formats use streamed or batched reads. Records are validated into a temporary disk
-spool before commit. These limits describe the preview; no large-volume throughput
-claim has been established. Provide stable source files and space for temporary
-and final output.
+The connection has no local endpoint or credentials. A table's `source.path` must
+be an absolute regular file path. Directories, URLs, glob patterns, symlinks and
+traversal segments are rejected. Choose `csv`, `tsv`, `json`, `jsonl` or `parquet`
+for `source.format`. Changing a file path, format or contract requires a new
+build and review. See [project runs](/docs/guides/runs).
 
-For storage objects, use the separate [Azure Blob connector](/docs/reference/azure-blob).
-Excel, XML, incremental reads and directory scanning are not supported.
+Files 1.1.0 has no separate `types` map. It derives parsing types from the ODCS
+columns: string, integer, decimal, number and boolean are supported. The
+contract may select a subset of a file's columns. DATE, TIMESTAMP and BINARY
+columns are not supported by this reader. CSV and TSV require a header. Empty
+JSON or JSONL uses the reviewed contract columns as its schema.
+
+Discovery checks every selected file. Extraction checks for source schema changes
+and validates all files before publishing records, so a failure in a later file
+cannot commit part of the flow. A new run ID reads current values; a completed
+retry verifies existing output without rereading the files.
+
+Each input is capped at 64 MiB and one million rows, with at most 500 columns and
+2 MB per output record. These are preview bounds, not measured throughput. The
+reader needs enough local disk for input, temporary spool and output. See the
+[connector guide](https://github.com/ingestron/connectors/blob/files-1.1.0/docs/files.md)
+for format rules and limits.
+
+The [retail exercise](/docs/tutorials/retail-files) remains pinned to Files
+1.0.1. Its one-file-per-connection layout still works. Upgrading that project to
+1.1.0 requires editing its connections and tables; installation does not rewrite
+the project for you. For storage objects, use [Azure Blob](/docs/reference/azure-blob).
