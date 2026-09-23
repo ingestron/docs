@@ -53,8 +53,8 @@ const evidence = JSON.parse(
   readFileSync(resolve(repo, "build/files-acceptance/evidence.json")),
 );
 assert.equal(evidence.publicSource, true);
-assert.equal(evidence.core, "0.12.2");
-assert.equal(evidence.cli, "0.15.0");
+assert.equal(evidence.core, "0.12.4");
+assert.equal(evidence.cli, "0.15.1");
 writeFileSync(
   resolve(work, "evidence.json"),
   JSON.stringify({ ...evidence, archiveSha, harnessCommit: commit }, null, 2) +

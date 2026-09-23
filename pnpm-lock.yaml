@@ -46,8 +46,8 @@ importers:
         specifier: 19.2.3
         version: 19.2.3(@types/react@19.3.0)
       ingestron:
-        specifier: 0.15.0
-        version: 0.15.0(zod@4.6.5)
+        specifier: 0.15.1
+        version: 0.15.1(zod@4.6.5)
       postcss:
         specifier: 8.5.28
         version: 8.5.28
@@ -1025,8 +1025,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@ingestron/core@0.12.2':
-    resolution: {integrity: sha512-Xwg6K9Bgv/cTcjpCnCZ4ES6CnhNgyqHuCOzmCZuqo1JxSDCO3rXzCc5qpw29wXfjpyaf1nTzgbr9SKYLM3LioA==}
+  '@ingestron/core@0.12.4':
+    resolution: {integrity: sha512-Y9bpKJemIL8RFrPKgqwLQWz+vKbTbVbQSUPDWok37CPnAxyjCAjHcMarjuB0sfGqYMIWYF0qFDJiBGPcaKXgvw==}
     engines: {node: '>=22.12.0'}
 
   '@isaacs/cliui@9.0.0':
@@ -2788,8 +2788,8 @@ packages:
     resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
     engines: {node: '>= 4'}
 
-  ingestron@0.15.0:
-    resolution: {integrity: sha512-urTf1J62DqHBUlQQqEOEaPOo6yryd9fSL2vwb+GwuLGxp+uLKYiaiko/08kX0350fO8kq4kILrWrrJdxtTdPDg==}
+  ingestron@0.15.1:
+    resolution: {integrity: sha512-sGLiPiUAfRttQ8ti7xKN8L6ModKk5vyB0K7Aev4bR/gMj+Xx4KIafxgofDL+VrZgKoiN8RztgZtH94dUFy7xWg==}
     engines: {node: '>=22.12.0'}
     hasBin: true
 
@@ -4849,7 +4849,7 @@ snapshots:
   '@img/sharp-win32-x64@0.35.4':
     optional: true
 
-  '@ingestron/core@0.12.2':
+  '@ingestron/core@0.12.4':
     dependencies:
       '@lezer/python': 1.1.19
       ajv: 8.20.0
@@ -6735,10 +6735,10 @@ snapshots:
 
   ignore@5.3.2: {}
 
-  ingestron@0.15.0(zod@4.6.5):
+  ingestron@0.15.1(zod@4.6.5):
     dependencies:
       '@clack/prompts': 1.7.0
-      '@ingestron/core': 0.12.2
+      '@ingestron/core': 0.12.4
       '@modelcontextprotocol/sdk': 1.30.0(zod@4.6.5)
       commander: 15.0.0
       yaml: 2.9.0

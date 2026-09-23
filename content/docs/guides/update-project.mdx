@@ -34,7 +34,8 @@ if `build/review-002` already contains work you want to preserve.
 ## Update a package selection
 
 Install the target version first, then change the matching exact reference in
-`providers.packages`. Commit the project and lock together. `plugin update` only
+`packages` (or `providers.packages` in an older project). Commit the project
+and lock together. `plugin update` only
 caches an available upgrade; it does not make this selection for you.
 
 To roll back, restore the previous authored files and lock from Git, restore the

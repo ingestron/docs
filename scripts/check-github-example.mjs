@@ -58,8 +58,8 @@ run(
 const evidence = JSON.parse(
   readFileSync(resolve(repo, "build/installed-acceptance/evidence.json")),
 );
-assert.equal(evidence.cli, "0.15.0");
-assert.equal(evidence.core, "0.12.2");
+assert.equal(evidence.cli, "0.15.1");
+assert.equal(evidence.core, "0.12.4");
 assert.equal(evidence.liveGitHub, false);
 // Run the reader's output-inspection download on the same produced file.
 run(

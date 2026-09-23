@@ -1,76 +1,79 @@
 ---
-title: "Read a SQL Server table"
-description: "Connect to SQL Server or Azure SQL with the local provider."
+title: "Read SQL Server tables"
+description: "Use one database connection to read several contracted tables."
 ---
 
-SQL Server connector 1.0.0 reads one table per connection into a reviewed Parquet
-snapshot. It uses the [local provider](/docs/reference/local), so the machine running
-Ingestron must be able to reach the database. Use an account with `SELECT` access
-to the table and permission to view its column metadata.
+SQL Server connector 1.1.0 reads selected SQL Server or Azure SQL tables into
+reviewed Parquet snapshots. The local provider runs on your machine, so it must
+be able to reach the database. Use an identity with `SELECT` access to the tables
+and permission to view their column metadata.
 
-Install the provider and source in your project directory:
+Install the provider and connector in your project directory:
 
 ```sh
 ingestron provider install local@0.4.1
-ingestron connector install sql-server@1.0.0
+ingestron connector install sql-server@1.1.0
 ```
 
-The source chooses a schema, table and optional columns. The connection says how
-the local machine reaches the database. In `project.yaml`, add a connection like
-this and refer to it from a local ingestion flow:
+Put the exact installed package names in `packages`. One connection holds the
+database endpoint and authentication. Each table in an ingestion flow names its
+physical schema and table; its ODCS data contract selects the columns:
 
 ```yaml
+packages:
+  local: local@0.4.1
+  sql-server: sql-server@1.1.0
 connections:
-  products:
+  northwind:
     package: sql-server
-    sourceId: sql_products
+    sourceId: northwind
     tenantId: training
     settings:
-      object:
-        schema: dbo
-        table: Products
-        columns: [ProductID, ProductName, UnitPrice]
       connection:
         server: example.database.windows.net
         database: northwind
-        port: 1433
         authentication:
           method: sql-password
           username: reader
           password:
             $secret:
               env: SQL_READER_PASSWORD
+flows:
+  - apiVersion: ingestron.flow/v1
+    kind: ingestion
+    id: northwind_local
+    provider: local
+    ingestion:
+      connection: northwind
+      execution: { mode: local }
+    tables:
+      products:
+        source: { schema: dbo, table: Products }
+        contract: { $resolve: ./contracts/products.odcs.yaml }
+      orders:
+        source: { schema: dbo, table: Orders }
+        contract: { $resolve: ./contracts/orders.odcs.yaml }
 ```
 
-Save `SQL_READER_PASSWORD` in your local environment or a project `.env` file and
-pass that file with `ingestron run --secrets-file .env`. Do not put the password in
-YAML. See [secrets](/docs/guides/secrets) and the
-[complete project template](https://github.com/ingestron/connectors/blob/sql-server-1.0.0/examples/sql-server/project.template.yaml)
-for the flow and ODCS contract. The template contains placeholders for your own
-server, database and login; it has no public database credentials.
+This is a section of `project.yaml`; the
+[complete one-table project template](https://github.com/ingestron/connectors/blob/sql-server-1.1.0/examples/sql-server/project.template.yaml)
+also includes the provider configuration, environment and an inline draft
+contract. To add a second table, add another `tables` entry and contract under
+the same flow. You can also use `contract: {$model: pack:dataset}` to select a
+reviewed contract from an installed model pack.
 
-If you already have an ODCS contract, reference its file under a flow's
-`tables` section instead of copying its fields into `project.yaml`:
+The contract is the column list for that table. There is no separate
+`object.columns` setting. Changing a connection, table source or contract
+requires a new build and review. The short package names resolve through
+`packages.lock.yaml`, which retains the full repository reference, commit and
+file hashes. Older stream-based projects keep working with their pinned
+connector release.
 
-```yaml
-tables:
-  products:
-    source:
-      stream: records
-    contract:
-      $resolve: ./contracts/products.odcs.yaml
-```
+Save `SQL_READER_PASSWORD` in your local environment or a project `.env` file.
+Pass that file with `ingestron run --secrets-file .env`. Do not put the password
+in YAML. See [secrets](/docs/guides/secrets).
 
-An installed model pack can supply the same contract with
-`contract: {$model: pack:dataset}`. Core 0.12.2 resolves that reference when
-preparing a connector flow. The contract must describe the columns selected by
-`object.columns`; omit the column filter when the contract covers the full table.
-The downloadable template includes a small three-field draft so it works without
-a separate model pack.
-
-The `authentication.method` choices for local execution are:
-
-| Method                    | Add these settings                            | Where the identity comes from         |
+| Authentication method     | Add these settings                            | Identity source                       |
 | ------------------------- | --------------------------------------------- | ------------------------------------- |
 | `sql-password`            | `username`, `password` secret reference       | SQL login                             |
 | `entra-default`           | None                                          | Local Azure Identity credential chain |
@@ -78,29 +81,26 @@ The `authentication.method` choices for local execution are:
 | `entra-service-principal` | `client_id`, `client_secret` secret reference | Entra application                     |
 
 SQL password has passed a read-only run against the existing Northwind Azure SQL
-database. The Entra modes are configured and tested against the driver interface;
-they still need a live database identity test. Your database must grant the chosen
-identity access. ADF linked services and Databricks native connections are separate
-future provider paths, not execution modes in this connector release.
+database using the previous one-table release. The multi-table release has
+passed synthetic runtime and installed-package build checks; a live multi-table
+read is still pending. The Entra modes have passed configuration tests, but
+still need a live database identity test. ADF linked services and Databricks
+native connections require separate provider implementations.
 
 After editing the project, run `ingestron check`, `ingestron build` and
 `ingestron runtime prepare`. Then [discover, review, approve and run](/docs/guides/runs)
-the flow. An approved retry verifies the existing output without reading the table
-again.
+the flow. An approved retry verifies existing output without reading SQL again.
 
-The connector reads at most one million rows, in batches, and the local runtime
-limits each record to 2 MB. It supports integer, boolean, decimal/money, floating,
+The local reader scans at most one million rows per table in batches and caps
+each record at 2 MB. It supports integer, boolean, decimal/money, floating,
 text, identifier and date/time columns; dates and times become ISO text. Review
-money fields as exact `DECIMAL(19,4)` in the ODCS contract. Binary, spatial and
-other unsupported columns fail discovery; use `object.columns` to select supported
-fields. Ingestron output field names must use letters, digits and underscores,
-starting with a letter or underscore.
+money fields as exact `DECIMAL(19,4)` in the contract. Unsupported selected
+columns fail discovery. Output field names must use letters, digits and
+underscores, starting with a letter or underscore.
 
-Discovery and execution are separate reads. The connector checks schema drift but
-does not promise an ordered or transactionally consistent snapshot while rows are
-changing. Use a stable table for a reviewed run. TLS and certificate validation
-are required; raw connection strings and certificate bypass are unavailable.
-
-The local adapter installs Microsoft's pinned `mssql-python` driver and ODBC binary.
-The Python driver is MIT-licensed; the binary has separate Microsoft terms. See
-the [source package and full limits](https://github.com/ingestron/connectors/blob/sql-server-1.0.0/docs/sql-server.md).
+Discovery and execution are separate reads. The connector checks schema drift
+but does not promise an ordered or transactionally consistent snapshot while
+rows are changing. TLS and certificate validation are required; raw connection
+strings and certificate bypass are unavailable. The adapter installs a pinned
+Microsoft Python driver and ODBC binary with separate upstream terms. See the
+[source package and full limits](https://github.com/ingestron/connectors/blob/sql-server-1.1.0/docs/sql-server.md).

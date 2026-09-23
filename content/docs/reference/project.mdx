@@ -30,6 +30,13 @@ you are ready to read your own data; add a token only when access requires it.
 Keep package versions fixed while learning the workflow. A larger or slower repository may
 exceed the example's timeout; review the run result before choosing another bound.
 
+This GitHub example uses the earlier package location and connector stream selector.
+New projects can put exact short package names under top-level `packages`. Sources
+with a table selector, such as SQL Server 1.1.0, put a physical source under each
+`flows[].tables.<name>.source`; the connection then holds settings shared by those
+tables. See [read SQL Server tables](/docs/reference/sql-server) for a two-table
+example.
+
 This table explains the example, not every possible project schema field. Use the
 published [core schemas](https://github.com/ingestron/core/tree/main/docs) and
 `ingestron --help` for application development, and validate changes with `ingestron check`.
