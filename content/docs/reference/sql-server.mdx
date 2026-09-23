@@ -1,0 +1,87 @@
+---
+title: "Read a SQL Server table"
+description: "Connect to SQL Server or Azure SQL with the local provider."
+---
+
+SQL Server connector 1.0.0 reads one table per connection into a reviewed Parquet
+snapshot. It uses the [local provider](/docs/reference/local), so the machine running
+Ingestron must be able to reach the database. Use an account with `SELECT` access
+to the table and permission to view its column metadata.
+
+Install the provider and source in your project directory:
+
+```sh
+ingestron plugin install local@0.4.1
+ingestron plugin install sql-server@1.0.0
+```
+
+The source chooses a schema, table and optional columns. The connection says how
+the local machine reaches the database. In `project.yaml`, add a connection like
+this and refer to it from a local ingestion flow:
+
+```yaml
+connections:
+  products:
+    package: sql-server
+    sourceId: sql_products
+    tenantId: training
+    settings:
+      object:
+        schema: dbo
+        table: Products
+        columns: [ProductID, ProductName, UnitPrice]
+      connection:
+        server: example.database.windows.net
+        database: northwind
+        port: 1433
+        authentication:
+          method: sql-password
+          username: reader
+          password:
+            $secret:
+              env: SQL_READER_PASSWORD
+```
+
+Save `SQL_READER_PASSWORD` in your local environment or a project `.env` file and
+pass that file with `ingestron run --secrets-file .env`. Do not put the password in
+YAML. See [secrets](/docs/guides/secrets) and the
+[complete project template](https://github.com/ingestron/connectors/blob/sql-server-1.0.0/examples/sql-server/project.template.yaml)
+for the flow and ODCS contract. The template contains placeholders for your own
+server, database and login; it has no public database credentials.
+
+The `authentication.method` choices for local execution are:
+
+| Method                    | Add these settings                            | Where the identity comes from         |
+| ------------------------- | --------------------------------------------- | ------------------------------------- |
+| `sql-password`            | `username`, `password` secret reference       | SQL login                             |
+| `entra-default`           | None                                          | Local Azure Identity credential chain |
+| `entra-managed-identity`  | Optional `client_id`                          | Identity assigned to Azure compute    |
+| `entra-service-principal` | `client_id`, `client_secret` secret reference | Entra application                     |
+
+SQL password has passed a read-only run against the existing Northwind Azure SQL
+database. The Entra modes are configured and tested against the driver interface;
+they still need a live database identity test. Your database must grant the chosen
+identity access. ADF linked services and Databricks native connections are separate
+future provider paths, not execution modes in this connector release.
+
+After editing the project, run `ingestron check`, `ingestron build` and
+`ingestron runtime prepare`. Then [discover, review, approve and run](/docs/guides/runs)
+the flow. An approved retry verifies the existing output without reading the table
+again.
+
+The connector reads at most one million rows, in batches, and the local runtime
+limits each record to 2 MB. It supports integer, boolean, decimal/money, floating,
+text, identifier and date/time columns; dates and times become ISO text. Review
+money fields as exact `DECIMAL(19,4)` in the ODCS contract. Binary, spatial and
+other unsupported columns fail discovery; use `object.columns` to select supported
+fields. Ingestron output field names must use letters, digits and underscores,
+starting with a letter or underscore.
+
+Discovery and execution are separate reads. The connector checks schema drift but
+does not promise an ordered or transactionally consistent snapshot while rows are
+changing. Use a stable table for a reviewed run. TLS and certificate validation
+are required; raw connection strings and certificate bypass are unavailable.
+
+The local adapter installs Microsoft's pinned `mssql-python` driver and ODBC binary.
+The Python driver is MIT-licensed; the binary has separate Microsoft terms. See
+the [source package and full limits](https://github.com/ingestron/connectors/blob/sql-server-1.0.0/docs/sql-server.md).

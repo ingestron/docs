@@ -7,12 +7,13 @@ These guides use the following published releases:
 
 | Component            | Version | Distribution                                                      |
 | -------------------- | ------- | ----------------------------------------------------------------- |
-| CLI                  | 0.14.1  | `npm install -g ingestron@0.14.1`                                 |
+| CLI                  | 0.14.2  | `npm install -g ingestron@0.14.2`                                 |
 | Core                 | 0.12.1  | Included as an exact CLI dependency.                              |
 | Local provider       | 0.4.1   | `ingestron plugin install local@0.4.1`                            |
 | GitHub connector     | 1.33.0  | `ingestron plugin install github@1.33.0`                          |
 | Files connector      | 1.0.1   | [Install through the retail guide](/docs/tutorials/retail-files). |
 | Azure Blob connector | 1.0.0   | [Install through the Azure guide](/docs/tutorials/azure-blob).    |
+| SQL Server connector | 1.0.0   | [Read a SQL Server table](/docs/reference/sql-server).            |
 
 The CLI and core require Node 22.12 or newer. CI covers Node 22.12, 22.23 and 24.12.
 Local execution is qualified on macOS/Linux with Python 3.12. A wider Node engine
@@ -20,13 +21,13 @@ range is not a claim that every future Node release has been tested.
 
 ## What is included
 
-Project and contract authoring, plugin installation, builds, local files, Azure Blob and GitHub snapshot
+Project and contract authoring, plugin installation, builds, local files, Azure Blob, SQL Server and GitHub snapshot
 execution, output verification, retry and the local stdio MCP adapter are documented
 here. The original code is Apache-2.0, licensed by Otrera Limited. Upstream
 components retain their own licence terms.
 
-SQL connectors, native cloud execution, scheduling and hosted enterprise
-services are not offered by these guides. The local GitHub procedure is a preview:
+Native ADF/Databricks execution, scheduling and hosted enterprise services are not
+offered by these guides. The local GitHub procedure is a preview:
 automated tests use synthetic API responses, and a bounded anonymous live run against
 the public Ingestron CLI repository has passed. Neither establishes throughput or
 independent-user acceptance.
@@ -49,3 +50,7 @@ known results across all five formats. Use the `files` shortcut in the retail gu
 
 Azure Blob 1.0.0 reads individual objects using read-only SAS credentials and the
 local provider. See the [Azure retail exercise](/docs/tutorials/azure-blob).
+
+SQL Server 1.0.0 reads one selected table through the local provider. SQL password
+is live-qualified with read-only Northwind; Entra modes await live identity tests.
+See [SQL Server settings and limits](/docs/reference/sql-server).

@@ -9,6 +9,7 @@
     "mcp",
     "releases",
     "files",
-    "azure-blob"
+    "azure-blob",
+    "sql-server"
   ]
 }
