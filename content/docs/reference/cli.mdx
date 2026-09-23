@@ -7,7 +7,8 @@ Commands use resource groups. Add `--help` at any level for arguments and defaul
 
 ```sh
 ingestron --help
-ingestron plugin install --help
+ingestron provider install --help
+ingestron connector install --help
 ingestron run --help
 ```
 
@@ -31,12 +32,18 @@ ingestron run --help
 
 | Command                 | Purpose                                                     |
 | ----------------------- | ----------------------------------------------------------- |
-| `plugin install`        | Cache and lock a package.                                   |
-| `plugin update`         | Explicitly check for an official package update.            |
+| `provider install`      | Cache and lock an execution provider.                       |
+| `connector install`     | Cache and lock a source connector.                          |
+| `provider update`       | Check for a newer qualified provider.                       |
+| `connector update`      | Check for a newer qualified connector.                      |
+| `provider list`         | Show installed provider packages.                           |
+| `connector list`        | Show installed connector packages.                          |
+| `provider exec`         | Run a configured provider's offline command.                |
 | `plugin configure`      | Register an installed provider in a project.                |
 | `plugin list`           | Show locked packages.                                       |
 | `plugin browse`         | Inspect installed packages; it is not a remote marketplace. |
 | `plugin versions`       | List stable repository tags.                                |
+| `plugin install`        | Install other package types or run an older script.         |
 | `runtime prepare`       | Prepare locked Python dependencies.                         |
 | `run --action discover` | Discover source metadata.                                   |
 | `run --action review`   | Create the local review.                                    |

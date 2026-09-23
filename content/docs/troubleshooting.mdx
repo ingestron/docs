@@ -5,7 +5,7 @@ description: "Start with the message or result you can see."
 
 ## npm reports EBADENGINE
 
-Run `node --version` in the same terminal. CLI 0.14.0 and core 0.12.1 require Node
+Run `node --version` in the same terminal. CLI 0.15.0 and core 0.12.2 require Node
 22.12 or newer. Earlier releases restricted the major version to 22. Install the
 current documented CLI and check `ingestron --version`.
 
@@ -22,7 +22,9 @@ packages are visible when you switch runtimes.
 
 ## A plugin name or version is unavailable
 
-Check the name: the official names in these guides are `local` and `github`.
+Check the name: the official provider is `local`; connectors are `github`, `files`,
+`azure-blob` and `sql-server`. Use `provider install` for the former and
+`connector install` for the latter with CLI 0.15.0 or newer.
 For a catalogue lookup failure, retry or install the exact version shown in the
 [tutorial](/docs/tutorials/github-to-parquet). A package in another repository needs
 an explicit reference. Do not delete a working lock just to force a lookup.

@@ -7,10 +7,10 @@ These guides use the following published releases:
 
 | Component            | Version | Distribution                                                      |
 | -------------------- | ------- | ----------------------------------------------------------------- |
-| CLI                  | 0.14.2  | `npm install -g ingestron@0.14.2`                                 |
-| Core                 | 0.12.1  | Included as an exact CLI dependency.                              |
-| Local provider       | 0.4.1   | `ingestron plugin install local@0.4.1`                            |
-| GitHub connector     | 1.33.0  | `ingestron plugin install github@1.33.0`                          |
+| CLI                  | 0.15.0  | `npm install -g ingestron@0.15.0`                                 |
+| Core                 | 0.12.2  | Included as an exact CLI dependency.                              |
+| Local provider       | 0.4.1   | `ingestron provider install local@0.4.1`                          |
+| GitHub connector     | 1.33.0  | `ingestron connector install github@1.33.0`                       |
 | Files connector      | 1.0.1   | [Install through the retail guide](/docs/tutorials/retail-files). |
 | Azure Blob connector | 1.0.0   | [Install through the Azure guide](/docs/tutorials/azure-blob).    |
 | SQL Server connector | 1.0.0   | [Read a SQL Server table](/docs/reference/sql-server).            |
@@ -21,7 +21,7 @@ range is not a claim that every future Node release has been tested.
 
 ## What is included
 
-Project and contract authoring, plugin installation, builds, local files, Azure Blob, SQL Server and GitHub snapshot
+Project and contract authoring, provider and connector installation, builds, local files, Azure Blob, SQL Server and GitHub snapshot
 execution, output verification, retry and the local stdio MCP adapter are documented
 here. The original code is Apache-2.0, licensed by Otrera Limited. Upstream
 components retain their own licence terms.
@@ -45,7 +45,7 @@ project's provider or connector selection.
 [Connectors](https://github.com/ingestron/connectors)
 
 Files 1.0.1 is qualified for local CSV, TSV, flat JSON/JSONL and Parquet with
-core 0.12.1 and local provider 0.4.1. The retail training archive tests the same
+core 0.12.2 and local provider 0.4.1. The retail training archive tests the same
 known results across all five formats. Use the `files` shortcut in the retail guide. See [file limits](/docs/reference/files).
 
 Azure Blob 1.0.0 reads individual objects using read-only SAS credentials and the
