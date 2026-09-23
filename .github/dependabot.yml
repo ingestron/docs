@@ -14,6 +14,12 @@ updates:
       prefix-development: chore
       include: scope
     groups:
+      react:
+        patterns:
+          - react
+          - react-dom
+          - "@types/react"
+          - "@types/react-dom"
       development-dependencies:
         dependency-type: development
         update-types:
@@ -21,6 +27,10 @@ updates:
           - patch
     labels:
       - dependencies
+    ignore:
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: github-actions
     directory: /

@@ -30,22 +30,22 @@
     "fumadocs-core": "16.14.3",
     "fumadocs-mdx": "15.2.3",
     "fumadocs-ui": "16.14.3",
-    "next": "16.3.0",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "next": "16.3.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
     "@opennextjs/cloudflare": "1.20.6",
     "@tailwindcss/postcss": "4.3.3",
     "@types/mdx": "2.0.14",
     "@types/node": "22.20.1",
-    "@types/react": "19.2.14",
+    "@types/react": "19.3.0",
     "@types/react-dom": "19.2.3",
     "ingestron": "0.14.1",
     "postcss": "8.5.28",
     "prettier": "3.9.8",
     "tailwindcss": "4.3.3",
-    "typescript": "5.9.3",
+    "typescript": "7.0.2",
     "wrangler": "4.135.0",
     "yaml": "2.9.1"
   },
