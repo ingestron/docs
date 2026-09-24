@@ -4,17 +4,22 @@ description: "Settings and limits for reading one Azure storage object with the 
 ---
 
 Azure Blob 1.0.0 reads one CSV, TSV, JSON, JSONL or Parquet object per connection.
-It uses core 0.12.2 and local provider 0.4.1. Start with the
+It is tested with CLI 0.15.1, core 0.12.4 and local provider 0.4.1. Start with the
 [Azure retail exercise](/docs/tutorials/azure-blob).
 
-| Setting     | Value                                                                     |
-| ----------- | ------------------------------------------------------------------------- |
-| `account`   | Azure public-cloud storage account name, not a URL                        |
-| `container` | Blob container or ADLS Gen2 file system name                              |
-| `blob`      | Exact path inside the container, without a leading slash                  |
-| `format`    | `csv`, `tsv`, `json`, `jsonl` or `parquet`                                |
-| `sas_token` | Secret reference: `{ $secret: { env: AZURE_STORAGE_SAS } }`               |
-| `types`     | Optional column types, as in the [files connector](/docs/reference/files) |
+| Setting     | Value                                                       |
+| ----------- | ----------------------------------------------------------- |
+| `account`   | Azure public-cloud storage account name, not a URL          |
+| `container` | Blob container or ADLS Gen2 file system name                |
+| `blob`      | Exact path inside the container, without a leading slash    |
+| `format`    | `csv`, `tsv`, `json`, `jsonl` or `parquet`                  |
+| `sas_token` | Secret reference: `{ $secret: { env: AZURE_STORAGE_SAS } }` |
+| `types`     | Optional column parsing types for this connector release    |
+
+Azure Blob 1.0.0 keeps the object path, format and optional `types` in each
+connection. The newer [local Files connector](/docs/reference/files) selects
+path and format per table and gets types from its ODCS contract. Installing
+Files 1.1.0 does not change an Azure Blob project.
 
 Use a time-limited HTTPS-only SAS with read or read/list permission. Plaintext tokens
 in project configuration, account keys and ambient Azure login are unsupported.

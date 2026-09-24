@@ -14,16 +14,16 @@ Run these commands in your terminal:
 ```sh
 node --version
 git --version
-npm install --global ingestron@0.15.0
+npm install --global ingestron@0.15.1
 ingestron --version
 ```
 
-The last command should print `0.15.0`. This version includes core `0.12.2`;
+The last command should print `0.15.1`. This version includes core `0.12.4`;
 you do not need to install core separately.
 
 If your shell cannot find `ingestron`, open a new terminal and check that your npm
 global executable directory is on `PATH`. If npm reports `EBADENGINE`, check the
-Node version in this same terminal and make sure you installed CLI 0.15.0 or newer.
+Node version in this same terminal and make sure you installed CLI 0.15.1 or newer.
 Older CLI releases restricted the Node major version.
 
 ## Upgrade an existing installation
@@ -84,4 +84,5 @@ it does not install them globally.
 
 [Create a contract](/docs/start/first-contract) to learn the files and commands
 without credentials. If you already know what a data contract is, go straight to
-[GitHub issues to Parquet](/docs/tutorials/github-to-parquet).
+[the retail file flow](/docs/tutorials/retail-files) to write a project and
+contracts from sample data without credentials.

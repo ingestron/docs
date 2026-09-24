@@ -97,11 +97,15 @@ test("downloads match tutorial versions, projection and inline metadata", () => 
   );
 });
 
-test("retail guide selects the immutable package and tested workflow", () => {
+test("retail guides show the current manual project and update workflow", () => {
   const guide = readFileSync("content/docs/tutorials/retail-files.mdx", "utf8");
   for (const step of [
-    "retail-files-1.0.1.zip",
-    "python3 setup.py",
+    "retail-files-1.1.0.zip",
+    "connector install files@1.1.0",
+    "contracts/customers.odcs.yaml",
+    "contracts/products.odcs.yaml",
+    "contracts/orders.odcs.yaml",
+    "source:",
     "run --action review",
     "run --action approve",
     "python3 inspect-output.py",
@@ -109,4 +113,16 @@ test("retail guide selects the immutable package and tested workflow", () => {
   ])
     assert.ok(guide.includes(step));
   assert.ok(guide.includes("61.95"));
+  const update = readFileSync(
+    "content/docs/tutorials/retail-add-table.mdx",
+    "utf8",
+  );
+  for (const step of [
+    "inventory.csv",
+    "contracts/inventory.odcs.yaml",
+    "build --out build/retail-v2",
+    "run --from build/retail-v2 --action review",
+    "run --from build/retail-v2 --run-id retail-002",
+  ])
+    assert.ok(update.includes(step));
 });
