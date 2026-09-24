@@ -1,0 +1,106 @@
+---
+title: "Add a retail table"
+description: "Extend the retail flow with inventory without adding another connection."
+---
+
+Continue from [the CSV retail flow](/docs/tutorials/retail-files). You will add
+`inventory.csv` as a fourth table, write its contract, and make a new reviewed
+build. Keep the original `retail-001` output while you do this.
+
+## 1. Inspect the new source
+
+From `retail/my-retail-flow`, check the file and print its absolute path:
+
+```sh
+cat ../data/csv/inventory.csv
+python3 -c 'from pathlib import Path; print(Path("../data/csv/inventory.csv").resolve())'
+```
+
+It has three rows and the columns `product_id`, `warehouse`, `quantity`. Copy
+the printed path for the next step. This file uses the existing file connection:
+the connection identifies the source family, while the table identifies a file.
+
+## 2. Add the table to your project
+
+In `project.yaml`, add `inventory` under the existing `flows[0].tables`, at the
+same indentation as `customers`, `products` and `orders`. Replace the path below
+with the absolute path you printed:
+
+```yaml
+inventory:
+  source:
+    path: /absolute/path/to/inventory.csv
+    format: csv
+  contract:
+    $resolve: ./contracts/inventory.odcs.yaml
+```
+
+Do not add a second `connections` entry. The `ingestion.connection` value stays
+`retail_files`.
+
+## 3. Write the inventory contract
+
+Save this as `contracts/inventory.odcs.yaml`:
+
+```yaml
+apiVersion: v3.1.0
+kind: DataContract
+id: retail-inventory
+name: Retail inventory
+version: 1.0.0
+status: draft
+schema:
+  - name: inventory
+    logicalType: object
+    physicalType: table
+    properties:
+      - name: product_id
+        logicalType: integer
+        physicalType: BIGINT
+        required: true
+      - name: warehouse
+        logicalType: string
+        physicalType: STRING
+        required: true
+      - name: quantity
+        logicalType: integer
+        physicalType: BIGINT
+        required: true
+```
+
+The contract selects the three columns and their parsing types. The file path
+and CSV format remain in the table's `source` entry.
+
+## 4. Make and review a new build
+
+Build into a new directory so the original review and output remain available:
+
+```sh
+ingestron check
+ingestron build --out build/retail-v2
+ingestron runtime prepare --from build/retail-v2
+ingestron run --from build/retail-v2 --action discover
+ingestron run --from build/retail-v2 --action review
+```
+
+Open `build/retail-v2/flows/retail_local/review.json`. Confirm all four tables
+are present, inventory selects the correct file, and its three column types
+match the contract. Then approve and run:
+
+```sh
+ingestron run --from build/retail-v2 --action approve
+ingestron run --from build/retail-v2 --run-id retail-002
+ingestron run --from build/retail-v2 status retail-002
+```
+
+Expect four Parquet tables under
+`build/retail-v2/data/retail_local/<identity-hash>/retail-002/`, including
+`inventory.parquet`. The inventory file should contain three rows. Your first
+build and its `retail-001` commit are still separate. Use a fresh run ID when
+the source changes again; repeat build and review when the selected columns,
+types, path or format change.
+
+You can follow the same steps with your own CSV file: inspect the header, add a
+table `source` using its absolute path, write a matching contract, and review a
+new build. The [Files reference](/docs/reference/files) lists supported types,
+formats and size limits.

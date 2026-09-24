@@ -72,7 +72,8 @@ reader needs enough local disk for input, temporary spool and output. See the
 [connector guide](https://github.com/ingestron/connectors/blob/files-1.1.0/docs/files.md)
 for format rules and limits.
 
-The [retail exercise](/docs/tutorials/retail-files) remains pinned to Files
-1.0.1. Its one-file-per-connection layout still works. Upgrading that project to
-1.1.0 requires editing its connections and tables; installation does not rewrite
-the project for you. For storage objects, use [Azure Blob](/docs/reference/azure-blob).
+The [retail tutorial](/docs/tutorials/retail-files) uses Files 1.1.0 to write
+one connection and three contracted tables by hand. The older Files 1.0.1
+exercise remains available in its original release; installation does not
+rewrite an older project. For storage objects, use
+[Azure Blob](/docs/reference/azure-blob).

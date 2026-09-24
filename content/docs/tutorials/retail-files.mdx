@@ -1,121 +1,308 @@
 ---
-title: "Read your first files"
-description: "Turn fictional retail files into three reviewed Parquet snapshots."
+title: "Build a retail file flow"
+description: "Write a project and three data contracts, then run a reviewed local snapshot."
 ---
 
-Read customers, products and orders from local files, then verify the result.
-This exercise needs no cloud account, source token or Labs access. It uses a small
-fictional NZ retailer with known results, including nulls, quoted names, embedded
-newlines and decimal prices.
+You will turn three fictional retail CSV files into three Parquet tables. Write the
+configuration yourself, review what Ingestron discovered, and check the result.
+No cloud account or source token is needed. Allow about 20–30 minutes. You need
+[CLI 0.15.1, Git and Python 3.12](/docs/start/installation) on macOS or Linux.
 
-You need [the CLI, Git and Python](/docs/start/installation), internet access for
-the first package installation, and a writable local directory. Files 1.0.1 works
-with CLI 0.15.0 and core 0.12.2 using the `files` shortcut below.
+## 1. Get the data and make your own project folder
 
-## 1. Download and prepare the project
-
-In an empty directory, download the
-[retail exercise](https://github.com/ingestron/connectors/releases/download/files-1.0.1/retail-files-1.0.1.zip):
+Download the [retail data and completed example](https://github.com/ingestron/connectors/releases/download/retail-1.1.0/retail-files-1.1.0.zip).
+The archive contains only fictional data, its byte hashes and a reference project.
+Work in a new folder so you can compare your files with the completed ones later.
 
 ```sh
-curl --fail --location --output retail.zip https://github.com/ingestron/connectors/releases/download/files-1.0.1/retail-files-1.0.1.zip
+mkdir retail-learning && cd retail-learning
+curl --fail --location --output retail.zip https://github.com/ingestron/connectors/releases/download/retail-1.1.0/retail-files-1.1.0.zip
 python3 -m zipfile -e retail.zip retail
-cd retail
-python3 setup.py
+mkdir retail/my-retail-flow retail/my-retail-flow/contracts
+cd retail/my-retail-flow
+head -n 4 ../data/csv/customers.csv
+head -n 4 ../data/csv/products.csv
+head -n 4 ../data/csv/orders.csv
 ```
 
-Setup verifies the fixture hashes and creates `project.yaml` with your absolute
-input paths. It refuses to replace an existing project. Open the YAML: it contains
-three connections, three flows and three ODCS contracts. Nothing has run yet.
+The files have three rows each. `products.csv` has a decimal `unit_price`;
+`orders.csv` has integer IDs and quantities. An empty customer email should
+remain null. The data is separate from your project configuration.
 
-## 2. Install and build
+## 2. Write the project
+
+Find each input's absolute path. From `my-retail-flow`, run:
+
+```sh
+python3 -c 'from pathlib import Path; [print(name.upper(), (Path("../data/csv") / (name + ".csv")).resolve()) for name in ("customers", "products", "orders")]'
+```
+
+Save this as `project.yaml`. Replace the three `__..._PATH__` values with the
+printed absolute paths and replace each `__FORMAT__` with `csv`. Keep the
+`$resolve` paths relative to `project.yaml`.
+
+```yaml
+apiVersion: ingestron.project/v1
+id: retail_files
+packages:
+  local: local@0.4.1
+  files: files@1.1.0
+providers:
+  configurations:
+    local:
+      package: local
+      binding: runtime
+defaults:
+  provider: local
+environments:
+  dev:
+    apiVersion: ingestron.environment/v1
+    environment: dev
+    bindings:
+      runtime:
+        kind: local
+connections:
+  retail_files:
+    package: files
+    sourceId: retail
+    tenantId: training
+    settings: {}
+flows:
+  - apiVersion: ingestron.flow/v1
+    kind: ingestion
+    id: retail_local
+    provider: local
+    ingestion:
+      connection: retail_files
+      timeoutSeconds: 120
+      execution:
+        mode: local
+    tables:
+      customers:
+        source:
+          path: __CUSTOMERS_PATH__
+          format: __FORMAT__
+        contract:
+          $resolve: ./contracts/customers.odcs.yaml
+      products:
+        source:
+          path: __PRODUCTS_PATH__
+          format: __FORMAT__
+        contract:
+          $resolve: ./contracts/products.odcs.yaml
+      orders:
+        source:
+          path: __ORDERS_PATH__
+          format: __FORMAT__
+        contract:
+          $resolve: ./contracts/orders.odcs.yaml
+```
+
+`packages` pins the provider and connector versions. `connections.retail_files`
+identifies a reusable file source; it contains no file path or credentials. The
+single ingestion flow has three tables. Each table chooses a physical file and
+points to its own data contract. This is why adding another file will not require
+another connection. The local provider runs the flow on your machine.
+
+## 3. Write the data contracts
+
+Create the following three files in `contracts/`. The contract columns select
+which input fields become output fields and how they are parsed. They are not
+another place to specify the file path. Keep the column names as written in the
+CSV headers. `required: false` allows the empty customer email; price uses
+`DECIMAL(10,2)`.
+
+Save as `contracts/customers.odcs.yaml`:
+
+```yaml
+apiVersion: v3.1.0
+kind: DataContract
+id: retail-customers
+name: Retail customers
+version: 1.0.0
+status: draft
+schema:
+  - name: customers
+    logicalType: object
+    physicalType: table
+    properties:
+      - name: customer_id
+        logicalType: string
+        physicalType: STRING
+        required: true
+      - name: name
+        logicalType: string
+        physicalType: STRING
+        required: true
+      - name: city
+        logicalType: string
+        physicalType: STRING
+        required: true
+      - name: email
+        logicalType: string
+        physicalType: STRING
+        required: false
+```
+
+Save as `contracts/products.odcs.yaml`:
+
+```yaml
+apiVersion: v3.1.0
+kind: DataContract
+id: retail-products
+name: Retail products
+version: 1.0.0
+status: draft
+schema:
+  - name: products
+    logicalType: object
+    physicalType: table
+    properties:
+      - name: product_id
+        logicalType: integer
+        physicalType: BIGINT
+        required: true
+      - name: name
+        logicalType: string
+        physicalType: STRING
+        required: true
+      - name: unit_price
+        logicalType: number
+        physicalType: DECIMAL(10,2)
+        required: true
+      - name: category
+        logicalType: string
+        physicalType: STRING
+        required: true
+```
+
+Save as `contracts/orders.odcs.yaml`:
+
+```yaml
+apiVersion: v3.1.0
+kind: DataContract
+id: retail-orders
+name: Retail orders
+version: 1.0.0
+status: draft
+schema:
+  - name: orders
+    logicalType: object
+    physicalType: table
+    properties:
+      - name: order_id
+        logicalType: integer
+        physicalType: BIGINT
+        required: true
+      - name: customer_id
+        logicalType: string
+        physicalType: STRING
+        required: true
+      - name: product_id
+        logicalType: integer
+        physicalType: BIGINT
+        required: true
+      - name: quantity
+        logicalType: integer
+        physicalType: BIGINT
+        required: true
+      - name: order_date
+        logicalType: string
+        physicalType: STRING
+        required: true
+```
+
+You have written all files needed for this flow. Compare them with
+`../project.template.yaml` and `../contracts/` if a check fails. The reference
+project still has path and format placeholders; `../setup.py` fills those only
+for the optional quick-run path.
+
+## 4. Install, check and build
+
+Run these commands inside `my-retail-flow`:
 
 ```sh
 ingestron provider install local@0.4.1
-ingestron connector install files@1.0.1
+ingestron connector install files@1.1.0
 ingestron check
 ingestron build
 ingestron runtime prepare
 ```
 
-The local provider runs Python on your machine; the files connector reads your
-selected inputs. Preparation downloads the locked dependencies once and reuses a
-matching environment later. Building does not read your source data.
+The first two commands install the pinned packages. `check` catches invalid
+project or contract definitions. `build` creates the local execution artefacts;
+it does not read source rows. `runtime prepare` installs locked Python dependencies
+for the local runner. If it cannot find Python 3.12, follow the
+[installation guide](/docs/start/installation#prepare-for-a-local-pipeline).
 
-## 3. Discover and review
+## 5. Discover, review and approve
 
 ```sh
 ingestron run --action discover
 ingestron run --action review
 ```
 
-Discovery reads the files to determine their schemas. Open each review under
-`build/generated/flows/`: `customers_local`, `products_local` and `orders_local`.
-Compare the selected columns with the corresponding contract in `project.yaml`.
-Check that email allows null and product price uses `DECIMAL(10,2)`.
-
-The CSV settings explicitly convert IDs and quantities to integers, and prices to
-decimals. Other CSV fields remain text. Empty CSV fields become null. Review these
-choices before using the same settings with your own files.
-
-## 4. Approve, run and verify
+Open `build/generated/flows/retail_local/review.json`. Compare each table's
+source path, selected columns and types with the three contracts. Check that
+`email` allows null and `unit_price` is decimal. Only approve when the review
+matches what you intended:
 
 ```sh
 ingestron run --action approve
+```
+
+Changing a path, format or contract later requires another build and review.
+The CLI does not silently approve a new selection.
+
+## 6. Run and check the result
+
+```sh
 ingestron run --run-id retail-001
 ingestron run status retail-001
+cp ../inspect-output.py .
 python3 inspect-output.py
 ```
 
-Expect three customers, three products and three orders, total quantity 7 and order
-value NZD 61.95. The helper checks the output and calculates the value from products
-and orders. That calculation is an inspection step; the connector itself does not
-join tables or build a sales model.
+Expect three customers, three products and three orders, total quantity 7 and
+order value **NZD 61.95**. The helper checks null and embedded-newline values
+and calculates the value from the output tables. The connector reads and writes
+tables; it does not join them or calculate sales.
 
-Each flow writes `records.parquet` and `commit.json` below
-`build/generated/data/<flow>/<identity-hash>/retail-001/`. Flows commit separately;
-this is not a transaction covering all three tables.
-
-## 5. Retry and compare formats
+Look under `build/generated/data/retail_local/<identity-hash>/retail-001/` for
+`customers.parquet`, `products.parquet`, `orders.parquet` and `commit.json`.
+The three tables share one flow commit. Try a completed retry:
 
 ```sh
 ingestron run --retry retail-001
 ```
 
-A completed retry verifies and reuses the existing output. It does not read changed
-input files. Use a new run ID when you want a new snapshot.
+It verifies and reuses the existing output; it does not reread changed inputs.
+Use a new run ID to make a fresh snapshot.
 
-To try TSV, JSON, JSONL or Parquet, extract the zip into another empty directory
-and use, for example, `python3 setup.py --format parquet`. Follow the same steps.
-The fixture rows and expected business results are the same across formats.
+## 7. Try another format or a rejected input
 
-## 6. Practise a rejected input
+For TSV, JSON, JSONL or Parquet, start with a fresh copy of the exercise data
+and change each table's absolute `source.path` and `source.format` in your
+project. Build, discover, review and approve again before running. The fixture
+rows and expected business result are the same in every format. The completed
+example can set paths for one format with `python3 setup.py --format parquet`
+in a fresh exercise folder.
 
-In your CSV exercise, save a backup of `data/csv/orders.csv`. Change the first order
-ID to `oops`, then run only that flow with a new ID:
+To see a rejected run, work in your disposable CSV copy. Change the first
+`order_id` in `../data/csv/orders.csv` from `1001` to `oops`, then run:
 
 ```sh
-ingestron run --flow orders_local --run-id rejected-001
+ingestron run --run-id rejected-001
 ```
 
-Expect failure and no committed snapshot for `rejected-001`. Your successful
-`retail-001` remains intact. Restore the original CSV, then recover the failed run:
+The run fails and writes no commit for `rejected-001`, because one selected
+integer cannot be parsed. Restore the original value, then run:
 
 ```sh
 ingestron run --retry rejected-001
 ```
 
-For schema changes, work in a fresh exercise copy: change the input and contract,
-then build, discover, review and approve again. Adding a column does not implicitly
-approve it. See [updating a project](/docs/guides/update-project).
-
-## Use your own files
-
-Change a connection's absolute `path`, its `format` and explicit `types`, then
-review its contract. Read the [files reference](/docs/reference/files) for type
-rules and limits. Start with a stable file that no other process is modifying.
-This release supports individual flat files, not folders, nested JSON or live feeds.
-
-The download contains fictional data licensed by Otrera Limited under Apache-2.0.
-It includes the licence and byte provenance; no Labs endpoints or credentials are
-included. Keep any output you need before deleting the disposable exercise folder.
+Your successful `retail-001` remains intact. Next,
+[add an inventory table by hand](/docs/tutorials/retail-add-table). For your own
+files, change the table's path and format, write a contract matching its header,
+and repeat build, discovery, review and approval. See [file types and limits](/docs/reference/files).
