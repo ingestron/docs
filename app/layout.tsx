@@ -18,7 +18,12 @@ export default function Layout({ children }: { children: ReactNode }) {
   return (
     <html lang="en-NZ" suppressHydrationWarning>
       <body>
-        <RootProvider theme={{ enabled: false }}>{children}</RootProvider>
+        <RootProvider
+          theme={{ enabled: false }}
+          search={{ options: { type: "static" } }}
+        >
+          {children}
+        </RootProvider>
       </body>
     </html>
   );

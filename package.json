@@ -10,11 +10,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:cloudflare": "opennextjs-cloudflare build",
-    "preview:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
-    "start": "next start",
+    "deploy:cloudflare": "next build && wrangler deploy",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "fumadocs-mdx && tsc --noEmit",
@@ -24,7 +20,8 @@
     "samples:check": "node scripts/check-examples.mjs",
     "samples:github": "node scripts/check-github-example.mjs",
     "samples:files": "node scripts/check-files-example.mjs",
-    "samples:azure": "node scripts/check-azure-example.mjs"
+    "samples:azure": "node scripts/check-azure-example.mjs",
+    "preview": "next build && wrangler dev"
   },
   "dependencies": {
     "fumadocs-core": "16.14.3",
@@ -35,7 +32,6 @@
     "react-dom": "19.3.0"
   },
   "devDependencies": {
-    "@opennextjs/cloudflare": "1.20.6",
     "@tailwindcss/postcss": "4.3.3",
     "@types/mdx": "2.0.14",
     "@types/node": "22.20.1",
