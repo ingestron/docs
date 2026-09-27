@@ -1,4 +1,10 @@
 {
   "title": "Guides",
-  "pages": ["plugins", "secrets", "runs", "update-project"]
+  "pages": [
+    "plugins",
+    "author-with-commands",
+    "secrets",
+    "runs",
+    "update-project"
+  ]
 }

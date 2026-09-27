@@ -5,15 +5,20 @@ description: "The packages and environments used by these guides."
 
 These guides use the following published releases:
 
-| Component            | Version | Distribution                                                   |
-| -------------------- | ------- | -------------------------------------------------------------- |
-| CLI                  | 0.15.1  | `npm install -g ingestron@0.15.1`                              |
-| Core                 | 0.12.4  | Included as an exact CLI dependency.                           |
-| Local provider       | 0.4.1   | `ingestron provider install local@0.4.1`                       |
-| GitHub connector     | 1.33.0  | `ingestron connector install github@1.33.0`                    |
-| Files connector      | 1.1.0   | [Read several local files](/docs/reference/files).             |
-| Azure Blob connector | 1.0.0   | [Install through the Azure guide](/docs/tutorials/azure-blob). |
-| SQL Server connector | 1.1.0   | [Read SQL Server tables](/docs/reference/sql-server).          |
+| Component            | Version | Distribution                             |
+| -------------------- | ------- | ---------------------------------------- |
+| CLI                  | 0.17.0  | `npm install --global ingestron@0.17.0`  |
+| Core                 | 0.12.7  | Included as an exact CLI dependency.     |
+| Local provider       | 0.4.3   | `ingestron provider install local`       |
+| Files connector      | 1.2.0   | `ingestron connector install files`      |
+| SQL Server connector | 1.2.0   | `ingestron connector install sql-server` |
+| Azure Blob connector | 1.1.0   | `ingestron connector install azure-blob` |
+| GitHub connector     | 1.33.1  | `ingestron connector install github`     |
+
+With CLI 0.17.0, an official name without a version selects exactly these
+releases, because they are the ones qualified for core 0.12.7. Add `@<version>`
+to reproduce a tutorial exactly. Older CLIs keep selecting the releases qualified
+for their own core version.
 
 The CLI and core require Node 22.12 or newer. CI covers Node 22.12, 22.23 and 24.12.
 Local execution is qualified on macOS/Linux with Python 3.12. A wider Node engine
@@ -44,18 +49,22 @@ project's provider or connector selection.
 [Local provider](https://github.com/ingestron/provider-local) ·
 [Connectors](https://github.com/ingestron/connectors)
 
-Files 1.1.0 reads several contracted local files through one connection. Its
-ten-file installed run checked discovery, review and all five formats with
-core 0.12.4 and local provider 0.4.1. The [retail training exercise](/docs/tutorials/retail-files)
-uses Files 1.1.0 and tests all five formats. Its manual walkthrough adds a
-fourth table in a separate reviewed build. The older Files 1.0.1 download
-remains available under its original release. See [file settings and limits](/docs/reference/files).
+Files 1.2.0 reads several contracted local files through one connection and
+carries reviewed source-to-target field names into the output. Its ten-file
+installed run checked discovery, review and all five formats with CLI 0.17.0,
+core 0.12.7 and local provider 0.4.3. The [retail training exercise](/docs/tutorials/retail-files)
+uses Files 1.2.0 and tests all five formats. Older Files 1.0.1 and 1.1.0
+downloads remain available under their original releases. See
+[file settings and limits](/docs/reference/files).
 
-Azure Blob 1.0.0 reads individual objects using read-only SAS credentials and the
-local provider. See the [Azure retail exercise](/docs/tutorials/azure-blob).
+Azure Blob 1.1.0 reads individual objects using read-only SAS credentials and the
+local provider. Its installed run covered all five formats with CLI 0.17.0. See the
+[Azure retail exercise](/docs/tutorials/azure-blob).
 
-SQL Server 1.1.0 selects multiple contracted tables through one connection.
-Its local runtime and installed two-table build are qualified with synthetic data.
-SQL password was live-qualified on the prior one-table release with read-only
-Northwind; a live multi-table read and Entra identity tests remain pending.
-See [SQL Server settings and limits](/docs/reference/sql-server).
+GitHub 1.33.1 reads GitHub.com issues. Its installed run covered pagination,
+review, retry and tamper rejection against synthetic API responses with CLI 0.17.0.
+
+SQL Server 1.2.0 selects multiple contracted tables through one connection and is
+qualified for core 0.12.7 with synthetic data. SQL password was live-qualified on
+an earlier one-table release with read-only Northwind; live multi-table and Entra
+identity tests remain pending. See [SQL Server settings and limits](/docs/reference/sql-server).

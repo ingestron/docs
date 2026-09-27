@@ -6,17 +6,17 @@ description: "Write a project and three data contracts, then run a reviewed loca
 You will turn three fictional retail CSV files into three Parquet tables. Write the
 configuration yourself, review what Ingestron discovered, and check the result.
 No cloud account or source token is needed. Allow about 20–30 minutes. You need
-[CLI 0.15.1, Git and Python 3.12](/docs/start/installation) on macOS or Linux.
+[CLI 0.17.0, Git and Python 3.12](/docs/start/installation) on macOS or Linux.
 
 ## 1. Get the data and make your own project folder
 
-Download the [retail data and completed example](https://github.com/ingestron/connectors/releases/download/retail-1.1.0/retail-files-1.1.0.zip).
+Download the [retail data and completed example](https://github.com/ingestron/connectors/releases/download/retail-1.2.0/retail-files-1.2.0.zip).
 The archive contains only fictional data, its byte hashes and a reference project.
 Work in a new folder so you can compare your files with the completed ones later.
 
 ```sh
 mkdir retail-learning && cd retail-learning
-curl --fail --location --output retail.zip https://github.com/ingestron/connectors/releases/download/retail-1.1.0/retail-files-1.1.0.zip
+curl --fail --location --output retail.zip https://github.com/ingestron/connectors/releases/download/retail-1.2.0/retail-files-1.2.0.zip
 python3 -m zipfile -e retail.zip retail
 mkdir retail/my-retail-flow retail/my-retail-flow/contracts
 cd retail/my-retail-flow
@@ -45,8 +45,8 @@ printed absolute paths and replace each `__FORMAT__` with `csv`. Keep the
 apiVersion: ingestron.project/v1
 id: retail_files
 packages:
-  local: local@0.4.1
-  files: files@1.1.0
+  local: local@0.4.3
+  files: files@1.2.0
 providers:
   configurations:
     local:
@@ -222,8 +222,8 @@ for the optional quick-run path.
 Run these commands inside `my-retail-flow`:
 
 ```sh
-ingestron provider install local@0.4.1
-ingestron connector install files@1.1.0
+ingestron provider install local@0.4.3
+ingestron connector install files@1.2.0
 ingestron check
 ingestron build
 ingestron runtime prepare

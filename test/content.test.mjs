@@ -64,10 +64,10 @@ test("navigation covers every page and retired content is absent", () => {
 });
 test("downloads match tutorial versions, projection and inline metadata", () => {
   const p = parse(readFileSync("public/examples/github/project.yaml", "utf8"));
-  assert.equal(p.providers.packages.local, "ingestron/provider-local@0.4.1");
+  assert.equal(p.providers.packages.local, "ingestron/provider-local@0.4.3");
   assert.equal(
     p.providers.packages.github,
-    "ingestron/connectors/connectors/github/connector.yaml@1.33.0",
+    "ingestron/connectors/connectors/github/connector.yaml@1.33.1",
   );
   assert.equal(p.connections.github.settings.authentication, "anonymous");
   assert.deepEqual(
@@ -79,8 +79,8 @@ test("downloads match tutorial versions, projection and inline metadata", () => 
     "utf8",
   );
   for (const command of [
-    "provider install local@0.4.1",
-    "connector install github@1.33.0",
+    "provider install local@0.4.3",
+    "connector install github@1.33.1",
     "run --action review",
     "run --action approve",
     "run --retry issues-001",
@@ -100,8 +100,8 @@ test("downloads match tutorial versions, projection and inline metadata", () => 
 test("retail guides show the current manual project and update workflow", () => {
   const guide = readFileSync("content/docs/tutorials/retail-files.mdx", "utf8");
   for (const step of [
-    "retail-files-1.1.0.zip",
-    "connector install files@1.1.0",
+    "retail-files-1.2.0.zip",
+    "connector install files@1.2.0",
     "contracts/customers.odcs.yaml",
     "contracts/products.odcs.yaml",
     "contracts/orders.odcs.yaml",

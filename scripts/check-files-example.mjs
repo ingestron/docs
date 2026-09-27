@@ -17,9 +17,9 @@ const site = process.cwd();
 const work = resolve("build/files-example");
 const cli = resolve("node_modules/ingestron/build/cli/cli/index.js");
 const archiveSha =
-  "286eb5f22a2bb4e4208016de953adfec1332dd994d126d8579b335fb7859559e";
+  "7874d6ab06504a588dfabf984f1e620df90cc196d99ca42049a91fc948c23bd4";
 const archiveUrl =
-  "https://github.com/ingestron/connectors/releases/download/retail-1.1.0/retail-files-1.1.0.zip";
+  "https://github.com/ingestron/connectors/releases/download/retail-1.2.0/retail-files-1.2.0.zip";
 rmSync(work, { recursive: true, force: true });
 mkdirSync(work, { recursive: true });
 const run = (args, cwd = work) => {
@@ -81,8 +81,8 @@ assert.equal(
 );
 const command = (...args) =>
   run(["node", cli, "--json", "--no-input", ...args], projectDir);
-command("provider", "install", "local@0.4.1");
-command("connector", "install", "files@1.1.0");
+command("provider", "install", "local@0.4.3");
+command("connector", "install", "files@1.2.0");
 command("check");
 command("build");
 command("runtime", "prepare");

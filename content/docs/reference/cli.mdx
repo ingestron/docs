@@ -14,19 +14,23 @@ ingestron run --help
 
 ## Project work
 
-| Command            | Purpose                                                 |
-| ------------------ | ------------------------------------------------------- |
-| `init [directory]` | Create project and environment files.                   |
-| `config show`      | Inspect the selected project configuration.             |
-| `config set`       | Change a non-secret value.                              |
-| `source add`       | Describe a source; it does not read data.               |
-| `source import`    | Import metadata from a supplied file.                   |
-| `contract draft`   | Draft a contract from imported metadata.                |
-| `contract check`   | Validate a contract.                                    |
-| `flow add`         | Add a flow using a standard from an installed provider. |
-| `check --draft`    | Check a project that is still being authored.           |
-| `check`            | Check strict build readiness.                           |
-| `build`            | Generate the configured provider's files.               |
+| Command                | Purpose                                                 |
+| ---------------------- | ------------------------------------------------------- |
+| `init [directory]`     | Create project and environment files.                   |
+| `config show`          | Inspect the selected project configuration.             |
+| `config set`           | Change a non-secret value.                              |
+| `source add`           | Describe a source; it does not read data.               |
+| `source import`        | Import metadata from a supplied file.                   |
+| `contract scaffold`    | Create a draft contract from one known field.           |
+| `contract draft`       | Draft a contract from imported metadata.                |
+| `contract map`         | Map discovered source fields into a contract.           |
+| `contract check`       | Validate a contract.                                    |
+| `flow add`             | Add a flow using a standard from an installed provider. |
+| `connections add`      | Register a connection that uses an installed connector. |
+| `connections flow-add` | Create an ingestion flow that reads a connection.       |
+| `check --draft`        | Check a project that is still being authored.           |
+| `check`                | Check strict build readiness.                           |
+| `build`                | Generate the configured provider's files.               |
 
 ## Packages and execution
 
@@ -39,7 +43,7 @@ ingestron run --help
 | `provider list`         | Show installed provider packages.                           |
 | `connector list`        | Show installed connector packages.                          |
 | `provider exec`         | Run a configured provider's offline command.                |
-| `plugin configure`      | Register an installed provider in a project.                |
+| `plugin configure`      | Register an installed provider or connector in a project.   |
 | `plugin list`           | Show locked packages.                                       |
 | `plugin browse`         | Inspect installed packages; it is not a remote marketplace. |
 | `plugin versions`       | List stable repository tags.                                |
@@ -68,6 +72,8 @@ namespaced commands; their help appears only when the required package is config
 | `--dry-run`             | Preview supported authoring changes. Not supported for installation, builds or runs. |
 | `--secrets-file <file>` | Project-relative secret file for a source run.                                       |
 | `--from <directory>`    | Select a generated build for runtime operations.                                     |
+| `--flow <id>`           | Limit `check`, `build` or `run` to one flow.                                         |
+| `--profile <name>`      | Select a named execution profile of that flow.                                       |
 
 Use `--secrets-file` rather than Node's `--env-file`. Read the diagnostic code and
 message when a command fails; exit status alone may not explain the corrective action.

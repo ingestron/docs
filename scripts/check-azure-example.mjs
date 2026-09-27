@@ -6,9 +6,9 @@ import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 const root = process.cwd(),
   work = resolve("build/azure-example");
-const commit = "61703515c2db7b1d992df8c0d189ecdda1a9b7e3";
+const commit = "17db40c5bce109b08fc8a9250da9376c622c964c";
 const archiveSha =
-  "6072581a644ff345cba214ce86337b12e44b7e10a205ca63e83c2fdb7cc891aa";
+  "4686bc0e59a125fb1466b88f3bfe5b5264f66b61fc657db6b9aeb2c2e1e4c599";
 rmSync(work, { recursive: true, force: true });
 mkdirSync(work, { recursive: true });
 const run = (args, cwd = work, env = process.env) =>
@@ -25,7 +25,7 @@ run([
   "--location",
   "--output",
   archive,
-  "https://github.com/ingestron/connectors/releases/download/azure-blob-1.0.0/azure-blob-retail-1.0.0.zip",
+  "https://github.com/ingestron/connectors/releases/download/azure-blob-1.1.0/azure-blob-retail-1.1.0.zip",
 ]);
 assert.equal(
   createHash("sha256").update(readFileSync(archive)).digest("hex"),
@@ -59,8 +59,8 @@ const evidence = JSON.parse(
   readFileSync(resolve(repo, "build/azure-blob-acceptance/evidence.json")),
 );
 assert.equal(evidence.publicSource, true);
-assert.equal(evidence.core, "0.12.4");
-assert.equal(evidence.cli, "0.15.1");
+assert.equal(evidence.core, "0.12.7");
+assert.equal(evidence.cli, "0.17.0");
 writeFileSync(
   resolve(work, "evidence.json"),
   JSON.stringify({ ...evidence, archiveSha, harnessCommit: commit }, null, 2) +
