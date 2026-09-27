@@ -1,22 +1,13 @@
 import { createMDX } from "fumadocs-mdx/next";
+
+// Static export: pages and the search index are built ahead of time and served
+// from Workers static assets. Headers and the root redirect live in
+// worker/index.js so no page rendering happens in the Worker (Free plan: 10 ms
+// CPU per request).
 export default createMDX()({
+  output: "export",
   reactStrictMode: true,
   poweredByHeader: false,
   turbopack: { root: process.cwd() },
-  async headers() {
-    return [
-      {
-        source: "/(.*)",
-        headers: [
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "X-Frame-Options", value: "DENY" },
-          {
-            key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(), payment=()",
-          },
-        ],
-      },
-    ];
-  },
+  images: { unoptimized: true },
 });

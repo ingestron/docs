@@ -13,3 +13,4 @@ cloudflare-env.d.ts
 *.tsbuildinfo
 .DS_Store
 .vercel/
+out/
