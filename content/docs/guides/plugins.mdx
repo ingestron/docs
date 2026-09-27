@@ -9,7 +9,7 @@ The GitHub tutorial needs both `local` and `github`.
 ## Install a provider or connector
 
 From the project directory, install `local` and the connectors your project uses.
-CLI 0.15.1 supports these official names:
+CLI 0.17.0 supports these official names:
 
 | Name         | Purpose                             |
 | ------------ | ----------------------------------- |
@@ -40,7 +40,7 @@ Installation does not edit `project.yaml`. The old `--cache-only` option is acce
 but unnecessary. Use the exact versions in a tutorial when reproducing its result:
 
 ```sh
-ingestron connector install github@1.33.0
+ingestron connector install github@1.33.1
 ingestron provider list
 ingestron connector list
 ```
@@ -62,18 +62,24 @@ To adopt another version, update the exact reference in your project, check it,
 and build and review again. Keep the previous configuration and lock in Git so
 you can restore them. See [change a project](/docs/guides/update-project).
 
-## Configure a provider
+## Register packages in a project
 
-The GitHub example already includes provider configuration. For a project without
-it, inspect the installed package and use its exact reference:
+Installation only caches and locks a package. To use it, register it in
+`project.yaml` with its exact reference. Tutorials that supply a project file
+already include this step. For a new project, check the exact versions with
+`ingestron plugin list --verbose`, then run:
 
 ```sh
-ingestron plugin configure ingestron/provider-local@0.4.1 --name local
+ingestron plugin configure ingestron/provider-local@0.4.3 --name local
+ingestron plugin configure ingestron/connectors/connectors/files/connector.yaml@1.2.0 --name files
 ```
 
-This is a separate authoring step. Review its files and add any required connection
-settings before building. The old `plugin install --name` spelling reports this
-new step instead of registering a provider implicitly.
+The first command registers the provider and makes it the project's default. The
+second adds the connector under a short package name that connections refer to.
+`project.yaml` then contains short exact names such as `local@0.4.3` and
+`files@1.2.0`. Review the change before building. The old `plugin install --name`
+spelling reports this separate step instead of registering a package implicitly.
+[Author a flow with commands](/docs/guides/author-with-commands) continues from here.
 
 ## Other repositories
 

@@ -3,8 +3,8 @@ title: "Azure Blob connector"
 description: "Settings and limits for reading one Azure storage object with the local provider."
 ---
 
-Azure Blob 1.0.0 reads one CSV, TSV, JSON, JSONL or Parquet object per connection.
-It is tested with CLI 0.15.1, core 0.12.4 and local provider 0.4.1. Start with the
+Azure Blob 1.1.0 reads one CSV, TSV, JSON, JSONL or Parquet object per connection.
+It is tested with CLI 0.17.0, core 0.12.7 and local provider 0.4.3. Start with the
 [Azure retail exercise](/docs/tutorials/azure-blob).
 
 | Setting     | Value                                                       |
@@ -16,10 +16,10 @@ It is tested with CLI 0.15.1, core 0.12.4 and local provider 0.4.1. Start with t
 | `sas_token` | Secret reference: `{ $secret: { env: AZURE_STORAGE_SAS } }` |
 | `types`     | Optional column parsing types for this connector release    |
 
-Azure Blob 1.0.0 keeps the object path, format and optional `types` in each
+Azure Blob 1.1.0 keeps the object path, format and optional `types` in each
 connection. The newer [local Files connector](/docs/reference/files) selects
 path and format per table and gets types from its ODCS contract. Installing
-Files 1.1.0 does not change an Azure Blob project.
+Files 1.1.0 and 1.2.0 do not change an Azure Blob project.
 
 Use a time-limited HTTPS-only SAS with read or read/list permission. Plaintext tokens
 in project configuration, account keys and ambient Azure login are unsupported.

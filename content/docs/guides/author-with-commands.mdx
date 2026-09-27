@@ -1,0 +1,117 @@
+---
+title: Author a flow with commands
+description: Create a connection, contract and ingestion flow without editing YAML by hand.
+---
+
+The [retail tutorial](/docs/tutorials/retail-files) teaches the project files by
+writing them. This guide builds the same kind of flow with CLI commands. Every
+command writes ordinary project files you can review and commit.
+
+You need [CLI 0.17.0, Git and Python 3.12](/docs/start/installation) and one CSV
+file. The example uses `customers.csv` from the
+[retail download](https://github.com/ingestron/connectors/releases/download/retail-1.2.0/retail-files-1.2.0.zip)
+(`data/csv/customers.csv`).
+
+## 1. Create the project and add packages
+
+```sh
+ingestron init shop
+cd shop
+ingestron provider install local
+ingestron connector install files
+ingestron plugin configure ingestron/provider-local@0.4.3 --name local
+ingestron plugin configure ingestron/connectors/connectors/files/connector.yaml@1.2.0 --name files
+```
+
+`install` caches and locks each package; `plugin configure` registers it in
+`project.yaml`. See [install providers and connectors](/docs/guides/plugins).
+
+## 2. Draft a contract
+
+Start from one field you know. The contract stays a draft until you review it.
+
+```sh
+ingestron contract scaffold customers --table customers --field customer_id --type string
+```
+
+This writes `contracts/customers.odcs.yaml`.
+
+## 3. Add a connection and a flow
+
+```sh
+mkdir data
+cp /path/to/customers.csv data/
+ingestron connections add retail --package files --source-id retail_customers --tenant-id training
+ingestron connections flow-add shop --provider local --connection retail \
+  --table customers --contract contracts/customers.odcs.yaml \
+  --source-path "$PWD/data/customers.csv" --format csv
+```
+
+The connection is reusable; `flow-add` writes `flows/shop/flow.yaml` and links
+it from `project.yaml`. Use an **absolute** `--source-path`: the Files connector
+reads from the execution environment, and a relative path makes discovery fail.
+Add `--dry-run` before any authoring command to preview its file changes.
+
+## 4. Discover the source
+
+```sh
+ingestron check
+ingestron build
+ingestron runtime prepare
+ingestron run --action discover
+```
+
+Discovery saves the source schema in `build/generated/flows/shop/discovery.json`.
+For the retail file it lists `customer_id`, `name`, `city` and `email`.
+
+## 5. Map source fields into the contract
+
+Write a mapping file that selects fields and names them in the contract:
+
+```yaml title="mapping.yaml"
+apiVersion: ingestron.field-mapping/v1
+flow: shop
+environment: dev
+contract: contracts/customers.odcs.yaml
+discovery: build/generated/flows/shop/discovery.json
+stream: customers
+table: customers
+fields:
+  - { source: customer_id, target: customer_id }
+  - { source: name, target: customer_name }
+  - { source: city, target: city }
+```
+
+```sh
+ingestron --dry-run contract map mapping.yaml
+ingestron contract map mapping.yaml
+```
+
+The contract now lists three properties. `customer_name` records
+`physicalName: name`, so the output uses your name while the source keeps its own.
+Fields you leave out, such as `email`, are not written.
+
+## 6. Review, approve and run
+
+The contract changed, so build and discover again before reviewing:
+
+```sh
+ingestron build
+ingestron run --action discover
+ingestron run --action review
+ingestron run --action approve
+ingestron run --run-id shop-001
+ingestron run status shop-001
+```
+
+A run before approval fails on purpose. The approved run writes three rows with
+the columns `customer_id`, `customer_name` and `city` to Parquet under
+`build/generated/data`. See [runs and receipts](/docs/guides/runs) for retries.
+
+## Execution profiles
+
+A flow can declare named `executionProfiles` to reuse the same datasets and
+contracts with different providers, for example local testing and a native
+platform generator. Select one with `--profile` on `check`, `build` and `run`;
+omit it to use the flow's default provider. The published providers in these
+guides use the default profile only.

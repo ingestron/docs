@@ -11,8 +11,8 @@ and permission to view their column metadata.
 Install the provider and connector in your project directory:
 
 ```sh
-ingestron provider install local@0.4.1
-ingestron connector install sql-server@1.1.0
+ingestron provider install local@0.4.3
+ingestron connector install sql-server@1.2.0
 ```
 
 Put the exact installed package names in `packages`. One connection holds the
@@ -21,8 +21,8 @@ physical schema and table; its ODCS data contract selects the columns:
 
 ```yaml
 packages:
-  local: local@0.4.1
-  sql-server: sql-server@1.1.0
+  local: local@0.4.3
+  sql-server: sql-server@1.2.0
 connections:
   northwind:
     package: sql-server

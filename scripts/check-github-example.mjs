@@ -11,7 +11,7 @@ import { execFileSync } from "node:child_process";
 import assert from "node:assert/strict";
 const root = process.cwd(),
   work = resolve("build/github-example");
-const commit = "18ab8d266b7230a8c399e75aec321d407c9010a4";
+const commit = "f10860721b61721c2f625820c5bff5587746bd29";
 // This checkout is disposable test output, never part of a user's project.
 rmSync(work, { recursive: true, force: true });
 mkdirSync(work, { recursive: true });
