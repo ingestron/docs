@@ -66,9 +66,26 @@ properties:
 
 `severity: error` means the load should fail when the rule fails; any other
 severity only warns. A column with `primaryKey: true` also implies not-null and
-unique rules unless you write them yourself. SQL and engine-specific (`custom`)
-rules are accepted too; `text` rules are documentation only. A malformed rule
-fails `check`.
+unique rules unless you write them yourself. `text` rules are documentation only.
+A malformed rule fails `check`.
+
+SQL rules return one number and use the same comparisons. Write the query in
+the target platform's dialect and use `${table}` for the table and, on a column
+rule, `${column}` for the column:
+
+```yaml
+quality:
+  - id: no-negative-amounts
+    type: sql
+    query: SELECT COUNT(*) FROM ${table} WHERE amount < 0
+    mustBe: 0
+    severity: error
+```
+
+Engine rules (`type: custom`) name an `engine` and pass its `implementation`
+through; only providers that support that engine enforce them. `check` validates
+the shape of SQL offline (one read-only statement, no comments); the platform
+compiles it when the check runs.
 
 Each provider and connector declares how it enforces each rule: while loading,
 after loading, or not at all. `check` and `build` report this for every flow, for example

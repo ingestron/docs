@@ -1,6 +1,6 @@
 ---
 title: "Databricks provider"
-description: "Native Databricks asset generation with provider-databricks 3.4.0."
+description: "Native Databricks asset generation with provider-databricks 3.5.0."
 ---
 
 The Databricks provider turns a reviewed project into a Databricks Asset Bundle
@@ -8,7 +8,7 @@ you deploy with your own tooling. It generates files only: it does not deploy, r
 jobs or connect to your workspace or data. Install it with:
 
 ```sh
-ingestron provider install databricks@3.4.0
+ingestron provider install databricks@3.5.0
 ```
 
 | Standard                      | What it generates                                                 |
@@ -34,10 +34,16 @@ checks. Rules never drop rows.
 | `snapshot-with-history@v1`                      | Every library rule is counted on the delivered snapshot. An error rule stops the update before the snapshot is applied.                                  |
 
 On streaming standards, other thresholds fail the build, and `duplicateValues`
-and `rowCount` rules are reported as not enforced. SQL and engine rules are not
-generated yet.
+and `rowCount` rules are reported as not enforced.
 
-Generation is tested offline against synthetic projects with CLI 0.17.5 and core
-0.12.11. Deployment and execution on a real Databricks workspace are not qualified by
+`type: sql` rules run on complete snapshots through `spark.sql`, where `${table}`
+is the delivered snapshot. On streaming standards they are reported as not
+enforced. `type: custom` rules with `engine: databricks` take a Spark SQL row
+condition as `implementation`, for example `amount >= 0`; they become
+expectations on streaming tables and are counted on snapshots. Rules for other
+engines are reported as not enforced.
+
+Generation is tested offline against synthetic projects with CLI 0.17.6 and core
+0.12.12. Deployment and execution on a real Databricks workspace are not qualified by
 this release. Source, guides and examples:
 [ingestron/provider-databricks](https://github.com/ingestron/provider-databricks).
