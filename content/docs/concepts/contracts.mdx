@@ -70,8 +70,8 @@ unique rules unless you write them yourself. SQL and engine-specific (`custom`)
 rules are accepted too; `text` rules are documentation only. A malformed rule
 fails `check`.
 
-Each provider declares how it enforces each rule: while loading, after loading,
-or not at all. `check` and `build` report this for every flow, for example
+Each provider and connector declares how it enforces each rule: while loading,
+after loading, or not at all. `check` and `build` report this for every flow, for example
 `Quality rules: 4 (0 at load, 0 after load, 4 not enforced by the target)`, and
 the build writes the full list to `ingestron-project.json`. An error-severity
 rule that the target cannot enforce stops the build. To accept that and only
@@ -83,9 +83,25 @@ defaults:
     unsupported: report
 ```
 
-Rules implied by keys are reported but never stop the build. In this release no
-provider enforces rules yet; local enforcement and native Databricks and ADF
-checks follow.
+Rules implied by keys are reported but never stop the build.
+
+### Local snapshots
+
+The local connectors (Files 1.3.0, SQL Server 1.3.0, Azure Blob 1.2.0 and GitHub
+1.34.0) check library rules and key rules on the staged snapshot before it is
+committed, so `check` counts them as enforced at load. If an error-severity rule
+fails, the run stops and nothing is committed:
+
+```text
+Error: Contract quality rules failed; nothing was committed: orders.key-unique (2).
+Fix the source data or review the rule severity, then retry with the same run ID.
+```
+
+Other rules are recorded in the snapshot receipt, and `ingestron run status`
+shows them, for example `Quality rules: 3 checked before commit; 1 warning(s):
+orders-volume.` Messages name rules and counts, never row values. Invalid rows are
+not removed or quarantined: a failed run is fixed at the source and retried. SQL
+and engine rules are not checked locally. Native Databricks and ADF checks follow.
 
 Start with [your first contract](/docs/start/first-contract), or inspect the inline
 contract in the [GitHub example](/examples/github/project.yaml).

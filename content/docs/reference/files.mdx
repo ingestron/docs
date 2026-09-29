@@ -3,24 +3,24 @@ title: "Read local files"
 description: "Read several files through one connection and use each table's contract for types."
 ---
 
-Files connector 1.1.0 reads CSV, TSV, flat JSON, JSON Lines and Parquet through
-local provider 0.4.3. One connection can serve several files. Each table in the
+Files connector 1.3.0 reads CSV, TSV, flat JSON, JSON Lines and Parquet through
+local provider 0.4.4. One connection can serve several files. Each table in the
 ingestion flow names its file and format; its ODCS data contract selects the
 columns and types for the reviewed Parquet snapshot.
 
 Install the provider and connector in your project directory:
 
 ```sh
-ingestron provider install local@0.4.3
-ingestron connector install files@1.2.0
+ingestron provider install local@0.4.4
+ingestron connector install files@1.3.0
 ```
 
 This is the relevant part of a two-file `project.yaml`:
 
 ```yaml
 packages:
-  local: local@0.4.3
-  files: files@1.2.0
+  local: local@0.4.4
+  files: files@1.3.0
 connections:
   local_files:
     package: files
