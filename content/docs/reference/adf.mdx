@@ -1,6 +1,6 @@
 ---
 title: "Azure Data Factory provider"
-description: "Native ADF asset generation with provider-adf 4.2.0."
+description: "Native ADF asset generation with provider-adf 4.3.1."
 ---
 
 The ADF provider turns a reviewed project into Azure Data Factory assets you
@@ -8,7 +8,7 @@ deploy with your own tooling. It generates files only: it does not deploy to Azu
 run pipelines or connect to your data. Install it with:
 
 ```sh
-ingestron provider install adf@4.2.0
+ingestron provider install adf@4.3.1
 ```
 
 | Standard                    | What it generates                                                               |
@@ -26,10 +26,11 @@ ingestron build --flow <flow> --profile <profile> --out build-adf
 ```
 
 Output includes the ARM template, parameters, pipelines, datasets and a
-deployment note. Linked services, integration runtimes and identities stay in your
+deployment note. The template records the Ingestron generator in its `metadata`,
+and generated resources carry an `ingestron:` annotation. Linked services, integration runtimes and identities stay in your
 subscription; the project refers to them by name.
 
-Generation is tested offline against synthetic projects with CLI 0.17.1 and core
-0.12.7. Deployment and execution in a real Azure subscription are not qualified by
+Generation is tested offline against synthetic projects with CLI 0.17.2 and core
+0.12.8. Deployment and execution in a real Azure subscription are not qualified by
 this release. Source, guides and examples:
 [ingestron/provider-adf](https://github.com/ingestron/provider-adf).
