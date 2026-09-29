@@ -43,8 +43,49 @@ with `status: active` must name at least one member whose role contains `owner`;
 drafts do not. Members with a past `dateOut` no longer count. Sign-off for a
 contract change is the review of that change in Git.
 
-Contracts can also record ODCS `quality` rules. This release reads and counts
-them, and `check` says when they are recorded but not yet enforced.
+## Quality rules
+
+Contracts can record ODCS `quality` rules on a column, a table or the whole
+contract. Library rules use one of `nullValues`, `missingValues`,
+`invalidValues`, `duplicateValues` or `rowCount` with one comparison such as
+`mustBe` or `mustBeGreaterThan`:
+
+```yaml
+properties:
+  - name: status
+    logicalType: string
+    physicalType: STRING
+    quality:
+      - id: status-valid
+        metric: invalidValues
+        arguments:
+          validValues: [open, closed]
+        mustBe: 0
+        severity: error
+```
+
+`severity: error` means the load should fail when the rule fails; any other
+severity only warns. A column with `primaryKey: true` also implies not-null and
+unique rules unless you write them yourself. SQL and engine-specific (`custom`)
+rules are accepted too; `text` rules are documentation only. A malformed rule
+fails `check`.
+
+Each provider declares how it enforces each rule: while loading, after loading,
+or not at all. `check` and `build` report this for every flow, for example
+`Quality rules: 4 (0 at load, 0 after load, 4 not enforced by the target)`, and
+the build writes the full list to `ingestron-project.json`. An error-severity
+rule that the target cannot enforce stops the build. To accept that and only
+report it, set:
+
+```yaml
+defaults:
+  quality:
+    unsupported: report
+```
+
+Rules implied by keys are reported but never stop the build. In this release no
+provider enforces rules yet; local enforcement and native Databricks and ADF
+checks follow.
 
 Start with [your first contract](/docs/start/first-contract), or inspect the inline
 contract in the [GitHub example](/examples/github/project.yaml).
