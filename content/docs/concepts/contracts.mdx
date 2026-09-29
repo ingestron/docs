@@ -22,5 +22,29 @@ A file can pass schema validation and still describe the wrong repository or
 business field. Read it, keep it in version control and review changes with the
 people who use the resulting data.
 
+## Owners and status
+
+A contract can name the people responsible for the data product with the ODCS
+`team` section, and its lifecycle with `status`:
+
+```yaml
+status: active
+team:
+  name: Sales data
+  members:
+    - username: ana@example.com
+      role: Data owner
+    - username: ben@example.com
+      role: Data steward
+```
+
+`ingestron check` lists each data product with its status and owner. A contract
+with `status: active` must name at least one member whose role contains `owner`;
+drafts do not. Members with a past `dateOut` no longer count. Sign-off for a
+contract change is the review of that change in Git.
+
+Contracts can also record ODCS `quality` rules. This release reads and counts
+them, and `check` says when they are recorded but not yet enforced.
+
 Start with [your first contract](/docs/start/first-contract), or inspect the inline
 contract in the [GitHub example](/examples/github/project.yaml).
