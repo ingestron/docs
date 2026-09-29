@@ -1,0 +1,27 @@
+---
+title: "Databricks provider"
+description: "Native Databricks asset generation with provider-databricks 3.2.0."
+---
+
+The Databricks provider turns a reviewed project into a Databricks Asset Bundle
+you deploy with your own tooling. It generates files only: it does not deploy, run
+jobs or connect to your workspace or data. Install it with:
+
+```sh
+ingestron provider install databricks@3.2.0
+```
+
+| Standard                      | What it generates                                                 |
+| ----------------------------- | ----------------------------------------------------------------- |
+| `snapshot-with-history@v1`    | Complete versioned snapshots to native history and a current view |
+| `change-feed-with-history@v1` | Baseline and full-row change events to history and a current view |
+| `append-only@v1`              | Immutable files to a streaming table                              |
+| `snapshot-publication@v1`     | Verify immutable Parquet snapshots, then publish a delivery index |
+
+Output includes `databricks.yml`, job and pipeline resources, notebooks and
+targets per environment. Secrets stay as secret-scope references.
+
+Generation is tested offline against synthetic projects with CLI 0.17.1 and core
+0.12.7. Deployment and execution on a real Databricks workspace are not qualified by
+this release. Source, guides and examples:
+[ingestron/provider-databricks](https://github.com/ingestron/provider-databricks).
