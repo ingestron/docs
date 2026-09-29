@@ -7,18 +7,18 @@ These guides use the following published releases:
 
 | Component            | Version | Distribution                             |
 | -------------------- | ------- | ---------------------------------------- |
-| CLI                  | 0.17.3  | `npm install --global ingestron@0.17.3`  |
-| Core                 | 0.12.9  | Included as an exact CLI dependency.     |
-| Local provider       | 0.4.3   | `ingestron provider install local`       |
+| CLI                  | 0.17.4  | `npm install --global ingestron@0.17.4`  |
+| Core                 | 0.12.10 | Included as an exact CLI dependency.     |
+| Local provider       | 0.4.4   | `ingestron provider install local`       |
 | ADF provider         | 4.3.1   | `ingestron provider install adf`         |
 | Databricks provider  | 3.3.0   | `ingestron provider install databricks`  |
-| Files connector      | 1.2.0   | `ingestron connector install files`      |
-| SQL Server connector | 1.2.0   | `ingestron connector install sql-server` |
-| Azure Blob connector | 1.1.0   | `ingestron connector install azure-blob` |
-| GitHub connector     | 1.33.1  | `ingestron connector install github`     |
+| Files connector      | 1.3.0   | `ingestron connector install files`      |
+| SQL Server connector | 1.3.0   | `ingestron connector install sql-server` |
+| Azure Blob connector | 1.2.0   | `ingestron connector install azure-blob` |
+| GitHub connector     | 1.34.0  | `ingestron connector install github`     |
 
-With CLI 0.17.3, an official name without a version selects exactly these
-releases, because they are the ones qualified for core 0.12.9. Add `@<version>`
+With CLI 0.17.4, an official name without a version selects exactly these
+releases, because they are the ones qualified for core 0.12.10. Add `@<version>`
 to reproduce a tutorial exactly. Older CLIs keep selecting the releases qualified
 for their own core version.
 
@@ -50,6 +50,13 @@ project's provider or connector selection.
 [Core releases](https://github.com/ingestron/core/releases) ·
 [Local provider](https://github.com/ingestron/provider-local) ·
 [Connectors](https://github.com/ingestron/connectors)
+
+Files 1.3.0, SQL Server 1.3.0, Azure Blob 1.2.0 and GitHub 1.34.0 check
+[contract quality rules](/docs/concepts/contracts#quality-rules) before each
+snapshot is committed. Their installed runs, with CLI 0.17.4 and local provider
+0.4.4, include a duplicate key that stops the run with nothing committed and a
+warning that is recorded in the receipt. These releases need core 0.12.10 or
+newer.
 
 Files 1.2.0 reads several contracted local files through one connection and
 carries reviewed source-to-target field names into the output. Its ten-file

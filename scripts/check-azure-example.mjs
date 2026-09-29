@@ -59,8 +59,8 @@ const evidence = JSON.parse(
   readFileSync(resolve(repo, "build/azure-blob-acceptance/evidence.json")),
 );
 assert.equal(evidence.publicSource, true);
-assert.equal(evidence.core, "0.12.7");
-assert.equal(evidence.cli, "0.17.0");
+assert.equal(evidence.core, "0.12.10");
+assert.equal(evidence.cli, "0.17.4");
 writeFileSync(
   resolve(work, "evidence.json"),
   JSON.stringify({ ...evidence, archiveSha, harnessCommit: commit }, null, 2) +

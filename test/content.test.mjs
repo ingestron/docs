@@ -64,10 +64,10 @@ test("navigation covers every page and retired content is absent", () => {
 });
 test("downloads match tutorial versions, projection and inline metadata", () => {
   const p = parse(readFileSync("public/examples/github/project.yaml", "utf8"));
-  assert.equal(p.providers.packages.local, "ingestron/provider-local@0.4.3");
+  assert.equal(p.providers.packages.local, "ingestron/provider-local@0.4.4");
   assert.equal(
     p.providers.packages.github,
-    "ingestron/connectors/connectors/github/connector.yaml@1.33.1",
+    "ingestron/connectors/connectors/github/connector.yaml@1.34.0",
   );
   assert.equal(p.connections.github.settings.authentication, "anonymous");
   assert.deepEqual(
@@ -79,8 +79,8 @@ test("downloads match tutorial versions, projection and inline metadata", () => 
     "utf8",
   );
   for (const command of [
-    "provider install local@0.4.3",
-    "connector install github@1.33.1",
+    "provider install local@0.4.4",
+    "connector install github@1.34.0",
     "run --action review",
     "run --action approve",
     "run --retry issues-001",
