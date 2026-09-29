@@ -1,6 +1,6 @@
 ---
 title: "Databricks provider"
-description: "Native Databricks asset generation with provider-databricks 3.3.0."
+description: "Native Databricks asset generation with provider-databricks 3.4.0."
 ---
 
 The Databricks provider turns a reviewed project into a Databricks Asset Bundle
@@ -8,7 +8,7 @@ you deploy with your own tooling. It generates files only: it does not deploy, r
 jobs or connect to your workspace or data. Install it with:
 
 ```sh
-ingestron provider install databricks@3.3.0
+ingestron provider install databricks@3.4.0
 ```
 
 | Standard                      | What it generates                                                 |
@@ -23,7 +23,21 @@ targets per environment. Secrets stay as secret-scope references. Generated
 YAML, Python and SQL files start with a note that they are generated and should
 not be edited.
 
-Generation is tested offline against synthetic projects with CLI 0.17.4 and core
-0.12.10. Deployment and execution on a real Databricks workspace are not qualified by
+## Contract quality rules
+
+[Contract quality rules](/docs/concepts/contracts#quality-rules) become native
+checks. Rules never drop rows.
+
+| Standard                                        | Checks                                                                                                                                                   |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `append-only@v1`, `change-feed-with-history@v1` | Column rules with `mustBe: 0` become Lakeflow expectations. `severity: error` fails the update; other rules keep the row and record expectation metrics. |
+| `snapshot-with-history@v1`                      | Every library rule is counted on the delivered snapshot. An error rule stops the update before the snapshot is applied.                                  |
+
+On streaming standards, other thresholds fail the build, and `duplicateValues`
+and `rowCount` rules are reported as not enforced. SQL and engine rules are not
+generated yet.
+
+Generation is tested offline against synthetic projects with CLI 0.17.5 and core
+0.12.11. Deployment and execution on a real Databricks workspace are not qualified by
 this release. Source, guides and examples:
 [ingestron/provider-databricks](https://github.com/ingestron/provider-databricks).
