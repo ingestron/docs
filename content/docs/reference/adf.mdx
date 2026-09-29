@@ -1,6 +1,6 @@
 ---
 title: "Azure Data Factory provider"
-description: "Native ADF asset generation with provider-adf 4.3.1."
+description: "Native ADF asset generation with provider-adf 4.4.0."
 ---
 
 The ADF provider turns a reviewed project into Azure Data Factory assets you
@@ -8,7 +8,7 @@ deploy with your own tooling. It generates files only: it does not deploy to Azu
 run pipelines or connect to your data. Install it with:
 
 ```sh
-ingestron provider install adf@4.3.1
+ingestron provider install adf@4.4.0
 ```
 
 | Standard                    | What it generates                                                               |
@@ -30,7 +30,18 @@ deployment note. The template records the Ingestron generator in its `metadata`,
 and generated resources carry an `ingestron:` annotation. Linked services, integration runtimes and identities stay in your
 subscription; the project refers to them by name.
 
-Generation is tested offline against synthetic projects with CLI 0.17.4 and core
-0.12.10. Deployment and execution in a real Azure subscription are not qualified by
+## Contract quality rules
+
+For `snapshot-land@v1` and `snapshot-to-databricks@v1`, [contract quality
+rules](/docs/concepts/contracts#quality-rules) and the rules implied by primary
+keys become one Lookup that counts each rule on the frozen source table before
+Copy. If an error rule fails, the pipeline stops with `INGESTRON_QUALITY_FAILED`
+and nothing is copied; other counts stay in the Lookup output. No Data Flow is
+generated and no rows are skipped. Pattern rules fail the build because SQL
+Server has no portable regular expressions. File copies and metadata-driven
+snapshots do not check contract rules.
+
+Generation is tested offline against synthetic projects with CLI 0.17.5 and core
+0.12.11. Deployment and execution in a real Azure subscription are not qualified by
 this release. Source, guides and examples:
 [ingestron/provider-adf](https://github.com/ingestron/provider-adf).

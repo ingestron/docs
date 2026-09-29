@@ -101,7 +101,15 @@ Other rules are recorded in the snapshot receipt, and `ingestron run status`
 shows them, for example `Quality rules: 3 checked before commit; 1 warning(s):
 orders-volume.` Messages name rules and counts, never row values. Invalid rows are
 not removed or quarantined: a failed run is fixed at the source and retried. SQL
-and engine rules are not checked locally. Native Databricks and ADF checks follow.
+and engine rules are not checked locally.
+
+### Databricks and ADF
+
+The [Databricks](/docs/reference/databricks#contract-quality-rules) and
+[ADF](/docs/reference/adf#contract-quality-rules) providers generate native
+checks, and what they enforce depends on the ingestion standard. `check` reports
+it per flow, so the same contract can be enforced at load on a snapshot and
+reported as not enforced on a streaming table.
 
 Start with [your first contract](/docs/start/first-contract), or inspect the inline
 contract in the [GitHub example](/examples/github/project.yaml).
