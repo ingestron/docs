@@ -4,6 +4,8 @@
     "cli",
     "project",
     "local",
+    "adf",
+    "databricks",
     "github",
     "core",
     "mcp",
