@@ -1,0 +1,10 @@
+---
+title: "Read SFTP files"
+description: "Read files from an SFTP server with the machine's OpenSSH client."
+---
+
+SFTP connector 1.0.0 reads files or folders from an SFTP server using the OpenSSH `sftp` client on the machine running the flow. The connection holds `host`, `port`, `user`, `private_key` (a secret reference) and the server's pinned `host_key`; a changed host key stops the run. Tables use `{ path, format }`.
+
+It is verified against an SFTP server in a local container, including rejected host and private keys.
+
+Use `ingestron discover` to draft the contract from the source. See the [connector guide](https://github.com/ingestron/connectors/blob/sftp-1.0.0/docs/sftp.md) for settings, limits and error codes.

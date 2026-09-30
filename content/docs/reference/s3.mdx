@@ -1,0 +1,10 @@
+---
+title: "Read Amazon S3 objects"
+description: "Read CSV, TSV, JSON, JSONL and Parquet objects from S3 or an S3-compatible store."
+---
+
+S3 connector 1.0.0 reads objects or prefixes from a bucket into reviewed Parquet snapshots, signing requests with AWS Signature Version 4. The connection holds `bucket`, `region`, `access_key_id` and `secret_access_key` (a secret reference), and optionally `endpoint` for S3-compatible stores. Each table's `source` is `{ path, format }`: an object key, or a prefix whose objects of that format are one table.
+
+It is verified: the connector tests pass against an S3-compatible server in a local container that checks every signature. It has not yet run against AWS itself.
+
+Use `ingestron discover` to draft the contract from the source. See the [connector guide](https://github.com/ingestron/connectors/blob/s3-1.0.0/docs/s3.md) for settings, limits and error codes.

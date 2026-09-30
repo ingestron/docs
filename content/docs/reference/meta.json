@@ -18,6 +18,12 @@
     "oracle",
     "stripe",
     "sharepoint",
-    "onedrive"
+    "onedrive",
+    "s3",
+    "gcs",
+    "sftp",
+    "salesforce",
+    "hubspot",
+    "jira"
   ]
 }

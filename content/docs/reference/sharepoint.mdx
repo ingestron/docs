@@ -49,6 +49,8 @@ name order, as one table, as the Databricks SharePoint route does. Types come
 from the contract, as for [local files](/docs/reference/files). Limits: 64 MiB
 per file, 100 files per folder.
 
+Tables can also read a SharePoint list with `source: { path: Lists/Budgets, entity: list }`, the same as the ADF and Databricks list routes.
+
 The connector is a preview: it passes the shared connector tests and an
 installed end-to-end run against a mock of Microsoft Graph, not a live tenant.
 See the [connector guide](https://github.com/ingestron/connectors/blob/sharepoint-0.1.0/docs/sharepoint.md).

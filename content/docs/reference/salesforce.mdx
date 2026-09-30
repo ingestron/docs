@@ -1,0 +1,8 @@
+---
+title: "Read Salesforce objects"
+description: "Read Salesforce objects through the REST API with a connected app."
+---
+
+Salesforce connector 0.1.0 reads objects through the REST API: OAuth client credentials against your org (`instance_url`, `client_id`, `client_secret`), the object describe for field types and a SOQL query of the contract's fields. Each table's `source` is `{ object: Account }`, the same as the ADF and Databricks native routes. It is a preview, tested against a mock of the documented API.
+
+Use `ingestron discover` to draft the contract from the source. See the [connector guide](https://github.com/ingestron/connectors/blob/salesforce-0.1.0/docs/salesforce.md) for settings, limits and error codes.

@@ -2,6 +2,7 @@
   "title": "Guides",
   "pages": [
     "plugins",
+    "discover",
     "author-with-commands",
     "secrets",
     "runs",

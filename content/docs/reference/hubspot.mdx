@@ -1,0 +1,8 @@
+---
+title: "Read HubSpot CRM objects"
+description: "Read HubSpot CRM objects with a private app token."
+---
+
+HubSpot connector 0.1.0 reads CRM objects (contacts, companies, deals, tickets and others) through the CRM v3 API with a private app token. Each table's `source` is `{ object: contacts }`, the same names as the ADF and Databricks routes. It is a preview, tested against a mock of the documented API.
+
+Use `ingestron discover` to draft the contract from the source. See the [connector guide](https://github.com/ingestron/connectors/blob/hubspot-0.1.0/docs/hubspot.md) for settings, limits and error codes.
