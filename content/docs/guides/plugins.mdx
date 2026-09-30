@@ -54,7 +54,7 @@ Installation does not edit `project.yaml`. The old `--cache-only` option is acce
 but unnecessary. Use the exact versions in a tutorial when reproducing its result:
 
 ```sh
-ingestron connector install github@1.35.0
+ingestron connector install github@1.36.0
 ingestron provider list
 ingestron connector list
 ```
@@ -91,7 +91,7 @@ ingestron plugin configure ingestron/connectors/connectors/files/connector.yaml@
 The first command registers the provider and makes it the project's default. The
 second adds the connector under a short package name that connections refer to.
 `project.yaml` then contains short exact names such as `local@0.4.6` and
-`files@1.4.0`. Review the change before building. The old `plugin install --name`
+`files@1.5.0`. Review the change before building. The old `plugin install --name`
 spelling reports this separate step instead of registering a package implicitly.
 [Author a flow with commands](/docs/guides/author-with-commands) continues from here.
 

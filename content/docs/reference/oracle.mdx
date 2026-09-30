@@ -3,14 +3,14 @@ title: "Read Oracle tables"
 description: "Use one database connection to read several contracted Oracle tables."
 ---
 
-Oracle connector 1.0.0 reads selected tables into reviewed Parquet snapshots
+Oracle connector 1.1.0 reads selected tables into reviewed Parquet snapshots
 through python-oracledb 26.0.1 in thin mode (UPL-1.0 or Apache-2.0); no native database client is needed. The local provider runs
 on your machine, so it must be able to reach the database. Use an account with
 `SELECT` on the tables and permission to read their column metadata.
 
 ```sh
 ingestron provider install local@0.4.6
-ingestron connector install oracle@1.0.0
+ingestron connector install oracle@1.1.0
 ```
 
 One connection holds the endpoint and credentials. Each table in an ingestion
@@ -61,4 +61,4 @@ identities, see [native routes](/docs/concepts/sources).
 The connector is marked verified: the shared connector test suite passes against
 a real server in a local `gvenzl/oracle-free:23-slim-faststart` container, with synthetic data. It has not
 been run against a managed cloud database. See the
-[connector guide](https://github.com/ingestron/connectors/blob/oracle-1.0.0/docs/oracle.md).
+[connector guide](https://github.com/ingestron/connectors/blob/oracle-1.1.0/docs/oracle.md).

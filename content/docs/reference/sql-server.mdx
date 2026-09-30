@@ -3,7 +3,7 @@ title: "Read SQL Server tables"
 description: "Use one database connection to read several contracted tables."
 ---
 
-SQL Server connector 1.4.0 reads selected SQL Server or Azure SQL tables into
+SQL Server connector 1.5.0 reads selected SQL Server or Azure SQL tables into
 reviewed Parquet snapshots. The local provider runs on your machine, so it must
 be able to reach the database. Use an identity with `SELECT` access to the tables
 and permission to view their column metadata.
@@ -12,7 +12,7 @@ Install the provider and connector in your project directory:
 
 ```sh
 ingestron provider install local@0.4.6
-ingestron connector install sql-server@1.4.0
+ingestron connector install sql-server@1.5.0
 ```
 
 Put the exact installed package names in `packages`. One connection holds the
@@ -22,7 +22,7 @@ physical schema and table; its ODCS data contract selects the columns:
 ```yaml
 packages:
   local: local@0.4.6
-  sql-server: sql-server@1.4.0
+  sql-server: sql-server@1.5.0
 connections:
   northwind:
     package: sql-server
