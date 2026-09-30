@@ -15,6 +15,9 @@
     "sql-server",
     "postgresql",
     "mysql",
-    "oracle"
+    "oracle",
+    "stripe",
+    "sharepoint",
+    "onedrive"
   ]
 }

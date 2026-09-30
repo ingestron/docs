@@ -1,6 +1,6 @@
 ---
 title: "Azure Data Factory provider"
-description: "Native ADF asset generation with provider-adf 4.6.0."
+description: "Native ADF asset generation with provider-adf 4.7.0."
 ---
 
 The ADF provider turns a reviewed project into Azure Data Factory assets you
@@ -8,7 +8,7 @@ deploy with your own tooling. It generates files only: it does not deploy to Azu
 run pipelines or connect to your data. Install it with:
 
 ```sh
-ingestron provider install adf@4.6.0
+ingestron provider install adf@4.7.0
 ```
 
 | Standard                    | What it generates                                                               |
@@ -17,6 +17,8 @@ ingestron provider install adf@4.6.0
 | `metadata-snapshot-land@v1` | One coordinator and worker that land many reviewed tables                       |
 | `immutable-file-copy@v1`    | Copy files once, never overwrite                                                |
 | `snapshot-to-databricks@v1` | Hand a landed snapshot to the [Databricks provider](/docs/reference/databricks) |
+| `sharepoint-list-land@v1`   | A SharePoint Online list as a typed Parquet snapshot                            |
+| `app-land@v1`               | A Salesforce or HubSpot object as a typed Parquet snapshot                      |
 
 To build ADF assets for a flow that also runs locally, add an execution profile
 that selects the ADF configuration, then build that profile:
@@ -24,6 +26,26 @@ that selects the ADF configuration, then build that profile:
 ```sh
 ingestron build --flow <flow> --profile <profile> --out build-adf
 ```
+
+## Native source routes
+
+A connection with `route: native` is read by ADF's own connectors through a
+linked service named in the environment binding (see
+[sources and routes](/docs/concepts/sources)):
+
+| Source kind                                   | Standard                  | ADF connector                        |
+| --------------------------------------------- | ------------------------- | ------------------------------------ |
+| `sql-server`, `postgresql`, `mysql`, `oracle` | `snapshot-land@v1`        | Copy with a pre-copy quality check   |
+| `azure-blob`, `s3`, `gcs`, `sftp`             | `immutable-file-copy@v1`  | Binary Copy of one completed file    |
+| `sharepoint` (lists)                          | `sharepoint-list-land@v1` | SharePoint Online List               |
+| `salesforce`                                  | `app-land@v1`             | Salesforce V2 (SOQL of the contract) |
+| `hubspot`                                     | `app-land@v1`             | HubSpot 2.0 named tables             |
+
+HubSpot tables use the portable names shared with Databricks, such as
+`contacts` (mapped to `CRM.Objects.Contacts`). Jira is not offered: the ADF Jira
+2.0 dataset needs an undocumented schema value and has no issues table. ADF can
+also be the landing side of a [bridge](/docs/concepts/sources#bridges) to
+Databricks.
 
 Output includes the ARM template, parameters, pipelines, datasets and a
 deployment note. The template records the Ingestron generator in its `metadata`,
@@ -43,7 +65,7 @@ Lookup, with `${table}` as the source table. Engine rules, such as
 `engine: databricks`, are reported as not enforced. File copies and
 metadata-driven snapshots do not check contract rules.
 
-Generation is tested offline against synthetic projects with CLI 0.17.7 and core
-0.12.13. Deployment and execution in a real Azure subscription are not qualified by
+Generation is tested offline against synthetic projects with CLI 0.17.8 and core
+0.12.14. Deployment and execution in a real Azure subscription are not qualified by
 this release. Source, guides and examples:
 [ingestron/provider-adf](https://github.com/ingestron/provider-adf).
