@@ -1,0 +1,55 @@
+---
+title: "Read Stripe objects"
+description: "Use one Stripe key to read customers, charges, invoices and other objects."
+---
+
+Stripe connector 0.1.0 reads Stripe objects into reviewed Parquet snapshots
+through Stripe's list API. It only reads. Create a
+[restricted key](https://docs.stripe.com/keys) with read access to the objects
+you select; test-mode keys read a free sandbox.
+
+```sh
+ingestron provider install local@0.4.6
+ingestron connector install stripe@0.1.0
+```
+
+```yaml
+connections:
+  payments:
+    package: stripe
+    sourceId: payments
+    tenantId: training
+    settings:
+      api_key:
+        $secret:
+          env: STRIPE_API_KEY
+flows:
+  - apiVersion: ingestron.flow/v1
+    kind: ingestion
+    id: payments_local
+    provider: local
+    ingestion:
+      connection: payments
+      execution: { mode: local }
+    tables:
+      customers:
+        source: { object: customers }
+        contract: { $resolve: ./contracts/customers.odcs.yaml }
+```
+
+`object` is one of `customers`, `charges`, `payment_intents`, `invoices`,
+`products`, `prices`, `subscriptions`, `refunds` or `balance_transactions`. The
+contract selects documented top-level fields: amounts and timestamps are
+`BIGINT`, flags `BOOLEAN`, everything else `STRING`; references such as
+`customer` are read as IDs. Nested objects and `metadata` are not selectable.
+
+A run reads every page (100 records, newest first) and fails if a record lacks
+a selected field or has a different type. Reads are full snapshots of up to one
+million records per object; rate limits fail the run. Errors name a code such
+as `STRIPE_AUTH` and never include the key or record values.
+
+The connector is a preview: it passes the shared connector tests and an
+installed end-to-end run against a mock of Stripe's documented list API, not a
+live account. See the
+[connector guide](https://github.com/ingestron/connectors/blob/stripe-0.1.0/docs/stripe.md)
+for the full field list.

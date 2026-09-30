@@ -1,0 +1,56 @@
+---
+title: "Read SharePoint files"
+description: "Read files and folders from SharePoint document libraries through Microsoft Graph."
+---
+
+SharePoint connector 0.1.0 reads CSV, TSV, JSON, JSONL or Parquet files from a
+SharePoint document library into reviewed Parquet snapshots through Microsoft
+Graph. Register an Entra application with `Sites.Selected` (granted on the
+site) or `Sites.Read.All` application permission and a client secret.
+
+```sh
+ingestron provider install local@0.4.6
+ingestron connector install sharepoint@0.1.0
+```
+
+```yaml
+connections:
+  documents:
+    package: sharepoint
+    sourceId: finance
+    tenantId: training
+    settings:
+      tenant_id: 11111111-2222-3333-4444-555555555555
+      client_id: 66666666-7777-8888-9999-000000000000
+      client_secret:
+        $secret:
+          env: GRAPH_CLIENT_SECRET
+      site: https://contoso.sharepoint.com/sites/finance
+flows:
+  - apiVersion: ingestron.flow/v1
+    kind: ingestion
+    id: documents_local
+    provider: local
+    ingestion:
+      connection: documents
+      execution: { mode: local }
+    tables:
+      customers:
+        source: { path: Shared Documents/retail/customers.csv, format: csv }
+        contract: { $resolve: ./contracts/customers.odcs.yaml }
+      orders:
+        source: { path: Shared Documents/retail/orders, format: csv }
+        contract: { $resolve: ./contracts/orders.odcs.yaml }
+```
+
+`path` starts with the library as it appears in the site URL. A file path reads
+that file; a folder path reads every file of the format directly inside it, in
+name order, as one table, as the Databricks SharePoint route does. Types come
+from the contract, as for [local files](/docs/reference/files). Limits: 64 MiB
+per file, 100 files per folder.
+
+Tables can also read a SharePoint list with `source: { path: Lists/Budgets, entity: list }`, the same as the ADF and Databricks list routes.
+
+The connector is a preview: it passes the shared connector tests and an
+installed end-to-end run against a mock of Microsoft Graph, not a live tenant.
+See the [connector guide](https://github.com/ingestron/connectors/blob/sharepoint-0.1.0/docs/sharepoint.md).

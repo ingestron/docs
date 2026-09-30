@@ -7,21 +7,30 @@ These guides use the following published releases:
 
 | Component            | Version | Distribution                             |
 | -------------------- | ------- | ---------------------------------------- |
-| CLI                  | 0.17.7  | `npm install --global ingestron@0.17.7`  |
-| Core                 | 0.12.13 | Included as an exact CLI dependency.     |
-| Local provider       | 0.4.5   | `ingestron provider install local`       |
-| ADF provider         | 4.6.0   | `ingestron provider install adf`         |
-| Databricks provider  | 3.6.0   | `ingestron provider install databricks`  |
-| Files connector      | 1.4.0   | `ingestron connector install files`      |
-| SQL Server connector | 1.4.0   | `ingestron connector install sql-server` |
-| PostgreSQL connector | 1.0.0   | `ingestron connector install postgresql` |
-| MySQL connector      | 1.0.0   | `ingestron connector install mysql`      |
-| Oracle connector     | 1.0.0   | `ingestron connector install oracle`     |
-| Azure Blob connector | 2.0.0   | `ingestron connector install azure-blob` |
-| GitHub connector     | 1.35.0  | `ingestron connector install github`     |
+| CLI                  | 0.17.8  | `npm install --global ingestron@0.17.8`  |
+| Core                 | 0.12.14 | Included as an exact CLI dependency.     |
+| Local provider       | 0.4.6   | `ingestron provider install local`       |
+| ADF provider         | 4.7.0   | `ingestron provider install adf`         |
+| Databricks provider  | 3.7.0   | `ingestron provider install databricks`  |
+| Files connector      | 1.5.0   | `ingestron connector install files`      |
+| SQL Server connector | 1.5.0   | `ingestron connector install sql-server` |
+| PostgreSQL connector | 1.1.0   | `ingestron connector install postgresql` |
+| MySQL connector      | 1.1.0   | `ingestron connector install mysql`      |
+| Oracle connector     | 1.1.0   | `ingestron connector install oracle`     |
+| Stripe connector     | 0.1.0   | `ingestron connector install stripe`     |
+| SharePoint connector | 0.1.0   | `ingestron connector install sharepoint` |
+| OneDrive connector   | 0.1.0   | `ingestron connector install onedrive`   |
+| S3 connector         | 1.0.0   | `ingestron connector install s3`         |
+| GCS connector        | 0.1.0   | `ingestron connector install gcs`        |
+| SFTP connector       | 1.0.0   | `ingestron connector install sftp`       |
+| Salesforce connector | 0.1.0   | `ingestron connector install salesforce` |
+| HubSpot connector    | 0.1.0   | `ingestron connector install hubspot`    |
+| Jira connector       | 0.1.0   | `ingestron connector install jira`       |
+| Azure Blob connector | 2.1.0   | `ingestron connector install azure-blob` |
+| GitHub connector     | 1.36.0  | `ingestron connector install github`     |
 
-With CLI 0.17.7, an official name without a version selects exactly these
-releases, because they are the ones qualified for core 0.12.13. Add `@<version>`
+With CLI 0.17.8, an official name without a version selects exactly these
+releases, because they are the ones qualified for core 0.12.14. Add `@<version>`
 to reproduce a tutorial exactly. Older CLIs keep selecting the releases qualified
 for their own core version.
 
@@ -31,7 +40,7 @@ range is not a claim that every future Node release has been tested.
 
 ## What is included
 
-Project and contract authoring, provider and connector installation, builds, local files, Azure Blob, SQL Server, PostgreSQL, MySQL, Oracle and GitHub snapshot
+Project and contract authoring, provider and connector installation, builds, local files, Azure Blob, SQL Server, PostgreSQL, MySQL, Oracle, Stripe, SharePoint, OneDrive and GitHub snapshot
 execution, output verification, retry and the local stdio MCP adapter are documented
 here. The original code is Apache-2.0, licensed by Otrera Limited. Upstream
 components retain their own licence terms.
@@ -53,6 +62,16 @@ project's provider or connector selection.
 [Core releases](https://github.com/ingestron/core/releases) ·
 [Local provider](https://github.com/ingestron/provider-local) ·
 [Connectors](https://github.com/ingestron/connectors)
+
+Core 0.12.14 adds [discovery](/docs/guides/discover), which drafts contracts from the source before you write them, and [bridges](/docs/concepts/sources#bridges): ADF lands a
+source that Databricks cannot reach, a Databricks job publishes each snapshot and
+Lakeflow applies it, all from one flow; `check` shows the bridge as one route and
+suggests it when a native route is billed separately. `check` also works on
+projects combining ADF and Databricks flows. ADF 4.7.0 reads Salesforce and
+HubSpot natively; Databricks 3.7.0 reads Salesforce, HubSpot and Jira through
+Lakeflow Connect. Stripe, SharePoint and OneDrive 0.1.0 are portable preview
+connectors tested against mocks of the vendors' documented APIs. Local provider
+0.4.6 names each connector's error code.
 
 Core 0.12.13 adds [source routes](/docs/concepts/sources): a connection can be
 read by a portable connector or natively by ADF or Databricks, and `check` shows

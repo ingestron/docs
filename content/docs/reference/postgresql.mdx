@@ -3,14 +3,14 @@ title: "Read PostgreSQL tables"
 description: "Use one database connection to read several contracted PostgreSQL tables."
 ---
 
-PostgreSQL connector 1.0.0 reads selected tables into reviewed Parquet snapshots
+PostgreSQL connector 1.1.0 reads selected tables into reviewed Parquet snapshots
 through pg8000 1.31.5 (BSD-3-Clause); no native database client is needed. The local provider runs
 on your machine, so it must be able to reach the database. Use an account with
 `SELECT` on the tables and permission to read their column metadata.
 
 ```sh
-ingestron provider install local@0.4.5
-ingestron connector install postgresql@1.0.0
+ingestron provider install local@0.4.6
+ingestron connector install postgresql@1.1.0
 ```
 
 One connection holds the endpoint and credentials. Each table in an ingestion
@@ -61,4 +61,4 @@ identities, see [native routes](/docs/concepts/sources).
 The connector is marked verified: the shared connector test suite passes against
 a real server in a local `postgres:17-alpine` container, with synthetic data. It has not
 been run against a managed cloud database. See the
-[connector guide](https://github.com/ingestron/connectors/blob/postgresql-1.0.0/docs/postgresql.md).
+[connector guide](https://github.com/ingestron/connectors/blob/postgresql-1.1.0/docs/postgresql.md).

@@ -1,0 +1,8 @@
+---
+title: "Read Jira Cloud issues and projects"
+description: "Read Jira Cloud issues, projects, issue types, statuses and users with an API token."
+---
+
+Jira connector 0.1.0 reads issues (with an optional bounded `jql`), projects, issue types, statuses and users through the REST API v3 with an account email and API token. Each table's `source` is `{ object: issues }`. It is a preview, tested against a mock of the documented API.
+
+Use `ingestron discover` to draft the contract from the source. See the [connector guide](https://github.com/ingestron/connectors/blob/jira-0.1.0/docs/jira.md) for settings, limits and error codes.

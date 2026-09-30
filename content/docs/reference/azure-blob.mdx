@@ -3,7 +3,7 @@ title: "Read Azure Blob and ADLS Gen2 files"
 description: "Use one storage connection to read several contracted blobs with the local provider."
 ---
 
-Azure Blob connector 2.0.0 reads CSV, TSV, JSON, JSONL or Parquet blobs into
+Azure Blob connector 2.1.0 reads CSV, TSV, JSON, JSONL or Parquet blobs into
 reviewed Parquet snapshots. One connection names the storage account, container
 and SAS; each table in an ingestion flow names one blob and its format, and its
 ODCS data contract selects the columns and types. The local provider runs on
@@ -11,8 +11,8 @@ your machine, so it must be able to reach the account. Start with the
 [Azure retail exercise](/docs/tutorials/azure-blob).
 
 ```sh
-ingestron provider install local@0.4.5
-ingestron connector install azure-blob@2.0.0
+ingestron provider install local@0.4.6
+ingestron connector install azure-blob@2.1.0
 ```
 
 ```yaml
@@ -76,6 +76,6 @@ ADLS Gen2 files use the Blob endpoint. Your machine still needs network access
 allowed by the account's firewall or private endpoint. For managed identity or
 private networks, see [native routes](/docs/concepts/sources).
 
-The connector is a preview: it is tested with CLI 0.17.7, core 0.12.13 and a
+The connector is a preview: it is tested with CLI 0.17.8, core 0.12.14 and a
 loopback Azure fixture across all five formats, not against a live storage
 account.

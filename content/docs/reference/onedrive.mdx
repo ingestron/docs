@@ -1,0 +1,27 @@
+---
+title: "Read OneDrive files"
+description: "Read files and folders from OneDrive for Business through Microsoft Graph."
+---
+
+OneDrive connector 0.1.0 reads files from a user's OneDrive for Business
+through Microsoft Graph, like the [SharePoint connector](/docs/reference/sharepoint).
+The connection names the user instead of a site, and needs `Files.Read.All`
+application permission.
+
+```sh
+ingestron connector install onedrive@0.1.0
+```
+
+```yaml
+settings:
+  tenant_id: 11111111-2222-3333-4444-555555555555
+  client_id: 66666666-7777-8888-9999-000000000000
+  client_secret:
+    $secret:
+      env: GRAPH_CLIENT_SECRET
+  user: reader@contoso.com
+```
+
+Table paths start at the drive root, such as `exports/customers.csv`. The
+connector is a preview, tested with unit tests against a Microsoft Graph mock.
+See the [connector guide](https://github.com/ingestron/connectors/blob/onedrive-0.1.0/docs/onedrive.md).

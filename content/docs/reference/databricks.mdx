@@ -1,6 +1,6 @@
 ---
 title: "Databricks provider"
-description: "Native Databricks asset generation with provider-databricks 3.6.0."
+description: "Native Databricks asset generation with provider-databricks 3.7.0."
 ---
 
 The Databricks provider turns a reviewed project into a Databricks Asset Bundle
@@ -8,7 +8,7 @@ you deploy with your own tooling. It generates files only: it does not deploy, r
 jobs or connect to your workspace or data. Install it with:
 
 ```sh
-ingestron provider install databricks@3.6.0
+ingestron provider install databricks@3.7.0
 ```
 
 | Standard                      | What it generates                                                 |
@@ -17,6 +17,28 @@ ingestron provider install databricks@3.6.0
 | `change-feed-with-history@v1` | Baseline and full-row change events to history and a current view |
 | `append-only@v1`              | Immutable files to a streaming table                              |
 | `snapshot-publication@v1`     | Verify immutable Parquet snapshots, then publish a delivery index |
+| `query-ingestion@v1`          | Database tables through Lakeflow Connect query-based connectors   |
+| `sharepoint-ingestion@v1`     | SharePoint files and lists through Lakeflow Connect               |
+| `saas-ingestion@v1`           | Salesforce, HubSpot and Jira through Lakeflow Connect             |
+
+## Native source routes
+
+A connection with `route: native` is read through a Unity Catalog connection
+named in the environment binding (see [sources and routes](/docs/concepts/sources)).
+Lakeflow Connect managed connectors run on serverless compute and are billed
+separately; `check` shows this before you choose them.
+
+| Source kind                                   | Standard                  | Status                       |
+| --------------------------------------------- | ------------------------- | ---------------------------- |
+| `sql-server`, `postgresql`, `mysql`, `oracle` | `query-ingestion@v1`      | Preview, billed separately   |
+| `azure-blob`, `s3`, `gcs`                     | Auto Loader standards     | Included in pipeline compute |
+| `sharepoint`                                  | `sharepoint-ingestion@v1` | Preview, billed separately   |
+| `salesforce`                                  | `saas-ingestion@v1`       | GA, billed separately        |
+| `hubspot`                                     | `saas-ingestion@v1`       | GA; CRM tables Beta          |
+| `jira`                                        | `saas-ingestion@v1`       | Beta                         |
+
+SaaS tables read only the reviewed contract columns. When a private source is
+only reachable from ADF, use a [bridge](/docs/concepts/sources#bridges).
 
 Output includes `databricks.yml`, job and pipeline resources, notebooks and
 targets per environment. Secrets stay as secret-scope references. Generated
@@ -43,7 +65,7 @@ condition as `implementation`, for example `amount >= 0`; they become
 expectations on streaming tables and are counted on snapshots. Rules for other
 engines are reported as not enforced.
 
-Generation is tested offline against synthetic projects with CLI 0.17.7 and core
-0.12.13. Deployment and execution on a real Databricks workspace are not qualified by
+Generation is tested offline against synthetic projects with CLI 0.17.8 and core
+0.12.14. Deployment and execution on a real Databricks workspace are not qualified by
 this release. Source, guides and examples:
 [ingestron/provider-databricks](https://github.com/ingestron/provider-databricks).

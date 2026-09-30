@@ -43,8 +43,8 @@ importers:
         specifier: 19.2.3
         version: 19.2.3(@types/react@19.3.0)
       ingestron:
-        specifier: 0.17.7
-        version: 0.17.7(zod@4.6.5)
+        specifier: 0.17.8
+        version: 0.17.8(zod@4.6.5)
       postcss:
         specifier: 8.5.28
         version: 8.5.28
@@ -625,8 +625,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@ingestron/core@0.12.13':
-    resolution: {integrity: sha512-kd5tyRrTu+ULgRsfg1B2Q73Lt9up9KaFLgxca2lwn05SWEQ2LKz7XYusP/LjtgfuPw9Bimwc8s8tHZRY+wZD5Q==}
+  '@ingestron/core@0.12.14':
+    resolution: {integrity: sha512-sGfYqxGquMLdZ4oo8ydoX43w+lmSte8lZptWCAyNKB5DzipKIGpsnTvkGggoUL14c7/5SY20C4i0a8DTo1vNxA==}
     engines: {node: '>=22.12.0'}
 
   '@jitl/quickjs-ffi-types@0.32.0':
@@ -1989,8 +1989,8 @@ packages:
     resolution: {integrity: sha512-IKXpvIzjnC9XTAUbVBcMfGS0EPaIXtW6v+zr+RRp+hqULEpo0owZax6wyRwPOJbWbzjYspQwusTsfVr0ifh4uQ==}
     engines: {node: '>=0.10.0'}
 
-  ingestron@0.17.7:
-    resolution: {integrity: sha512-PQmx4Gj/lE0Wpjc47Ya1bC4E7s5nSqgDjzYJ0VJNCDFHqpHmj04tyOBkrVYwuL6XRyrv8z3VFzu5AddpMKQvUg==}
+  ingestron@0.17.8:
+    resolution: {integrity: sha512-jvPTtDw4LNNUyx2/TgnF1gEoKuvR3z5ArCO2rYzNBdnfU3EMKHIe+3rehprBS9SO6KsiKcTeGfdfFPctrIAtIg==}
     engines: {node: '>=22.12.0'}
     hasBin: true
 
@@ -3204,7 +3204,7 @@ snapshots:
   '@img/sharp-win32-x64@0.35.4':
     optional: true
 
-  '@ingestron/core@0.12.13':
+  '@ingestron/core@0.12.14':
     dependencies:
       '@lezer/python': 1.1.19
       ajv: 8.20.0
@@ -4605,10 +4605,10 @@ snapshots:
     dependencies:
       safer-buffer: 2.1.2
 
-  ingestron@0.17.7(zod@4.6.5):
+  ingestron@0.17.8(zod@4.6.5):
     dependencies:
       '@clack/prompts': 1.7.0
-      '@ingestron/core': 0.12.13
+      '@ingestron/core': 0.12.14
       '@modelcontextprotocol/sdk': 1.30.0(zod@4.6.5)
       commander: 15.0.0
       yaml: 2.9.0

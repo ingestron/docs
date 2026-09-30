@@ -1,0 +1,8 @@
+---
+title: "Read Google Cloud Storage objects"
+description: "Read objects from Cloud Storage through its XML API with HMAC keys."
+---
+
+Google Cloud Storage connector 0.1.0 reads objects or prefixes with an HMAC key: `bucket`, `access_key_id` and `secret_access_key`. Tables use `{ path, format }` as for [S3](/docs/reference/s3). It is a preview, tested against a mock of the API.
+
+Use `ingestron discover` to draft the contract from the source. See the [connector guide](https://github.com/ingestron/connectors/blob/gcs-0.1.0/docs/gcs.md) for settings, limits and error codes.

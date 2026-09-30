@@ -1,0 +1,91 @@
+---
+title: "Discover a source"
+description: "Draft data contracts from what a source offers, before you write any."
+---
+
+You can start a table with only its `source`. `ingestron discover` lists every
+field the source offers and writes a draft contract per table for you to review.
+It reads metadata only and never changes `project.yaml`.
+
+```yaml
+flows:
+  - apiVersion: ingestron.flow/v1
+    kind: ingestion
+    id: sales_local
+    provider: local
+    ingestion:
+      connection: sales
+      execution: { mode: local }
+    tables:
+      customers:
+        source: { schema: public, table: customers }
+```
+
+```sh
+ingestron discover --flow sales_local --accept-keys --secrets-file .env
+```
+
+Drafts go to `contracts/<flow>/<table>.odcs.yaml` and are never overwritten.
+Each lists the fields with types, required fields and, with `--accept-keys`,
+the source's primary keys. Fields a contract cannot represent (such as `jsonb`
+or spatial types) and names that are not valid field names are listed instead
+of drafted. Review the draft, then point the table at it:
+
+```yaml
+customers:
+  source: { schema: public, table: customers }
+  contract: { $resolve: ./contracts/sales_local/customers.odcs.yaml }
+```
+
+## Where discovery runs
+
+| Connection                            | How fields are found                                                                |
+| ------------------------------------- | ----------------------------------------------------------------------------------- |
+| Portable                              | The connector reads the source through the local provider                           |
+| Native or bridge, with a `package`    | The same, through that portable connector; the platform still does the ingestion    |
+| Native or bridge, without a `package` | The platform generates a metadata job; you run it and pass its export with `--from` |
+
+A native or bridge connection can name a portable package and its settings just
+for discovery. This suits SaaS applications and any source your machine can
+reach:
+
+```yaml
+connections:
+  crm:
+    kind: salesforce
+    route: native
+    binding: sf # used by ADF or Databricks for ingestion
+    package: salesforce # used only by ingestron discover
+    sourceId: crm
+    tenantId: training
+    settings:
+      instance_url: https://acme.my.salesforce.com
+      client_id: 3MVG9EXAMPLE
+      client_secret: { $secret: { env: SF_CLIENT_SECRET } }
+```
+
+Discovery through a portable package needs the local provider configured in the
+project.
+
+For a source only the platform can reach, such as a private SQL Server behind a
+self-hosted integration runtime, `ingestron discover --flow <id>` writes the
+platform's metadata assets to `build/discovery/<flow>/`:
+
+- **ADF:** a metadata pipeline on the connection's linked service (SQL Server,
+  Azure SQL, PostgreSQL, MySQL, Oracle) that exports to the flow's landing storage.
+- **Databricks:** a read-only query over the source catalogue through a Lakehouse
+  Federation foreign catalog; set `foreignCatalog` on the connection's binding.
+
+Deploy and run them with your own access, download the exported rows as JSON, then:
+
+```sh
+ingestron discover --flow sales --from metadata.json --accept-keys
+```
+
+## What each source reports
+
+Databases report their column types, nullability and primary keys. Files are
+inferred from the data: CSV text is suggested as integer, decimal or boolean
+when every sampled value fits. Stripe, Salesforce, HubSpot, Jira and
+SharePoint lists report their vendor field definitions. Always review names,
+types, required fields and keys before using a draft.
