@@ -104,8 +104,8 @@ Rules implied by keys are reported but never stop the build.
 
 ### Local snapshots
 
-The local connectors (Files 1.3.0, SQL Server 1.3.0, Azure Blob 1.2.0 and GitHub
-1.34.0) check library rules and key rules on the staged snapshot before it is
+The local connectors (Files 1.4.0, SQL Server 1.4.0, Azure Blob 2.0.0, PostgreSQL, MySQL and Oracle 1.0.0, and GitHub
+1.35.0) check library rules and key rules on the staged snapshot before it is
 committed, so `check` counts them as enforced at load. If an error-severity rule
 fails, the run stops and nothing is committed:
 

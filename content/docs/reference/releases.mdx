@@ -7,18 +7,21 @@ These guides use the following published releases:
 
 | Component            | Version | Distribution                             |
 | -------------------- | ------- | ---------------------------------------- |
-| CLI                  | 0.17.6  | `npm install --global ingestron@0.17.6`  |
-| Core                 | 0.12.12 | Included as an exact CLI dependency.     |
-| Local provider       | 0.4.4   | `ingestron provider install local`       |
-| ADF provider         | 4.5.0   | `ingestron provider install adf`         |
-| Databricks provider  | 3.5.0   | `ingestron provider install databricks`  |
-| Files connector      | 1.3.0   | `ingestron connector install files`      |
-| SQL Server connector | 1.3.0   | `ingestron connector install sql-server` |
-| Azure Blob connector | 1.2.0   | `ingestron connector install azure-blob` |
-| GitHub connector     | 1.34.0  | `ingestron connector install github`     |
+| CLI                  | 0.17.7  | `npm install --global ingestron@0.17.7`  |
+| Core                 | 0.12.13 | Included as an exact CLI dependency.     |
+| Local provider       | 0.4.5   | `ingestron provider install local`       |
+| ADF provider         | 4.6.0   | `ingestron provider install adf`         |
+| Databricks provider  | 3.6.0   | `ingestron provider install databricks`  |
+| Files connector      | 1.4.0   | `ingestron connector install files`      |
+| SQL Server connector | 1.4.0   | `ingestron connector install sql-server` |
+| PostgreSQL connector | 1.0.0   | `ingestron connector install postgresql` |
+| MySQL connector      | 1.0.0   | `ingestron connector install mysql`      |
+| Oracle connector     | 1.0.0   | `ingestron connector install oracle`     |
+| Azure Blob connector | 2.0.0   | `ingestron connector install azure-blob` |
+| GitHub connector     | 1.35.0  | `ingestron connector install github`     |
 
-With CLI 0.17.6, an official name without a version selects exactly these
-releases, because they are the ones qualified for core 0.12.12. Add `@<version>`
+With CLI 0.17.7, an official name without a version selects exactly these
+releases, because they are the ones qualified for core 0.12.13. Add `@<version>`
 to reproduce a tutorial exactly. Older CLIs keep selecting the releases qualified
 for their own core version.
 
@@ -28,7 +31,7 @@ range is not a claim that every future Node release has been tested.
 
 ## What is included
 
-Project and contract authoring, provider and connector installation, builds, local files, Azure Blob, SQL Server and GitHub snapshot
+Project and contract authoring, provider and connector installation, builds, local files, Azure Blob, SQL Server, PostgreSQL, MySQL, Oracle and GitHub snapshot
 execution, output verification, retry and the local stdio MCP adapter are documented
 here. The original code is Apache-2.0, licensed by Otrera Limited. Upstream
 components retain their own licence terms.
@@ -50,6 +53,17 @@ project's provider or connector selection.
 [Core releases](https://github.com/ingestron/core/releases) ·
 [Local provider](https://github.com/ingestron/provider-local) ·
 [Connectors](https://github.com/ingestron/connectors)
+
+Core 0.12.13 adds [source routes](/docs/concepts/sources): a connection can be
+read by a portable connector or natively by ADF or Databricks, and `check` shows
+each route's licence, cost, access and maturity. ADF 4.6.0 and Databricks 3.6.0
+add native routes for SQL Server, PostgreSQL, MySQL, Oracle, object storage and
+SharePoint; their generated assets are checked offline, not run on a real
+platform. Every connector now uses the same layout: the connection holds the
+endpoint and credentials, each table names one object, and the contract selects
+columns and types. Azure Blob 2.0.0 moves to that layout (a breaking change for
+1.x projects, which keep working on 1.x). PostgreSQL, MySQL and Oracle 1.0.0 pass
+the shared connector test suite against real servers in local containers.
 
 Files 1.3.0, SQL Server 1.3.0, Azure Blob 1.2.0 and GitHub 1.34.0 check
 [contract quality rules](/docs/concepts/contracts#quality-rules) before each

@@ -9,7 +9,7 @@ The GitHub tutorial needs both `local` and `github`.
 ## Install a provider or connector
 
 From the project directory, install `local` and the connectors your project uses.
-CLI 0.17.6 supports these official names:
+CLI 0.17.7 supports these official names:
 
 | Name         | Purpose                             |
 | ------------ | ----------------------------------- |
@@ -20,6 +20,9 @@ CLI 0.17.6 supports these official names:
 | `github`     | Read GitHub issues                  |
 | `azure-blob` | Read Azure Blob and ADLS Gen2 files |
 | `sql-server` | Read SQL Server or Azure SQL tables |
+| `postgresql` | Read PostgreSQL tables              |
+| `mysql`      | Read MySQL and MariaDB tables       |
+| `oracle`     | Read Oracle tables                  |
 
 For example:
 
@@ -42,7 +45,7 @@ Installation does not edit `project.yaml`. The old `--cache-only` option is acce
 but unnecessary. Use the exact versions in a tutorial when reproducing its result:
 
 ```sh
-ingestron connector install github@1.34.0
+ingestron connector install github@1.35.0
 ingestron provider list
 ingestron connector list
 ```
@@ -72,14 +75,14 @@ already include this step. For a new project, check the exact versions with
 `ingestron plugin list --verbose`, then run:
 
 ```sh
-ingestron plugin configure ingestron/provider-local@0.4.4 --name local
+ingestron plugin configure ingestron/provider-local@0.4.5 --name local
 ingestron plugin configure ingestron/connectors/connectors/files/connector.yaml@1.2.0 --name files
 ```
 
 The first command registers the provider and makes it the project's default. The
 second adds the connector under a short package name that connections refer to.
-`project.yaml` then contains short exact names such as `local@0.4.4` and
-`files@1.3.0`. Review the change before building. The old `plugin install --name`
+`project.yaml` then contains short exact names such as `local@0.4.5` and
+`files@1.4.0`. Review the change before building. The old `plugin install --name`
 spelling reports this separate step instead of registering a package implicitly.
 [Author a flow with commands](/docs/guides/author-with-commands) continues from here.
 

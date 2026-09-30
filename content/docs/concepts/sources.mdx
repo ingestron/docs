@@ -1,0 +1,72 @@
+---
+title: "Sources and routes"
+description: "How Ingestron shows which connector reads each source, and what it costs and needs."
+---
+
+A connection reads one kind of source, such as SQL Server, Azure Blob Storage or
+GitHub. There can be more than one way to read it:
+
+| Route        | What reads the source                                                    |
+| ------------ | ------------------------------------------------------------------------ |
+| **Portable** | An Ingestron connector package, run by the provider on its compute       |
+| **Native**   | The platform's own connector, such as ADF Copy or Databricks Auto Loader |
+
+Native connectors in the ADF and Databricks providers are free to use with
+Ingestron; the platform bills its own usage as it normally would.
+
+## Reading the routes in `check`
+
+For each flow that reads a connection, `check` prints the route it uses and, when
+another configured provider can read the same source natively, that alternative:
+
+```text
+Sources:
+  sales: erp (sql-server) portable sql-server@1.4.0 on local [verified, no extra cost]
+    Also available: native on adf via snapshot-land@v1 [preview, included in platform pricing]
+```
+
+Nothing switches routes for you. A native alternative uses that provider's
+ingestion standard, so moving to it is a project change you review. Routes that a
+platform bills separately are listed with `--json` but never suggested.
+
+## Reference records
+
+Every route carries the same record, so you can compare them in one format.
+`ingestron check --json` includes it in full.
+
+| Field          | Meaning                                                                                         |
+| -------------- | ----------------------------------------------------------------------------------------------- |
+| `docs`         | Where the connector or API is documented                                                        |
+| `vendorStatus` | The platform's own status: GA, preview or beta; `not-applicable` for Ingestron connectors       |
+| `licence`      | Licence of the connector and anything it wraps, or the platform's terms                         |
+| `cost`         | `none`, `included` in platform pricing, or `separately-billed`, with a pricing link and note    |
+| `access`       | What you need: nothing, free access, a free tier, a trial, a subscription or a platform service |
+| `auth`         | Supported sign-in methods                                                                       |
+| `network`      | Where the source can be: local, public, private network or on-premises                          |
+| `maturity`     | How far Ingestron has tested the route (below)                                                  |
+| `verified`     | When the record was last checked; `check` notes records older than 180 days                     |
+
+## Maturity
+
+| Level         | Meaning                                                                                                       |
+| ------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Preview**   | Tested against mocks, synthetic data or offline generation only; not yet against the live service or platform |
+| **Verified**  | Also tested against the real service, using a free, trial or test account                                     |
+| **Qualified** | Also run natively on the target platform, or used by an independent user                                      |
+
+The GitHub and local files connectors are verified. SQL Server, Azure Blob and
+the native ADF and Databricks routes are in preview.
+
+## Requiring capabilities
+
+A flow can state what its source must support. `check` stops if the route cannot
+supply it:
+
+```yaml
+ingestion:
+  connection: erp
+  requires: [incremental]
+```
+
+Capabilities are `snapshot`, `incremental`, `cdc`, `deletes` and `discovery`.
+Current Ingestron connectors read reviewed full snapshots with discovery.

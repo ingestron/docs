@@ -1,42 +1,81 @@
 ---
-title: "Azure Blob connector"
-description: "Settings and limits for reading one Azure storage object with the local provider."
+title: "Read Azure Blob and ADLS Gen2 files"
+description: "Use one storage connection to read several contracted blobs with the local provider."
 ---
 
-Azure Blob 1.2.0 reads one CSV, TSV, JSON, JSONL or Parquet object per connection.
-It is tested with CLI 0.17.6, core 0.12.12 and local provider 0.4.4, and checks
-[contract quality rules](/docs/concepts/contracts#local-snapshots) before commit. The
-exercise download pins 1.1.0 and local provider 0.4.3, which still work. Start with the
+Azure Blob connector 2.0.0 reads CSV, TSV, JSON, JSONL or Parquet blobs into
+reviewed Parquet snapshots. One connection names the storage account, container
+and SAS; each table in an ingestion flow names one blob and its format, and its
+ODCS data contract selects the columns and types. The local provider runs on
+your machine, so it must be able to reach the account. Start with the
 [Azure retail exercise](/docs/tutorials/azure-blob).
 
-| Setting     | Value                                                       |
-| ----------- | ----------------------------------------------------------- |
-| `account`   | Azure public-cloud storage account name, not a URL          |
-| `container` | Blob container or ADLS Gen2 file system name                |
-| `blob`      | Exact path inside the container, without a leading slash    |
-| `format`    | `csv`, `tsv`, `json`, `jsonl` or `parquet`                  |
-| `sas_token` | Secret reference: `{ $secret: { env: AZURE_STORAGE_SAS } }` |
-| `types`     | Optional column parsing types for this connector release    |
+```sh
+ingestron provider install local@0.4.5
+ingestron connector install azure-blob@2.0.0
+```
 
-Azure Blob 1.1.0 keeps the object path, format and optional `types` in each
-connection. The newer [local Files connector](/docs/reference/files) selects
-path and format per table and gets types from its ODCS contract. Installing
-Files 1.1.0 and 1.2.0 do not change an Azure Blob project.
+```yaml
+connections:
+  retail_blob:
+    package: azure-blob
+    sourceId: retail
+    tenantId: training
+    settings:
+      account: yourstorageaccount
+      container: samples
+      sas_token:
+        $secret:
+          env: AZURE_STORAGE_SAS
+flows:
+  - apiVersion: ingestron.flow/v1
+    kind: ingestion
+    id: retail_local
+    provider: local
+    ingestion:
+      connection: retail_blob
+      execution: { mode: local }
+    tables:
+      customers:
+        source: { path: retail/v1/csv/customers.csv, format: csv }
+        contract: { $resolve: ./contracts/customers.odcs.yaml }
+```
+
+| Connection setting | Value                                                       |
+| ------------------ | ----------------------------------------------------------- |
+| `account`          | Azure public-cloud storage account name, not a URL          |
+| `container`        | Blob container or ADLS Gen2 file system name                |
+| `sas_token`        | Secret reference: `{ $secret: { env: AZURE_STORAGE_SAS } }` |
+
+| Table `source` key | Value                                                  |
+| ------------------ | ------------------------------------------------------ |
+| `path`             | Exact blob path inside the container, no leading slash |
+| `format`           | `csv`, `tsv`, `json`, `jsonl` or `parquet`             |
+
+Types come from each table's contract, as for [local files](/docs/reference/files);
+there is no `types` map. Azure Blob 1.x kept one blob, its format and `types` in
+each connection; those releases and the 1.1.0 exercise download remain
+available and are not changed by installing 2.0.0.
 
 Use a time-limited HTTPS-only SAS with read or read/list permission. Plaintext tokens
 in project configuration, account keys and ambient Azure login are unsupported.
 Tokens must contain explicit permissions and expiry; stored-policy-only SAS tokens
 are not supported. Credentials are resolved only in the local runtime.
 
-The connector checks size and ETag before downloading and uses a conditional read.
-It rejects redirects, incomplete downloads and objects that change during the read.
-Downloaded input is temporary; the final output follows the normal reviewed snapshot
-and retry rules. Discovery and execution are separate reads, so data may change
-between them if its schema still matches the approved contract.
+The connector checks size and ETag before downloading each blob and uses a
+conditional read. It rejects redirects, incomplete downloads and blobs that
+change during the read. Every selected blob is read before any record is
+committed, so a failure in a later table commits nothing. Discovery and
+execution are separate reads, so data may change between them if its schema
+still matches the approved contract.
 
 The [file format limits](/docs/reference/files) apply, including 64 MiB and one million
-rows per object. This release has no directory scans, wildcards, incremental sync,
+rows per blob. This release has no directory scans, wildcards, incremental sync,
 version pinning, managed identity, custom endpoints or sovereign-cloud support.
-ADLS Gen2 files use the Blob endpoint; native DFS operations and ACL management are
-not implemented. Your machine still needs network access allowed by the account's
-firewall or private endpoint.
+ADLS Gen2 files use the Blob endpoint. Your machine still needs network access
+allowed by the account's firewall or private endpoint. For managed identity or
+private networks, see [native routes](/docs/concepts/sources).
+
+The connector is a preview: it is tested with CLI 0.17.7, core 0.12.13 and a
+loopback Azure fixture across all five formats, not against a live storage
+account.
