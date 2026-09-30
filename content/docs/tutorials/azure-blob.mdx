@@ -7,7 +7,7 @@ Use the same retail data as the [local files exercise](/docs/tutorials/retail-fi
 this time reading from your Azure storage account. Ingestron runs on your machine
 and saves three reviewed Parquet snapshots locally.
 
-You need CLI 0.17.6, Git, Python 3.12, and an existing Azure public-cloud storage
+You need CLI 0.17.7, Git, Python 3.12, and an existing Azure public-cloud storage
 account and container that your machine can reach. This exercise uses a read-only,
 HTTPS-only SAS token with an expiry date. Azure storage and transfer charges can
 apply. Ingestron does not create cloud resources in this exercise.
@@ -17,7 +17,7 @@ apply. Ingestron does not create cloud resources in this exercise.
 Download into an empty directory:
 
 ```sh
-curl --fail --location --output azure-retail.zip https://github.com/ingestron/connectors/releases/download/azure-blob-1.1.0/azure-blob-retail-1.1.0.zip
+curl --fail --location --output azure-retail.zip https://github.com/ingestron/connectors/releases/download/azure-blob-2.0.0/azure-blob-retail-2.0.0.zip
 python3 -m zipfile -e azure-retail.zip azure-retail
 cd azure-retail
 ```
@@ -34,7 +34,9 @@ use a different folder; the default is `retail/v1`.
 python3 setup-azure.py --account yourstorageaccount --container samples
 ```
 
-This creates `project.yaml` with three connections and data contracts. It refuses
+This creates `project.yaml` with one Azure Blob connection (account, container
+and SAS reference) and three tables, each naming its blob path and format, with
+a data contract per table. It refuses
 to overwrite an existing project. Review the account, container and blob paths.
 For ADLS Gen2, use the storage account name and file system name as the container.
 The connector reads through the account's Blob endpoint.
@@ -61,7 +63,7 @@ the CLI does not load this file automatically. An Azure CLI login does not suppl
 
 ```sh
 ingestron provider install local@0.4.3
-ingestron connector install azure-blob@1.1.0
+ingestron connector install azure-blob@2.0.0
 ingestron check
 ingestron build
 ingestron runtime prepare
@@ -69,8 +71,8 @@ ingestron run --action discover --secrets-file .env
 ingestron run --action review
 ```
 
-Open each
-`review.json` under `build/generated/flows` and check the source fields against
+Open
+`build/generated/flows/retail_local/review.json` and check the source fields against
 its contract. Discovery reads each selected object to infer and check its schema.
 
 Approve the reviewed contracts and run:

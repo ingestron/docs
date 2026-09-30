@@ -1,6 +1,6 @@
 ---
 title: "Databricks provider"
-description: "Native Databricks asset generation with provider-databricks 3.5.0."
+description: "Native Databricks asset generation with provider-databricks 3.6.0."
 ---
 
 The Databricks provider turns a reviewed project into a Databricks Asset Bundle
@@ -8,7 +8,7 @@ you deploy with your own tooling. It generates files only: it does not deploy, r
 jobs or connect to your workspace or data. Install it with:
 
 ```sh
-ingestron provider install databricks@3.5.0
+ingestron provider install databricks@3.6.0
 ```
 
 | Standard                      | What it generates                                                 |
@@ -43,7 +43,7 @@ condition as `implementation`, for example `amount >= 0`; they become
 expectations on streaming tables and are counted on snapshots. Rules for other
 engines are reported as not enforced.
 
-Generation is tested offline against synthetic projects with CLI 0.17.6 and core
-0.12.12. Deployment and execution on a real Databricks workspace are not qualified by
+Generation is tested offline against synthetic projects with CLI 0.17.7 and core
+0.12.13. Deployment and execution on a real Databricks workspace are not qualified by
 this release. Source, guides and examples:
 [ingestron/provider-databricks](https://github.com/ingestron/provider-databricks).

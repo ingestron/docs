@@ -12,6 +12,9 @@
     "releases",
     "files",
     "azure-blob",
-    "sql-server"
+    "sql-server",
+    "postgresql",
+    "mysql",
+    "oracle"
   ]
 }
