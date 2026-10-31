@@ -23,10 +23,10 @@
     "sync:vscode": "node scripts/sync-vscode-commands.mjs"
   },
   "dependencies": {
-    "@ingestron/authoring": "^1.0.0",
-    "@ingestron/cli": "^1.0.0",
-    "@ingestron/definitions": "^1.0.0",
-    "@ingestron/pack-adf": "^1.0.0",
+    "@ingestron/authoring": "^1.1.0",
+    "@ingestron/cli": "^1.1.0",
+    "@ingestron/definitions": "^1.1.0",
+    "@ingestron/pack-adf": "^1.1.0",
     "@ingestron/pack-databricks": "^1.0.0",
     "fflate": "0.8.2",
     "fumadocs-core": "16.17.8",
