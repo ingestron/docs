@@ -3,6 +3,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { commands } from "@ingestron/cli";
+import vscodeCommands from "../components/reference/vscode-commands.json";
 import { describe, expect, it } from "vitest";
 
 const content = join(process.cwd(), "content/docs");
@@ -26,10 +27,7 @@ function pages(folder: string): string[] {
 }
 
 describe("VS Code command docs", () => {
-  const manifest = JSON.parse(
-    readFileSync(join(process.cwd(), "../vscode/package.json"), "utf8"),
-  ) as { contributes: { commands: { title: string; category: string }[] } };
-  for (const { title, category } of manifest.contributes.commands) {
+  for (const { title, category } of vscodeCommands) {
     it(`${category}: ${title} is explained in a guide`, () => {
       expect(text).toContain(`${category}: ${title}`);
     });

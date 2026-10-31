@@ -1,0 +1,62 @@
+[
+  {
+    "command": "ingestron.plan",
+    "title": "Plan",
+    "category": "Ingestron"
+  },
+  {
+    "command": "ingestron.apply",
+    "title": "Apply",
+    "category": "Ingestron"
+  },
+  {
+    "command": "ingestron.check",
+    "title": "Check",
+    "category": "Ingestron"
+  },
+  {
+    "command": "ingestron.toggleAutoApply",
+    "title": "Turn auto-apply on or off",
+    "category": "Ingestron"
+  },
+  {
+    "command": "ingestron.selectEnvironment",
+    "title": "Select environment",
+    "category": "Ingestron"
+  },
+  {
+    "command": "ingestron.showGenerated",
+    "title": "Show generated files",
+    "category": "Ingestron"
+  },
+  {
+    "command": "ingestron.compareWithBuild",
+    "title": "Compare with build",
+    "category": "Ingestron"
+  },
+  {
+    "command": "ingestron.newProject",
+    "title": "New project",
+    "category": "Ingestron"
+  },
+  {
+    "command": "ingestron.showReference",
+    "title": "Show reference",
+    "category": "Ingestron"
+  },
+  {
+    "command": "ingestron.platformRequest",
+    "title": "Prepare platform request",
+    "category": "Ingestron"
+  },
+  {
+    "command": "ingestron.compareEnvironments",
+    "title": "Compare environments",
+    "category": "Ingestron"
+  },
+  {
+    "command": "ingestron.draftContract",
+    "title": "Draft contract from sample",
+    "category": "Ingestron"
+  }
+]

@@ -19,7 +19,8 @@
     "format:check": "prettier --check .",
     "secrets:check": "node scripts/scan-secrets.mjs",
     "licences:check": "node scripts/check-licences.mjs",
-    "dco:check": "node scripts/check-dco.mjs"
+    "dco:check": "node scripts/check-dco.mjs",
+    "sync:vscode": "node scripts/sync-vscode-commands.mjs"
   },
   "dependencies": {
     "@ingestron/authoring": "^1.0.0",

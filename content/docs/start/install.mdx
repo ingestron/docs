@@ -26,23 +26,31 @@ Help should list the available commands. To run it without installing, use
 </Tool>
 <Tool name="VS Code">
 
-Install the `ingestron.vsix` file you were given:
+The extension is not in the Visual Studio Marketplace yet. Build it from
+[ingestron/vscode](https://github.com/ingestron/vscode) (Node.js 22.13 or later
+and pnpm 10), then install the file it writes:
 
 ```sh
+git clone https://github.com/ingestron/vscode.git
+cd vscode
+pnpm install
+pnpm package
 code --install-extension ingestron.vsix
 ```
 
-Alternatively, use **Extensions: Install from VSIX…** to select the file. After
-installation, the Command Palette should include **Ingestron: New project**. See
-[VS Code](/docs/tools/vscode) for editor features.
+Alternatively, use **Extensions: Install from VSIX…** to select
+`ingestron.vsix`. After installation, the Command Palette should include
+**Ingestron: New project**. See [VS Code](/docs/tools/vscode) for editor
+features.
 
 </Tool>
 </ToolSteps>
 
 ## Build from source
 
-To change Ingestron itself, build both tools from the repository. You need
-Node.js 22.13 or later and pnpm 10:
+To change the CLI or its libraries, build them from
+[ingestron/ingestron](https://github.com/ingestron/ingestron). You need Node.js
+22.13 or later and pnpm 10:
 
 ```sh
 git clone https://github.com/ingestron/ingestron.git
@@ -50,8 +58,10 @@ cd ingestron
 pnpm install
 pnpm --filter "@ingestron/cli..." build
 alias ingestron="node $PWD/packages/cli/dist/main.js"
-pnpm --filter ingestron-vscode package   # writes apps/vscode/ingestron.vsix
 ```
+
+The platform packs, the extension and this site each have their own
+repository in the [ingestron organisation](https://github.com/ingestron).
 
 ## Verify the workflow
 

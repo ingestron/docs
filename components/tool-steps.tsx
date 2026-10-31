@@ -1,4 +1,4 @@
-// Steps that differ between the CLI, VS Code and Studio. With one tool there
+// Steps that differ between the CLI and VS Code. With one tool there
 // are no tabs; the reader's choice is remembered across pages.
 import { Children, isValidElement, type ReactElement, type ReactNode } from "react";
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
