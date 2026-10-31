@@ -1,0 +1,59 @@
+---
+title: Land files only
+description: Use ADF alone to land one file per table that reports read directly, with no store step.
+---
+
+When reports read the files ADF lands, for example Power BI reading Parquet
+files from storage, ADF can be the whole project. Each flow ends at the files
+ADF lands, and nothing loads them into tables.
+
+<ExampleDownload name="landing-only" />
+
+## End flows at the landed files
+
+Name only the ADF pack in the standard, and set the store to `none`:
+
+<Example name="landing-only" file="standard.yaml" />
+
+`store: { default: none }` ends every flow at the landed files. To end one flow
+there, write `store: { uses: none }` in that flow. When nothing chooses a store,
+`ingestron plan` reports it, and the editor offers both changes as fixes.
+
+## Choose how the files are laid out
+
+Set the layout in the standard, under the method's settings:
+
+| Setting                                                    | Files                                                                       |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `layout: snapshot`                                         | One file per table, `<object>/<object>.parquet`, replaced by each load      |
+| `layout: increments`                                       | A new file per load in `<object>/`, named by the window's start and the run |
+| `path: "{object}/{yyyy}/{MM}/{dd}/{object}_{run}.parquet"` | A path of your own under the landing folder                                 |
+
+Reports that read the current data need `snapshot`: the file's path never
+changes, so a report keeps working after each load.
+
+A path must include `{object}`, so each table keeps its own files. Its other
+tokens are `{connection}`, the window's start `{yyyy}`, `{MM}`, `{dd}` and
+`{HH}`, and `{run}`. A path adds a file per load when it has `{run}` or the date
+tokens down to the window's unit, such as `{HH}` for hourly loads; otherwise
+each load replaces the file.
+
+Without a setting, a flow that ends at the landed files gets `snapshot`. When
+each load holds only its window's rows (`mode: incremental`, or a Microsoft 365
+dataset's date filter), it gets `increments` instead, so no rows are lost.
+Ingestron refuses a layout that would lose rows: loads holding only their
+window, written to a file the next load replaces.
+
+## Generate and publish
+
+Run `ingestron apply`. With only the ADF pack, each environment's folder under
+`build/` holds the `linkedService`, `dataset`, `pipeline` and `trigger` folders
+directly. Bring them into your factory as described in
+[Publish ADF resources](/docs/how-to/publish-adf).
+
+## What is not checked
+
+Nothing reads the files before your reports do, so Ingestron checks no rows.
+Each contract quality rule and flow expectation on these tables is reported as
+not checked (`QUALITY_RULE_NOT_CHECKED`). A transform cannot read a table that
+ends at the landed files: give its flow a store step first.

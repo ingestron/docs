@@ -22,6 +22,7 @@
     "deploy-the-bundle",
     "---Azure Data Factory---",
     "adf",
+    "land-files-only",
     "adf-native-connectors",
     "adf-runtime",
     "name-adf-resources",
