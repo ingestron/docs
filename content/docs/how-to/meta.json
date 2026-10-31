@@ -27,7 +27,9 @@
     "adf-native-connectors",
     "adf-runtime",
     "name-adf-resources",
-    "publish-adf"
+    "publish-adf",
+    "---DuckDB---",
+    "run-locally-with-duckdb"
   ],
   "defaultOpen": false
 }

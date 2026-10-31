@@ -1,0 +1,97 @@
+---
+title: Run locally with DuckDB
+description: Build tables on a laptop with DuckDB, and run a cloud project's tables locally from a load's files.
+---
+
+DuckDB runs SQL on a laptop, with nothing to set up but its command line. The
+DuckDB pack loads files into tables in a local database, runs transforms, and
+publishes each table as Parquet that Power BI and other tools read as files.
+The same project can land files with ADF in the cloud and still run its tables
+locally, so a failed load can be tried again on a laptop.
+
+## Try it in five minutes
+
+Install the [DuckDB command line](https://duckdb.org/docs/installation/), then:
+
+```sh
+ingestron init demo --template duckdb --yes
+cd demo
+ingestron apply
+duckdb ingestron.duckdb -c ".read build/dev/run.sql"
+duckdb ingestron.duckdb -c "SELECT * FROM silver.customer_totals"
+```
+
+The starter reads `samples/orders.csv`, keeps the tables `bronze.orders` and
+`silver.customer_totals` in `ingestron.duckdb`, and publishes both to
+`published/` as `<schema>.<table>.parquet`. Run `run.sql` again after each
+change to the files or the definitions; running again is safe. Keep
+`ingestron.duckdb` and `published/*.parquet` out of version control: they are
+data, built from the files.
+
+## Read files where they are
+
+`duckdb-files` reads a files connection's `path` and each table's `object`, a
+file or a pattern. Name the format in the standard; CSV files have a header row
+and commas unless `csv` says otherwise:
+
+```yaml
+# standard.yaml
+packs: [duckdb@1]
+ingest:
+  settings:
+    duckdb-files: { format: csv }
+```
+
+`duckdb-table` keeps each table by `mode`: `replace` (the default), `append`
+(each file's rows once) or `upsert` (by the contract's primary key). The
+`published` folder comes from the platform and must exist.
+
+## Run a cloud project locally
+
+When ADF lands the files and DuckDB builds the tables, an environment that names
+`runs-on: duckdb` runs the same tables on a laptop:
+
+<ExampleDownload name="duckdb-local" />
+
+<Example name="duckdb-local" file="project.yaml" />
+
+In `local`, ADF's copy becomes `duckdb-landed`, which reads each table's files
+from `<landing>/<object>/*.parquet`. Name the local folder in the standard:
+
+<Example name="duckdb-local" file="standard.yaml" />
+
+The tables' store and transforms must be DuckDB's in every environment, so the
+local run is the cloud run with local paths: `run.sql` differs only in where
+files are read and published. A serve step from another pack, such as
+`synapse-serve`, is left out locally, since the tables can be queried in
+`ingestron.duckdb`.
+
+## Bring a load's files down
+
+ADF writes each load of a table to `<landing>/<object>/` in the landing storage,
+one Parquet file per load, with the contract's column names. Download that
+folder's files to `samples/<object>/`, with Azure Storage Explorer, or with
+AzCopy after `azcopy login`:
+
+```sh
+azcopy copy "https://saleslakedev.dfs.core.windows.net/landing/erp/erp.dbo.Invoices/*" \
+  "samples/erp.dbo.Invoices/"
+```
+
+Then generate and run the local environment from the project folder:
+
+```sh
+ingestron apply
+duckdb ingestron.duckdb -c ".read build/local/duckdb/run.sql"
+```
+
+With `upsert` or `append`, put the loads in the order ADF wrote them; their
+file names start with the load's time, so a later load's rows win.
+
+## What a local run cannot catch
+
+A local run starts after the files land. It finds mistakes in contracts, types,
+modes and transforms, but not failures inside ADF: connectors, credentials,
+networking, the self-hosted integration runtime, or the source itself. Tables
+ADF lands in other ways find no files locally: Microsoft 365 data (JSON), files
+`adf-files` copies as they are, and custom `path` layouts.
