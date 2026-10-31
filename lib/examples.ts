@@ -95,7 +95,8 @@ export function exampleFiles(name: string): string[] {
   const folder = exampleFolder(name);
   const files = (path: string): string[] =>
     readdirSync(path, { withFileTypes: true }).flatMap((entry) =>
-      entry.name === "build" || entry.name.startsWith(".")
+      // Hidden files are local state, except .gitkeep, which keeps a folder the example needs.
+      entry.name === "build" || (entry.name.startsWith(".") && entry.name !== ".gitkeep")
         ? []
         : entry.isDirectory()
           ? files(join(path, entry.name))
