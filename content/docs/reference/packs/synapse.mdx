@@ -1,0 +1,25 @@
+---
+title: Synapse serverless pack
+description: Views in Azure Synapse serverless SQL, with their settings and defaults.
+---
+
+`synapse@1` shows tables to reporting tools as views in Azure Synapse serverless
+SQL: over the files another pack lands, over a transform's query, or over the
+files a store pack keeps. For views only, list it first, so it provides the
+defaults: `packs: [synapse@1, adf@1]`. The settings below come from the pack
+itself.
+
+For a task walkthrough, use [Serve files as SQL](/docs/how-to/serve-files-as-sql).
+The pack writes `views.sql` for each environment; run it against the serverless
+database when the definitions change. Generation itself creates nothing in Azure.
+
+<PackMethods pack="synapse" />
+
+## Contract fields
+
+What this pack does with each field of a table's contract. When a contract
+writes a field that no pack of the standard uses yet, Ingestron warns at that
+field with the reason below; **Elsewhere** fields are handled by another pack
+or step and never warn.
+
+<ContractUseTable pack="synapse" />

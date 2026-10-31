@@ -23,6 +23,7 @@
     "---Azure Data Factory---",
     "adf",
     "land-files-only",
+    "serve-files-as-sql",
     "adf-native-connectors",
     "adf-runtime",
     "name-adf-resources",
