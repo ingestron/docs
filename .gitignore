@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.tmp/
+*.tsbuildinfo
+build/
+.DS_Store
+.next/
+out/
+.source/
+public/downloads/
+next-env.d.ts
