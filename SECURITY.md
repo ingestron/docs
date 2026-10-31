@@ -2,14 +2,15 @@
 
 ## Report a vulnerability
 
-Email security@ingestron.io. Do not open a public issue. Include the version of
-the documentation site, what you ran, and the smallest definitions that reproduce the problem.
+Email security@ingestron.io. Do not open a public issue. Include the page's
+address, what you saw and how to reproduce it.
 We acknowledge reports within five working days and agree a disclosure date
 with you.
 
 ## Supported versions
 
-Security fixes go into the latest `1.x` release.
+The live site at docs.ingestron.io is the supported version; fixes are
+published there.
 
 ## Design
 

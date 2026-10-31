@@ -16,9 +16,9 @@ example README, package README and user-facing command text.
 - Facts the code knows (settings, defaults, connector facts, error codes,
   document fields, CLI commands) are rendered by components in
   `components/reference/`. Change the code, not the page.
-- Organise by the reader's job. Steps that differ between the CLI, VS Code and
-  Studio go in `<ToolSteps>`; a page under Tools only when one tool alone has
-  the feature.
+- Organise by the reader's job. Steps that differ between the CLI and VS Code
+  go in `<ToolSteps>`; a page under Tools only when one tool alone has the
+  feature.
 
 ## One voice
 

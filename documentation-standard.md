@@ -7,7 +7,8 @@ calm and helpful. Use “you” for the reader and “Ingestron” for product b
 Prefer active verbs and short, connected paragraphs. Avoid marketing superlatives,
 ceremonial introductions, rhetorical questions and repetitive summaries.
 
-Use task titles: “Install a plugin”, “Read GitHub issues”, “Retry a run”. Avoid
+Use task titles: “Generate your first project”, “Check generated files in CI”,
+“Add a SQL Server source”. Avoid
 internal architecture labels in navigation. Explain “pack” as what turns
 definitions into files for a platform and “connector” as the kind of source a
 connection reads before using these terms freely.
@@ -15,10 +16,10 @@ connection reads before using these terms freely.
 Examples:
 
 - Prefer “Save your token in `.env`.” to “Configure the secure credential boundary.”
-- Prefer “This command writes `packages.lock.yaml`.” to “The immutable resolution
-  artefact is materialised.”
-- Prefer “If the review is out of date, rebuild and review again.” to “Reconcile
-  stale governance evidence before reactivating the execution gate.”
+- Prefer “`ingestron apply` writes the files the plan listed.” to “The resolved
+  generation artefacts are materialised.”
+- Prefer “If `ingestron check` fails, run `ingestron apply` and commit the
+  result.” to “Reconcile generated-file drift before re-enabling the CI gate.”
 - Prefer “You should see two rows.” to “Verify successful attainment of the outcome.”
 
 Do not promise “just”, “simply”, “seamless” or a completion time that was not tried.
@@ -64,8 +65,8 @@ useful next step without adding a generic concluding paragraph.
 
 Check links, search, code overflow, keyboard focus, narrow layouts and heading order.
 Remove stale screenshots, downloads, redirects and dependencies with the retired
-content. Old URLs need not survive a user-authorised reset; never redirect them to
-unrelated capabilities as if they were still supported.
+content. When a page moves, redirect its old URL to the new page; when a feature
+is removed, remove its pages rather than redirecting them to something unrelated.
 
 Review each sentence: Does the reader need it here? Is the claim supported? Could
 this be said more plainly? Does the example work with the published package?
