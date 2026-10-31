@@ -34,7 +34,12 @@ it("makes YAML reference syntax reachable from the introduction and concepts", (
 });
 
 it("separates the core workflow from today's supported platform combinations", () => {
-  expect(read("start/choose-a-route.mdx")).toContain("ADF-only");
-  expect(read("reference/packs/index.mdx")).toContain("ADF-only");
+  const routes = read("start/choose-a-route.mdx");
+  expect(routes).toContain("ADF landing only");
+  expect(routes).toContain("/docs/how-to/run-locally-with-duckdb");
+  expect(routes).toContain("will not enable a destination no pack");
+  const packs = read("reference/packs/index.mdx");
+  expect(packs).toContain("ADF landing only");
+  expect(packs).toContain("does not yet start it in Azure");
   expect(read("how-to/plan-and-generate.mdx")).toContain("does not deploy");
 });
