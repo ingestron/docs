@@ -9,10 +9,11 @@ import {
 } from "@ingestron/definitions";
 import { adf } from "@ingestron/pack-adf";
 import { databricks } from "@ingestron/pack-databricks";
+import { duckdb } from "@ingestron/pack-duckdb";
 import { synapse } from "@ingestron/pack-synapse";
 
 /** The packs the CLI provides, in the order a standard usually lists them. */
-export const packs: Pack[] = [databricks, adf, synapse];
+export const packs: Pack[] = [databricks, adf, synapse, duckdb];
 
 /** Each pack's reference page. */
 export function packPages(): { pack: string; url: string }[] {
