@@ -56,10 +56,11 @@ layers. Rules are considered in pack order. Each resolved action records the
 pack that owns it, and each pack generates its own output folder when several
 packs are selected.
 
-For the current ADF-to-Databricks route, copying produces landing files and the
-store method reads them into tables. The ADF pack supplies no store method, so
-ADF alone is not a complete route today. Other combinations require implemented,
-compatible methods; they cannot be enabled by substituting a provider name.
+For the ADF-to-Databricks route, copying produces landing files and the store
+method reads them into tables. The ADF pack supplies no store method: alone, it
+ends at the landed files (`store: none`), and with Synapse or DuckDB those packs
+serve or store them. Other combinations require implemented, compatible methods;
+they cannot be enabled by substituting a provider name.
 
 ## Keep settings with their owner
 

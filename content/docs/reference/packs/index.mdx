@@ -10,27 +10,33 @@ Tools are separate interfaces to that model.
 
 ## Available packs
 
-| Pack                                                            | Responsibilities                                         | Generated output                                                   |
-| --------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------ |
-| [Databricks](/docs/reference/packs/databricks) (`databricks@1`) | Supported direct ingestion, transforms and storage       | Bundles, pipelines, SQL or Python files, and jobs where configured |
-| [Azure Data Factory](/docs/reference/packs/adf) (`adf@1`)       | Native copying from supported sources to landing storage | Linked services, datasets, pipelines and triggers                  |
+| Pack                                                              | Responsibilities                                         | Generated output                                                   |
+| ----------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------ |
+| [Databricks](/docs/reference/packs/databricks) (`databricks@1`)   | Supported direct ingestion, transforms and storage       | Bundles, pipelines, SQL or Python files, and jobs where configured |
+| [Azure Data Factory](/docs/reference/packs/adf) (`adf@1`)         | Native copying from supported sources to landing storage | Linked services, datasets, pipelines and triggers                  |
+| [Synapse serverless](/docs/reference/packs/synapse) (`synapse@1`) | SQL views over landed files and transforms               | `views.sql` for the serverless database                            |
+| [DuckDB](/docs/reference/packs/duckdb) (`duckdb@1`)               | Tables, transforms and local runs, published as Parquet  | `run.sql` and each table's SQL                                     |
 
 Exact methods, defaults and settings are rendered from the packs on their pages.
 Connector-specific access and ingestion requirements are in [Connections](/docs/connectors).
 
 ## Supported combinations today
 
-| Project route                         | Required packs                            | Result                                                                     |
-| ------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------- |
-| Direct ingestion into Databricks      | Databricks                                | Tables produced by the supported direct ingestion and storage methods      |
-| ADF ingestion with Databricks storage | Databricks + ADF                          | ADF lands files; Databricks reads those files into tables                  |
-| ADF-only                              | Not supported as a complete project route | The ADF pack has no store method and the builder does not offer this route |
-| ADF with another destination          | No such destination pack is bundled today | A compatible implemented store method would be required                    |
+| Project route                         | Required packs          | Result                                                                                                             |
+| ------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Direct ingestion into Databricks      | Databricks              | Tables produced by the supported direct ingestion and storage methods                                              |
+| ADF ingestion with Databricks storage | Databricks + ADF        | ADF lands files; Databricks reads those files into tables                                                          |
+| ADF landing only                      | ADF, with `store: none` | ADF lands files that reports read directly ([guide](/docs/how-to/land-files-only))                                 |
+| ADF with Synapse views                | Synapse + ADF           | ADF lands files; Synapse serverless SQL shows them as views ([guide](/docs/how-to/serve-files-as-sql))             |
+| DuckDB on a laptop                    | DuckDB                  | DuckDB loads local files into tables and publishes them as Parquet ([guide](/docs/how-to/run-locally-with-duckdb)) |
+| ADF with DuckDB tables                | DuckDB + ADF            | ADF lands files; DuckDB builds the tables, and `runs-on: duckdb` runs them locally                                 |
 
-This is the current capability boundary, not a definition of Ingestron as a
-Databricks-only product. Do not assume an unlisted provider or arbitrary pack
-combination works. The current command and editor use their bundled packs;
-adding a name to `packs` does not install a provider plugin.
+Ingestron generates the DuckDB SQL but does not yet start it in Azure after
+each load: run it where DuckDB runs, such as a laptop or your own scheduled job.
+
+This is the current capability boundary. Do not assume an unlisted provider or
+arbitrary pack combination works. The current command and editor use their
+bundled packs; adding a name to `packs` does not install a provider plugin.
 
 ## Decide which capabilities you need
 

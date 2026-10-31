@@ -38,11 +38,18 @@ choices, not the definition of every future Ingestron project.
 | Databricks directly           | Reads supported sources into Databricks tables                                                  | Databricks       |
 | ADF ingestion into Databricks | Copies sources to ADLS Gen2 landing storage, then reads the landed files into Databricks tables | Databricks + ADF |
 
-**ADF-only is not a supported complete route today.** The ADF pack has ingestion
-methods but no storage method, and no alternative destination pack is bundled.
-If you need ADF with a different destination, that is a current capability gap;
-selecting another provider name in YAML will not enable it. See the
-[pack catalogue](/docs/reference/packs) for the current boundary.
+Other combinations start from a guide's example or a template rather than the
+builder:
+
+| Route                  | What it does                                                                   | Packs          | Guide                                                           |
+| ---------------------- | ------------------------------------------------------------------------------ | -------------- | --------------------------------------------------------------- |
+| ADF landing only       | Copies sources to landing storage, for reports that read the files             | ADF            | [Land files only](/docs/how-to/land-files-only)                 |
+| ADF with Synapse views | Lands files, and shows them and transforms as Synapse serverless SQL views     | Synapse + ADF  | [Serve files as SQL](/docs/how-to/serve-files-as-sql)           |
+| DuckDB                 | Loads files into DuckDB tables on a laptop, runs transforms, publishes Parquet | DuckDB (+ ADF) | [Run locally with DuckDB](/docs/how-to/run-locally-with-duckdb) |
+
+Selecting another provider name in YAML will not enable a destination no pack
+implements. See the [pack catalogue](/docs/reference/packs) for the current
+boundary.
 
 ## Check the connector's routes
 
