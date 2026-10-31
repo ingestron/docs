@@ -19,7 +19,8 @@ describe("examples", () => {
         expect(archives.get(name!), `${id}: ${name}/${file}`).toContain(file);
       }
     }
-  });
+    // Reads every connector's examples page and every example archive.
+  }, 30_000);
   it("lists every sample with a title, summary and the facts found by resolving it", () => {
     const examples = listExamples();
     expect(examples).toHaveLength(19);
