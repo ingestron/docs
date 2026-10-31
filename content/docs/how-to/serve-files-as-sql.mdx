@@ -1,0 +1,62 @@
+---
+title: Serve files as SQL
+description: Show the files ADF lands to reports as Synapse serverless SQL views, with transforms as views too.
+---
+
+When reports need SQL tables, but nothing should run or be stored after each
+load, Synapse serverless SQL can show the files ADF lands as views. A transform
+becomes a view over other views. Synapse reads the files each time a report
+queries a view.
+
+<ExampleDownload name="synapse-views" />
+
+## List Synapse first, and keep tables as views
+
+<Example name="synapse-views" file="standard.yaml" />
+
+Synapse comes first because the first pack provides the defaults: the database
+name, `{{ project }}_{{ environment }}`, and the column types.
+`store: { default: synapse-view }` keeps every table as a view over the files
+ADF lands. `layout: snapshot` lands one file per table, so each view shows the
+current data. A view over files that each load adds shows every load's rows.
+
+## Name the external data source
+
+The views read the files through an external data source in the serverless
+database. Name it, and where it points, in the platform:
+
+<Example name="synapse-views" file="platform.yaml" />
+
+Every file a view reads must be under `data_source_location`.
+
+## Write a transform as a view
+
+A transform's SQL is T-SQL over its inputs' views, written
+`{{ tables.<input> }}`:
+
+<Example name="synapse-views" file="transforms/customer_totals.yaml" />
+
+The SQL sits inside the view: it cannot start with `WITH` or end with
+`ORDER BY`, and it names only tables listed in `inputs`. A view cannot merge
+changes or keep history; for that, keep the table with a store pack and serve
+it with `synapse-serve`.
+
+## Generate, then run the views
+
+Run `ingestron apply`. Each environment's folder holds the ADF resources under
+`adf/` and the views in `synapse/views.sql`. Run `views.sql` against the
+serverless database, with Synapse Studio, `sqlcmd` or a CI step, whenever the
+definitions change; loads need nothing more.
+
+`ingestron request` lists what the platform team creates first: the serverless
+database, the external data source with a managed-identity credential, the
+workspace's read access to the storage, and report users' permissions.
+
+## Views or tables
+
+|                             | Views (Synapse)                              | Tables (a store pack, served with `synapse-serve`) |
+| --------------------------- | -------------------------------------------- | -------------------------------------------------- |
+| Runs after each load        | Nothing                                      | The store pack's job                               |
+| Cost                        | Data scanned each time a report reads a view | The job's run time, plus data scanned when read    |
+| Merge, history              | No: the files as they are                    | Yes                                                |
+| Heavy joins over large data | Recomputed on every read                     | Computed once per load                             |
