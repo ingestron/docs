@@ -15,6 +15,7 @@ describe("pack pages", () => {
     expect(packPages()).toEqual([
       { pack: "databricks", url: "/docs/reference/packs/databricks" },
       { pack: "adf", url: "/docs/reference/packs/adf" },
+      { pack: "synapse", url: "/docs/reference/packs/synapse" },
     ]);
   });
 
