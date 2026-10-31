@@ -1,0 +1,37 @@
+---
+title: DuckDB pack
+description: DuckDB tables, transforms and local runs, with their settings and defaults.
+---
+
+`duckdb@1` loads files into tables in a DuckDB database, runs transforms, and
+publishes each table as Parquet, with SQL that DuckDB runs on a laptop or
+wherever DuckDB runs. List it first, so it provides the defaults:
+`packs: [duckdb@1]`, or `packs: [duckdb@1, adf@1]` when ADF lands the files.
+The settings below come from the pack itself.
+
+For a task walkthrough, use [Run locally with DuckDB](/docs/how-to/run-locally-with-duckdb).
+The pack writes `run.sql`, every table in order, and `tables/`, each table's
+SQL alone, for each environment. Run `run.sql` from the project folder with the
+DuckDB command line; generation itself runs nothing.
+
+`duckdb-table` loads a table's files by `mode`: `replace` (the table is the
+files' rows), `append` (each file's rows once) or `upsert` (rows replace those
+with the same primary key; `sequence_by` picks the latest). Running again is
+safe in every mode. Each table is published to the `published` folder as
+`<schema>.<table>.parquet`; the folder must exist.
+
+An environment with `runs-on: duckdb` replaces another pack's file-landing
+ingest, such as `adf-copy`, with `duckdb-landed`, which reads a load's files
+from a local folder. The tables' store and transforms must be DuckDB's in every
+environment.
+
+<PackMethods pack="duckdb" />
+
+## Contract fields
+
+What this pack does with each field of a table's contract. When a contract
+writes a field that no pack of the standard uses yet, Ingestron warns at that
+field with the reason below; **Elsewhere** fields are handled by another pack
+or step and never warn.
+
+<ContractUseTable pack="duckdb" />

@@ -16,6 +16,7 @@ describe("pack pages", () => {
       { pack: "databricks", url: "/docs/reference/packs/databricks" },
       { pack: "adf", url: "/docs/reference/packs/adf" },
       { pack: "synapse", url: "/docs/reference/packs/synapse" },
+      { pack: "duckdb", url: "/docs/reference/packs/duckdb" },
     ]);
   });
 
