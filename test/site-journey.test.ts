@@ -35,7 +35,7 @@ it("makes YAML reference syntax reachable from the introduction and concepts", (
 
 it("separates the core workflow from today's supported platform combinations", () => {
   const routes = read("start/choose-a-route.mdx");
-  expect(routes).toContain("ADF, ending at the landed files (`adf-files`)");
+  expect(routes).toContain("ADF, ending at the landed files (`adf-landing`)");
   expect(routes).toContain("/docs/how-to/run-locally-with-duckdb");
   expect(routes).toContain("will not enable a destination no pack");
   const packs = read("reference/packs/index.mdx");
