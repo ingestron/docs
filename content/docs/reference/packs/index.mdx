@@ -31,8 +31,10 @@ Connector-specific access and ingestion requirements are in [Connections](/docs/
 | DuckDB on a laptop                    | DuckDB                  | DuckDB loads local files into tables and publishes them as Parquet ([guide](/docs/how-to/run-locally-with-duckdb)) |
 | ADF with DuckDB tables                | DuckDB + ADF            | ADF lands files; DuckDB builds the tables, and `runs-on: duckdb` runs them locally                                 |
 
-Ingestron generates the DuckDB SQL but does not yet start it in Azure after
-each load: run it where DuckDB runs, such as a laptop or your own scheduled job.
+In Azure, ADF's `after_copy` starts a Container Apps job after each schedule's
+copies, and the job rebuilds the DuckDB tables with a public image
+([guide](/docs/how-to/run-duckdb-in-azure)). Ingestron creates neither the job
+nor its access; `ingestron request` lists them.
 
 This is the current capability boundary. Do not assume an unlisted provider or
 arbitrary pack combination works. The current command and editor use their

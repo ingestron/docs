@@ -51,8 +51,10 @@ interface. [Connectivity](/docs/concepts/connectivity) explains reachability.
 
 ## Combine packs when their actions fit
 
-The first pack in the standard supplies project defaults such as naming and
-layers. Rules are considered in pack order. Each resolved action records the
+The first pack in the standard supplies project defaults such as naming,
+layers and column types. Rules are considered in pack order. The order is
+precedence, not the order things run: list the pack that stores or serves the
+tables first, such as `[duckdb@1, adf@1]`, even though ADF copies first. Each resolved action records the
 pack that owns it, and each pack generates its own output folder when several
 packs are selected.
 

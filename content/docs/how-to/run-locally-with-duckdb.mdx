@@ -68,10 +68,11 @@ files are read and published. A serve step from another pack, such as
 
 ## Bring a load's files down
 
-ADF writes each load of a table to `<landing>/<object>/` in the landing storage,
-one Parquet file per load, with the contract's column names. Download that
-folder's files to `samples/<object>/`, with Azure Storage Explorer, or with
-AzCopy after `azcopy login`:
+ADF writes a table's files to `<landing>/<object>/` in the landing storage,
+with the contract's column names: one file, replaced by each load, with
+`layout: snapshot` (as in the example), or a file per load with `increments`.
+Download that folder's files to `samples/<object>/`, with Azure Storage
+Explorer, or with AzCopy after `azcopy login`:
 
 ```sh
 azcopy copy "https://saleslakedev.dfs.core.windows.net/landing/erp/erp.dbo.Invoices/*" \
@@ -85,8 +86,13 @@ ingestron apply
 duckdb ingestron.duckdb -c ".read build/local/duckdb/run.sql"
 ```
 
-With `upsert` or `append`, put the loads in the order ADF wrote them; their
-file names start with the load's time, so a later load's rows win.
+With increments and `upsert` or `append`, keep the loads' file names: they
+start with the load's time, so a later load's rows win.
+
+## Run the same tables in Azure
+
+To rebuild the tables in Azure after each load, ADF can start a Container Apps
+job: see [Run DuckDB in Azure](/docs/how-to/run-duckdb-in-azure).
 
 ## What a local run cannot catch
 

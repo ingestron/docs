@@ -40,6 +40,7 @@ it("separates the core workflow from today's supported platform combinations", (
   expect(routes).toContain("will not enable a destination no pack");
   const packs = read("reference/packs/index.mdx");
   expect(packs).toContain("ADF landing only");
-  expect(packs).toContain("does not yet start it in Azure");
+  expect(packs).toContain("/docs/how-to/run-duckdb-in-azure");
+  expect(read("how-to/run-duckdb-in-azure.mdx")).toContain("ghcr.io/ingestron/duckdb-runner:1");
   expect(read("how-to/plan-and-generate.mdx")).toContain("does not deploy");
 });
