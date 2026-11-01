@@ -21,6 +21,10 @@ duckdb ingestron.duckdb -c ".read build/dev/run.sql"
 duckdb ingestron.duckdb -c "SELECT * FROM silver.customer_totals"
 ```
 
+In VS Code, run **Ingestron: New project**, choose **From a starter**, then
+**DuckDB on a laptop**, and **Ingestron: Apply**; then run the two `duckdb`
+lines in the project folder's terminal.
+
 The starter reads `samples/orders.csv`, keeps the tables `bronze.orders` and
 `silver.customer_totals` in `ingestron.duckdb`, and publishes both to
 `published/` as `<schema>.<table>.parquet`. Run `run.sql` again after each

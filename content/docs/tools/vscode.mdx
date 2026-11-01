@@ -125,7 +125,7 @@ marked **fixed by the standard**, and marks the others **not allowed**. If a
 definition sets a fixed value anyway, the `FIXED_SETTING` problem has a quick
 fix, **Remove this setting**, so the standard's value applies.
 
-![Under a table's store with:, completion lists the streaming table's settings, such as changes_suffix with its default _changes, cluster_by, mode and sequence_by.](/images/vscode/completion.png)
+![Under a table's store with:, completion lists the streaming table's settings: mode with its default append, sequence_by, delete_when, except_columns, changes_suffix, cluster_by and properties.](/images/vscode/completion.png)
 
 It also fills in what the project already decides:
 
@@ -250,12 +250,21 @@ off, and VS Code remembers the choice for each workspace.
 
 ## Start a project
 
-**Ingestron: New project** asks for a source category, connection, network
-reachability and supported route, then the project name, environments,
-standard and configuration. It asks for the destination folder last. You can
-search across all sources or within a category. When the folder is outside
-the workspace, it offers to open it or add it to the workspace.
-See [Create a project from a connection](/docs/how-to/start-from-a-template).
+**Ingestron: New project** starts from a connection or from a starter.
+
+- **From a connection** asks for a source category, connection, network
+  reachability and supported route, then the project name, environments,
+  standard and configuration. You can search across all sources or within a
+  category. See [Create a project from a connection](/docs/how-to/start-from-a-template).
+- **From a starter** offers the ready-made projects, such as **DuckDB on a
+  laptop**, which [runs locally with DuckDB](/docs/how-to/run-locally-with-duckdb).
+  It asks only for the project name, environments and the starter's own
+  questions; the starter brings its standard.
+
+It asks for the destination folder last. When the folder is outside the
+workspace, it offers to open it or add it to the workspace.
+
+![New project's first question: From a connection, to choose a source, how it is reached and a supported route, or From a starter, a ready-made project to try, such as DuckDB on a laptop.](/images/vscode/new-project.png)
 
 ## Every command
 
