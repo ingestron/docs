@@ -38,6 +38,9 @@ A transform's SQL is T-SQL over its inputs' views, written
 
 <Example name="synapse-views" file="transforms/customer_totals.yaml" />
 
+A view checks no rows, so the contract's quality rules and required columns
+are reported as not checked (`CONTRACT_FIELD_UNUSED` warnings).
+
 The SQL sits inside the view: it cannot start with `WITH` or end with
 `ORDER BY`, and it names only tables listed in `inputs`. A view cannot merge
 changes or keep history; for that, keep the table with a store pack and serve

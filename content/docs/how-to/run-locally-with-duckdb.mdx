@@ -17,13 +17,16 @@ Install the [DuckDB command line](https://duckdb.org/docs/installation/), then:
 ingestron init demo --template duckdb --yes
 cd demo
 ingestron apply
-duckdb ingestron.duckdb -c ".read build/dev/run.sql"
+duckdb -bail ingestron.duckdb -c ".read build/dev/run.sql"
 duckdb ingestron.duckdb -c "SELECT * FROM silver.customer_totals"
 ```
 
 In VS Code, run **Ingestron: New project**, choose **From a starter**, then
 **DuckDB on a laptop**, and **Ingestron: Apply**; then run the two `duckdb`
 lines in the project folder's terminal.
+
+`-bail` stops at the first error, so a run that fails while building
+publishes nothing; without it, DuckDB carries on and commits what it built.
 
 The starter reads `samples/orders.csv`, keeps the tables `bronze.orders` and
 `silver.customer_totals` in `ingestron.duckdb`, and publishes both to
@@ -87,7 +90,7 @@ Then generate and run the local environment from the project folder:
 
 ```sh
 ingestron apply
-duckdb ingestron.duckdb -c ".read build/local/duckdb/run.sql"
+duckdb -bail ingestron.duckdb -c ".read build/local/duckdb/run.sql"
 ```
 
 With increments and `upsert` or `append`, keep the loads' file names: they
