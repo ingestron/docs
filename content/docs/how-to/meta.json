@@ -29,7 +29,8 @@
     "name-adf-resources",
     "publish-adf",
     "---DuckDB---",
-    "run-locally-with-duckdb"
+    "run-locally-with-duckdb",
+    "run-duckdb-in-azure"
   ],
   "defaultOpen": false
 }

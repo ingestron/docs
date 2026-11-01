@@ -1,0 +1,136 @@
+---
+title: Run DuckDB in Azure
+description: Rebuild a project's DuckDB tables in Azure after each ADF load, with a Container Apps job and a public image.
+---
+
+When ADF lands the files and DuckDB builds the tables, an Azure Container Apps
+job can rebuild them after each load. ADF runs a schedule's copies, starts the
+job, and waits for it. The job pulls the public image
+`ghcr.io/ingestron/duckdb-runner:1`, so you need no container registry and no
+registry credentials. Each run starts with an empty database, reads every landed
+file, rebuilds every table, and publishes each one to storage as Parquet.
+Nothing is kept between runs, so running again is always safe.
+
+<ExampleDownload name="duckdb-local" />
+
+## How it fits together
+
+<FlowDiagram
+  title="One schedule, one job run"
+  steps={[
+    { title: "ADF copies", detail: "Every connection on the schedule, in parallel" },
+    { title: "Start the job", detail: "Once, with the factory's managed identity" },
+    { title: "DuckDB rebuilds", detail: "Every table, from the landed files" },
+    { title: "Published", detail: "<schema>.<table>.parquet for reports" },
+  ]}
+/>
+
+Ingestron creates nothing in Azure. You create the job once, from the template
+below, and your deploy step copies the generated SQL to storage.
+
+## Create the job
+
+The job runs in a Container Apps environment on the consumption plan. Create
+one if you have none:
+
+```sh
+az containerapp env create --name cae-data --resource-group rg-data --location australiaeast
+```
+
+Then deploy the job from the template,
+[`duckdb-job.bicep`](https://github.com/ingestron/docs/blob/main/ci-templates/azure/duckdb-job.bicep):
+
+```sh
+az deployment group create --resource-group rg-data \
+  --template-file duckdb-job.bicep \
+  --parameters name=sales-dev-duckdb \
+    environmentId=$(az containerapp env show -n cae-data -g rg-data --query id -o tsv) \
+    sqlUrl=abfss://deploy@saleslakedev.dfs.core.windows.net/sales/dev/run.sql \
+    storageAccountName=saleslakedev \
+    factoryPrincipalId=$(az datafactory show -n adf-sales-dev -g rg-data --query identity.principalId -o tsv)
+```
+
+The template creates the job with:
+
+- **Identity:** its own managed identity, with Storage Blob Data Contributor on
+  the storage account, to read the landed files and `run.sql` and to publish
+  tables.
+- **Resources and limits:** 0.5 vCPU and 1 GiB per run, a replica timeout of
+  1800 seconds, and one retry. Raise the CPU and memory for larger tables, up
+  to the consumption plan's limits.
+- **Starting and stopping:** the Container Apps Jobs Operator role on the job
+  for your data factory, so ADF can start runs, read them and stop them. The
+  role also lets the factory change a run's container, so the job holds no
+  secrets.
+- **Image:** the public image, pulled anonymously. If your organisation only
+  allows its own registry, copy the image there and pass `image=`; the template
+  shows where the registry's settings go. A private registry adds its own cost.
+
+The template outputs the job's resource ID, `jobId`, for `after_copy`.
+
+## Deploy the SQL
+
+Run `ingestron apply` as usual, then copy each environment's DuckDB folder to
+the folder `sqlUrl` names, in your deploy pipeline:
+
+```sh
+az storage fs directory upload --account-name saleslakedev --file-system deploy \
+  --source "build/dev/duckdb/*" --destination-path sales/dev --recursive --auth-mode login
+```
+
+When DuckDB is the only pack, the folder is `build/<environment>/` instead.
+The cloud environment's `run.sql` must read and write `abfss://` paths: the job
+refuses one that names local folders.
+
+## Start it after the copies
+
+Name the job in the platform, per environment:
+
+<Example name="duckdb-local" file="platform.yaml" />
+
+With `after_copy`, each schedule has one parent pipeline,
+`pl_<project>_every_<interval>_<unit>`, and one trigger in place of the
+connection pipelines' triggers. The parent runs the schedule's copies, starts
+the job once, reads the run's status every 30 seconds, and fails unless the run
+succeeded. `ingestron request --env dev` lists the job, its access and its
+limits.
+
+When you turn `after_copy` on in an environment that already runs:
+
+- set `start` to the next window, because the new trigger runs every window
+  since `start`;
+- delete the connection pipelines' old triggers from the factory, because an
+  incremental publish leaves them running, which would copy everything twice.
+
+## Hangs, failures and cost
+
+- **A run that never finishes** is stopped at `after_copy.timeout` (one hour by
+  default), and the pipeline fails, saying whether the run stopped. The job's
+  own replica timeout is half of that, so a retried run also ends in time.
+- **A failed run** is retried once by the job. Retries are safe because each
+  run rebuilds everything. ADF never starts the job twice for one load: a
+  failed copy is retried in place, and the schedule's trigger does not retry.
+- **Cost:** consumption-plan jobs bill per second only while a run goes, with
+  a monthly free allowance per subscription (180,000 vCPU-seconds and 360,000
+  GiB-seconds at the time of writing), so a small daily job normally costs
+  nothing. ADF bills each activity run: the wait reads the run's status every
+  30 seconds, about three activity runs a poll.
+- **Every run reads every landed file.** With `layout: snapshot` that is one
+  file per table. With increments, each run reads them all; keep them bounded,
+  knowing that deleting old files removes their rows from `append` tables.
+- **Two schedules** may start the job at once. Each run rebuilds everything,
+  and the later run's files win.
+
+## Checked against live Azure: not yet
+
+These parts follow Microsoft's and DuckDB's current documentation, but have not
+yet been run in a live subscription:
+
+- the start call's response when Azure answers asynchronously, from which the
+  pipeline reads the run's name;
+- the empty body on the start call;
+- DuckDB signing in with the job's managed identity, and overwriting published
+  files on `abfss://`.
+
+Try it in a development subscription first, and tell us what you find:
+hello@ingestron.io.
