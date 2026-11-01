@@ -30,6 +30,14 @@ Each question:
 Any other field is an error, so a misspelt one is found at once. Your editor
 checks `template.yaml` too after `ingestron schemas`.
 
+## Files
+
+`init` copies the template folder's files, apart from `template.yaml`,
+`README.md`, `build`, `.generated.json`, `.git` and `.ingestron`. A file
+named `gitignore`, in any folder, is written as `.gitignore`, because npm does
+not always publish files whose names start with a dot. A template shared as a
+folder or Git URL can hold either name.
+
 ## Built-in templates
 
 <BuiltInTemplates />
