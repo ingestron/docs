@@ -1,0 +1,72 @@
+---
+title: Define a data product
+description: Declare who owns a data product and what it publishes, require governance in the standard, and get a passport per product.
+---
+
+A data product is a set of tables someone owns and others rely on. Ingestron
+reads it from an Open Data Product Standard (ODPS) file beside your contracts,
+checks it against your standard's governance rules before anything is
+generated, and writes a plain-language **passport** for it with every run, so
+data owners and consumers can see what it is without reading YAML.
+
+<ExampleDownload name="data-products" />
+
+## Write the product
+
+Put each product in `products/` and add `products/*.yaml` to `project.yaml`'s
+`imports`. In VS Code, a new empty file in `products/` offers a skeleton.
+
+<Example name="data-products" file="products/customers.yaml" />
+
+Ingestron reads the product's name, purpose and usage, its team (a member
+whose `role` is `owner` is an owner), its support channels, and each output
+port's `contractId`: the product publishes the tables built from that
+contract. A contract can be published by one product only, so every table has
+one owner. Other ODPS fields, such as `inputPorts`, are kept as documentation.
+
+What a product promises about its columns stays in the ODCS contract:
+`classification` on each column, `roles` for who may use the data, and
+`slaProperties` for freshness.
+
+<Example name="data-products" file="contracts/customers.yaml" />
+
+## Require governance
+
+The standard's `governance` section says what every product must give:
+
+<Example name="data-products" file="standard.yaml" />
+
+- `products.require`: facts each product must state: `owner`, `purpose`,
+  `support`, `domain`.
+- `classification`: the allowed values, whether every published column needs
+  one (`columns: required`), and which values are sensitive.
+- `access.sensitive.require`: for a contract with a sensitive column, the
+  fields each of its `roles` must give.
+
+Only contracts a product publishes are governed. A broken rule is an error,
+so `ingestron check` fails in CI and the pull request is stopped. Remove
+`classification: confidential` from `email` in the example to see it:
+
+```text
+contracts/customers.yaml:13:17  error  COLUMN_UNCLASSIFIED
+  Column "email" of the contract "shop.customers" has no classification; "customers" publishes it, and the standard requires one.
+```
+
+An unknown classification offers each allowed value as a quick fix.
+
+## Read the passport
+
+`ingestron apply` writes `build/<environment>/products/` beside the pipelines:
+a `README.md` listing every product, and a page per product. It says who owns
+the product and what it is for, which table it is in this environment and
+where it lives, its columns with sensitive ones marked, its quality checks,
+how fresh it is, who may use it, its lineage as a diagram, and the governance
+rules it meets:
+
+<Example name="data-products" file="build/dev/products/customers.md" />
+
+Passports are Markdown with Mermaid diagrams, so GitHub and Azure DevOps show
+them as pages. They are generated with the pipelines, so they are always up to
+date, and `ingestron check` fails when one is stale.
+
+Access is shown as the contract declares it. Ingestron does not grant it yet.

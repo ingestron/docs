@@ -26,7 +26,7 @@ Pass `--standard ../platform/standard.yaml` when creating the project. Relative
 paths are resolved from your current shell directory. For a concrete ADF route:
 
 ```sh
-ingestron init sales --connector postgresql --connectivity private --via adf \
+ingestron init sales --connector postgresql --connectivity private --via adf-databricks \
   --standard ../platform/standard.yaml --yes
 ```
 
@@ -80,3 +80,10 @@ In the downloaded example, set `cluster_by` to `none` under the PostgreSQL table
 `store.with` in `flows/postgresql.yaml`. Plan reports that policy fixes it to
 `auto`. Remove that override and plan again. The valid project produces ADF
 resources under `build/dev/adf/` and a bundle under `build/dev/databricks/`.
+
+## 5. Require governance of data products
+
+A `governance` section makes every data product state its owner and purpose,
+classify each column it publishes, and say who may use sensitive data. A
+product that breaks a rule stops generation, so the pull request fails. See
+[Define a data product](/docs/how-to/define-a-data-product).
