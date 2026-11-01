@@ -35,12 +35,12 @@ When only one route is supported, Ingestron selects it. Then enter the
 project name, environments, standard and connection settings. Press Enter
 to accept the default shown beside a question.
 
-To select the connection and route with flags (`--via` is `databricks`, `adf`,
-`adf-synapse`, `adf-duckdb` or `adf-files`; see
+To select the connection and route with flags (`--via` is `databricks`, `adf-databricks`,
+`adf-synapse`, `adf-duckdb` or `adf-landing`; see
 [Choose platforms and an ingestion route](/docs/start/choose-a-route)):
 
 ```sh
-ingestron init sales --connector postgresql --connectivity private --via adf \
+ingestron init sales --connector postgresql --connectivity private --via adf-databricks \
   --env dev --env prod --yes
 ```
 

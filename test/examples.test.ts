@@ -23,7 +23,7 @@ describe("examples", () => {
   }, 30_000);
   it("lists every sample with a title, summary and the facts found by resolving it", () => {
     const examples = listExamples();
-    expect(examples).toHaveLength(22);
+    expect(examples).toHaveLength(23);
     for (const example of examples) {
       expect(example.title, example.name).not.toBe("");
       expect(example.summary, example.name).toMatch(/\.$/);
