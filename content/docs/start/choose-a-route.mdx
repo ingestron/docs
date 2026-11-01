@@ -30,22 +30,21 @@ editor is a separate choice; it does not determine the platform architecture.
 
 ## What works in the current distribution
 
-The current builder offers two complete routes. These are today's implemented
-choices, not the definition of every future Ingestron project.
+New project, in the CLI and VS Code, offers these routes for a source; `--via`
+names them on the command line.
 
-| Route                         | What it does                                                                                    | Packs            |
-| ----------------------------- | ----------------------------------------------------------------------------------------------- | ---------------- |
-| Databricks directly           | Reads supported sources into Databricks tables                                                  | Databricks       |
-| ADF ingestion into Databricks | Copies sources to ADLS Gen2 landing storage, then reads the landed files into Databricks tables | Databricks + ADF |
+| Route (`--via`)                               | What it does                                                                                      | Packs            | Guide                                                   |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------------- |
+| Databricks directly (`databricks`)            | Reads supported sources into Databricks tables                                                    | Databricks       | [Databricks](/docs/how-to/databricks)                   |
+| ADF ingestion into Databricks (`adf`)         | Copies sources to ADLS Gen2 landing storage, then reads the landed files into Databricks tables   | Databricks + ADF | [Azure Data Factory](/docs/how-to/adf)                  |
+| ADF, served as Synapse views (`adf-synapse`)  | Lands each table as a file, and shows the files and transforms as Synapse serverless SQL views    | Synapse + ADF    | [Serve files as SQL](/docs/how-to/serve-files-as-sql)   |
+| ADF into DuckDB tables (`adf-duckdb`)         | Lands each table as a file; DuckDB builds tables from them, runs transforms and publishes Parquet | DuckDB + ADF     | [Run DuckDB in Azure](/docs/how-to/run-duckdb-in-azure) |
+| ADF, ending at the landed files (`adf-files`) | Copies sources to landing storage, for reports that read the files                                | ADF              | [Land files only](/docs/how-to/land-files-only)         |
 
-Other combinations start from a guide's example or a template rather than the
-builder:
-
-| Route                  | What it does                                                                   | Packs          | Guide                                                           |
-| ---------------------- | ------------------------------------------------------------------------------ | -------------- | --------------------------------------------------------------- |
-| ADF landing only       | Copies sources to landing storage, for reports that read the files             | ADF            | [Land files only](/docs/how-to/land-files-only)                 |
-| ADF with Synapse views | Lands files, and shows them and transforms as Synapse serverless SQL views     | Synapse + ADF  | [Serve files as SQL](/docs/how-to/serve-files-as-sql)           |
-| DuckDB                 | Loads files into DuckDB tables on a laptop, runs transforms, publishes Parquet | DuckDB (+ ADF) | [Run locally with DuckDB](/docs/how-to/run-locally-with-duckdb) |
+Synapse and DuckDB are offered where ADF copies tables, not where it copies
+files as they are; Synapse not for Microsoft 365, which lands JSON. To try
+DuckDB on a laptop with no source at all, start from the **DuckDB on a laptop**
+starter: [Run locally with DuckDB](/docs/how-to/run-locally-with-duckdb).
 
 Selecting another provider name in YAML will not enable a destination no pack
 implements. See the [pack catalogue](/docs/reference/packs) for the current
