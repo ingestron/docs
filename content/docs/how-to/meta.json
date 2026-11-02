@@ -27,6 +27,7 @@
     "serve-files-as-sql",
     "adf-native-connectors",
     "adf-runtime",
+    "design-adf-pipelines",
     "name-adf-resources",
     "publish-adf",
     "---DuckDB---",
