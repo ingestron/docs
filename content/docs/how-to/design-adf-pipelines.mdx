@@ -1,0 +1,106 @@
+---
+title: Design your ADF pipelines
+description: Choose how pipelines copy their tables, retry failed copies, add audit columns and file resources in the factory.
+---
+
+Your standard decides how the generated pipelines look in ADF Studio. Every
+setting on this page is optional: without them, each pipeline has one Copy
+activity per table, as before. Write them under the method's settings in the
+standard; a flow can override them with `ingest: { with: … }`, except where a
+pipeline's tables must agree.
+
+```yaml title="standard.yaml"
+ingest:
+  default: adf-copy
+  settings:
+    adf-copy:
+      pattern: foreach
+      parallel: 4
+      activity: { retries: 2, retry_interval: 60, timeout: 120 }
+      audit_columns:
+        _loaded_at: run.trigger_time
+        _run_id: run.id
+        _source: source.object
+      folder: ingestron/${project.id}
+      annotations: [finance]
+```
+
+Run `ingestron apply` and open the pipeline in ADF Studio, or read
+`build/<environment>/pipeline/` to see the result.
+
+## Copy every table with one ForEach
+
+`pattern: foreach` gives each connection's pipeline one ForEach activity,
+`for_each_table`, with one parameterised Copy inside, `copy_table`. The
+pipeline's `tables` parameter lists the tables to copy. Its default value is
+the generated list, so each table's query and landing folder are in the
+pipeline's JSON and in Git. Nothing is read at run time, and no control table is
+needed.
+
+To copy only some tables again, trigger the pipeline with a shorter `tables`
+value: copy the entries you need from the parameter's default.
+
+`parallel` sets how many tables are copied at once, from 1 to 50; the default
+is 4. The pattern is offered for `adf-copy` sources (the SQL Server family).
+Incremental tables carry their watermark column, and the Copy adds the window
+filter when it runs. A `path` with date or `{run}` tokens needs one Copy
+activity per table: use `pattern: activities`.
+
+The tables of one pipeline share `pattern`, `parallel`, `activity` and
+`audit_columns`. When a flow changes one of them for a single table,
+`ingestron plan` names the tables that differ.
+
+## Retry a failed copy
+
+`activity` is the Copy activity's policy, for every ADF method:
+
+| Setting          | Meaning                                    | Values      |
+| ---------------- | ------------------------------------------ | ----------- |
+| `retries`        | How often a failed copy is tried again     | 0 to 10     |
+| `retry_interval` | Seconds between tries                      | 30 to 86400 |
+| `timeout`        | Minutes a copy may run before ADF stops it | 1 to 10080  |
+
+Keys you leave out keep ADF's defaults. These retries happen inside the run;
+`retries` at the method's top level still retries the whole window from the
+trigger. With `after_copy`, window retries move onto the copies, and your
+`activity` values win.
+
+## Add audit columns
+
+`audit_columns` adds columns to every landed row, by name. A value is one of the
+run values ADF fills in when it runs, or text:
+
+| Value               | What ADF writes                               | Type      |
+| ------------------- | --------------------------------------------- | --------- |
+| `run.trigger_time`  | The run's trigger time                        | timestamp |
+| `run.window_start`  | The start of the run's window                 | timestamp |
+| `run.window_end`    | The end of the run's window                   | timestamp |
+| `run.id`            | The pipeline run's ID                         | string    |
+| `run.pipeline`      | The pipeline's name                           | string    |
+| `source.object`     | The source object, such as `erp.dbo.Invoices` | string    |
+| `source.connection` | The connection's ID                           | string    |
+| other text          | The text, such as `${environment.name}`       | string    |
+
+Names start with a letter or underscore, must not repeat a contract column or
+each other in another case, and must not be `_ingestron_file` or
+`_rescued_data`, which the packs that read the files use.
+The packs that read the files keep the columns after the contract's: Synapse
+views, DuckDB tables and Databricks tables, with timestamps typed. Each data
+product passport lists them with its columns.
+
+Audit columns are offered for `adf-copy` and for native table copies that read
+columns by name. Files copied as they are have no rows to add to, and sources
+read by path, or Microsoft 365, are refused for now.
+
+## File resources in the factory
+
+`folder` puts the project's pipelines and datasets in a factory folder, such as
+`ingestron/erp`; every ADF table in a project uses the same folder.
+`annotations` adds tags to a pipeline, after Ingestron's own. The tables of one
+pipeline share them, so each flow can tag its pipeline with its source system.
+
+Under `pattern: foreach`, each run of `copy_table` carries its table's name as
+a user property, so the run's monitoring view shows which table each copy was.
+
+Every generated pipeline and Copy activity has a description, so the factory
+explains itself without opening the definitions.
