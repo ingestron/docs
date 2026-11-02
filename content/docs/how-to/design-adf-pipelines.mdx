@@ -81,7 +81,9 @@ run values ADF fills in when it runs, or text:
 | `source.connection` | The connection's ID                           | string    |
 | other text          | The text, such as `${environment.name}`       | string    |
 
-Names start with a letter or underscore, and must not repeat a contract column.
+Names start with a letter or underscore, must not repeat a contract column or
+each other in another case, and must not be `_ingestron_file` or
+`_rescued_data`, which the packs that read the files use.
 The packs that read the files keep the columns after the contract's: Synapse
 views, DuckDB tables and Databricks tables, with timestamps typed. Each data
 product passport lists them with its columns.
@@ -93,8 +95,12 @@ read by path, or Microsoft 365, are refused for now.
 ## File resources in the factory
 
 `folder` puts the project's pipelines and datasets in a factory folder, such as
-`ingestron/erp`. `annotations` adds tags to its pipelines, after Ingestron's
-own. Every ADF table in a project uses the same `folder` and `annotations`.
+`ingestron/erp`; every ADF table in a project uses the same folder.
+`annotations` adds tags to a pipeline, after Ingestron's own. The tables of one
+pipeline share them, so each flow can tag its pipeline with its source system.
+
+Under `pattern: foreach`, each run of `copy_table` carries its table's name as
+a user property, so the run's monitoring view shows which table each copy was.
 
 Every generated pipeline and Copy activity has a description, so the factory
 explains itself without opening the definitions.
