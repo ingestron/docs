@@ -5,6 +5,7 @@ import { DocLinks } from "@/components/doc-links";
 import { Example, ExampleDownload } from "@/components/example";
 import { FlowDiagram } from "@/components/flow-diagram";
 import { RouteComparison } from "@/components/reference/route-comparison";
+import { RouteFacts } from "@/components/reference/route-facts";
 import { RouteTable } from "@/components/reference/route-table";
 import { ProjectSources } from "@/components/reference/project-sources";
 import { BuiltInTemplates } from "@/components/reference/built-in-templates";
@@ -57,6 +58,7 @@ export function getMDXComponents(components?: MDXComponents) {
     ProjectSources,
     FlowDiagram,
     RouteComparison,
+    RouteFacts,
     RouteTable,
     ExamplesList,
     ExtensionCommands,

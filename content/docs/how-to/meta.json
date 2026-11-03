@@ -23,16 +23,11 @@
     "deploy-the-bundle",
     "---Azure Data Factory---",
     "adf",
-    "land-files-only",
-    "serve-files-as-sql",
     "adf-native-connectors",
     "adf-runtime",
     "design-adf-pipelines",
     "name-adf-resources",
-    "publish-adf",
-    "---DuckDB---",
-    "run-locally-with-duckdb",
-    "run-duckdb-in-azure"
+    "publish-adf"
   ],
   "defaultOpen": false
 }

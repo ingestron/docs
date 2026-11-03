@@ -78,6 +78,14 @@ test("the start section and connectivity land on their new pages", () => {
   );
 });
 
+test("the four moved platform guides land on their pages, with the query kept", () => {
+  const shipped = (path) => redirectFor(new URL(path, "https://docs.ingestron.io"));
+  assert.equal(shipped("/docs/how-to/run-locally-with-duckdb"), "/docs/platforms/duckdb");
+  assert.equal(shipped("/docs/how-to/run-duckdb-in-azure/"), "/docs/platforms/duckdb-in-azure");
+  assert.equal(shipped("/docs/how-to/serve-files-as-sql.html"), "/docs/platforms/synapse");
+  assert.equal(shipped("/docs/how-to/land-files-only?x=1"), "/docs/platforms/landing-only?x=1");
+});
+
 test("the worker answers the root with 307", () => {
   const response = redirectResponseFor(new URL("https://docs.ingestron.io/?q=1"));
   assert.deepEqual(response, { location: "https://docs.ingestron.io/docs?q=1", status: 307 });

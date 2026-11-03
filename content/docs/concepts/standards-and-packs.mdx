@@ -54,7 +54,7 @@ laptop. There, an ingest that lands files with another pack is replaced by the
 named pack's method that reads those landed files, and a serve step from
 another pack is left out. A store or transform that belongs to another pack is
 a [`RUNS_ON`](/docs/reference/errors#RUNS_ON) error, and a table another pack ingests straight into a table is
-left out with a warning. [Run locally with DuckDB](/docs/how-to/run-locally-with-duckdb#run-a-cloud-project-locally)
+left out with a warning. [Run a cloud project locally](/docs/platforms/duckdb#run-a-cloud-project-locally)
 shows it.
 
 The connection-first builder writes an explicit `ingest.uses` for the chosen

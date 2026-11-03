@@ -1,20 +1,24 @@
 ---
-title: Run locally with DuckDB
-description: Build tables on a laptop with DuckDB, and run a cloud project's tables locally from a load's files.
+title: DuckDB
+description: Build tables with DuckDB from files on one machine, and run a cloud project's tables locally from a load's files.
 ---
 
-DuckDB runs SQL on a laptop, with nothing to set up but its command line. The
-DuckDB pack loads files into tables in a local database, runs transforms, and
-publishes each table as Parquet that Power BI and other tools read as files.
-The same project can land files with ADF in the cloud and still run its tables
-locally, so a failed load can be tried again on a laptop.
+DuckDB runs SQL on one machine, with nothing to set up but its command line.
+The DuckDB pack loads files into tables in a local database, runs transforms,
+and publishes each table as Parquet that Power BI and other tools read as
+files.
 
-To try it first, [run your first project on your laptop](/docs/start/first-project):
+<RouteFacts id="duckdb" />
+
+To try it, [run your first project on your laptop](/docs/start/first-project):
 it creates a project from the **DuckDB on a laptop** starter, generates its
 SQL and builds its tables. Each table is published to the `published/` folder
 that `platform.yaml` names, as `<schema>.<table>.parquet`. Keep `ingestron.duckdb` and
 `published/*.parquet` out of version control: they are data, built from the
 files.
+
+The same pack also runs a cloud project's tables on a laptop, so a failed load
+can be tried again there; see [Run a cloud project locally](#run-a-cloud-project-locally).
 
 ## Read files where they are
 
@@ -95,7 +99,7 @@ start with the load's time, so a later load's rows win.
 ## Run the same tables in Azure
 
 To rebuild the tables in Azure after each load, ADF can start a Container Apps
-job: see [Run DuckDB in Azure](/docs/how-to/run-duckdb-in-azure).
+job: see [Run DuckDB in Azure](/docs/platforms/duckdb-in-azure).
 
 ## What a local run cannot catch
 

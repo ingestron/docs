@@ -24,9 +24,9 @@ export interface RouteRow {
 export const routeGuides: Record<string, string> = {
   databricks: "how-to/databricks",
   "adf-databricks": "how-to/adf",
-  "adf-synapse": "how-to/serve-files-as-sql",
-  "adf-duckdb": "how-to/run-duckdb-in-azure",
-  "adf-landing": "how-to/land-files-only",
+  "adf-synapse": "platforms/synapse",
+  "adf-duckdb": "platforms/duckdb-in-azure",
+  "adf-landing": "platforms/landing-only",
 };
 
 /** The starter that needs no source and no cloud. */
@@ -40,11 +40,11 @@ const written: Record<string, Written> = {
     choose: "To try Ingestron, or to build tables from files on one machine, with no cloud.",
     afterLoad:
       "You run `run.sql` with the DuckDB command line: it rebuilds the tables and publishes them as Parquet.",
-    deploy: "Nothing: it runs where you are.",
+    deploy: "Nothing. It runs where you are.",
   },
   databricks: {
     choose: "Databricks can reach the source, and the tables live in Databricks.",
-    afterLoad: "Nothing more: the Databricks pipeline that reads the source writes the tables.",
+    afterLoad: "Nothing more. The Databricks pipeline that reads the source writes the tables.",
     deploy: "The Databricks CLI: `databricks bundle deploy`.",
   },
   "adf-databricks": {
@@ -56,7 +56,7 @@ const written: Record<string, Written> = {
   "adf-synapse": {
     choose:
       "Reports need SQL over the copied tables, with nothing to run or store after each load.",
-    afterLoad: "Nothing: Synapse serverless SQL reads the files each time a report queries a view.",
+    afterLoad: "Nothing. Synapse serverless SQL reads the files each time a report queries a view.",
     deploy:
       "The factory's Git publishing, and running `views.sql` against the serverless database when the definitions change.",
   },
@@ -69,7 +69,7 @@ const written: Record<string, Written> = {
   },
   "adf-landing": {
     choose: "Reports read the landed files themselves, such as Power BI reading Parquet.",
-    afterLoad: "Nothing: the copied files are the result.",
+    afterLoad: "Nothing. The copied files are the result.",
     deploy: "The factory's Git publishing.",
   },
 };
@@ -96,7 +96,7 @@ export function routeRows(): RouteRow[] {
       title: template.title,
       option: `--template ${starter}`,
       packs: sampleFacts(template.folder).packs.map((pack) => pack.split("@")[0]!),
-      guide: "how-to/run-locally-with-duckdb",
+      guide: "platforms/duckdb",
       ...words(starter),
     },
     ...allRoutes().map(({ via, title }) => ({
@@ -108,4 +108,11 @@ export function routeRows(): RouteRow[] {
       ...words(via),
     })),
   ];
+}
+
+/** One route's row, by its `--via` value or the starter's name. */
+export function routeRow(id: string): RouteRow {
+  const row = routeRows().find((item) => item.id === id);
+  if (!row) throw new Error(`No route "${id}".`);
+  return row;
 }
