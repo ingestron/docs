@@ -5,6 +5,7 @@ import { DocLinks } from "@/components/doc-links";
 import { Example, ExampleDownload } from "@/components/example";
 import { FlowDiagram } from "@/components/flow-diagram";
 import { RouteComparison } from "@/components/reference/route-comparison";
+import { RouteTable } from "@/components/reference/route-table";
 import { ProjectSources } from "@/components/reference/project-sources";
 import { BuiltInTemplates } from "@/components/reference/built-in-templates";
 import { CliCommands } from "@/components/reference/cli-commands";
@@ -21,7 +22,12 @@ import { PackMethods } from "@/components/reference/pack-methods";
 import { NativeReadSettings } from "@/components/reference/native-read-settings";
 import { SettingsSections } from "@/components/reference/settings-sections";
 import { SettingsTable } from "@/components/reference/settings-table";
-import { PackageVersions, PackNames, PlatformChecks } from "@/components/reference/versions";
+import {
+  DuckdbTested,
+  PackageVersions,
+  PackNames,
+  PlatformChecks,
+} from "@/components/reference/versions";
 import { Tool, ToolSteps } from "@/components/tool-steps";
 
 export function getMDXComponents(components?: MDXComponents) {
@@ -51,11 +57,13 @@ export function getMDXComponents(components?: MDXComponents) {
     ProjectSources,
     FlowDiagram,
     RouteComparison,
+    RouteTable,
     ExamplesList,
     ExtensionCommands,
     PackageVersions,
     PackNames,
     PlatformChecks,
+    DuckdbTested,
     ...components,
   } satisfies MDXComponents;
 }

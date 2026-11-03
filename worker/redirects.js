@@ -3,7 +3,10 @@
 // scripts/check-links.ts checks every target against the built site.
 
 /** Exact old path to new path. A target may end in `#anchor`. */
-export const redirects = new Map();
+export const redirects = new Map([
+  ["/docs/start", "/docs/start/first-project"],
+  ["/docs/concepts/connectivity", "/docs/start/choose-a-route#reachability"],
+]);
 
 /** Old paths by shape: a pattern and the function that builds the new path. */
 export const patterns = [];
