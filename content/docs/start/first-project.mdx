@@ -14,7 +14,8 @@ Start in any folder where you can create a new one, such as your home folder.
 ## Before you start
 
 - **Node.js 22.13 or later.** `npx ingestron@1` runs Ingestron without
-  installing it. To install it instead, or to use VS Code, see
+  installing it. The first time, npm asks to install the `ingestron` package;
+  answer `y`. To install it instead, or to use VS Code, see
   [Install a tool](/docs/start/install).
 - **The [DuckDB command line](https://duckdb.org/docs/installation/).** The
   DuckDB pack's SQL is tested with DuckDB <DuckdbTested />.
@@ -131,13 +132,24 @@ second shows the totals it built from the five sample orders:
 └──────────┴────────┴────────┘
 ```
 
-`published/` now holds `bronze.orders.parquet` and
-`silver.customer_totals.parquet`, which Power BI and other tools read as
-files. `-bail` stops at the first error, so a run that fails while building
-publishes nothing; without it, DuckDB carries on and commits what it built.
-Running `run.sql` again is safe: it rebuilds both tables and
-replaces both files. The project's `.gitignore` keeps `ingestron.duckdb` and
-the Parquet files out of Git, because they are data built from the files.
+`run.sql` also published both tables as Parquet, which Power BI and other
+tools read as files:
+
+```sh
+ls published
+```
+
+```text
+bronze.orders.parquet  silver.customer_totals.parquet
+```
+
+`run.sql` builds both tables in one transaction, so if a statement fails,
+neither table changes. `-bail` then stops DuckDB before it publishes anything.
+Without `-bail`, DuckDB can go on to the `COPY` statements and publish the
+tables as they were before the run. Running `run.sql` again is safe: it
+rebuilds both tables and replaces both files. The project's `.gitignore` keeps
+`ingestron.duckdb` and the Parquet files out of Git, because they are data
+built from the files.
 
 ## 5. Read what you wrote
 
