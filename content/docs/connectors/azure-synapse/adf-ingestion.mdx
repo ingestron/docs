@@ -43,8 +43,8 @@ extra WHERE criteria and per-table window schedules are not supported by
 
 ## Keep the destination current
 
-ADF writes Parquet into landing storage. Databricks reads those files into a
-streaming table. The store's `sequence_by` controls which version wins when
+ADF writes Parquet into landing storage. On the `adf-databricks` route,
+Databricks reads those files into a streaming table. The store's `sequence_by` controls which version wins when
 keeping the latest row; it is separate from the extraction watermark. With
 append storage, repeated full copies add repeated rows. Choose
 [upsert or history](/docs/how-to/keep-a-table-current) when appropriate.
@@ -52,7 +52,8 @@ A row missing from a later copy does not tell the store to delete it.
 
 All tables of one connection and source database share runtime, encryption,
 schedule, retry and paused settings. Those values must agree even when the
-tables use different watermarks. ADF and Databricks run on separate schedules.
+tables use different watermarks. On the `adf-databricks` route, ADF and
+Databricks run on separate schedules.
 
 ## Complete examples
 
