@@ -1,5 +1,4 @@
 {
-  "title": "Start here",
-  "pages": ["index", "install", "first-project", "choose-a-route"],
-  "defaultOpen": false
+  "title": "Get started",
+  "pages": ["first-project", "how-it-works", "choose-a-route", "install"]
 }
