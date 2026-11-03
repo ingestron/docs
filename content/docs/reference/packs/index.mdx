@@ -22,18 +22,18 @@ Connector-specific access and ingestion requirements are in [Connections](/docs/
 
 ## Supported combinations today
 
-| Project route                         | Required packs          | Result                                                                                                             |
-| ------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Direct ingestion into Databricks      | Databricks              | Tables produced by the supported direct ingestion and storage methods                                              |
-| ADF ingestion with Databricks storage | Databricks + ADF        | ADF lands files; Databricks reads those files into tables                                                          |
-| ADF landing only                      | ADF, with `store: none` | ADF lands files that reports read directly ([guide](/docs/how-to/land-files-only))                                 |
-| ADF with Synapse views                | Synapse + ADF           | ADF lands files; Synapse serverless SQL shows them as views ([guide](/docs/how-to/serve-files-as-sql))             |
-| DuckDB on a laptop                    | DuckDB                  | DuckDB loads local files into tables and publishes them as Parquet ([guide](/docs/how-to/run-locally-with-duckdb)) |
-| ADF with DuckDB tables                | DuckDB + ADF            | ADF lands files; DuckDB builds the tables, and `runs-on: duckdb` runs them locally                                 |
+| Project route                         | Required packs          | Result                                                                                               |
+| ------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------- |
+| Direct ingestion into Databricks      | Databricks              | Tables produced by the supported direct ingestion and storage methods                                |
+| ADF ingestion with Databricks storage | Databricks + ADF        | ADF lands files; Databricks reads those files into tables                                            |
+| ADF landing only                      | ADF, with `store: none` | ADF lands files that reports read directly ([guide](/docs/platforms/landing-only))                   |
+| ADF with Synapse views                | Synapse + ADF           | ADF lands files; Synapse serverless SQL shows them as views ([guide](/docs/platforms/synapse))       |
+| DuckDB on a laptop                    | DuckDB                  | DuckDB loads local files into tables and publishes them as Parquet ([guide](/docs/platforms/duckdb)) |
+| ADF with DuckDB tables                | DuckDB + ADF            | ADF lands files; DuckDB builds the tables, and `runs-on: duckdb` runs them locally                   |
 
 In Azure, ADF's `after_copy` starts a Container Apps job after each schedule's
 copies, and the job rebuilds the DuckDB tables with a public image
-([guide](/docs/how-to/run-duckdb-in-azure)). Ingestron creates neither the job
+([guide](/docs/platforms/duckdb-in-azure)). Ingestron creates neither the job
 nor its access; `ingestron request` lists them.
 
 This is the current capability boundary. Do not assume an unlisted provider or
