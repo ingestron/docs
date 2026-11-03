@@ -9,8 +9,8 @@ analysis uses the open files and selected environment.
 
 ## Install
 
-Follow [Install a tool](/docs/start/install) to build and install the extension
-from this checkout.
+Follow [Install a tool](/docs/start/install) to build the extension from
+[ingestron/vscode](https://github.com/ingestron/vscode) and install it.
 
 Open a folder that holds an Ingestron project. The environment the extension
 uses appears in the status bar, such as `Ingestron: dev`; click it to choose
@@ -196,8 +196,11 @@ The **Ingestron** tab in the secondary side bar, on the right, opens with a
   request** and **Show generated files**. Click one to run it for the project.
 
 With several projects, each has a row, named by its `id` and showing its folder
-in the workspace, that holds the same lists. A workspace with no project shows
-**New project**. The view follows the environments in `project.yaml`, so adding
+in the workspace, that holds the same lists. Every row starts folded except
+the project of the file in the main editor, which opens by itself. Moving to a
+file of another project opens that project and folds the one before; a row you
+fold or open by hand stays as you left it until the active project changes. A
+workspace with no project shows **New project**. The view follows the environments in `project.yaml`, so adding
 one to the file adds it to the list.
 
 ## Reference beside the editor

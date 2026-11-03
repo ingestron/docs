@@ -7,15 +7,18 @@ A **standard** is the project's policy. A **pack** implements capabilities and
 builds platform files. A **method** performs one action for a table. Choosing a
 pack does not mean every action must run on that platform.
 
-| Action      | Responsibility                                             |
-| ----------- | ---------------------------------------------------------- |
-| `ingest`    | Read a source, producing files or a table                  |
-| `transform` | Compute a result from declared project tables              |
-| `store`     | Keep the preceding result using a supported storage method |
+| Action      | Responsibility                                                                 |
+| ----------- | ------------------------------------------------------------------------------ |
+| `ingest`    | Read a source, producing files or a table                                      |
+| `transform` | Compute a result from declared project tables                                  |
+| `store`     | Keep the preceding result using a supported storage method                     |
+| `serve`     | Make a table's data available somewhere else, such as SQL views over its files |
 
 Methods declare what they accept and produce. Consecutive methods must be
 compatible; listing two packs does not make every combination valid. If ingestion
-already produces a table, that flow has no separate store step.
+already produces a table, that flow has no separate store step. A serve step is
+optional: it follows a table's last step only when something chooses a serve
+method, such as `synapse-serve` for a table another pack stores.
 
 ## One policy across the project
 
@@ -44,6 +47,15 @@ For each action, the first applicable choice wins:
 Rules can match connector, connectivity, layer and the preceding action's output.
 An explicit unsupported choice is reported as a problem; it does not silently
 switch to another platform.
+
+An environment in `project.yaml` can name `runs-on`, one of the standard's
+packs, to run the tables on that pack alone, such as `runs-on: duckdb` on a
+laptop. There, an ingest that lands files with another pack is replaced by the
+named pack's method that reads those landed files, and a serve step from
+another pack is left out. A store or transform that belongs to another pack is
+a [`RUNS_ON`](/docs/reference/errors#RUNS_ON) error, and a table another pack ingests straight into a table is
+left out with a warning. [Run locally with DuckDB](/docs/how-to/run-locally-with-duckdb#run-a-cloud-project-locally)
+shows it.
 
 The connection-first builder writes an explicit `ingest.uses` for the chosen
 route. You can inspect that choice in the flow without learning the builder's

@@ -4,7 +4,8 @@ description: Review generated copy resources and publish them through your facto
 ---
 
 Use this after [planning and generating](/docs/how-to/plan-and-generate) a project
-with the ADF pack. In the current combined route, its output is under
+with the ADF pack. With ADF alone (the `adf-landing` route), its output is
+`build/<environment>/`; when the standard lists another pack too, it is
 `build/<environment>/adf/`. Ingestron generates files; it does not publish the
 factory or provision the runtime, source access, Key Vault or landing storage.
 
@@ -32,7 +33,11 @@ release pipeline, use the organisation's established ADF deployment process.
 
 ## Deploy downstream resources separately
 
-For the current ADF-to-Databricks route, the Databricks bundle is a separate
-output under `build/<environment>/databricks/`. Follow
-[Deploy the Databricks bundle](/docs/how-to/deploy-the-bundle) for that output.
-Publishing the factory does not deploy or schedule the downstream bundle.
+When the standard lists another pack, its files are a separate output beside
+`adf/`, and publishing the factory does not deploy or schedule them:
+
+- `build/<environment>/databricks/`: follow
+  [Deploy the Databricks bundle](/docs/how-to/deploy-the-bundle).
+- `build/<environment>/synapse/`: run its `views.sql`, as in
+  [Serve files as SQL](/docs/how-to/serve-files-as-sql).
+- `build/<environment>/duckdb/`: follow [Run DuckDB in Azure](/docs/how-to/run-duckdb-in-azure).
