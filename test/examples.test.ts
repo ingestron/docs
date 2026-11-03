@@ -1,8 +1,10 @@
 // The worked examples: front matter for listing, and safe reads of their files.
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { appendFileSync, cpSync, mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { exampleFiles, listExamples, readExampleFile } from "../lib/examples.js";
+import { run } from "@ingestron/cli";
+import { exampleFiles, exampleFolder, listExamples, readExampleFile } from "../lib/examples.js";
 import { connectorIds } from "../lib/reference.js";
 
 describe("examples", () => {
@@ -63,5 +65,23 @@ describe("examples", () => {
     expect(() => readExampleFile("minimal", "../../guides/environments/project.yaml")).toThrow(
       'Example "minimal": "../../guides/environments/project.yaml" is outside the example.',
     );
+  });
+
+  it("fails the organisation-standards exercise with the output its page shows", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "docs-fixed-setting-"));
+    cpSync(exampleFolder("standards-and-conventions"), cwd, { recursive: true });
+    appendFileSync(
+      join(cwd, "flows/web.yaml"),
+      readExampleFile("standards-and-conventions", "exercises/fixed-setting.yaml"),
+    );
+    let output = "";
+    expect(run(["plan", "--no-diff"], { cwd, write: (text) => (output += text) })).toBe(1);
+    const page = readFileSync(
+      join(process.cwd(), "content/docs/examples/organisation-standards.mdx"),
+      "utf8",
+    );
+    const shown = /Plan again:\n\n```text\n([\s\S]*?)```/.exec(page)?.[1];
+    expect(shown).toBeDefined();
+    expect(output).toBe(shown);
   });
 });

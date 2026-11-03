@@ -21,6 +21,7 @@ import { PackMethods } from "@/components/reference/pack-methods";
 import { NativeReadSettings } from "@/components/reference/native-read-settings";
 import { SettingsSections } from "@/components/reference/settings-sections";
 import { SettingsTable } from "@/components/reference/settings-table";
+import { PackageVersions, PackNames, PlatformChecks } from "@/components/reference/versions";
 import { Tool, ToolSteps } from "@/components/tool-steps";
 
 export function getMDXComponents(components?: MDXComponents) {
@@ -52,6 +53,9 @@ export function getMDXComponents(components?: MDXComponents) {
     RouteComparison,
     ExamplesList,
     ExtensionCommands,
+    PackageVersions,
+    PackNames,
+    PlatformChecks,
     ...components,
   } satisfies MDXComponents;
 }
