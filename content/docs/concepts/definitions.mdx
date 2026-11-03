@@ -31,8 +31,12 @@ to produce another table when the selected packs support it.
 | `Flow`         | Source objects, destination table definitions and ingestion choices            |
 | `DataContract` | Expected columns, logical types, keys and other supported contract information |
 | `Transform`    | Declared input tables and code that produces another table                     |
+| `DataProduct`  | Who owns a set of published tables, their purpose and support, in ODPS         |
 
-A project needs exactly one Standard and may have one Platform. It does not need
+A data product is an Open Data Product Standard file, usually in `products/`,
+whose output ports name the contracts it publishes; see
+[Define a data product](/docs/how-to/define-a-data-product). A project needs
+exactly one Standard and may have one Platform. It does not need
 one Platform document per provider: method settings share that document under
 their method IDs. Capabilities still depend on the selected packs.
 
