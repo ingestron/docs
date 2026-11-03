@@ -8,7 +8,8 @@ Databricks bundles and pipelines, Azure Data Factory pipelines, Synapse
 serverless views and DuckDB SQL. You describe the sources, tables and rules in
 YAML your team reviews. Ingestron applies your organisation's standard and
 writes ordinary platform files, and you deploy them with your platform's own
-tools. Nothing in them calls Ingestron.
+tools. Nothing in them calls Ingestron; the one optional route that runs
+something Ingestron publishes is [named below](#no-dependency-once-its-deployed).
 
 ## Run it on your laptop
 
@@ -51,7 +52,7 @@ with each column cast to the type its contract gives.
 
 <Example name="duckdb" file="build/dev/tables/silver.customer_totals.sql" />
 
-The Databricks pack writes the `minimal` starter's orders table as a streaming
+The Databricks pack writes the `minimal` example project's orders table as a streaming
 table in a Databricks pipeline, typed and checked from its contract:
 
 <Example name="minimal" file="build/dev/src/shop/bronze/orders.sql" />
@@ -63,7 +64,8 @@ a project from the YAML to the platform.
 ### No dependency once it's deployed
 
 The generated files need only your platform, so if you stop using Ingestron,
-they still deploy and run, and you edit them yourself from then on. One optional route uses something Ingestron publishes:
+they still deploy and run, and you edit them yourself from then on. One
+optional route uses something Ingestron publishes:
 DuckDB in Azure runs in a public container image, which you can copy to your
 own registry. [Generated files](/docs/concepts/generated-files) explains what
 Ingestron writes and how it tracks it.
