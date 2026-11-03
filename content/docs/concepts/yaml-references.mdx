@@ -10,20 +10,20 @@ Quotation marks do not disable references: a quoted YAML string is still resolve
 
 ## Choose the right syntax
 
-| Write                                | Meaning                                                        | Where to use it                                                |
-| ------------------------------------ | -------------------------------------------------------------- | -------------------------------------------------------------- |
-| `${values.landing}`                  | A project value after environment overrides                    | Definition values                                              |
-| `${values.cluster.workers}`          | A nested value                                                 | Definition values                                              |
-| `${values.hosts.0}`                  | The first item in a value list                                 | Definition values                                              |
-| `${environment.name}`                | The selected environment, such as `dev`                        | Values and definitions                                         |
-| `${project.id}` or `${project.name}` | The project ID or optional display name                        | Values and definitions                                         |
-| `${file:query.sql}`                  | Contents of a project file                                     | Whole value, or embedded when the result is scalar             |
-| `${file:shared.yaml#/columns/0}`     | A value within a YAML file                                     | Whole value or embedded scalar; the fragment is a JSON Pointer |
-| `${secret:source-password}`          | A reference to a secret, never the secret's contents           | A whole value accepted by a connector or method                |
-| `${envvar:SOURCE_HOST}`              | Text from an environment variable supplied by the calling tool | Non-secret local inputs; see tool support below                |
-| `{{ environment }}` or `{{ table }}` | A naming pattern evaluated with naming context                 | Standard or platform `naming` only                             |
-| `{{ tables.orders }}`                | A declared input's generated name                              | SQL transform code supported by the selected method            |
-| `$${bundle.target}`                  | Literal `${bundle.target}` text after YAML loading             | Text intended for another tool; see transform exceptions below |
+| Write                                | Meaning                                              | Where to use it                                                |
+| ------------------------------------ | ---------------------------------------------------- | -------------------------------------------------------------- |
+| `${values.landing}`                  | A project value after environment overrides          | Definition values                                              |
+| `${values.cluster.workers}`          | A nested value                                       | Definition values                                              |
+| `${values.hosts.0}`                  | The first item in a value list                       | Definition values                                              |
+| `${environment.name}`                | The selected environment, such as `dev`              | Values and definitions                                         |
+| `${project.id}` or `${project.name}` | The project ID or optional display name              | Values and definitions                                         |
+| `${file:query.sql}`                  | Contents of a project file                           | Whole value, or embedded when the result is scalar             |
+| `${file:shared.yaml#/columns/0}`     | A value within a YAML file                           | Whole value or embedded scalar; the fragment is a JSON Pointer |
+| `${secret:source-password}`          | A reference to a secret, never the secret's contents | A whole value accepted by a connector or method                |
+| `${envvar:SOURCE_HOST}`              | Text from an environment variable or an `.env` file  | Non-secret values for one person or machine; see below         |
+| `{{ environment }}` or `{{ table }}` | A naming pattern evaluated with naming context       | Standard or platform `naming` only                             |
+| `{{ tables.orders }}`                | A declared input's generated name                    | SQL transform code supported by the selected method            |
+| `$${bundle.target}`                  | Literal `${bundle.target}` text after YAML loading   | Text intended for another tool; see transform exceptions below |
 
 Project `id`, `name` and `imports` are read literally. YAML mapping keys are not
 interpolated. Write references in values, not in field names or import patterns.
@@ -91,17 +91,97 @@ Do not embed a secret reference in a URL or connection string.
 
 ## Read an environment variable
 
-`${envvar:SOURCE_HOST}` reads text from the environment map supplied by the tool
-loading the definitions. Names use letters, digits and underscores and cannot
-start with a digit. Unset or empty values report
-[`ENVVAR_MISSING`](/docs/reference/errors#ENVVAR_MISSING).
+`${envvar:SOURCE_HOST}` reads text from an environment variable. Names use
+letters, digits and underscores and cannot start with a digit. Ingestron uses
+the first non-empty value from the environment of the process that runs it,
+then `.env.<environment>`, then `.env`. An empty value counts as unset.
 
-The current CLI Plan, Apply and Check commands pass their process environment.
-Editor analysis, environment comparison and infrastructure requests currently
-use an empty environment map, so they cannot resolve these references. Prefer
-project and environment `values` for definitions that must work across those
-interfaces. Environment-variable values become ordinary resolved text and may
-reach generated files; use `${secret:…}` for credentials instead.
+A variable that is unset everywhere reports
+[`ENVVAR_MISSING`](/docs/reference/errors#ENVVAR_MISSING). The CLI reports it
+as an error. The editor reports it as information that names the file to add it
+to, so the rest of the project is still checked.
+
+An environment variable's value becomes ordinary resolved text and may reach
+generated files. Use `${secret:…}` for credentials instead.
+
+## Choose where a value lives
+
+Start with the first place and move down only when the value does not fit:
+
+1. **`values` in `project.yaml`**, with `environments.<name>.values` for what
+   differs. Commit them. Everyone, the editor and CI get the same result, and a
+   reviewer sees every change. The `prod` entry in
+   [the example above](#project-values-and-environments) replaces `landing`
+   and `host` this way.
+2. **`.env` files**, for a value that differs for each person or machine, such
+   as a folder on your laptop or a sandbox workspace, or that your
+   infrastructure code produces, such as the name of a storage account it
+   creates. Do not commit them.
+3. **Pipeline variables in CI.** Set the variable in the pipeline and pass it to
+   the step that runs Ingestron. The process environment wins over the files, so
+   CI needs no `.env`.
+4. **`${secret:…}`**, for every credential. A `.env` file holds values that are
+   not secret: a line that Ingestron cannot read is reported without quoting it,
+   but a problem with the value itself may show it.
+
+## Use environment files
+
+Create `.env` in the project folder, beside `project.yaml`, with one
+`NAME=value` per line:
+
+```dotenv title=".env"
+SOURCE_HOST=sqlserver.example.invalid
+LANDING_PATH=/Volumes/dev_landing/finance/files
+```
+
+Then write `${envvar:SOURCE_HOST}` where the definition needs the value.
+Ingestron also reads `.env.<environment>`, such as `.env.prod`, for the
+environment it is working on and never reads another environment's file. A file
+that does not exist is skipped without a message. The files feed
+`${envvar:…}` only: their names do not become `values`.
+
+A file is UTF-8, one setting to a line:
+
+- A line starting with `#` is a comment, and so is the text after a space and
+  `#` following a value. `https://example.invalid/path#part` is one value.
+- `export NAME=value` is accepted, and so are single or double quotes around the
+  value. Single quotes keep the text exactly. Double quotes understand `\n`,
+  `\"` and `\\`.
+- Nothing is expanded: `$HOME` and `${OTHER}` stay as written.
+- A value is on one line. If a name repeats in a file, the last one wins.
+
+A line Ingestron cannot read, such as one without `=`, with an unclosed quote or
+with a name that has a hyphen, reports [`ENV_FILE_LINE`](/docs/reference/errors#ENV_FILE_LINE)
+as a warning. The message names the file and line, not the text, and the line
+is ignored.
+
+### Keep the files out of Git, and share a template
+
+`ingestron init` adds these lines to the new project's `.gitignore`, or to the
+one that is already there, and says when it added them:
+
+```text title=".gitignore"
+.env
+.env.*
+!.env.example
+```
+
+Commit a `.env.example` instead, with the names and placeholder values. Anyone
+who clones the project copies it to `.env` and fills it in:
+
+```dotenv title=".env.example"
+# Copy to .env and fill in. Add .env.prod for values that only prod uses.
+SOURCE_HOST=sqlserver.example.invalid
+LANDING_PATH=/Volumes/dev_landing/finance/files
+```
+
+Keep `!.env.example` after `.env.*` in a `.gitignore` you edit yourself;
+before it, the glob ignores the template again. Ingestron reads no file called
+`.env.example` unless you have an environment named `example`.
+
+The CLI and VS Code both read these files. VS Code also uses the environment it
+was started with, not variables you export later in a terminal; put those in
+`.env`. See [VS Code](/docs/tools/vscode#problems-as-you-type).
 
 ## Naming patterns and transform code
 
