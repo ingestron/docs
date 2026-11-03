@@ -1,4 +1,7 @@
 // Reference data read from the packages at build time, so pages match the code.
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { projectRecipe, projectRoutes, projectSources, type ProjectRoute } from "@ingestron/cli";
 import {
   documentReference,
   methodReference,
@@ -11,6 +14,7 @@ import { adf } from "@ingestron/pack-adf";
 import { databricks } from "@ingestron/pack-databricks";
 import { duckdb } from "@ingestron/pack-duckdb";
 import { synapse } from "@ingestron/pack-synapse";
+import { parse } from "yaml";
 
 /** The packs the CLI provides, in the order a standard usually lists them. */
 export const packs: Pack[] = [databricks, adf, synapse, duckdb];
@@ -18,6 +22,52 @@ export const packs: Pack[] = [databricks, adf, synapse, duckdb];
 /** Each pack's reference page. */
 export function packPages(): { pack: string; url: string }[] {
   return packs.map((pack) => ({ pack: pack.id, url: `/docs/reference/packs/${pack.id}` }));
+}
+
+/** A page's title, from its front matter, by its path under `/docs/`. */
+export function pageTitle(path: string): string {
+  const text = readFileSync(join(process.cwd(), "content/docs", `${path}.mdx`), "utf8");
+  const title = (parse(text.split("---")[1] ?? "") as { title?: string } | null)?.title;
+  if (!title) throw new Error(`The page "${path}" has no title.`);
+  return title;
+}
+
+/** A pack's name, from the title of its reference page: "Azure Data Factory" for `adf`. */
+export function packName(pack: string): string {
+  return pageTitle(`reference/packs/${pack}`).replace(/ pack$/, "");
+}
+
+/** Every route New project offers for some source, once each, in the order it lists them. */
+export function allRoutes(): Pick<ProjectRoute, "via" | "title">[] {
+  const order: Pick<ProjectRoute, "via" | "title">[] = [];
+  for (const source of projectSources()) {
+    let next = 0;
+    for (const { via, title } of projectRoutes(source.id)) {
+      const known = order.findIndex((route) => route.via === via);
+      if (known === -1) order.splice(next++, 0, { via, title });
+      else next = known + 1;
+    }
+  }
+  return order;
+}
+
+const routePackCache = new Map<string, string[]>();
+
+/** The packs a route's project lists in its standard, as New project writes it: `["synapse", "adf"]`. */
+export function routePacks(via: string): string[] {
+  let found = routePackCache.get(via);
+  if (!found) {
+    const source = projectSources().find((item) =>
+      projectRoutes(item.id).some((route) => route.via === via),
+    );
+    const route = source && projectRoutes(source.id).find((item) => item.via === via);
+    if (!source || !route) throw new Error(`No source has the route "${via}".`);
+    const { files } = projectRecipe(source.id, via, route.connectivity[0] ?? "public");
+    const standard = parse(String(files["standard.yaml"])) as { packs: string[] };
+    found = standard.packs.map((pack) => pack.split("@")[0]!);
+    routePackCache.set(via, found);
+  }
+  return found;
 }
 
 /** A method's settings, described once for the docs and the editor. */
