@@ -11,8 +11,8 @@ locally, so a failed load can be tried again on a laptop.
 
 To try it first, [run your first project on your laptop](/docs/start/first-project):
 it creates a project from the **DuckDB on a laptop** starter, generates its
-SQL and builds its tables. Each table is published to the platform's
-`published` folder as `<schema>.<table>.parquet`. Keep `ingestron.duckdb` and
+SQL and builds its tables. Each table is published to the `published/` folder
+that `platform.yaml` names, as `<schema>.<table>.parquet`. Keep `ingestron.duckdb` and
 `published/*.parquet` out of version control: they are data, built from the
 files.
 
