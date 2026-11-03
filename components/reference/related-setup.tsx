@@ -1,38 +1,80 @@
-import { connectorEntries } from "@/lib/reference";
+// The routes and their packs come from New project's metadata; link text is each page's title.
+import { projectRoutes } from "@ingestron/cli";
+import { connectorEntries, packName, packs, pageTitle, routePacks } from "@/lib/reference";
 
-const common = [
-  ["Create a project", "/docs/how-to/start-from-a-template"],
-  ["Standards and overrides", "/docs/how-to/configure-a-standard"],
-];
-const adf = [
-  ["ADF runtime and scheduling", "/docs/how-to/adf-runtime"],
-  ["ADF resource names", "/docs/how-to/name-adf-resources"],
-  ["Publish ADF resources", "/docs/how-to/publish-adf"],
-  ["Generate and inspect ADF", "/docs/how-to/adf-native-connectors#generate-and-inspect"],
-];
-const databricks = [
-  ["Databricks names", "/docs/how-to/name-things-your-way"],
-  ["Databricks schedules", "/docs/how-to/refresh-on-a-schedule"],
-  ["Deploy Databricks", "/docs/how-to/deploy-the-bundle"],
-];
+const common = ["how-to/start-from-a-template", "how-to/configure-a-standard"];
+/** The guide for each route, by its `--via` value. */
+const routeGuides: Record<string, string> = {
+  databricks: "how-to/databricks",
+  "adf-databricks": "how-to/adf",
+  "adf-synapse": "how-to/serve-files-as-sql",
+  "adf-duckdb": "how-to/run-duckdb-in-azure",
+  "adf-landing": "how-to/land-files-only",
+};
+/** Setup guides for a pack, shown when one of the connector's routes uses it. */
+const packGuides: Record<string, string[]> = {
+  adf: [
+    "how-to/adf-native-connectors",
+    "how-to/adf-runtime",
+    "how-to/name-adf-resources",
+    "how-to/publish-adf",
+  ],
+  databricks: [
+    "how-to/name-things-your-way",
+    "how-to/refresh-on-a-schedule",
+    "how-to/deploy-the-bundle",
+  ],
+};
 
 /** Shared setup links beside connector chapters, or below them on small screens.
  * @example <RelatedSetup id="sqlserver" />
  */
 export function RelatedSetup({ id }: { id: string }) {
-  const hasAdf = connectorEntries(id).some((entry) => entry.pack === "adf");
-  // ADF routes also generate a downstream Databricks table.
-  const links = [...common, ...(hasAdf ? adf : []), ...databricks];
+  if (connectorEntries(id).length === 0) throw new Error(`No pack reads connector "${id}".`);
+  const routes = projectRoutes(id).filter(
+    (route, index, all) => all.findIndex((other) => other.via === route.via) === index,
+  );
+  const used = new Set(routes.flatMap((route) => routePacks(route.via)));
+  // The packs that read the connector first, then the packs their routes hand over to.
+  const readers = connectorEntries(id).map((entry) => entry.pack);
+  const groups = [
+    ...readers,
+    ...packs.map((pack) => pack.id).filter((pack) => !readers.includes(pack)),
+  ].filter((pack) => used.has(pack) && packGuides[pack]);
   return (
     <nav className="related-setup" aria-label="Related setup">
       <p>Related setup</p>
+      <Links pages={common} />
+      <p>Routes</p>
       <ul>
-        {links.map(([title, href]) => (
-          <li key={href}>
-            <a href={href}>{title}</a>
-          </li>
-        ))}
+        {routes.map(({ via, title }) => {
+          const guide = routeGuides[via];
+          if (!guide) throw new Error(`No guide for the route "${via}".`);
+          return (
+            <li key={via}>
+              <a href={`/docs/${guide}`}>{title}</a>
+            </li>
+          );
+        })}
       </ul>
+      {groups.map((pack) => (
+        <div key={pack}>
+          <p>{packName(pack)}</p>
+          <Links pages={packGuides[pack]!} />
+        </div>
+      ))}
     </nav>
+  );
+}
+
+function Links({ pages }: { pages: string[] }) {
+  return (
+    <ul>
+      {pages.map((page) => (
+        <li key={page}>
+          <a href={`/docs/${page}`}>{pageTitle(page)}</a>
+        </li>
+      ))}
+    </ul>
   );
 }
