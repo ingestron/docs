@@ -33,6 +33,7 @@ const allowed = [
   "source.config.ts",
   "test",
   "tsconfig.json",
+  "vitest.config.ts",
   "worker",
   "wrangler.jsonc",
 ];
