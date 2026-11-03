@@ -6,6 +6,7 @@ import {
   appendFileSync,
   existsSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -13,20 +14,27 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { run } from "@ingestron/cli";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 
 const read = (path: string) => readFileSync(join(process.cwd(), "content/docs", path), "utf8");
 const page = read("start/first-project.mdx");
 
-/** The text under a heading, written as in the page (such as `## 2. Plan`), up to the next heading at its level or above. */
+/**
+ * The text under a heading, written as in the page (such as `## 2. Plan`), up to
+ * the next heading at its level or above. A `#` line inside a code block, such
+ * as a shell comment, is not a heading.
+ */
 function section(text: string, heading: string): string {
   const level = /^#+/.exec(heading)![0].length;
   const lines = text.split("\n");
-  const start = lines.indexOf(heading);
+  let fenced = false;
+  const headings = lines.map((line) => {
+    if (line.startsWith("```")) fenced = !fenced;
+    return !fenced && /^#+ /.test(line) ? /^#+/.exec(line)![0].length : 0;
+  });
+  const start = lines.findIndex((line, index) => line === heading && headings[index] === level);
   if (start === -1) throw new Error(`The page has no heading "${heading}".`);
-  const end = lines.findIndex(
-    (line, index) => index > start && /^#+ /.test(line) && /^#+/.exec(line)![0].length <= level,
-  );
+  const end = headings.findIndex((found, index) => index > start && found > 0 && found <= level);
   return lines.slice(start + 1, end === -1 ? undefined : end).join("\n");
 }
 
@@ -57,30 +65,23 @@ const words = (line: string) =>
 const duckdbVersion = spawnSync("duckdb", ["--version"], { encoding: "utf8" });
 const duckdb = duckdbVersion.status === 0;
 const withDuckdb = duckdb ? "" : " (skipped: the duckdb command line is not on the PATH)";
+/** The DuckDB version the DuckDB pack is tested with, which the page names. */
+const tested = (
+  JSON.parse(
+    readFileSync(join(process.cwd(), "node_modules/@ingestron/pack-duckdb/package.json"), "utf8"),
+  ) as { devDependencies: Record<string, string> }
+).devDependencies["@duckdb/node-api"]!.replace(/-r\.\d+$/, "");
 
-/** Rows of a DuckDB box, as the page shows it: the header's names, then each row's cells. */
-function boxRows(box: string): string[][] {
-  const lines = box.trimEnd().split("\n");
-  const cells = (line: string) =>
-    line
-      .split("│")
-      .slice(1, -1)
-      .map((cell) => cell.trim());
-  const body = lines.findIndex((line) => line.startsWith("├"));
-  expect(body, "a box with a header").toBeGreaterThan(0);
-  return [cells(lines[1]!), ...lines.slice(body + 1, -1).map(cells)];
-}
-
-/** Rows of DuckDB's CSV output: the header, then each row. */
-const csvRows = (csv: string) =>
-  csv
-    .trimEnd()
-    .split("\n")
-    .map((line) => line.split(","));
+// CI installs DuckDB, so there the DuckDB steps never skip, and run the version the page names.
+it.runIf(process.env.CI)("has the DuckDB command line the page names, in CI", () => {
+  expect(duckdbVersion.stdout).toMatch(new RegExp(`^v${tested.replaceAll(".", "\\.")} `));
+});
 
 /** Runs the page's commands in one project, one line at a time. */
 class Shell {
-  cwd = mkdtempSync(join(tmpdir(), "docs-first-project-"));
+  /** The temporary folder the page's commands start in. */
+  readonly root = mkdtempSync(join(tmpdir(), "docs-first-project-"));
+  cwd = this.root;
 
   /** Runs each line, stopping at the first that fails; returns the last one's exit code and output. */
   run(block: string): { code: number; output: string } {
@@ -110,14 +111,22 @@ class Shell {
       const code = run(args.slice(1), { cwd: this.cwd, write: (text) => (output += text) });
       return { code, output };
     }
+    if (command === "ls") {
+      expect(args).toHaveLength(1);
+      const names = readdirSync(join(this.cwd, args[0]!)).filter((name) => !name.startsWith("."));
+      return { code: 0, output: `${names.sort().join("  ")}\n` };
+    }
     if (command === "duckdb") {
-      // CSV, not the box a terminal shows, so the rows compare whatever the DuckDB version draws.
-      const query = args.includes("-c") && !args[args.indexOf("-c") + 1]!.startsWith(".");
-      const result = spawnSync("duckdb", query ? ["-csv", ...args] : args, {
+      // The box a terminal shows, header, types and rows, whatever mode DuckDB
+      // would pick for a pipe. Notices on stderr are not part of the output.
+      const result = spawnSync("duckdb", ["-cmd", ".mode duckbox", ...args], {
         cwd: this.cwd,
         encoding: "utf8",
       });
-      return { code: result.status ?? 1, output: result.stdout + result.stderr };
+      return {
+        code: result.status ?? 1,
+        output: result.status === 0 ? result.stdout : result.stdout + result.stderr,
+      };
     }
     throw new Error(`The test cannot run "${line}".`);
   }
@@ -129,6 +138,7 @@ class Shell {
 
 describe("Run your first project on your laptop", () => {
   const shell = new Shell();
+  afterAll(() => rmSync(shell.root, { recursive: true, force: true }));
   // Read inside each test, so a missing section fails that test alone.
   const create = () => section(page, "## 1. Create the project");
   const plan = () => section(page, "## 2. Plan");
@@ -163,15 +173,19 @@ describe("Run your first project on your laptop", () => {
     expect(existsSync(shell.file("build/dev/run.sql"))).toBe(true);
   });
 
-  it(`builds the tables with the rows the page shows${withDuckdb}`, ({ skip }) => {
+  it(`builds the tables and shows the box the page shows${withDuckdb}`, ({ skip }) => {
     if (!duckdb) skip();
-    const { code, output } = shell.run(fence(build(), "sh"));
+    const [commands, list] = fences(build(), "sh");
+    const [box, listed] = fences(build(), "text");
+    const { code, output } = shell.run(commands!);
     expect(code, output).toBe(0);
-    expect(csvRows(output)).toEqual(boxRows(fence(build(), "text")));
-    const published = /`published\/` now holds `([^`]+)` and `([^`]+)`/.exec(prose(build()));
-    expect(published, "the page names the published files").not.toBeNull();
-    for (const file of published!.slice(1))
-      expect(existsSync(shell.file(`published/${file}`))).toBe(true);
+    // Exact, so the header, the type row (varchar, int64, double) and every row match.
+    expect(box!.split("\n")[2], "the box's type row").toMatch(/^│ varchar +│ int64 +│ double +│$/);
+    expect(output).toBe(box);
+    const published = shell.run(list!);
+    expect(published.output.split(/\s+/).filter(Boolean)).toEqual(
+      listed!.split(/\s+/).filter(Boolean),
+    );
   });
 
   it("plans the change the page shows when a column is added", () => {
@@ -187,7 +201,7 @@ describe("Run your first project on your laptop", () => {
     expect(applied, "the commands that apply and run again").toBeDefined();
   });
 
-  it(`applies the new column and shows the rows the page shows${withDuckdb}`, ({ skip }) => {
+  it(`applies the new column and shows the box the page shows${withDuckdb}`, ({ skip }) => {
     const applied = fences(change(), "sh")[1]!;
     const lines = applied.trimEnd().split("\n");
     const ingestron = lines.filter((line) => line.startsWith("npx "));
@@ -198,7 +212,7 @@ describe("Run your first project on your laptop", () => {
     if (!duckdb) skip();
     const { code, output } = shell.run(lines.slice(1).join("\n"));
     expect(code, output).toBe(0);
-    expect(csvRows(output)).toEqual(boxRows(fences(change(), "text")[1]!));
+    expect(output).toBe(fences(change(), "text")[1]);
   });
 
   it("reports a hand-edited file as a conflict, overwrites nothing, and writes it again once deleted", () => {
@@ -246,8 +260,9 @@ describe("the home page's first run", () => {
   const steps = ["## 1. Create the project", "## 2. Plan", "## 3. Apply", "## 4. Build the tables"];
 
   it("uses the first project's commands, in order", () => {
+    // Every command of steps 1 to 3, then step 4's build and query.
     const commands = steps.flatMap((heading) =>
-      fence(section(page, heading), "sh").trimEnd().split("\n"),
+      fences(section(page, heading), "sh")[0]!.trimEnd().split("\n"),
     );
     const run = section(home, "## Run it on your laptop");
     expect(fence(run, "sh").trimEnd().split("\n")).toEqual(commands);
@@ -255,7 +270,7 @@ describe("the home page's first run", () => {
 
   it("shows the rows the first project builds", () => {
     const run = section(home, "## Run it on your laptop");
-    expect(fence(run, "text")).toBe(fence(section(page, "## 4. Build the tables"), "text"));
+    expect(fence(run, "text")).toBe(fences(section(page, "## 4. Build the tables"), "text")[0]);
   });
 
   it("names the starting point and links to the first project", () => {

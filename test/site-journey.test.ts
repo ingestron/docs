@@ -53,7 +53,7 @@ it("runs the first project with no cloud account, source or deployment", () => {
   expect(commands.length).toBeGreaterThan(0);
   // Only Ingestron, DuckDB and the shell: no cloud command line, nothing deployed.
   for (const command of commands)
-    expect(command).toMatch(/^(npx ingestron@1 |cd |duckdb |rm build\/)/);
+    expect(command).toMatch(/^(npx ingestron@1 |cd |duckdb |rm build\/|ls published$)/);
 });
 
 it("keeps the front door's claims to what is shown and measured", () => {

@@ -8,7 +8,7 @@ Databricks bundles and pipelines, Azure Data Factory pipelines, Synapse
 serverless views and DuckDB SQL. You describe the sources, tables and rules in
 YAML your team reviews. Ingestron applies your organisation's standard and
 writes ordinary platform files, and you deploy them with your platform's own
-tools.
+tools. Nothing in them calls Ingestron.
 
 ## Run it on your laptop
 
@@ -51,16 +51,19 @@ with each column cast to the type its contract gives.
 
 <Example name="duckdb" file="build/dev/tables/silver.customer_totals.sql" />
 
-The other packs write the same kind of file for their platforms: bundle YAML
-and SQL for Databricks, pipeline JSON for Azure Data Factory, and view SQL for
-Synapse. [How Ingestron works](/docs/start/how-it-works) follows a project from
-the YAML to the platform.
+The Databricks pack writes the `minimal` starter's orders table as a streaming
+table in a Databricks pipeline, typed and checked from its contract:
+
+<Example name="minimal" file="build/dev/src/shop/bronze/orders.sql" />
+
+The bundle around it is YAML, Azure Data Factory gets pipeline JSON, and
+Synapse gets view SQL. [How Ingestron works](/docs/start/how-it-works) follows
+a project from the YAML to the platform.
 
 ### No dependency once it's deployed
 
-The generated files need only your platform. Nothing in them calls Ingestron,
-so if you stop using it, the files still deploy and run, and you edit them
-yourself from then on. One optional route uses something Ingestron publishes:
+The generated files need only your platform, so if you stop using Ingestron,
+they still deploy and run, and you edit them yourself from then on. One optional route uses something Ingestron publishes:
 DuckDB in Azure runs in a public container image, which you can copy to your
 own registry. [Generated files](/docs/concepts/generated-files) explains what
 Ingestron writes and how it tracks it.
@@ -69,22 +72,23 @@ Ingestron writes and how it tracks it.
 
 The platform team writes one standard: the packs, names, layers, types,
 default settings, settings no project may change, and what every data product
-must declare. VS Code checks a project against it as you type, and
-`ingestron plan` and `ingestron check` in CI report every place a project
-breaks it. See [Configure the project standard](/docs/how-to/configure-a-standard).
+must declare. VS Code marks a break as you type, `ingestron plan` reports
+every one, and `ingestron check` fails the CI build. See
+[Configure the project standard](/docs/how-to/configure-a-standard).
 
 ### Reuse your team's work
 
 Start a project from a template your team keeps in Git with
 `ingestron init <name> --template <git url>`, and take the standard from a shared
-repository with `--standard`. Templates, standards and packs are open files: a
-template is a project folder, a standard is one YAML file, and the packs are
-Apache-2.0 code, so you can publish them for others to use. See
+repository with `--standard`. A template is a project folder and a standard is
+one YAML file, so you can keep them in any Git repository your team, or anyone
+else, can clone. The packs are open source under Apache-2.0. See
 [Share a template](/docs/how-to/share-a-template).
 
 ## Where your data can go
 
-Each route is one that `ingestron init` offers, or the starter above:
+Ingestron generates for these routes today. The first is the starter above and
+needs no cloud; `ingestron init` offers each of the others with `--via`:
 
 <RouteTable />
 
