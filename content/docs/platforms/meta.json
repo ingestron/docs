@@ -1,0 +1,4 @@
+{
+  "title": "Platforms",
+  "pages": ["duckdb", "duckdb-in-azure", "synapse", "landing-only"]
+}

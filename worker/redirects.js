@@ -6,6 +6,10 @@
 export const redirects = new Map([
   ["/docs/start", "/docs/start/first-project"],
   ["/docs/concepts/connectivity", "/docs/start/choose-a-route#reachability"],
+  ["/docs/how-to/serve-files-as-sql", "/docs/platforms/synapse"],
+  ["/docs/how-to/run-locally-with-duckdb", "/docs/platforms/duckdb"],
+  ["/docs/how-to/run-duckdb-in-azure", "/docs/platforms/duckdb-in-azure"],
+  ["/docs/how-to/land-files-only", "/docs/platforms/landing-only"],
 ]);
 
 /** Old paths by shape: a pattern and the function that builds the new path. */

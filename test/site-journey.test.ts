@@ -5,8 +5,10 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it } from "vitest";
 import { RouteComparison } from "../components/reference/route-comparison";
+import { RouteFacts } from "../components/reference/route-facts";
 import { RouteTable } from "../components/reference/route-table";
 import { allRoutes } from "../lib/reference";
+import { routeRows } from "../lib/routes";
 
 const read = (path: string) => readFileSync(join(process.cwd(), "content/docs", path), "utf8");
 
@@ -117,20 +119,54 @@ it("separates the core workflow from today's supported platform combinations", (
   // The starter, then every route New project offers, each with its guide.
   expect(rows).toHaveLength(1 + allRoutes().length);
   expect(rows[0]).toContain("<code>--template duckdb</code>");
-  expect(rows[0]).toContain('href="/docs/how-to/run-locally-with-duckdb"');
+  expect(rows[0]).toContain('href="/docs/platforms/duckdb"');
   allRoutes().forEach(({ via, title }, index) => {
     expect(rows[index + 1]).toContain(title);
     expect(rows[index + 1]).toContain(`<code>--via ${via}</code>`);
-    expect(rows[index + 1]).toMatch(/href="\/docs\/how-to\/[a-z-]+"/);
+    expect(rows[index + 1]).toMatch(/href="\/docs\/(?:how-to|platforms)\/[a-z-]+"/);
   });
   expect(html).toContain("ADF ingestion, ending at the landed files");
-  expect(html).toContain('href="/docs/how-to/run-duckdb-in-azure"');
+  expect(html).toContain('href="/docs/platforms/duckdb-in-azure"');
   expect(read("index.mdx")).toContain("<RouteTable />");
   const packs = read("reference/packs/index.mdx");
   expect(packs).toContain("ADF landing only");
-  expect(packs).toContain("/docs/how-to/run-duckdb-in-azure");
-  expect(read("how-to/run-duckdb-in-azure.mdx")).toContain("ghcr.io/ingestron/duckdb-runner:1");
+  expect(packs).toContain("/docs/platforms/duckdb-in-azure");
+  expect(read("platforms/duckdb-in-azure.mdx")).toContain("ghcr.io/ingestron/duckdb-runner:1");
   expect(read("how-to/plan-and-generate.mdx")).toContain("does not deploy");
+});
+
+it("gives each route a platform page that opens with what runs, what deploys and how to create it", () => {
+  const root = JSON.parse(read("meta.json"));
+  expect(root.pages).toContain("...platforms");
+  expect(root.pages.indexOf("---Platforms---")).toBe(root.pages.indexOf("...platforms") - 1);
+  const platforms = JSON.parse(read("platforms/meta.json")).pages as string[];
+  expect(platforms).toEqual(["duckdb", "duckdb-in-azure", "synapse", "landing-only"]);
+  // Moved, not copied: the old guides are gone, and their URLs redirect.
+  for (const old of [
+    "run-locally-with-duckdb",
+    "run-duckdb-in-azure",
+    "serve-files-as-sql",
+    "land-files-only",
+  ])
+    expect(existsSync(join(process.cwd(), `content/docs/how-to/${old}.mdx`)), old).toBe(false);
+  for (const [id, page] of [
+    ["duckdb", "duckdb"],
+    ["adf-duckdb", "duckdb-in-azure"],
+    ["adf-synapse", "synapse"],
+    ["adf-landing", "landing-only"],
+  ] as const) {
+    const text = read(`platforms/${page}.mdx`);
+    expect(routeRows().find((row) => row.id === id)?.guide, id).toBe(`platforms/${page}`);
+    // Before the first heading, so it is the first thing a reader meets.
+    expect(text.split("\n## ")[0], page).toContain(`<RouteFacts id="${id}" />`);
+    const row = routeRows().find((item) => item.id === id)!;
+    const facts = renderToStaticMarkup(createElement(RouteFacts, { id }));
+    expect(facts).toContain("After each load:");
+    expect(facts).toContain("Deploy with:");
+    expect(facts).toContain(`init ${id === "duckdb" ? "shop" : "sales --connector"}`);
+    expect(facts).toContain(row.option);
+  }
+  expect(existsSync(join(process.cwd(), "content/docs/platforms/index.mdx"))).toBe(false);
 });
 
 it("compares each source on the route page across every route New project offers", () => {
