@@ -64,7 +64,8 @@ with an empty database, so every file is read.
 
 A transform's columns are cast to the contract's types, and a cast can change a
 value: a timestamp with a time zone loses its offset when the contract says
-`timestamp`, and a decimal rounds when the contract says `integer`. Give the
+`timestamp`, and a `timestamptz` shows the time in the session's time zone; a
+decimal rounds when the contract says `integer`. Give the
 contract the type you want to keep.
 
 ## Run a cloud project locally
