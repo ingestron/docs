@@ -83,3 +83,25 @@ it("rejects composing values from other values as documented", () => {
     ),
   ).toContain("VALUES_SELF_REFERENCE");
 });
+
+it("reads .env and .env.<environment> in the documented order", () => {
+  const folder = fixture();
+  edit(folder, "connections/shop.yaml", (doc) => {
+    doc.settings.path = "${envvar:SOURCE_PATH}";
+  });
+  writeFileSync(join(folder, ".env"), "SOURCE_PATH=/Volumes/shared/source\n");
+  writeFileSync(join(folder, ".env.dev"), 'export SOURCE_PATH="/Volumes/dev/source" # mine\n');
+  const options = { packs: [databricks], environment: "dev", envvars: {} };
+  const path = (extra = {}) =>
+    loadDefinitions(folder, { ...options, ...extra }).model?.tables[0]?.ingest?.connection.settings
+      .path;
+  expect(path()).toBe("/Volumes/dev/source");
+  expect(path({ envvars: { SOURCE_PATH: "/Volumes/host/source" } })).toBe("/Volumes/host/source");
+  rmSync(join(folder, ".env.dev"));
+  expect(path()).toBe("/Volumes/shared/source");
+  rmSync(join(folder, ".env"));
+  const unset = loadDefinitions(folder, { ...options, missingEnvvars: "information" });
+  expect(unset.diagnostics.map((item) => [item.code, item.severity])).toEqual([
+    ["ENVVAR_MISSING", "information"],
+  ]);
+});
