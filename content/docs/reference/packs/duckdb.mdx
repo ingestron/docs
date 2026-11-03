@@ -21,6 +21,16 @@ with the same primary key; `sequence_by` picks the latest). Running again is
 safe in every mode. Each table is published to the `published` folder as
 `<schema>.<table>.parquet`; the folder must exist.
 
+`append` reads each file name once, so a file re-exported under the same name is
+skipped, and its new rows are not loaded. Give a re-export a new name, or delete
+`ingestron.duckdb` and run again to reload every file. A CSV without a header
+(`csv.header: false`) binds its columns in the contract's order, so the file's
+columns must be in that order. With a header, columns are matched by name.
+
+A transform's columns are cast to the contract's types, and a cast can change a
+value: a timestamp with a time zone loses its offset when the contract says
+`timestamp`, and a decimal rounds when the contract says `integer`.
+
 An environment with `runs-on: duckdb` replaces another pack's file-landing
 ingest, such as `adf-copy`, with `duckdb-landed`, which reads a load's files
 from a local folder. The tables' store and transforms must be DuckDB's in every

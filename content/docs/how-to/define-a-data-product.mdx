@@ -59,7 +59,9 @@ An unknown classification offers each allowed value as a quick fix.
 `ingestron apply` writes `build/<environment>/products/` beside the pipelines:
 a `README.md` listing every product, and a page per product. It says who owns
 the product and what it is for, which table it is in this environment and
-where it lives, its columns with sensitive ones marked, its quality checks,
+where it lives, its columns, with the contract's type for each (such as
+`integer` or `timestamp`, also for columns the landed files add) and sensitive ones
+marked, its quality checks,
 how fresh it is, who may use it, its lineage as a diagram, and the governance
 rules it meets:
 
