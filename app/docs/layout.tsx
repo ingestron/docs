@@ -15,7 +15,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             className="docs-shortcuts"
             aria-label="Documentation shortcuts"
           >
-            <a href="/docs/start">Start here</a>
+            <a href="/docs/start/first-project">Start here</a>
             <a href="/docs/how-to">Guides</a>
             <a href="/docs/concepts/yaml-references">YAML syntax</a>
           </nav>

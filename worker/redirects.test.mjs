@@ -58,9 +58,24 @@ test("the root is not in the map", () => {
   assert.equal(lookup("/"), undefined);
 });
 
-test("the shipped map and patterns start empty", () => {
-  assert.equal(realRedirects.size, 0);
-  assert.equal(realPatterns.length, 0);
+test("every shipped redirect goes from a clean docs path to a docs page", () => {
+  assert.ok(realRedirects.size > 0);
+  for (const [from, to] of realRedirects) {
+    assert.match(from, /^\/docs\//, from);
+    assert.doesNotMatch(from, /(?:\/|\.html)$/, from);
+    assert.match(to, /^\/docs\//, `${from} → ${to}`);
+  }
+  for (const [pattern] of realPatterns) assert.match(pattern.source, /^\^\\\/docs\\\//);
+});
+
+test("the start section and connectivity land on their new pages", () => {
+  const shipped = (path) => redirectFor(new URL(path, "https://docs.ingestron.io"));
+  assert.equal(shipped("/docs/start"), "/docs/start/first-project");
+  assert.equal(shipped("/docs/start/"), "/docs/start/first-project");
+  assert.equal(
+    shipped("/docs/concepts/connectivity.html"),
+    "/docs/start/choose-a-route#reachability",
+  );
 });
 
 test("the worker answers the root with 307", () => {
@@ -86,7 +101,10 @@ test("the worker passes an unknown path on to the assets", async () => {
       },
     },
   };
-  const response = await worker.fetch(new Request("https://docs.ingestron.io/docs/start"), env);
-  assert.equal(asked, "https://docs.ingestron.io/docs/start");
+  const response = await worker.fetch(
+    new Request("https://docs.ingestron.io/docs/start/install"),
+    env,
+  );
+  assert.equal(asked, "https://docs.ingestron.io/docs/start/install");
   assert.equal(response.status, 200);
 });

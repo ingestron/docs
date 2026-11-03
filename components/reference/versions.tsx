@@ -61,15 +61,27 @@ export function PackageVersions() {
   );
 }
 
+/** The DuckDB version that runs the DuckDB pack's SQL in its tests, such as `1.5.6`. */
+function duckdbTested(): string {
+  const duckdb = installed("@ingestron/pack-duckdb").devDependencies?.["@duckdb/node-api"];
+  if (!duckdb) throw new Error("Not found: the DuckDB the DuckDB pack's tests use.");
+  if (!/^\d+\.\d+\.\d+(-r\.\d+)?$/.test(duckdb))
+    throw new Error(`Not an exact version: the DuckDB pack's @duckdb/node-api is ${duckdb}.`);
+  return duckdb.replace(/-r\.\d+$/, "");
+}
+
+/** The DuckDB version the DuckDB pack's tests run its SQL with, for a sentence.
+ * @example The pack's SQL is tested with DuckDB <DuckdbTested />.
+ */
+export function DuckdbTested() {
+  return <>{duckdbTested()}</>;
+}
+
 /** What each pack's output was checked against, as the installed pack records it.
  * @example <PlatformChecks />
  */
 export function PlatformChecks() {
   const databricks = readme("@ingestron/pack-databricks");
-  const duckdb = installed("@ingestron/pack-duckdb").devDependencies?.["@duckdb/node-api"];
-  if (!duckdb) throw new Error("Not found: the DuckDB the DuckDB pack's tests use.");
-  if (!/^\d+\.\d+\.\d+(-r\.\d+)?$/.test(duckdb))
-    throw new Error(`Not an exact version: the DuckDB pack's @duckdb/node-api is ${duckdb}.`);
   const rows: [string, string][] = [
     [
       "databricks",
@@ -83,10 +95,7 @@ export function PlatformChecks() {
       "synapse",
       `Microsoft Learn's Synapse serverless SQL pages, accessed ${found(readme("@ingestron/pack-synapse"), /Microsoft Learn, accessed ([\d-]+)/, "the Synapse access date")}`,
     ],
-    [
-      "duckdb",
-      `DuckDB ${duckdb.replace(/-r\.\d+$/, "")}, which runs the SQL the pack writes in its tests`,
-    ],
+    ["duckdb", `DuckDB ${duckdbTested()}, which runs the SQL the pack writes in its tests`],
   ];
   return (
     <table>

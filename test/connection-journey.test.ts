@@ -7,8 +7,8 @@ import { parse, stringify } from "yaml";
 import { expect, it } from "vitest";
 import { exampleFolder, readExampleFile } from "../lib/examples.js";
 
-it("shows the same files that the first-project command creates", () => {
-  const cwd = mkdtempSync(join(tmpdir(), "docs-first-project-"));
+it("keeps the connection-first-files sample equal to what init writes for files on Databricks", () => {
+  const cwd = mkdtempSync(join(tmpdir(), "docs-connection-first-files-"));
   const code = run(
     [
       "init",

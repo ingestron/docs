@@ -1,16 +1,9 @@
 // The routes and their packs come from New project's metadata; link text is each page's title.
 import { projectRoutes } from "@ingestron/cli";
 import { connectorEntries, packName, packs, pageTitle, routePacks } from "@/lib/reference";
+import { routeGuides } from "@/lib/routes";
 
 const common = ["how-to/start-from-a-template", "how-to/configure-a-standard"];
-/** The guide for each route, by its `--via` value. */
-const routeGuides: Record<string, string> = {
-  databricks: "how-to/databricks",
-  "adf-databricks": "how-to/adf",
-  "adf-synapse": "how-to/serve-files-as-sql",
-  "adf-duckdb": "how-to/run-duckdb-in-azure",
-  "adf-landing": "how-to/land-files-only",
-};
 /** Setup guides for a pack, shown when one of the connector's routes uses it. */
 const packGuides: Record<string, string[]> = {
   adf: [

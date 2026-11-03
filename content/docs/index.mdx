@@ -1,70 +1,109 @@
 ---
 title: Ingestron
-description: Describe the data you need, apply your standards, and generate the files your platforms run.
+description: Describe ingestion in YAML your team reviews, and get the Databricks, Azure Data Factory, Synapse or DuckDB files you would otherwise write by hand, with your standards applied.
 ---
 
-Ingestron turns reviewed YAML definitions into platform files. A project describes
-connections, data contracts, flows and transforms. Its standard selects methods
-and sets policy; packs implement those methods for the chosen platforms.
+Ingestron writes the files a data engineer would otherwise write by hand:
+Databricks bundles and pipelines, Azure Data Factory pipelines, Synapse
+serverless views and DuckDB SQL. You describe the sources, tables and rules in
+YAML your team reviews. Ingestron applies your organisation's standard and
+writes ordinary platform files, and you deploy them with your platform's own
+tools.
 
-<FlowDiagram
-  title="From definitions to deployed resources"
-  steps={[
-    { title: "Define", detail: "Sources, contracts and the tables you need" },
-    { title: "Resolve", detail: "Environment values, standards and pack methods" },
-    { title: "Generate", detail: "Plan changes, then write reviewable files" },
-    { title: "Deploy", detail: "Use the target platform's deployment tools" },
-  ]}
-/>
+## Run it on your laptop
 
-Plan shows what would change. Apply writes files; it does not deploy them or move
-data. Your platforms run the generated resources after deployment. You can learn
-the definition and generation workflow locally without connecting to a source.
+You need Node.js 22.13 or later and the
+[DuckDB command line](https://duckdb.org/docs/installation/); no cloud account
+and no source. In a folder where you can create a new one:
 
-## Start with your task
+```sh
+npx ingestron@1 init shop --template duckdb --yes
+cd shop
+npx ingestron@1 plan
+npx ingestron@1 apply
+duckdb -bail ingestron.duckdb -c ".read build/dev/run.sql"
+duckdb ingestron.duckdb -c "SELECT * FROM silver.customer_totals ORDER BY customer"
+```
 
-<DocLinks
-  items={[
-    {
-      title: "Start here",
-      href: "/docs/start",
-      description: "Understand the workflow and generate your first project.",
-    },
-    {
-      title: "Understand the definitions",
-      href: "/docs/concepts",
-      description: "Connections, contracts, flows, standards and environments.",
-    },
-    {
-      title: "Find a guide",
-      href: "/docs/how-to",
-      description: "Create, configure, generate and review a project.",
-    },
-    {
-      title: "YAML references and placeholders",
-      href: "/docs/concepts/yaml-references",
-      description: "Values, secrets, file includes, naming patterns and escaping.",
-    },
-    {
-      title: "Find a connection",
-      href: "/docs/connectors",
-      description: "Source requirements, ingestion behaviour and complete examples.",
-    },
-    {
-      title: "Check platform support",
-      href: "/docs/reference/packs",
-      description: "What each available pack provides and which combinations work today.",
-    },
-  ]}
-/>
+The last command shows a table that DuckDB built from sample orders, with SQL
+that Ingestron generated:
 
-## One workflow, different platforms and tools
+```text
+┌──────────┬────────┬────────┐
+│ customer │ orders │ total  │
+│ varchar  │ int64  │ double │
+├──────────┼────────┼────────┤
+│ Aroha    │      2 │  65.75 │
+│ Ben      │      2 │   42.0 │
+│ Chen     │      1 │   8.75 │
+└──────────┴────────┴────────┘
+```
 
-Definitions and standards are the centre of the project. Packs decide the target
-syntax and capabilities; tools let you edit, inspect and generate those files.
-Neither your editor nor one platform defines the whole Ingestron workflow.
+[Run your first project on your laptop](/docs/start/first-project) explains
+each step and each file, then changes the project and breaks it on purpose.
 
-The current distribution includes the <PackNames /> packs, with specific
-supported combinations. Check [platform support](/docs/reference/packs) before
-choosing a route. Browse [examples](/docs/examples) for working projects
-and [tools](/docs/tools) for available ways to use Ingestron.
+## What you get
+
+### The same files you would write
+
+This is the starter's transform as Ingestron writes it for DuckDB: your SQL,
+with each column cast to the type its contract gives.
+
+<Example name="duckdb" file="build/dev/tables/silver.customer_totals.sql" />
+
+The other packs write the same kind of file for their platforms: bundle YAML
+and SQL for Databricks, pipeline JSON for Azure Data Factory, and view SQL for
+Synapse. [How Ingestron works](/docs/start/how-it-works) follows a project from
+the YAML to the platform.
+
+### No dependency once it's deployed
+
+The generated files need only your platform. Nothing in them calls Ingestron,
+so if you stop using it, the files still deploy and run, and you edit them
+yourself from then on. One optional route uses something Ingestron publishes:
+DuckDB in Azure runs in a public container image, which you can copy to your
+own registry. [Generated files](/docs/concepts/generated-files) explains what
+Ingestron writes and how it tracks it.
+
+### Your standards on every project
+
+The platform team writes one standard: the packs, names, layers, types,
+default settings, settings no project may change, and what every data product
+must declare. VS Code checks a project against it as you type, and
+`ingestron plan` and `ingestron check` in CI report every place a project
+breaks it. See [Configure the project standard](/docs/how-to/configure-a-standard).
+
+### Reuse your team's work
+
+Start a project from a template your team keeps in Git with
+`ingestron init <name> --template <git url>`, and take the standard from a shared
+repository with `--standard`. Templates, standards and packs are open files: a
+template is a project folder, a standard is one YAML file, and the packs are
+Apache-2.0 code, so you can publish them for others to use. See
+[Share a template](/docs/how-to/share-a-template).
+
+## Where your data can go
+
+Each route is one that `ingestron init` offers, or the starter above:
+
+<RouteTable />
+
+[Choose where your data goes](/docs/start/choose-a-route) says when to choose
+each one and what runs after each load.
+
+## What Ingestron does not do
+
+- It doesn't connect to your sources or your cloud. Its only network call is
+  to fetch a template or standard from a Git URL you give it.
+- It doesn't deploy anything. Your platform's tools do.
+- It doesn't read secret values. A `${secret:…}` reference carries only the
+  secret's name.
+- It doesn't send telemetry, from the command line or from VS Code.
+- It doesn't overwrite a file someone edited. It reports a conflict instead.
+
+## Next
+
+- **Data engineers:** [Run your first project on your laptop](/docs/start/first-project).
+- **Platform teams:** [Configure the project standard](/docs/how-to/configure-a-standard),
+  then [Ask the platform team for what the project needs](/docs/how-to/ask-the-platform-team).
+- **Comparing routes:** [Choose where your data goes](/docs/start/choose-a-route).

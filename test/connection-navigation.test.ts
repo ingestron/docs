@@ -81,8 +81,27 @@ it("lists each connector in the category used by the project builder", () => {
   }
 });
 
-it("opens every main section from its folder label without a duplicate index item", () => {
-  for (const name of ["start", "concepts", "how-to", "examples", "reference", "tools"]) {
+it("lists Get started's pages under its separator, in reading order, with no index page", () => {
+  const at = tree.children.findIndex(
+    (node) => node.type === "separator" && node.name === "Get started",
+  );
+  expect(at, "a Get started separator").toBeGreaterThan(-1);
+  expect(
+    tree.children
+      .slice(at + 1, at + 5)
+      .map((node) => (node.type === "page" ? node.url : node.type)),
+  ).toEqual([
+    "/docs/start/first-project",
+    "/docs/start/how-it-works",
+    "/docs/start/choose-a-route",
+    "/docs/start/install",
+  ]);
+  expect(tree.children[at + 5]?.type).toBe("separator");
+  expect(source.getPage(["start"])).toBeUndefined();
+});
+
+it("opens every other main section from its folder label without a duplicate index item", () => {
+  for (const name of ["concepts", "how-to", "examples", "reference", "tools"]) {
     const url = `/docs/${name}`;
     const folder = tree.children.find((node) => node.type === "folder" && node.index?.url === url);
     expect(folder?.type).toBe("folder");

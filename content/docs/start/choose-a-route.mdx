@@ -1,72 +1,89 @@
 ---
-title: Choose platforms and an ingestion route
-description: Match your source and intended result to the capabilities available in Ingestron.
+title: Choose where your data goes
+description: Pick a route for your source, from Databricks directly to Azure Data Factory into Databricks, Synapse views, DuckDB tables or landed files, and check that the source supports it.
 ---
 
-Start with the source you need to read and the result you want to keep. Choose
-compatible capabilities for ingestion, any transformation, and storage. Your
-editor is a separate choice; it does not determine the platform architecture.
+A route is the path your data takes from its source to where it is kept, and
+it decides which packs the project uses. Project creation, in the CLI and in
+VS Code, offers only the routes your source supports; `--via` names one on the
+command line.
 
-## Make four decisions
+## Choose a route
 
-1. **Source and access.** Choose a connector and declare its reachability.
-   Check the connection page for authentication and runtime requirements.
-2. **Ingestion.** Choose a method that supports that connector and reachability.
-   Decide whether its copy or change-capture behaviour meets your needs.
-3. **Destination and later processing.** Check which methods can store the
-   ingestion result and whether you need transforms or quality checks.
-4. **Standard.** Select one standard containing compatible packs and policy for
-   all the required actions.
-
-<FlowDiagram
-  title="Choose capabilities before tool-specific steps"
-  steps={[
-    { title: "Source", detail: "Connector and reachability" },
-    { title: "Required actions", detail: "Read, transform when needed, and store" },
-    { title: "Compatible packs", detail: "Methods that can hand results to each other" },
-    { title: "Project standard", detail: "Allowed methods, defaults and fixed policy" },
-  ]}
-/>
-
-## What works in the current distribution
-
-New project, in the CLI and VS Code, offers these routes for a source; `--via`
-names them on the command line.
-
-| Route (`--via`)                                  | What it does                                                                                      | Packs            | Guide                                                   |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------------- |
-| Databricks directly (`databricks`)               | Reads supported sources into Databricks tables                                                    | Databricks       | [Databricks](/docs/how-to/databricks)                   |
-| ADF ingestion into Databricks (`adf-databricks`) | Copies sources to ADLS Gen2 landing storage, then reads the landed files into Databricks tables   | Databricks + ADF | [Azure Data Factory](/docs/how-to/adf)                  |
-| ADF, served as Synapse views (`adf-synapse`)     | Lands each table as a file, and shows the files and transforms as Synapse serverless SQL views    | Synapse + ADF    | [Serve files as SQL](/docs/how-to/serve-files-as-sql)   |
-| ADF into DuckDB tables (`adf-duckdb`)            | Lands each table as a file; DuckDB builds tables from them, runs transforms and publishes Parquet | DuckDB + ADF     | [Run DuckDB in Azure](/docs/how-to/run-duckdb-in-azure) |
-| ADF, ending at the landed files (`adf-landing`)  | Copies sources to landing storage, for reports that read the files                                | ADF              | [Land files only](/docs/how-to/land-files-only)         |
+<RouteTable detail />
 
 Synapse and DuckDB are offered where ADF copies tables, not where it copies
-files as they are; Synapse not for Microsoft 365, which lands JSON. To try
-DuckDB on a laptop with no source at all, start from the **DuckDB on a laptop**
-starter: [Run locally with DuckDB](/docs/how-to/run-locally-with-duckdb).
+files as they are; Synapse not for Microsoft 365, which lands JSON. ADF can be
+chosen for sources on a public endpoint or reachable from the workspace, as
+well as private ones. On the `adf-databricks` route, Databricks reads the
+landed files; it does not open a second connection to the original source.
 
 Selecting another provider name in YAML will not enable a destination no pack
 implements. See the [pack catalogue](/docs/reference/packs) for the current
 boundary.
 
-## Check the connector's routes
+## Reachability
 
-The comparison below comes from the same pack metadata used by project creation.
-A route must support both the source and its `connectivity` value.
+A connection says how its source can be reached with `connectivity`. Each
+ingestion method says which values it supports, and Ingestron uses them to
+check or choose a method. It does not create network routes or test the
+connection.
+
+| Value       | Meaning in the current connector catalogue                                  |
+| ----------- | --------------------------------------------------------------------------- |
+| `public`    | The source is reachable through a public endpoint                           |
+| `workspace` | The source is reachable from the workspace used by the ingestion method     |
+| `private`   | The source requires an ingestion runtime with access to its private network |
+
+Reachability describes the source's access path only. It is separate from
+where the data is kept, and from the editor or command you use. Each
+connector's page gives its exact runtime and authentication requirements.
+
+Project creation offers the routes that support both the connector and its
+reachability, and a standard can limit them further. A method chosen by hand
+that cannot read the source is reported as a problem. For example, SQL Server
+on `public` or `workspace` can use Databricks directly (Lakeflow Connect) or
+any ADF route; on `private`, only the ADF routes:
+
+<Example name="private-sql-server" file="connections/erp.yaml" />
+
+When no method is named, the
+[standard and pack rules](/docs/concepts/standards-and-packs#how-a-method-is-chosen)
+can choose one by reachability.
+
+## Check your source
+
+This comparison comes from the same pack metadata as project creation. Each
+cell shows the method, the reachability it supports, and its maturity:
 
 <RouteComparison ids={["files", "sqlserver", "salesforce", "kafka", "postgresql"]} />
 
-`public`, `workspace` and `private` describe [reachability](/docs/concepts/connectivity).
-They do not provision networking or test credentials. A standard can also reject
-an otherwise supported method.
+Every other source is in the [connector catalogue](/docs/connectors), and its
+page lists its routes.
 
-ADF can be selected for supported public and workspace sources as well as private
-ones. On the `adf-databricks` route, Databricks reads the landing files; it does
-not run a second direct connection to the original source.
+## Create it
 
-## Create the selected project
+<ToolSteps>
+<Tool name="CLI">
 
-Use [Create a project](/docs/how-to/start-from-a-template) for the available
-interfaces. The builder writes an explicit ingestion choice into the definitions
-and checks its standard. Generation and deployment remain separate steps.
+```sh
+ingestron init sales --connector sqlserver --connectivity private --via adf-databricks
+```
+
+Without `--yes`, `init` asks for the settings it needs, and for any choice the
+flags leave out. Add `--standard <path or Git URL>` to use your organisation's
+standard. For DuckDB on a laptop, use `--template duckdb` instead, as in
+[Run your first project on your laptop](/docs/start/first-project).
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: New project** and choose **From a connection**. Pick the
+source, its reachability and a route; the list shows only the routes that
+support both.
+
+</Tool>
+</ToolSteps>
+
+[Create a project from a connection](/docs/how-to/start-from-a-template) covers
+every option. Generating the files and deploying them stay separate steps.

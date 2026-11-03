@@ -9,31 +9,12 @@ publishes each table as Parquet that Power BI and other tools read as files.
 The same project can land files with ADF in the cloud and still run its tables
 locally, so a failed load can be tried again on a laptop.
 
-## Try it in five minutes
-
-Install the [DuckDB command line](https://duckdb.org/docs/installation/), then:
-
-```sh
-ingestron init demo --template duckdb --yes
-cd demo
-ingestron apply
-duckdb -bail ingestron.duckdb -c ".read build/dev/run.sql"
-duckdb ingestron.duckdb -c "SELECT * FROM silver.customer_totals"
-```
-
-In VS Code, run **Ingestron: New project**, choose **From a starter**, then
-**DuckDB on a laptop**, and **Ingestron: Apply**; then run the two `duckdb`
-lines in the project folder's terminal.
-
-`-bail` stops at the first error, so a run that fails while building
-publishes nothing; without it, DuckDB carries on and commits what it built.
-
-The starter reads `samples/orders.csv`, keeps the tables `bronze.orders` and
-`silver.customer_totals` in `ingestron.duckdb`, and publishes both to
-`published/` as `<schema>.<table>.parquet`. Run `run.sql` again after each
-change to the files or the definitions; running again is safe. Keep
-`ingestron.duckdb` and `published/*.parquet` out of version control: they are
-data, built from the files.
+To try it first, [run your first project on your laptop](/docs/start/first-project):
+it creates a project from the **DuckDB on a laptop** starter, generates its
+SQL and builds its tables. Each table is published to the platform's
+`published` folder as `<schema>.<table>.parquet`. Keep `ingestron.duckdb` and
+`published/*.parquet` out of version control: they are data, built from the
+files.
 
 ## Read files where they are
 

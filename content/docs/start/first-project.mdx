@@ -1,128 +1,353 @@
 ---
-title: Generate your first project
-description: Learn the definition-to-generation workflow with a small, local example.
+title: Run your first project on your laptop
+description: Create a project from the DuckDB starter, generate its SQL, and build two tables on your laptop. No cloud account, no source, nothing deployed.
 ---
 
-Create definitions, inspect their plan, then generate and review the files. This
-example uses the Databricks pack to make the output concrete. You do not need a
-Databricks account, a live source or cloud access to complete it; nothing is
-deployed and no data is loaded.
+In this tutorial you create a small project from YAML, let Ingestron write the
+SQL for it, and run that SQL with DuckDB on your own machine. At the end you
+have a DuckDB database with two tables, `bronze.orders` and
+`silver.customer_totals`, each also published as a Parquet file. You need no
+cloud account and no source, and nothing is deployed.
 
-[Install a tool](/docs/start/install) first. For your own project, check
-[supported platform combinations](/docs/start/choose-a-route). The underlying
-workflow remains definitions → plan → generate → review.
+Start in any folder where you can create a new one, such as your home folder.
 
-<ExampleDownload name="connection-first-files" /> contains the finished example for comparison.
+## Before you start
 
-## 1. Create the definitions
+- **Node.js 22.13 or later.** `npx ingestron@1` runs Ingestron without
+  installing it. To install it instead, or to use VS Code, see
+  [Install a tool](/docs/start/install).
+- **The [DuckDB command line](https://duckdb.org/docs/installation/).** The
+  DuckDB pack's SQL is tested with DuckDB <DuckdbTested />.
 
-From the parent folder, create an empty project named `shop`:
-
-<ToolSteps>
-<Tool name="CLI">
-
-```sh
-ingestron init shop --connector files --connectivity public --via databricks --env dev --yes
-```
-
-`--yes` uses synthetic example values. Without these flags, project creation
-asks for the connection, reachability, route, standard and settings.
-
-</Tool>
-<Tool name="VS Code">
-
-Run **Ingestron: New project**. Choose **Files and storage**, **Files**, **public**,
-then **Databricks directly**. Name the project `shop` and environment `dev`, keep
-the supplied standard and example values, and select an empty `shop` folder.
-
-</Tool>
-</ToolSteps>
-
-Both create the same five definition files, a `.gitignore` that keeps `.env`
-files out of Git, and show a plan. Open `shop`; the
-remaining steps run from that folder. No platform output has been written yet.
-
-## 2. Understand the files
-
-`project.yaml` names the project, values, environments and imports:
-
-<Example name="connection-first-files" file="project.yaml" />
-
-`standard.yaml` selects the pack. This small standard uses its defaults:
-
-<Example name="connection-first-files" file="standard.yaml" />
-
-The connection describes the source. `${values.source_path}` reads a project
-value using the [YAML reference syntax](/docs/concepts/yaml-references):
-
-<Example name="connection-first-files" file="connections/shop.yaml" />
-
-The flow links that connection's object to the contract describing `orders`:
-
-<Example name="connection-first-files" file="flows/orders.yaml" />
-
-<Example name="connection-first-files" file="contracts/orders.yaml" />
-
-The [definition model](/docs/concepts/definitions) explains those relationships.
-For this exercise keep the synthetic values; replace them before any deployment.
-
-## 3. Plan and generate
+## 1. Create the project
 
 <ToolSteps>
 <Tool name="CLI">
 
 ```sh
-ingestron plan --env dev --no-diff
-ingestron apply --env dev --no-diff
+npx ingestron@1 init shop --template duckdb --yes
+cd shop
 ```
 
 </Tool>
 <Tool name="VS Code">
 
-Save the files and run **Ingestron: Plan** for `dev`. Inspect the output panel,
-then run **Ingestron: Apply**.
+Create an empty folder named `shop`. Run **Ingestron: New project**, choose
+**From a starter**, then **DuckDB on a laptop**. Keep the name `shop` and the
+environment `dev`, leave the standard empty to keep the starter's own, and
+select the `shop` folder. Open that folder in VS Code.
 
 </Tool>
 </ToolSteps>
 
-Plan lists three creates under `build/dev`: `databricks.yml`,
-`resources/shop.pipeline.yml` and `src/shop/bronze/orders.sql`. Apply writes them
-and reports `Applied.`. Read the generated table definition:
+`init` copies the starter into `shop` and prints
+`Created shop from the template duckdb (11 files).`, followed by the plan in
+the next step. `--yes` takes the starter's defaults instead of asking. The
+remaining steps run in the `shop` folder.
 
-<Example name="connection-first-files" file="build/dev/src/shop/bronze/orders.sql" />
+## 2. Plan
 
-This pack chose table names, types and storage settings from the resolved
-standard and contract. The files describe resources to deploy later; generating
-them has not run a pipeline or read the source path.
+<ToolSteps>
+<Tool name="CLI">
 
-## 4. See how generated files are protected
+```sh
+npx ingestron@1 plan
+```
 
-Add a comment to `build/dev/src/shop/bronze/orders.sql`, then plan again.
-Ingestron reports a conflict because the file differs from its recorded generated
-version. It does not overwrite your edit.
+</Tool>
+<Tool name="VS Code">
 
-Remove your added comment, then plan again: there should be no changes. Make
-future changes in definitions and regenerate. The
-[ownership guide](/docs/concepts/generated-files) explains conflicts and recovery.
+Run **Ingestron: Plan**. The output appears in the **Ingestron** output panel.
 
-## Continue with your own project
+</Tool>
+</ToolSteps>
+
+You should see:
+
+```text
+dev → build/dev
+create    README.md
+create    run.sql
+create    tables/bronze.orders.sql
+create    tables/silver.customer_totals.sql
+
+4 files: 4 create. Ready to apply.
+```
+
+`dev` is the project's one environment, and its files go to `build/dev/`. Plan
+writes nothing: it shows what `apply` would write.
+
+## 3. Apply
+
+<ToolSteps>
+<Tool name="CLI">
+
+```sh
+npx ingestron@1 apply
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: Apply**.
+
+</Tool>
+</ToolSteps>
+
+```text
+dev → build/dev
+create    README.md
+create    run.sql
+create    tables/bronze.orders.sql
+create    tables/silver.customer_totals.sql
+
+4 files: 4 create. Ready to apply.
+Applied.
+```
+
+`build/dev/` now holds the four files, and `.generated.json`, which records
+each file as it was generated.
+
+## 4. Build the tables
+
+Run DuckDB in the `shop` folder (in VS Code, open a terminal there):
+
+```sh
+duckdb -bail ingestron.duckdb -c ".read build/dev/run.sql"
+duckdb ingestron.duckdb -c "SELECT * FROM silver.customer_totals ORDER BY customer"
+```
+
+The first line runs the generated SQL and prints nothing when it succeeds. The
+second shows the totals it built from the five sample orders:
+
+```text
+┌──────────┬────────┬────────┐
+│ customer │ orders │ total  │
+│ varchar  │ int64  │ double │
+├──────────┼────────┼────────┤
+│ Aroha    │      2 │  65.75 │
+│ Ben      │      2 │   42.0 │
+│ Chen     │      1 │   8.75 │
+└──────────┴────────┴────────┘
+```
+
+`published/` now holds `bronze.orders.parquet` and
+`silver.customer_totals.parquet`, which Power BI and other tools read as
+files. `-bail` stops at the first error, so a run that fails while building
+publishes nothing; without it, DuckDB carries on and commits what it built.
+Running `run.sql` again is safe: it rebuilds both tables and
+replaces both files. The project's `.gitignore` keeps `ingestron.duckdb` and
+the Parquet files out of Git, because they are data built from the files.
+
+## 5. Read what you wrote
+
+The project is a handful of short YAML files. `standard.yaml` chooses the
+DuckDB pack, the part of Ingestron that writes DuckDB SQL, and says the source
+files are CSV:
+
+<Example name="duckdb" file="standard.yaml" />
+
+`platform.yaml` says where this machine publishes each table:
+
+<Example name="duckdb" file="platform.yaml" />
+
+The connection is the source: a folder of files beside the project.
+
+<Example name="duckdb" file="connections/shop.yaml" />
+
+The flow reads `orders.csv` from that connection into the table `orders`,
+described by a contract:
+
+<Example name="duckdb" file="flows/orders.yaml" />
+
+The contract is an [Open Data Contract Standard](https://bitol-io.github.io/open-data-contract-standard/)
+file. It names the columns and their types, and those columns are what the
+table gets:
+
+<Example name="duckdb" file="contracts/orders.yaml" />
+
+The transform builds `customer_totals` from `orders` with SQL. Its own
+contract, `contracts/customer_totals.yaml`, types the result:
+
+<Example name="duckdb" file="transforms/customer_totals.yaml" />
+
+From those files Ingestron wrote `run.sql`. It is plain DuckDB SQL: every
+column cast to its contract's type, both tables built in one transaction, and
+published only once both are built. Nothing in it calls Ingestron.
+
+<Example name="duckdb" file="build/dev/run.sql" />
+
+The [definition model](/docs/concepts/definitions) explains how the files link
+to each other.
+
+## Add a column
+
+Add a `channel` column. First add this line at the end of
+`contracts/orders.yaml`, under the other columns, with the same indentation:
+
+{/* prettier-ignore */}
+```yaml
+      - { name: channel, logicalType: string }
+```
+
+Then replace `samples/orders.csv` with orders that have a channel:
+
+```csv
+order_id,customer,amount,ordered_at,channel
+1,Aroha,25.50,2026-10-01,web
+2,Ben,12.00,2026-10-01,store
+3,Aroha,40.25,2026-10-02,web
+4,Chen,8.75,2026-10-03,web
+5,Ben,30.00,2026-10-03,store
+```
+
+Plan again:
+
+```sh
+npx ingestron@1 plan
+```
+
+Plan shows each changed line: the `channel` column is read, cast and
+published. A reviewer sees the same change in a pull request.
+
+```text
+dev → build/dev
+update    run.sql
+          @@ -5,5 +5,5 @@
+
+           CREATE SCHEMA IF NOT EXISTS "bronze";
+          -CREATE OR REPLACE TABLE "bronze"."orders" AS SELECT CAST("order_id" AS BIGINT) AS "order_id", CAST("customer" AS VARCHAR) AS "customer", CAST("amount" AS DOUBLE) AS "amount", CAST("ordered_at" AS DATE) AS "ordered_at" FROM read_csv('./samples/orders.csv', header = true, delim = ',');
+          +CREATE OR REPLACE TABLE "bronze"."orders" AS SELECT CAST("order_id" AS BIGINT) AS "order_id", CAST("customer" AS VARCHAR) AS "customer", CAST("amount" AS DOUBLE) AS "amount", CAST("ordered_at" AS DATE) AS "ordered_at", CAST("channel" AS VARCHAR) AS "channel" FROM read_csv('./samples/orders.csv', header = true, delim = ',');
+
+           CREATE SCHEMA IF NOT EXISTS "silver";
+          @@ -17,4 +17,4 @@
+
+           -- Published only once every table is built.
+          -COPY (SELECT "order_id", "customer", "amount", "ordered_at" FROM "bronze"."orders") TO './published/bronze.orders.parquet' (FORMAT parquet);
+          +COPY (SELECT "order_id", "customer", "amount", "ordered_at", "channel" FROM "bronze"."orders") TO './published/bronze.orders.parquet' (FORMAT parquet);
+           COPY (SELECT "customer", "orders", "total" FROM "silver"."customer_totals") TO './published/silver.customer_totals.parquet' (FORMAT parquet);
+update    tables/bronze.orders.sql
+          @@ -1,3 +1,3 @@
+           CREATE SCHEMA IF NOT EXISTS "bronze";
+          -CREATE OR REPLACE TABLE "bronze"."orders" AS SELECT CAST("order_id" AS BIGINT) AS "order_id", CAST("customer" AS VARCHAR) AS "customer", CAST("amount" AS DOUBLE) AS "amount", CAST("ordered_at" AS DATE) AS "ordered_at" FROM read_csv('./samples/orders.csv', header = true, delim = ',');
+          -COPY (SELECT "order_id", "customer", "amount", "ordered_at" FROM "bronze"."orders") TO './published/bronze.orders.parquet' (FORMAT parquet);
+          +CREATE OR REPLACE TABLE "bronze"."orders" AS SELECT CAST("order_id" AS BIGINT) AS "order_id", CAST("customer" AS VARCHAR) AS "customer", CAST("amount" AS DOUBLE) AS "amount", CAST("ordered_at" AS DATE) AS "ordered_at", CAST("channel" AS VARCHAR) AS "channel" FROM read_csv('./samples/orders.csv', header = true, delim = ',');
+          +COPY (SELECT "order_id", "customer", "amount", "ordered_at", "channel" FROM "bronze"."orders") TO './published/bronze.orders.parquet' (FORMAT parquet);
+
+4 files: 2 update, 2 unchanged. Ready to apply.
+```
+
+The contract decides the columns: a new column in the CSV alone changes
+nothing until the contract names it. Apply, and build the tables again:
+
+```sh
+npx ingestron@1 apply
+duckdb -bail ingestron.duckdb -c ".read build/dev/run.sql"
+duckdb ingestron.duckdb -c "SELECT * FROM bronze.orders ORDER BY order_id"
+```
+
+```text
+┌──────────┬──────────┬────────┬────────────┬─────────┐
+│ order_id │ customer │ amount │ ordered_at │ channel │
+│  int64   │ varchar  │ double │    date    │ varchar │
+├──────────┼──────────┼────────┼────────────┼─────────┤
+│        1 │ Aroha    │   25.5 │ 2026-10-01 │ web     │
+│        2 │ Ben      │   12.0 │ 2026-10-01 │ store   │
+│        3 │ Aroha    │  40.25 │ 2026-10-02 │ web     │
+│        4 │ Chen     │   8.75 │ 2026-10-03 │ web     │
+│        5 │ Ben      │   30.0 │ 2026-10-03 │ store   │
+└──────────┴──────────┴────────┴────────────┴─────────┘
+```
+
+## Break it on purpose
+
+Two mistakes show how Ingestron protects your work.
+
+### Edit a generated file
+
+Add the line `-- my change` at the end of `build/dev/run.sql`, save it, and
+plan:
+
+```sh
+npx ingestron@1 plan
+```
+
+```text
+dev → build/dev
+conflict  run.sql
+          Changed by hand since it was generated. Move the change into the definitions, or delete the file to generate it again.
+
+4 files: 3 unchanged, 1 conflict. Resolve the conflicts before applying.
+```
+
+Plan exits with an error, and `apply` refuses in the same way, so your edit is
+never overwritten. A change belongs in the definitions, where the next plan
+shows it to a reviewer. To undo it, delete the file and apply:
+
+```sh
+rm build/dev/run.sql
+npx ingestron@1 apply
+```
+
+```text
+dev → build/dev
+create    run.sql
+
+4 files: 1 create, 3 unchanged. Ready to apply.
+Applied.
+```
+
+[Generated files](/docs/concepts/generated-files) explains how Ingestron
+tracks what it wrote.
+
+### Name a connection that does not exist
+
+In `flows/orders.yaml`, change `source: shop` to `source: shops`, save it, and
+plan:
+
+```sh
+npx ingestron@1 plan
+```
+
+```text
+dev: the definitions have problems
+flows/orders.yaml:4:9  error  BROKEN_LINK
+  "shops" is not the id of a Connection document.
+  Known Connection ids: shop.
+  Fix: Change to "shop".
+```
+
+Each problem names the file, line and column, the
+[error code](/docs/reference/errors#BROKEN_LINK) and a fix, and nothing is
+written. VS Code underlines the value as you type and offers
+**Change to "shop"** as a quick fix. Change it back, and plan reports
+`4 files: 4 unchanged. Up to date.`
+
+## Clean up
+
+Delete the `shop` folder. Nothing else was created: no account, no service and
+no file outside the folder, apart from the copy of Ingestron that `npx` keeps
+in npm's cache.
+
+## Next
 
 <DocLinks
+  label="Next steps"
   items={[
     {
-      title: "Create a project from your connection",
-      href: "/docs/how-to/start-from-a-template",
-      description: "Choose the supported route and standard you actually need.",
+      title: "How Ingestron works",
+      href: "/docs/start/how-it-works",
+      description: "What you write, what Ingestron writes, and what runs on your platform.",
     },
     {
-      title: "Configure shared policy",
-      href: "/docs/how-to/configure-a-standard",
-      description: "Control defaults, allowed methods and fixed settings.",
+      title: "Choose where your data goes",
+      href: "/docs/start/choose-a-route",
+      description: "Databricks, Azure Data Factory, Synapse views or DuckDB, for your source.",
     },
     {
-      title: "Plan, generate and review",
-      href: "/docs/how-to/plan-and-generate",
-      description: "Use the same workflow after every change.",
+      title: "The same tables, fed by ADF in Azure",
+      href: "/docs/how-to/run-locally-with-duckdb",
+      description: "Land files with Azure Data Factory and build these tables locally or in Azure.",
     },
   ]}
 />
