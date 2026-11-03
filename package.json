@@ -13,7 +13,7 @@
     "build": "next build",
     "typecheck": "fumadocs-mdx && tsc --noEmit",
     "test": "vitest run --dir test",
-    "validate": "pnpm format:check && pnpm secrets:check && pnpm licences:check && node --test scripts/*.test.mjs && pnpm typecheck && pnpm test && pnpm build && pnpm check:links",
+    "validate": "pnpm format:check && pnpm secrets:check && pnpm licences:check && node --test scripts/*.test.mjs worker/*.test.mjs && pnpm typecheck && pnpm test && pnpm build && pnpm check:links",
     "check:links": "tsx scripts/check-links.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
