@@ -33,6 +33,19 @@ it("makes YAML reference syntax reachable from the introduction and concepts", (
   expect(syntax).toContain("UNKNOWN_CODE_VALUE");
 });
 
+it("explains environment files where the editor and the other pages send readers", () => {
+  const syntax = read("concepts/yaml-references.mdx");
+  expect(syntax).toContain("## Use environment files");
+  for (const text of [".env.<environment>", ".env.example", "!.env.example", "ENV_FILE_LINE"])
+    expect(syntax).toContain(text);
+  for (const page of [
+    "tools/vscode.mdx",
+    "how-to/check-in-ci.mdx",
+    "how-to/start-from-a-template.mdx",
+  ])
+    expect(read(page)).toContain("/docs/concepts/yaml-references#use-environment-files");
+});
+
 it("separates the core workflow from today's supported platform combinations", () => {
   const routes = read("start/choose-a-route.mdx");
   expect(routes).toContain("ADF, ending at the landed files (`adf-landing`)");

@@ -98,7 +98,10 @@ See [Name ADF resources](/docs/how-to/name-adf-resources) for name defaults
 and overrides.
 
 `init` never replaces an existing file. If any target file already exists,
-it lists the clashes and writes nothing. After editing the definitions,
+it lists the clashes and writes nothing. The one exception is `.gitignore`:
+`init` adds the lines that keep `.env` files out of Git, where they are missing,
+and says so. See [Environment files](/docs/concepts/yaml-references#use-environment-files)
+for what those files are for. After editing the definitions,
 run `ingestron plan` from the project folder to review the generated files.
 
 ## Review and generate
