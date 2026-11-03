@@ -52,6 +52,13 @@ steps:
     displayName: ingestron check
 ```
 
+## Give the check its variables
+
+If a definition uses `${envvar:NAME}`, set `NAME` in the pipeline's variables and
+pass it to the step that runs `ingestron check`. A value in the process
+environment wins over `.env` files, and `.env` files are not committed, so CI
+has none. See [Environment files](/docs/concepts/yaml-references#use-environment-files).
+
 ## Run it locally
 
 Both files are also in the

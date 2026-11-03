@@ -33,10 +33,15 @@ the standard fixes, a method that cannot read a source, a name that is not
 valid. Problems are for the environment in the status bar; click it, or run
 **Ingestron: Select environment**, to choose another.
 
-Editor analysis does not read process environment variables. A definition using
-`${envvar:NAME}` can therefore pass CLI Plan but report a missing variable in the
-editor. Use project values for portable configuration; see
-[YAML environment references](/docs/concepts/yaml-references#read-an-environment-variable).
+A definition that uses `${envvar:NAME}` reads the variable from `.env.<environment>`
+and `.env` in the project folder, and from the environment VS Code was started
+with. A variable exported later in a terminal is not seen here; put it in
+`.env`. When the variable is set nowhere, the editor shows a blue information
+mark, not an error, that names the file to add it to, such as
+`.env.dev`. The rest of the project is still checked, and a value that depends
+on the missing one is not judged until it is set. A line in an `.env` file that
+Ingestron cannot read is a warning (`ENV_FILE_LINE`) at that line. See
+[Environment files](/docs/concepts/yaml-references#use-environment-files).
 
 A definitions file that no import in `project.yaml` matches, such as a new
 transform in `transforms/` when the project imports only `flows/*.yaml`, is
@@ -180,13 +185,28 @@ docs, and each problem's code in the Problems panel links to its entry in
 
 ![Hovering the orders table shows its full name dev_sales.bronze.orders, the files method with its pack defaults, and the streaming table's settings: mode set by this table, cluster_by fixed by the standard, properties from the standard, each with file and line.](/images/vscode/hover.png)
 
+## Project view
+
+The **Ingestron** tab in the secondary side bar, on the right, opens with a
+**Project** section. For a workspace with one project it lists:
+
+- **Environments**, each with a circle, and a check and **selected** on the one
+  commands use now. Click an environment to select it, as in the status bar.
+- **Check**, **Plan**, **Apply**, **Compare environments**, **Prepare platform
+  request** and **Show generated files**. Click one to run it for the project.
+
+With several projects, each has a row, named by its `id` and showing its folder
+in the workspace, that holds the same lists. A workspace with no project shows
+**New project**. The view follows the environments in `project.yaml`, so adding
+one to the file adds it to the list.
+
 ## Reference beside the editor
 
-The **Ingestron** tab in the secondary side bar, on the right, explains what
-the cursor is on as you move it: the problems on that line with their meaning,
-fix and quick fixes; then the field or value, with each allowed value, the one
-written marked, its default, an example and where it is usually set; on the
-document's header, the document and its fields. Open it with
+The **Reference** section below the Project view, in the same **Ingestron** tab,
+explains what the cursor is on as you move it: the problems on that line with
+their meaning, fix and quick fixes; then the field or value, with each allowed
+value, the one written marked, its default, an example and where it is usually
+set; on the document's header, the document and its fields. Open it with
 **Ingestron: Show reference**, or drag the tab to another side.
 
 It shows what the installed extension knows, so it matches its packs and
@@ -230,6 +250,20 @@ until you do so.
 **Ingestron: Plan**, **Ingestron: Apply** and **Ingestron: Check** run the
 command for the project and environment, after saving open files. The output
 is in the Ingestron output panel.
+
+You can start them from where you are working, as well as from the Command
+Palette. Each acts on the project you started it from, for the environment
+chosen for that project:
+
+- **Right-click** a project folder, or a YAML file in a project, in the
+  Explorer for **Ingestron: Check**, **Plan**, **Apply**, **Compare
+  environments** and **Prepare platform request**. The files in `build/` do not
+  have the menu.
+- **Editor title buttons**: with a YAML file of a project, or a preview of
+  generated files, open, **Plan** and **Apply** are buttons in the editor's
+  title bar. **Check**, **Compare environments** and **Prepare platform
+  request** are under the **…** menu beside them.
+- **The Project view** lists the same actions; see below.
 
 ![The Ingestron output panel after Ingestron: Plan: three files to create in build/dev, ready to apply.](/images/vscode/plan.png)
 
