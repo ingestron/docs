@@ -68,10 +68,12 @@ export function PlatformChecks() {
   const databricks = readme("@ingestron/pack-databricks");
   const duckdb = installed("@ingestron/pack-duckdb").devDependencies?.["@duckdb/node-api"];
   if (!duckdb) throw new Error("Not found: the DuckDB the DuckDB pack's tests use.");
+  if (!/^\d+\.\d+\.\d+(-r\.\d+)?$/.test(duckdb))
+    throw new Error(`Not an exact version: the DuckDB pack's @duckdb/node-api is ${duckdb}.`);
   const rows: [string, string][] = [
     [
       "databricks",
-      `The bundle schema of Databricks CLI ${found(databricks, /Databricks CLI (v[\d.]+)/, "the Databricks CLI version")} (\`databricks bundle schema\`) and the Databricks documentation, accessed ${found(databricks, /## Sources \(accessed ([\d-]+)\)/, "the Databricks access date")}`,
+      `The bundle schema of Databricks CLI ${found(databricks, /Bundle fields from Databricks CLI (v[\d.]+)/, "the Databricks CLI version")} (\`databricks bundle schema\`) and the Databricks documentation, accessed ${found(databricks, /## Sources \(accessed ([\d-]+)\)/, "the Databricks access date")}`,
     ],
     [
       "adf",
