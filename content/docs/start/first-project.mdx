@@ -145,8 +145,8 @@ bronze.orders.parquet  silver.customer_totals.parquet
 
 `run.sql` builds both tables in one transaction, so if a statement fails,
 neither table changes. `-bail` then stops DuckDB before it publishes anything.
-Without `-bail`, DuckDB can go on to the `COPY` statements and publish the
-tables as they were before the run. Running `run.sql` again is safe: it
+If you pipe `run.sql` into DuckDB without `-bail`, it can go on to the `COPY`
+statements and publish the tables as they were before the run. Running `run.sql` again is safe: it
 rebuilds both tables and replaces both files. The project's `.gitignore` keeps
 `ingestron.duckdb` and the Parquet files out of Git, because they are data
 built from the files.
