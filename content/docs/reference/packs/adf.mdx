@@ -8,7 +8,7 @@ landing storage. From there, the [Databricks pack](/docs/reference/packs/databri
 reads them into tables, the [Synapse serverless pack](/docs/reference/packs/synapse)
 shows them as views, or the [DuckDB pack](/docs/reference/packs/duckdb) builds
 tables from them. Synapse and DuckDB read the tables ADF copies, not files it
-copies as they are. List the other pack first, as New project does:
+copies as they are, and Synapse cannot read the JSON Microsoft 365 lands. List the other pack first, as New project does:
 `packs: [databricks@1, adf@1]`, `[synapse@1, adf@1]` or `[duckdb@1, adf@1]`.
 On its own, `packs: [adf@1]` with `store: { default: none }` ends each table at
 the landed files; see [Land files only](/docs/how-to/land-files-only). The
