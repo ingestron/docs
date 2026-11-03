@@ -1,5 +1,6 @@
 // Download cards describe the same resolved samples that the archive builder uses.
 import { listExamples, type ExampleInfo } from "@/lib/examples";
+import { packName } from "@/lib/reference";
 
 /** Matching downloadable projects, with their platforms and connector scope.
  * @example <ExamplesList connector="sqlserver" />
@@ -39,16 +40,15 @@ function Download({ example }: { example: ExampleInfo }) {
       </div>
       <p>{summary}</p>
       <p className="setting-meta">
-        {facts.packs
-          .map((pack) => (pack === "adf" ? "Azure Data Factory" : "Databricks"))
-          .join(" + ")}
+        {facts.packs.map(packName).join(" + ")}
         {" · "}
         {facts.connectors.length > 1
           ? `Multi-connector project (${facts.connectors.length} connector types)`
           : `${facts.connectors[0]} project`}
       </p>
       <p>
-        Includes project definitions, contracts and generated output. File previews use these same
+        Holds the project's definition files, not its generated files: run{" "}
+        <code>ingestron apply</code> in the folder to write them. File previews use these same
         sample files.
       </p>
       <a

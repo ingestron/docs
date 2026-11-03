@@ -1,9 +1,10 @@
 // Routes stay in package metadata; chapters provide detailed instructions.
 import { Fragment, type ReactNode } from "react";
+import { projectRoutes } from "@ingestron/cli";
 import { ingestionRows } from "@/lib/connector-settings";
-import { connectorEntries, type ConnectorEntry } from "@/lib/reference";
+import { connectorEntries, packName, type ConnectorEntry } from "@/lib/reference";
 
-/** A compact route summary linking to each platform's full chapters.
+/** A compact summary of each pack that reads the connector and the routes it starts, linking to its chapters.
  * @example <ConnectorFacts id="sqlserver" />
  */
 export function ConnectorFacts({ id }: { id: string }) {
@@ -22,7 +23,7 @@ function Route({ id, entry }: { id: string; entry: ConnectorEntry }) {
   const { pack, connector } = entry;
   return (
     <section>
-      <h3>{pack === "adf" ? "Azure Data Factory → landing → Databricks" : "Databricks"}</h3>
+      <h3>{packName(pack)}</h3>
       <dl className="connector-summary">
         {routeFacts(id, entry).map(([label, value]) => (
           <Fragment key={label}>
@@ -46,7 +47,19 @@ function routeFacts(
 ): [string, ReactNode][] {
   const { reading, maturity } = connector;
   const modes = ingestionRows(id, pack).find((field) => field.path.join(".") === "mode")?.values;
+  const routes = projectRoutes(id).filter((route) => route.method === connector.method);
+  if (routes.length === 0) throw new Error(`No route reads "${id}" with ${connector.method}.`);
   const facts: [string, ReactNode][] = [
+    [
+      "Routes",
+      <ul key="routes" className="route-list">
+        {routes.map(({ via, title }) => (
+          <li key={via}>
+            {title} (<code>{via}</code>)
+          </li>
+        ))}
+      </ul>,
+    ],
     ["Method", <code key="method">{connector.method}</code>],
     ["Connectivity", connectivity.join(", ") || "any"],
     ["Source object", <code key="object">{connector.object}</code>],

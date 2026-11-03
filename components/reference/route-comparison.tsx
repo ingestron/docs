@@ -1,35 +1,52 @@
 // A compact comparison uses the same supported routes as New project.
 import { projectRoutes, projectSources } from "@ingestron/cli";
+import { allRoutes } from "@/lib/reference";
 
-/** Compare selected sources without maintaining a second support matrix.
+/** Compare selected sources across every route, without maintaining a second support matrix.
  * @example <RouteComparison ids={["files", "sqlserver"]} />
  */
 export function RouteComparison({ ids }: { ids: string[] }) {
   const sources = projectSources();
+  const routes = allRoutes();
   return (
-    <table>
-      <thead>
-        <tr>
-          <th>Source</th>
-          <th>Databricks directly</th>
-          <th>ADF → Databricks</th>
-        </tr>
-      </thead>
-      <tbody>
-        {ids.map((id) => (
-          <tr key={id}>
-            <td>
-              <a href={`/docs/connectors/${id}`}>
-                {sources.find((source) => source.id === id)?.title ?? id}
-              </a>
-            </td>
-            {["databricks", "adf"].map((via) => (
-              <RouteCell key={via} id={id} via={via} />
+    // The same scrolling, focusable frame Fumadocs gives a Markdown table.
+    <div
+      className="relative overflow-auto prose-no-margin my-6 route-comparison"
+      tabIndex={0}
+      role="region"
+      aria-label="Routes for each source"
+    >
+      <table>
+        <thead>
+          <tr>
+            <th>Source</th>
+            {routes.map(({ via, title }) => (
+              <th key={via}>
+                {title}
+                <br />
+                <code>{via}</code>
+              </th>
             ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {ids.map((id) => {
+            const source = sources.find((item) => item.id === id);
+            if (!source) throw new Error(`No source "${id}".`);
+            return (
+              <tr key={id}>
+                <td>
+                  <a href={`/docs/connectors/${id}`}>{source.title}</a>
+                </td>
+                {routes.map(({ via }) => (
+                  <RouteCell key={via} id={id} via={via} />
+                ))}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
