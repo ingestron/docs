@@ -1,6 +1,9 @@
 // docs.ingestron.io Worker. Serves the static Next export from ASSETS and adds
-// the root redirect and security headers. Keep it tiny: the Workers Free plan
+// the root redirect, the moved-page redirects (redirects.js) and security
+// headers. Keep it tiny: the Workers Free plan
 // allows 10 ms CPU per request.
+
+import { redirectFor } from "./redirects.js";
 
 const securityHeaders = [
   ["Strict-Transport-Security", "max-age=31536000; includeSubDomains"],
@@ -10,11 +13,12 @@ const securityHeaders = [
   ["Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()"],
 ];
 
-export function redirectFor(url) {
+export function redirectResponseFor(url, table) {
   if (url.pathname === "/" || url.pathname === "") {
     return { location: `${url.origin}/docs${url.search}`, status: 307 };
   }
-  return null;
+  const target = redirectFor(url, table);
+  return target === undefined ? null : { location: `${url.origin}${target}`, status: 301 };
 }
 
 export function cacheControlFor(pathname) {
@@ -25,7 +29,7 @@ export function cacheControlFor(pathname) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const redirect = redirectFor(url);
+    const redirect = redirectResponseFor(url);
     if (redirect) {
       return new Response(null, {
         status: redirect.status,

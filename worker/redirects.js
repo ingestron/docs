@@ -1,0 +1,32 @@
+// Moved and merged pages. A page that is removed or renamed gets an entry here
+// in the same change, so an old link, bookmark or search result still lands.
+// scripts/check-links.ts checks every target against the built site.
+
+/** Exact old path to new path. A target may end in `#anchor`. */
+export const redirects = new Map();
+
+/** Old paths by shape: a pattern and the function that builds the new path. */
+export const patterns = [];
+
+/**
+ * The path to send an old URL to, with its query kept, or undefined when the
+ * URL is not redirected. One trailing `/` or `.html` is ignored.
+ */
+export function redirectFor(url, table = { redirects, patterns }) {
+  const path = url.pathname.replace(/(?:\/|\.html)$/, "");
+  const target = table.redirects.get(path) ?? firstMatch(table.patterns, path);
+  if (target === undefined) return undefined;
+  if (!url.search) return target;
+  const hash = target.indexOf("#");
+  return hash === -1
+    ? `${target}${url.search}`
+    : `${target.slice(0, hash)}${url.search}${target.slice(hash)}`;
+}
+
+function firstMatch(list, path) {
+  for (const [pattern, build] of list) {
+    const match = path.match(pattern);
+    if (match) return build(match);
+  }
+  return undefined;
+}
