@@ -29,7 +29,8 @@ columns must be in that order. With a header, columns are matched by name.
 
 A transform's columns are cast to the contract's types, and a cast can change a
 value: a timestamp with a time zone loses its offset when the contract says
-`timestamp`, and a decimal rounds when the contract says `integer`.
+`timestamp`, and a `timestamptz` shows the time in the session's time zone; a
+decimal rounds when the contract says `integer`.
 
 An environment with `runs-on: duckdb` replaces another pack's file-landing
 ingest, such as `adf-copy`, with `duckdb-landed`, which reads a load's files
