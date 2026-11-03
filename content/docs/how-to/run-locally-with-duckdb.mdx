@@ -53,6 +53,20 @@ ingest:
 (each file's rows once) or `upsert` (by the contract's primary key). The
 `published` folder comes from the platform and must exist.
 
+A CSV without a header (`csv.header: false`) binds its columns in the
+contract's order, so the file's columns must be in that order. With a header,
+columns are matched by name.
+
+`append` reads each file name once, so a file re-exported under the same name is
+skipped and its new rows are not loaded. Give a re-export a new name, or delete
+`ingestron.duckdb` and run again to reload every file. In Azure each run starts
+with an empty database, so every file is read.
+
+A transform's columns are cast to the contract's types, and a cast can change a
+value: a timestamp with a time zone loses its offset when the contract says
+`timestamp`, and a decimal rounds when the contract says `integer`. Give the
+contract the type you want to keep.
+
 ## Run a cloud project locally
 
 When ADF lands the files and DuckDB builds the tables, an environment that names
