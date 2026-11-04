@@ -184,7 +184,7 @@ it("merges the worked standard and the naming concept into their guides, keeping
     "DUPLICATE_NAME",
     "## ADF resource names",
     "### Choose where the name belongs",
-    "### Review a rename before applying",
+    '<OldAnchor id="review-a-rename-before-applying" />',
     "Ingestron renames files, not data.",
   ])
     expect(naming).toContain(text);
