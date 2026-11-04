@@ -57,7 +57,8 @@ and apply it again first.
    The key, `customers`, is the table's name. `object` is the file in the
    connection's folder, and `contract` is the contract's `id`. In VS Code,
    completion under `tables` offers each contract no table uses yet as a
-   table, with its object and contract filled in.
+   table. It fills in `object` with the contract's table name, `customers`:
+   change it to the file, `customers.csv`.
 
 4. Plan:
 
@@ -137,7 +138,8 @@ while the rest of your platform stays as it is:
 - **Choose names that do not clash** with what is deployed; see
   [Name Databricks resources](/docs/how-to/name-things-your-way).
 - **Keep your own files out of `build/`.** `ingestron check` fails on a file
-  there that it did not generate; see
+  there that it did not generate. If you keep files there on purpose, run
+  `ingestron check --allow-extra`; see
   [Check generated files in CI](/docs/how-to/check-in-ci).
 
 Then add the next source when you are ready, as above.

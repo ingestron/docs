@@ -92,7 +92,9 @@ function SettingPlacement({ fields, action }: { fields: FieldInfo[]; action: str
   const places = [...new Set(fields.map((field) => field.placement))]
     .filter((home) => home !== undefined)
     .map((home) =>
-      home === "definition" ? `the flow's ${action}.with` : homes[home as keyof typeof homes],
+      home === "definition"
+        ? `the flow's or a table's ${action}.with`
+        : homes[home as keyof typeof homes],
     );
   return (
     <p className="setting-meta">

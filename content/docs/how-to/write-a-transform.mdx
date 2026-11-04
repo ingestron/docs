@@ -10,8 +10,9 @@ engine's SQL: DuckDB's with [`duckdb-sql`](/docs/reference/packs/duckdb#duckdb-s
 T-SQL with [`synapse-sql`](/docs/reference/packs/synapse#synapse-sql), and
 Databricks SQL with [`sql`](/docs/reference/packs/databricks#sql), or Python
 with [`pyspark`](/docs/reference/packs/databricks#pyspark). A transform names
-its method with `transform.uses`; without it, the standard's rules and
-default choose, then its packs'.
+its method with `transform.uses`. Without it, the first of these that applies
+chooses: a matching rule of the standard, a matching rule of a pack, the
+standard's default, then the default of the first pack that has one.
 
 ## Write the SQL
 
