@@ -4,6 +4,7 @@ import { projectRoutes } from "@ingestron/cli";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it } from "vitest";
+import { RelatedSetup } from "../components/reference/related-setup";
 import { RouteComparison } from "../components/reference/route-comparison";
 import { RouteFacts } from "../components/reference/route-facts";
 import { RouteTable } from "../components/reference/route-table";
@@ -199,7 +200,13 @@ it("gives each route a platform page that opens with what runs, what deploys and
 it("keeps the Databricks worked example: two environments and a deliberate break", () => {
   const page = read("platforms/databricks.mdx");
   expect(page).toContain("## Work through the retail project");
-  for (const file of ["standard.yaml", "project.yaml", "platform.yaml", "flows/shop.yaml"])
+  for (const file of [
+    "standard.yaml",
+    "project.yaml",
+    "platform.yaml",
+    "flows/shop.yaml",
+    "transforms/daily_sales.yaml",
+  ])
     expect(page).toContain(`<Example name="retail" file="${file}" />`);
   expect(page).toContain("ingestron init retail --template retail");
   expect(page).toContain("DUPLICATE_TABLE");
@@ -226,4 +233,27 @@ it("compares each source on the route page across every route New project offers
       !offered.includes(via),
     ),
   );
+});
+
+it("links each platform page once beside a connector: Routes first, then only the pack guides it lacks", () => {
+  // sqlserver: Databricks directly lists platforms/databricks under Routes, so
+  // the Databricks group does not repeat it. postgresql has no direct route, so
+  // its Databricks group keeps the page.
+  const links = (id: string) =>
+    [...renderToStaticMarkup(createElement(RelatedSetup, { id })).matchAll(/href="([^"]+)"/g)].map(
+      (match) => match[1]!,
+    );
+  const count = (list: string[], href: string) => list.filter((item) => item === href).length;
+  const sqlserver = links("sqlserver");
+  expect(projectRoutes("sqlserver").map((route) => route.via)).toContain("databricks");
+  expect(count(sqlserver, "/docs/platforms/databricks")).toBe(1);
+  expect(count(sqlserver, "/docs/platforms/adf")).toBe(1);
+  expect(count(sqlserver, "/docs/platforms/adf-pipelines")).toBe(1);
+  expect(count(sqlserver, "/docs/how-to/name-things-your-way")).toBe(1);
+  const postgresql = links("postgresql");
+  expect(projectRoutes("postgresql").map((route) => route.via)).not.toContain("databricks");
+  expect(count(postgresql, "/docs/platforms/databricks")).toBe(1);
+  expect(count(postgresql, "/docs/platforms/adf")).toBe(1);
+  for (const list of [sqlserver, postgresql])
+    expect(new Set(list).size, "no page linked twice").toBe(list.length);
 });

@@ -14,7 +14,10 @@ pack writes the pipelines that read the landed files into tables.
 
 ADF feeds the other routes too. Everything on this page, from the runtime and
 Key Vault to the schedules and publishing, applies to them as well; their own
-pages cover what reads the files:
+pages cover what reads the files. To follow this page on one of them, use that
+route's `--via` when you create the project, and expect its plan to list that
+route's own files beside the factory's, in place of the Databricks ones shown
+here:
 
 - [Synapse serverless views](/docs/platforms/synapse) (`adf-synapse`): views
   over the landed files.
@@ -201,12 +204,13 @@ generated trigger before deploying, especially when `start` is in the past.
 <SettingsSections pack="adf" method="adf-copy" include={["retries", "paused"]} />
 
 To stop only the copies, for example while the source database is down for
-maintenance, set `paused` for the copy method in the platform (here
-`adf-copy`; use the method your flows select):
+maintenance, set `paused` for the copy method in the platform. For the
+finished PostgreSQL project, add it beside the other `adf-table` settings in
+`platform.yaml`; for your project, use the method your flows select:
 
 ```yaml
 settings:
-  adf-copy:
+  adf-table:
     paused: true
 ```
 
