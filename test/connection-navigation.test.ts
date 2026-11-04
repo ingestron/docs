@@ -156,14 +156,42 @@ it("lists the guides and concepts under their sections' separators, in order, wi
   for (const name of ["concepts", "how-to"]) expect(source.getPage([name]), name).toBeUndefined();
 });
 
-it("opens every other main section from its folder label without a duplicate index item", () => {
-  for (const name of ["examples", "reference", "tools"]) {
-    const url = `/docs/${name}`;
+it("lists Look up after Understand: the catalogue, each reference page, VS Code and troubleshooting, with no section index pages", () => {
+  const order = tree.children.filter((node) => node.type === "separator").map((node) => node.name);
+  expect(order[5]).toBe("Look up");
+  const at = tree.children.findIndex(
+    (node) => node.type === "separator" && node.name === "Look up",
+  );
+  expect(
+    tree.children
+      .slice(at + 1)
+      .map((node) =>
+        node.type === "page"
+          ? node.url
+          : node.type === "folder"
+            ? (node.index?.url ?? "")
+            : node.type,
+      ),
+  ).toEqual([
+    "/docs/connectors",
+    "/docs/reference/documents",
+    "/docs/reference/packs",
+    "/docs/reference/errors",
+    "/docs/reference/cli",
+    "/docs/reference/templates",
+    "/docs/reference/versions",
+    "/docs/tools/vscode",
+    "/docs/troubleshooting",
+  ]);
+  // The folders that remain open their landing page from their label, with no duplicate item.
+  for (const url of ["/docs/connectors", "/docs/reference/packs"]) {
     const folder = tree.children.find((node) => node.type === "folder" && node.index?.url === url);
-    expect(folder?.type).toBe("folder");
+    expect(folder?.type, url).toBe("folder");
     if (folder?.type === "folder")
       expect(folder.children.some((child) => child.type === "page" && child.url === url)).toBe(
         false,
       );
   }
+  for (const name of ["examples", "reference", "tools"])
+    expect(source.getPage([name]), name).toBeUndefined();
 });

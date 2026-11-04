@@ -35,8 +35,11 @@ ingest:
 ```
 
 `duckdb-table` keeps each table by `mode`: `replace` (the default), `append`
-(each file's rows once) or `upsert` (by the contract's primary key). The
-`published` folder comes from the platform and must exist.
+(each file's rows once) or `upsert` (by the contract's primary key). Running
+again is safe in every mode; see
+[Keep a table current](/docs/how-to/keep-a-table-current). The `published`
+folder comes from the platform and must exist. Every method and setting is in
+the [DuckDB pack reference](/docs/reference/packs/duckdb).
 
 A CSV without a header (`csv.header: false`) binds its columns in the
 contract's order, so the file's columns must be in that order. With a header,

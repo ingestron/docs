@@ -1,5 +1,4 @@
 {
   "title": "Tools",
-  "pages": ["index", "cli", "vscode"],
-  "defaultOpen": false
+  "pages": ["vscode"]
 }

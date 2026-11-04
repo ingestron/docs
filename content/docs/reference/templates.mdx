@@ -1,15 +1,31 @@
 ---
-title: Templates
-description: The template.yaml fields and the built-in templates.
+title: Starters and templates
+description: The built-in starters and how to create a project from one, the template.yaml fields, and the project downloads.
 ---
 
-Prepared templates are an explicit CLI option, useful for organisation
-layouts or several connections. The default workflow is
-[connection-first creation](/docs/how-to/start-from-a-template).
+A template is a project folder with a `template.yaml`. `ingestron init` copies
+the folder into a new project and asks the questions the file lists. A starter
+is a template that ships with Ingestron: a complete project for one common
+situation. See [Share templates and standards](/docs/how-to/share-a-template)
+to make a template of your own.
 
-A template is a project folder with a `template.yaml`. See
-[Share templates and standards](/docs/how-to/share-a-template) to make one and
-[Create a project](/docs/how-to/start-from-a-template#start-from-a-starter) to use one.
+## Create a project from a starter [#create-a-project-from-a-starter]
+
+In the CLI, name the starter with `--template`. Without `--yes`, `init` asks the
+starter's questions, which the table below lists:
+
+```sh
+ingestron init my-project --template retail --yes
+```
+
+In VS Code, **Ingestron: New project** then **From a starter** lists the same
+starters by title and name. Either way, the result is ordinary definitions you
+edit; [Create a project](/docs/how-to/start-from-a-template#start-from-a-starter)
+covers folders and Git URLs, and `--standard` and `--set`.
+
+## Built-in templates [#built-in-templates]
+
+<BuiltInTemplates />
 
 ## `template.yaml`
 
@@ -38,6 +54,22 @@ named `gitignore`, in any folder, is written as `.gitignore`, because npm does
 not always publish files whose names start with a dot. A template shared as a
 folder or Git URL can hold either name.
 
-## Built-in templates
+## Download a starter [#download-a-starter]
 
-<BuiltInTemplates />
+Each download holds a starter's synthetic definitions, without generated
+files: run `ingestron apply` in its folder to write them. The platforms and
+connectors listed are read from the resolved starter.
+
+<SamplesCatalogue kind="starter" />
+
+## Focused examples [#focused-examples]
+
+Each focused example demonstrates one idea. Concept and guide pages show
+files from these downloads;
+[Create a project](/docs/how-to/start-from-a-template#from-a-downloaded-example)
+says how to try one. To learn the workflow, follow
+[Run your first project on your laptop](/docs/start/first-project), which uses
+the `duckdb` starter, or [Azure Data Factory](/docs/platforms/adf), which uses
+`connection-first-adf`.
+
+<SamplesCatalogue kind="guide" />
