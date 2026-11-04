@@ -124,32 +124,37 @@ describe("generated files", () => {
     expect(entry("An apply stopped part-way")).toContain("`.tmp` file");
   }, 30_000);
 
-  it("a failed write puts the files back and says so", () => {
-    // A user who can write anywhere, such as root, cannot make the write fail this way.
-    if (process.getuid?.() === 0) return;
-    const project = copy("duckdb");
-    cli(project, ["apply"]);
-    edit(project, "transforms/customer_totals.yaml", (text) => text.replace("SELECT", "SELECT 1,"));
-    const before = readFileSync(join(project, "build/dev/run.sql"), "utf8");
-    const tables = join(project, "build/dev/tables");
-    chmodSync(tables, 0o555);
-    try {
-      const { code, output } = cli(project, ["apply", "--no-diff"]);
-      expect(code).toBe(1);
-      const failure = lines(output).find((line) => line.startsWith("Could not write"))!;
-      expect(failure.startsWith('Could not write "tables/silver.customer_totals.sql": ')).toBe(
-        true,
+  // A user who can write anywhere, such as root, cannot make the write fail this way.
+  it.skipIf(process.getuid?.() === 0 || process.platform === "win32")(
+    "a failed write puts the files back and says so",
+    () => {
+      const project = copy("duckdb");
+      cli(project, ["apply"]);
+      edit(project, "transforms/customer_totals.yaml", (text) =>
+        text.replace("SELECT", "SELECT 1,"),
       );
-      expect(failure.endsWith(". Nothing was changed.")).toBe(true);
-      expect(entry("An apply stopped part-way")).toContain(
-        'Could not write "tables/silver.customer_totals.sql": <reason>. Nothing was changed.',
-      );
-    } finally {
-      chmodSync(tables, 0o755);
-    }
-    expect(readFileSync(join(project, "build/dev/run.sql"), "utf8")).toBe(before);
-    expect(existsSync(join(project, "build/dev/.generated.lock"))).toBe(false);
-  }, 30_000);
+      const before = readFileSync(join(project, "build/dev/run.sql"), "utf8");
+      const tables = join(project, "build/dev/tables");
+      chmodSync(tables, 0o555);
+      try {
+        const { code, output } = cli(project, ["apply", "--no-diff"]);
+        expect(code).toBe(1);
+        const failure = lines(output).find((line) => line.startsWith("Could not write"))!;
+        expect(failure.startsWith('Could not write "tables/silver.customer_totals.sql": ')).toBe(
+          true,
+        );
+        expect(failure.endsWith(". Nothing was changed.")).toBe(true);
+        expect(entry("An apply stopped part-way")).toContain(
+          'Could not write "tables/silver.customer_totals.sql": <reason>. Nothing was changed.',
+        );
+      } finally {
+        chmodSync(tables, 0o755);
+      }
+      expect(readFileSync(join(project, "build/dev/run.sql"), "utf8")).toBe(before);
+      expect(existsSync(join(project, "build/dev/.generated.lock"))).toBe(false);
+    },
+    30_000,
+  );
 
   it("names an environment that was not applied while the others were", () => {
     const project = copy("environments");
@@ -526,6 +531,7 @@ describe("DuckDB", () => {
     );
     const { output } = cli(project, ["request", "--env", "dev"]);
     expect(output).toContain("Container Apps Jobs Operator");
+    expect(output).toContain("retry limit to 1");
   }, 30_000);
 });
 
