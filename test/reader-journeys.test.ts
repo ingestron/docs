@@ -63,17 +63,19 @@ describe("platform pages", () => {
     "synapse",
   ];
 
-  it("each ends with a Next list: add a source, plan and review, check in CI", () => {
+  it("each ends with a Next list of three links chosen for it, not one list for all", () => {
+    const lists = new Map<string, string>();
     for (const page of pages) {
       const text = read(`platforms/${page}.mdx`);
       const next = section(text, "## Next");
       expect(text.trimEnd().endsWith(next.trimEnd()), `${page}: Next is last`).toBe(true);
-      for (const href of [
-        "/docs/how-to/add-a-source",
-        "/docs/how-to/plan-and-generate",
-        "/docs/how-to/check-in-ci",
-      ])
-        expect(next, `${page} → ${href}`).toContain(`](${href})`);
+      const links = [...next.matchAll(/^- \[[^\]]+\]\((\/docs\/[^)]+)\)/gm)].map(
+        (match) => match[1]!,
+      );
+      expect(links, `${page}: three links`).toHaveLength(3);
+      const key = [...links].sort().join(" ");
+      expect(lists.get(key), `${page} has the same Next list as ${lists.get(key)}`).toBeUndefined();
+      lists.set(key, page);
     }
   });
 });
