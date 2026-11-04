@@ -85,8 +85,8 @@ const written: Record<string, Written> = {
     choose: "Reports read the landed files themselves, such as Power BI reading Parquet.",
     afterLoad: "Nothing. The copied files are the result.",
     deploy: "The factory's Git publishing.",
-    deployAt: "/docs/platforms/landing-only#generate-and-publish",
-    deployStep: "Generate and publish",
+    deployAt: "/docs/platforms/landing-only#deploy",
+    deployStep: "Deploy",
   },
 };
 
