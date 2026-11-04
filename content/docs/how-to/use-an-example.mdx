@@ -26,7 +26,7 @@ Open the extracted folder containing `project.yaml`. If needed,
    keys of that object. Check the connector's ingestion page for reading options.
 3. Review the project's environment values, platform and standard. Configure
    [shared defaults and fixed settings](/docs/how-to/configure-a-standard),
-   [ADF infrastructure](/docs/how-to/adf-runtime) when used, and resource names
+   [ADF infrastructure](/docs/platforms/adf#runtime-and-key-vault) when used, and resource names
    before generating. Do not put secret values in the YAML.
 
 ## Generate and inspect
@@ -41,7 +41,7 @@ and destination names in those files. Generation validates definitions; it does
 not connect to the source or deploy the result.
 
 For ADF, inspect the linked services, datasets, pipelines and triggers using
-[Generate and inspect ADF](/docs/how-to/adf-native-connectors#generate-and-inspect).
+[Generate and inspect ADF](/docs/platforms/adf#generate-and-inspect).
 For Databricks, inspect the generated bundle and its resources before
-[deployment](/docs/how-to/deploy-the-bundle). The packs write separate output
+[deployment](/docs/platforms/databricks#deploy). The packs write separate output
 folders when the project uses both platforms.

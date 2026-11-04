@@ -22,8 +22,8 @@ export interface RouteRow {
 
 /** The guide for each route, by its `--via` value. */
 export const routeGuides: Record<string, string> = {
-  databricks: "how-to/databricks",
-  "adf-databricks": "how-to/adf",
+  databricks: "platforms/databricks",
+  "adf-databricks": "platforms/adf",
   "adf-synapse": "platforms/synapse",
   "adf-duckdb": "platforms/duckdb-in-azure",
   "adf-landing": "platforms/landing-only",

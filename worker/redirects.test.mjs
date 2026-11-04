@@ -86,6 +86,30 @@ test("the four moved platform guides land on their pages, with the query kept", 
   assert.equal(shipped("/docs/how-to/land-files-only?x=1"), "/docs/platforms/landing-only?x=1");
 });
 
+test("the merged Databricks and ADF guides land on their sections, with the query kept", () => {
+  const shipped = (path) => redirectFor(new URL(path, "https://docs.ingestron.io"));
+  for (const [from, to] of [
+    ["/docs/examples/retail", "/docs/platforms/databricks"],
+    ["/docs/how-to/databricks/", "/docs/platforms/databricks"],
+    ["/docs/how-to/deploy-the-bundle", "/docs/platforms/databricks#deploy"],
+    ["/docs/how-to/manage-schemas.html", "/docs/platforms/databricks#create-the-schemas"],
+    ["/docs/how-to/refresh-on-a-schedule", "/docs/platforms/databricks#schedule"],
+    ["/docs/how-to/adf", "/docs/platforms/adf"],
+    ["/docs/how-to/adf-native-connectors", "/docs/platforms/adf"],
+    ["/docs/how-to/adf-runtime", "/docs/platforms/adf#runtime-and-key-vault"],
+    ["/docs/how-to/publish-adf/", "/docs/platforms/adf#publish"],
+    ["/docs/how-to/design-adf-pipelines", "/docs/platforms/adf-pipelines"],
+    ["/docs/how-to/name-adf-resources", "/docs/platforms/adf-pipelines#name-resources"],
+  ])
+    assert.equal(shipped(from), to, from);
+  assert.equal(
+    shipped("/docs/how-to/adf-runtime?x=1"),
+    "/docs/platforms/adf?x=1#runtime-and-key-vault",
+  );
+  // A path that only starts like a redirected one is not redirected.
+  assert.equal(shipped("/docs/how-to/adf-runtimes"), undefined);
+});
+
 test("the worker answers the root with 307", () => {
   const response = redirectResponseFor(new URL("https://docs.ingestron.io/?q=1"));
   assert.deepEqual(response, { location: "https://docs.ingestron.io/docs?q=1", status: 307 });

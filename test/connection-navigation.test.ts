@@ -37,11 +37,18 @@ it("keeps connection chapters and shared guides under the same global root", () 
     "Azure Data Factory",
     "Connection and access",
   ]);
-  expect(pathTo("/docs/how-to/adf-runtime")?.map((node) => node.name)).toEqual([
-    "Guides",
-    "Azure Data Factory",
-    "ADF runtime and scheduling",
-  ]);
+  // The shared ADF setup page sits in the same root, in the Platforms group.
+  expect(pathTo("/docs/platforms/adf")?.map((node) => node.name)).toEqual(["Azure Data Factory"]);
+  const group = tree.children.findIndex(
+    (node) => node.type === "separator" && node.name === "Platforms",
+  );
+  const next = tree.children.findIndex((node, index) => index > group && node.type === "separator");
+  const adf = tree.children.findIndex(
+    (node) => node.type === "page" && node.url === "/docs/platforms/adf",
+  );
+  expect(group, "a Platforms separator").toBeGreaterThan(-1);
+  expect(adf).toBeGreaterThan(group);
+  expect(adf).toBeLessThan(next);
 });
 
 it("keeps every overview and supported route reachable at its existing URL", () => {

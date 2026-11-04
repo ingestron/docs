@@ -123,7 +123,7 @@ it("separates the core workflow from today's supported platform combinations", (
   allRoutes().forEach(({ via, title }, index) => {
     expect(rows[index + 1]).toContain(title);
     expect(rows[index + 1]).toContain(`<code>--via ${via}</code>`);
-    expect(rows[index + 1]).toMatch(/href="\/docs\/(?:how-to|platforms)\/[a-z-]+"/);
+    expect(rows[index + 1]).toMatch(/href="\/docs\/platforms\/[a-z-]+"/);
   });
   expect(html).toContain("ADF ingestion, ending at the landed files");
   expect(html).toContain('href="/docs/platforms/duckdb-in-azure"');
@@ -140,19 +140,40 @@ it("gives each route a platform page that opens with what runs, what deploys and
   expect(root.pages).toContain("...platforms");
   expect(root.pages.indexOf("---Platforms---")).toBe(root.pages.indexOf("...platforms") - 1);
   const platforms = JSON.parse(read("platforms/meta.json")).pages as string[];
-  expect(platforms).toEqual(["duckdb", "duckdb-in-azure", "synapse", "landing-only"]);
-  // Moved, not copied: the old guides are gone, and their URLs redirect.
+  expect(platforms).toEqual([
+    "duckdb",
+    "duckdb-in-azure",
+    "databricks",
+    "synapse",
+    "adf",
+    "adf-pipelines",
+    "landing-only",
+  ]);
+  // Moved or merged, not copied: the old guides are gone, and their URLs redirect.
   for (const old of [
-    "run-locally-with-duckdb",
-    "run-duckdb-in-azure",
-    "serve-files-as-sql",
-    "land-files-only",
+    "how-to/run-locally-with-duckdb",
+    "how-to/run-duckdb-in-azure",
+    "how-to/serve-files-as-sql",
+    "how-to/land-files-only",
+    "how-to/databricks",
+    "how-to/deploy-the-bundle",
+    "how-to/manage-schemas",
+    "how-to/refresh-on-a-schedule",
+    "examples/retail",
+    "how-to/adf",
+    "how-to/adf-native-connectors",
+    "how-to/adf-runtime",
+    "how-to/publish-adf",
+    "how-to/design-adf-pipelines",
+    "how-to/name-adf-resources",
   ])
-    expect(existsSync(join(process.cwd(), `content/docs/how-to/${old}.mdx`)), old).toBe(false);
+    expect(existsSync(join(process.cwd(), `content/docs/${old}.mdx`)), old).toBe(false);
   for (const [id, page] of [
     ["duckdb", "duckdb"],
     ["adf-duckdb", "duckdb-in-azure"],
+    ["databricks", "databricks"],
     ["adf-synapse", "synapse"],
+    ["adf-databricks", "adf"],
     ["adf-landing", "landing-only"],
   ] as const) {
     const text = read(`platforms/${page}.mdx`);
@@ -167,6 +188,21 @@ it("gives each route a platform page that opens with what runs, what deploys and
     expect(facts).toContain(row.option);
   }
   expect(existsSync(join(process.cwd(), "content/docs/platforms/index.mdx"))).toBe(false);
+  // The ADF page is the setup for every route ADF feeds, and says so before its first heading.
+  const adf = read("platforms/adf.mdx").split("\n## ")[0]!;
+  for (const via of ["adf-synapse", "adf-duckdb", "adf-landing"]) {
+    expect(adf, via).toContain(`(/docs/${routeRows().find((row) => row.id === via)!.guide})`);
+    expect(adf, via).toContain(`\`${via}\``);
+  }
+});
+
+it("keeps the Databricks worked example: two environments and a deliberate break", () => {
+  const page = read("platforms/databricks.mdx");
+  expect(page).toContain("## Work through the retail project");
+  for (const file of ["standard.yaml", "project.yaml", "platform.yaml", "flows/shop.yaml"])
+    expect(page).toContain(`<Example name="retail" file="${file}" />`);
+  expect(page).toContain("ingestron init retail --template retail");
+  expect(page).toContain("DUPLICATE_TABLE");
 });
 
 it("compares each source on the route page across every route New project offers", () => {
