@@ -4,19 +4,11 @@ import { connectorEntries, packName, packs, pageTitle, routePacks } from "@/lib/
 import { routeGuides } from "@/lib/routes";
 
 const common = ["how-to/start-from-a-template", "how-to/configure-a-standard"];
-/** Setup guides for a pack, shown when one of the connector's routes uses it. */
+/** Setup guides for a pack, shown when one of the connector's routes uses it,
+ * unless the Routes list already links the page. */
 const packGuides: Record<string, string[]> = {
-  adf: [
-    "how-to/adf-native-connectors",
-    "how-to/adf-runtime",
-    "how-to/name-adf-resources",
-    "how-to/publish-adf",
-  ],
-  databricks: [
-    "how-to/name-things-your-way",
-    "how-to/refresh-on-a-schedule",
-    "how-to/deploy-the-bundle",
-  ],
+  adf: ["platforms/adf", "platforms/adf-pipelines"],
+  databricks: ["platforms/databricks", "how-to/name-things-your-way"],
 };
 
 /** Shared setup links beside connector chapters, or below them on small screens.
@@ -34,6 +26,7 @@ export function RelatedSetup({ id }: { id: string }) {
     ...readers,
     ...packs.map((pack) => pack.id).filter((pack) => !readers.includes(pack)),
   ].filter((pack) => used.has(pack) && packGuides[pack]);
+  const linked = new Set(routes.map((route) => routeGuides[route.via]));
   return (
     <nav className="related-setup" aria-label="Related setup">
       <p>Related setup</p>
@@ -53,7 +46,7 @@ export function RelatedSetup({ id }: { id: string }) {
       {groups.map((pack) => (
         <div key={pack}>
           <p>{packName(pack)}</p>
-          <Links pages={packGuides[pack]!} />
+          <Links pages={packGuides[pack]!.filter((page) => !linked.has(page))} />
         </div>
       ))}
     </nav>

@@ -12,22 +12,10 @@
     "ask-the-platform-team",
     "share-a-template",
     "use-an-example",
-    "---Databricks---",
-    "databricks",
     "write-a-transform",
     "keep-a-table-current",
     "add-quality-checks",
-    "name-things-your-way",
-    "refresh-on-a-schedule",
-    "manage-schemas",
-    "deploy-the-bundle",
-    "---Azure Data Factory---",
-    "adf",
-    "adf-native-connectors",
-    "adf-runtime",
-    "design-adf-pipelines",
-    "name-adf-resources",
-    "publish-adf"
+    "name-things-your-way"
   ],
   "defaultOpen": false
 }
