@@ -1,10 +1,10 @@
-// Routes stay in package metadata; chapters provide detailed instructions.
+// Routes stay in package metadata; the sections below them on the page give the detail.
 import { Fragment, type ReactNode } from "react";
 import { projectRoutes } from "@ingestron/cli";
 import { ingestionRows } from "@/lib/connector-settings";
 import { connectorEntries, packName, type ConnectorEntry } from "@/lib/reference";
 
-/** A compact summary of each pack that reads the connector and the routes it starts, linking to its chapters.
+/** A compact summary of each pack that reads the connector and the routes it starts, linking to its sections.
  * @example <ConnectorFacts id="sqlserver" />
  */
 export function ConnectorFacts({ id }: { id: string }) {
@@ -32,9 +32,9 @@ function Route({ id, entry }: { id: string; entry: ConnectorEntry }) {
           </Fragment>
         ))}
       </dl>
-      <nav aria-label={`${connector.title} ${pack} chapters`} className="chapter-links">
-        <a href={`/docs/connectors/${id}/${pack}-connection`}>Connection and access →</a>
-        <a href={`/docs/connectors/${id}/${pack}-ingestion`}>Ingestion →</a>
+      <nav aria-label={`${connector.title} with ${packName(pack)}`} className="chapter-links">
+        <a href={`#${pack}-connection`}>Connect with {packName(pack)} ↓</a>
+        <a href={`#${pack}-ingestion`}>Read with {packName(pack)} ↓</a>
         <a href={connector.docs}>Vendor prerequisites ↗</a>
       </nav>
     </section>

@@ -15,7 +15,7 @@ const packGuides: Record<string, string[]> = {
   databricks: ["platforms/databricks", "how-to/name-things-your-way"],
 };
 
-/** Shared setup links beside connector chapters, or below them on small screens.
+/** Shared setup links beside a connector's page, or below it on small screens.
  * @example <RelatedSetup id="sqlserver" />
  */
 export function RelatedSetup({ id }: { id: string }) {

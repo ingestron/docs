@@ -39,13 +39,19 @@ function guides(): Sample[] {
     }));
 }
 
-/** Every sample, starters first, then the guides. */
+let resolved: ExampleInfo[] | undefined;
+
+/**
+ * Every sample, starters first, then the guides. Resolving them takes about a
+ * second, and every connector page lists its samples, so it is done once.
+ */
 export function listExamples(): ExampleInfo[] {
-  return [...listSamples(), ...guides()].map((sample) => ({
+  resolved ??= [...listSamples(), ...guides()].map((sample) => ({
     ...sample,
     facts: sampleFacts(sample.folder),
     ...(sample.kind === "starter" && { template: sample.name }),
   }));
+  return resolved;
 }
 
 /** A sample's folder, by its name. Throws for a name that is not a sample. */
