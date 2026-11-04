@@ -37,22 +37,19 @@ these pages describe.
 
 ## Choose the version you run
 
-The [CI templates](/docs/how-to/check-in-ci) run `npx --yes ingestron@1 check`,
-which fetches the newest 1.x release on each run. A new release can then make
+The [CI templates](/docs/how-to/check-in-ci) run `npm install -g ingestron@1`,
+which installs the newest 1.x release on each run. A new release can then make
 `ingestron check` fail on a pull request that changed nothing, because the
 files it generates are no longer the ones committed.
 
-To upgrade when you choose, name the exact version in CI:
-
-```sh
-npx --yes ingestron@1.10.1 check
-```
-
-Install the same version on your computers:
+To upgrade when you choose, install the exact version, in CI in place of
+`ingestron@1` and on each of your computers:
 
 ```sh
 npm install -g ingestron@1.10.1
 ```
+
+`npm ls -g ingestron` shows the version a computer has installed.
 
 The VS Code extension carries its own copy of the command: the version its
 own repository locked when you built it, which need not be the one you pin.

@@ -4,10 +4,10 @@ description: Fail a build when someone changed the definitions without generatin
 ---
 
 Commit the `build/` folder with your definitions. In CI, run `ingestron check`
-from the definitions project folder. It needs only Node.js 22.13 or later; `npx`
-fetches the command from npm. `ingestron@1` is the newest 1.x release; to
-choose when a new release changes your generated files, name the exact
-version, as [Upgrade Ingestron and its packs](/docs/how-to/upgrade#choose-the-version-you-run)
+from the definitions project folder. It needs only Node.js 22.13 or later: each
+template installs the command from npm with `npm install -g ingestron@1`, the
+newest 1.x release, then runs it. To choose when a new release changes your
+generated files, install the exact version, as [Upgrade Ingestron and its packs](/docs/how-to/upgrade#choose-the-version-you-run)
 shows.
 
 ## GitHub Actions
@@ -30,7 +30,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npx --yes ingestron@1 check
+      - run: npm install -g ingestron@1
+      - run: ingestron check
 ```
 
 ## Azure DevOps
@@ -51,7 +52,9 @@ steps:
   - task: NodeTool@0
     inputs:
       versionSpec: 22.x
-  - script: npx --yes ingestron@1 check
+  - script: npm install -g ingestron@1
+    displayName: Install Ingestron
+  - script: ingestron check
     displayName: ingestron check
 ```
 

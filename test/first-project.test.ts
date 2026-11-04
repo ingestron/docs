@@ -18,6 +18,8 @@ import { afterAll, describe, expect, it } from "vitest";
 
 const read = (path: string) => readFileSync(join(process.cwd(), "content/docs", path), "utf8");
 const page = read("start/first-project.mdx");
+/** The one setup line: Ingestron installed globally from npm, so every command is `ingestron …`. */
+const install = "npm install -g ingestron";
 
 /**
  * The text under a heading, written as in the page (such as `## 2. Plan`), up to
@@ -105,10 +107,9 @@ class Shell {
       rmSync(join(this.cwd, args[0]!));
       return { code: 0, output: "" };
     }
-    if (command === "npx") {
-      expect(args[0], "Ingestron run with npx at major version 1").toBe("ingestron@1");
+    if (command === "ingestron") {
       let output = "";
-      const code = run(args.slice(1), { cwd: this.cwd, write: (text) => (output += text) });
+      const code = run(args, { cwd: this.cwd, write: (text) => (output += text) });
       return { code, output };
     }
     if (command === "ls") {
@@ -147,6 +148,12 @@ describe("Run your first project on your laptop", () => {
   const change = () => section(page, "## Add a column");
   const conflict = () => section(page, "### Edit a generated file");
   const link = () => section(page, "### Name a connection that does not exist");
+
+  it("installs Ingestron from npm before the first command, as setup the test does not run", () => {
+    // The tests run the CLI these pages describe; the install line is the reader's setup.
+    expect(fence(section(page, "## Before you start"), "sh")).toBe(`${install}\n`);
+    expect(prose(section(page, "## Before you start"))).toContain("Node.js 22.13 or later");
+  });
 
   it("creates the project with the page's commands and prints what the page quotes", () => {
     const [init, ...rest] = fence(create(), "sh").trimEnd().split("\n");
@@ -204,7 +211,7 @@ describe("Run your first project on your laptop", () => {
   it(`applies the new column and shows the box the page shows${withDuckdb}`, ({ skip }) => {
     const applied = fences(change(), "sh")[1]!;
     const lines = applied.trimEnd().split("\n");
-    const ingestron = lines.filter((line) => line.startsWith("npx "));
+    const ingestron = lines.filter((line) => line.startsWith("ingestron "));
     expect(ingestron, "apply comes first").toEqual([lines[0]]);
     const result = shell.run(lines[0]!);
     expect(result.code, result.output).toBe(0);
@@ -226,7 +233,7 @@ describe("Run your first project on your laptop", () => {
     let result = shell.run(planned!);
     expect(result.code).toBe(1);
     expect(trimmed(result.output)).toBe(trimmed(conflicted!));
-    result = shell.run("npx ingestron@1 apply");
+    result = shell.run("ingestron apply");
     expect(result.code).toBe(1);
     expect(readFileSync(shell.file("build/dev/run.sql"), "utf8")).toContain(line);
     result = shell.run(undo!);
@@ -259,13 +266,13 @@ describe("the home page's first run", () => {
   const home = read("index.mdx");
   const steps = ["## 1. Create the project", "## 2. Plan", "## 3. Apply", "## 4. Build the tables"];
 
-  it("uses the first project's commands, in order", () => {
-    // Every command of steps 1 to 3, then step 4's build and query.
+  it("installs first, then uses the first project's commands, in order", () => {
+    // The install, every command of steps 1 to 3, then step 4's build and query.
     const commands = steps.flatMap((heading) =>
       fences(section(page, heading), "sh")[0]!.trimEnd().split("\n"),
     );
     const run = section(home, "## Run it on your laptop");
-    expect(fence(run, "sh").trimEnd().split("\n")).toEqual(commands);
+    expect(fence(run, "sh").trimEnd().split("\n")).toEqual([install, ...commands]);
   });
 
   it("shows the rows the first project builds", () => {

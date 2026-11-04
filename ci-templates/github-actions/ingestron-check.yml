@@ -15,4 +15,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npx --yes ingestron@1 check
+      - run: npm install -g ingestron@1
+      - run: ingestron check

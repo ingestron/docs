@@ -48,6 +48,21 @@ const without = (output: string, ...noise: RegExp[]) =>
     .filter((line) => !noise.some((pattern) => pattern.test(line)))
     .join("\n");
 
+describe("the command", () => {
+  it("installs the command as Install a tool does, and finds npm's global folder when the shell cannot", () => {
+    const text = entry("`ingestron: command not found` [#ingestron-command-not-found]");
+    expect(text).toContain("**Symptom:**");
+    // The shells' own messages, which name the command the pages run.
+    expect(text).toContain("`bash: ingestron: command not found`");
+    expect(text).toContain("`zsh: command not found: ingestron`");
+    expect(fences(text, "sh")).toEqual(["npm install -g ingestron\n", "npm prefix -g\n"]);
+    expect(fences(read("start/install.mdx"), "sh")[0]).toMatch(/^npm install -g ingestron\n/);
+    // The pages that install send a reader here.
+    for (const from of ["start/install.mdx", "start/first-project.mdx"])
+      expect(read(from), from).toContain("(/docs/troubleshooting#ingestron-command-not-found)");
+  });
+});
+
 describe("generated files", () => {
   it("plan reports a conflict, and the entry's fix generates the file again", () => {
     const project = copy("duckdb");
