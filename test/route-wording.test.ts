@@ -1,15 +1,21 @@
 // A connector's page names every route New project offers for it, and no
-// destination none of those routes reaches.
+// destination none of those routes reaches: in its description, its sections,
+// its notes and its related setup.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { projectRoutes } from "@ingestron/cli";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { parse } from "yaml";
-import { ConnectorFacts } from "../components/reference/connector-facts";
+import { ConnectorPage } from "../components/reference/connector-page";
 import { RelatedSetup } from "../components/reference/related-setup";
 import { connectorEntries, connectorIds } from "../lib/reference.js";
+
+vi.mock("@/components/example", () => ({ Example: () => null }));
+
+// The first page rendered resolves every sample, which takes seconds on a busy machine.
+vi.setConfig({ testTimeout: 30_000 });
 
 /** Each destination, by the `--via` values of the routes that end there. */
 const destinations: [string, string[]][] = [
@@ -19,16 +25,22 @@ const destinations: [string, string[]][] = [
   ["Azure Data Factory", ["adf-databricks", "adf-synapse", "adf-duckdb", "adf-landing"]],
 ];
 
-/** The page's description and its rendered route facts and related setup, as text. */
+/**
+ * The page's description, and its text as a reader sees it: the rendered page
+ * up to its examples, the connector's notes and the related setup. The
+ * examples are left out: they list samples, such as the DuckDB starter that
+ * reads files, not routes.
+ */
 function connectorPage(id: string): { description: string; text: string } {
-  const source = readFileSync(
-    join(process.cwd(), "content/docs/connectors", id, "index.mdx"),
-    "utf8",
-  );
-  const { description } = parse(source.split("---")[1]!) as { description: string };
-  const html = [ConnectorFacts, RelatedSetup]
-    .map((component) => renderToStaticMarkup(createElement(component, { id })))
-    .join(" ");
+  const source = readFileSync(join(process.cwd(), "content/docs/connectors", `${id}.mdx`), "utf8");
+  const [, front = "", notes = ""] = source.split("---\n");
+  const { description } = parse(front) as { description: string };
+  const page = renderToStaticMarkup(createElement(ConnectorPage, { id }));
+  const html = [
+    page.slice(0, page.indexOf('<h2 id="examples"')),
+    notes,
+    renderToStaticMarkup(createElement(RelatedSetup, { id })),
+  ].join(" ");
   // The connector's own name can hold a destination's, such as Azure Synapse Analytics.
   const own = connectorEntries(id).map(({ connector }) => connector.title);
   const strip = (text: string) =>

@@ -5,23 +5,35 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { run } from "@ingestron/cli";
 import { exampleFiles, exampleFolder, listExamples, readExampleFile } from "../lib/examples.js";
-import { connectorIds } from "../lib/reference.js";
+import { connectorExample, watermarkExample } from "../lib/connector-page.js";
+import { connectorEntries, connectorIds } from "../lib/reference.js";
 
 describe("examples", () => {
   it("includes every connector example preview in its downloadable archive", () => {
     const archives = new Map(
       listExamples().map((example) => [example.name, exampleFiles(example.name)]),
     );
+    const shown: [string, string, string][] = [
+      ["adf-copy pages", watermarkExample, "standard.yaml"],
+      ["adf-copy pages", watermarkExample, "flows/erp.yaml"],
+    ];
     for (const id of connectorIds()) {
+      for (const { pack } of connectorEntries(id)) {
+        const { connection, flow } = connectorExample(id, pack);
+        shown.push([id, connection.name, connection.file], [id, flow.name, flow.file]);
+      }
+      // The examples a connector's own notes show.
       const page = readFileSync(
-        join(process.cwd(), "content/docs/connectors", id, "examples.mdx"),
+        join(process.cwd(), "content/docs/connectors", `${id}.mdx`),
         "utf8",
       );
-      for (const [, name, file] of page.matchAll(/<Example name="([^"]+)" file="([^"]+)"/g)) {
-        expect(archives.get(name!), `${id}: ${name}/${file}`).toContain(file);
-      }
+      for (const [, name, file] of page.matchAll(/<Example name="([^"]+)" file="([^"]+)"/g))
+        shown.push([id, name!, file!]);
     }
-    // Reads every connector's examples page and every example archive.
+    for (const [where, name, file] of shown)
+      expect(archives.get(name), `${where}: ${name}/${file}`).toContain(file);
+    expect(shown.filter(([where]) => where === "files").length).toBeGreaterThan(4);
+    // Reads every connector's page and every example archive.
   }, 30_000);
   it("lists every sample with a title, summary and the facts found by resolving it", () => {
     const examples = listExamples();
