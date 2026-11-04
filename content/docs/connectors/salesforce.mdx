@@ -1,0 +1,32 @@
+---
+title: Salesforce
+description: "Read Salesforce with Databricks Lakeflow Connect, or copy a full selection with Azure Data Factory into landing storage, for Databricks tables, Synapse serverless SQL views or DuckDB tables, or to keep as landed files."
+---
+
+<ConnectorPage id="salesforce">
+
+<ConnectorNote at="databricks-reading">
+
+One ingestion pipeline for the connection writes every table of its flows.
+SaaS sources need no gateway.
+
+</ConnectorNote>
+
+<ConnectorNote at="adf-reading">
+
+`object` is the Salesforce object API name, such as `Account`. Use API field
+names in the contract. The example selects account IDs, names and modification
+times, with a SOQL `query` that excludes accounts without a name. It uses
+Salesforce's query language; `SELECT *` is not a substitute for naming fields.
+
+<Example name="adf-native-connectors" file="contracts/salesforce-account.yaml" />
+
+This connector does not maintain an extraction watermark, even when your query
+contains criteria. The contract's key identifies the row; it does not by itself
+make the copy incremental. See
+[Microsoft's Salesforce source reference](https://learn.microsoft.com/en-us/azure/data-factory/connector-salesforce#salesforce-as-a-source-type)
+for SOQL and source permissions.
+
+</ConnectorNote>
+
+</ConnectorPage>

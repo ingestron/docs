@@ -10,8 +10,7 @@ import { RouteTable } from "@/components/reference/route-table";
 import { ProjectSources } from "@/components/reference/project-sources";
 import { BuiltInTemplates } from "@/components/reference/built-in-templates";
 import { CliCommands } from "@/components/reference/cli-commands";
-import { ConnectorSettings } from "@/components/reference/connector-settings";
-import { ConnectorFacts } from "@/components/reference/connector-facts";
+import { ConnectorNote, ConnectorPage } from "@/components/reference/connector-page";
 import { ContractTypes } from "@/components/reference/contract-types";
 import { ContractUseTable } from "@/components/reference/contract-use";
 import { PackCapabilities } from "@/components/reference/pack-capabilities";
@@ -22,7 +21,6 @@ import { ErrorCodes, LoadingCodes } from "@/components/reference/error-codes";
 import { ExtensionCommands } from "@/components/reference/extension-commands";
 import { ExamplesList } from "@/components/reference/examples-list";
 import { PackMethods } from "@/components/reference/pack-methods";
-import { NativeReadSettings } from "@/components/reference/native-read-settings";
 import { SettingsSections } from "@/components/reference/settings-sections";
 import { SettingsTable } from "@/components/reference/settings-table";
 import {
@@ -44,10 +42,9 @@ export function getMDXComponents(components?: MDXComponents) {
     ToolSteps,
     SettingsTable,
     SettingsSections,
-    NativeReadSettings,
     PackMethods,
-    ConnectorFacts,
-    ConnectorSettings,
+    ConnectorPage,
+    ConnectorNote,
     ContractTypes,
     ContractUseTable,
     PackCapabilities,

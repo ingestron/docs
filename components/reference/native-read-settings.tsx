@@ -4,7 +4,7 @@ import { SettingsSections } from "./settings-sections";
 /** Show only the native table settings supported by this connector.
  * @example <NativeReadSettings id="rest" />
  */
-export function NativeReadSettings({ id }: { id: string }) {
+export function NativeReadSettings({ id, level }: { id: string; level?: 3 | 4 }) {
   const entry = connectorEntries(id).find((item) => item.pack === "adf");
   const reading = entry?.connector.reading;
   if (!reading) throw new Error(`No native reading metadata for ${id}`);
@@ -35,7 +35,7 @@ export function NativeReadSettings({ id }: { id: string }) {
           This connector has no <code>source_options</code> settings.
         </p>
       )}
-      <SettingsSections pack="adf" method="adf-table" connector={id} />
+      <SettingsSections pack="adf" method="adf-table" connector={id} level={level} />
     </>
   );
 }

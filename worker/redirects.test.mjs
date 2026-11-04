@@ -177,3 +177,25 @@ test("the worker passes an unknown path on to the assets", async () => {
   assert.equal(asked, "https://docs.ingestron.io/docs/start/install");
   assert.equal(response.status, 200);
 });
+
+test("a connector's old chapters land on its page's sections, and categories on the catalogue", () => {
+  const shipped = (path) => redirectFor(new URL(path, "https://docs.ingestron.io"));
+  assert.equal(
+    shipped("/docs/connectors/sqlserver/adf-connection"),
+    "/docs/connectors/sqlserver#adf-connection",
+  );
+  assert.equal(
+    shipped("/docs/connectors/sqlserver/databricks-ingestion/"),
+    "/docs/connectors/sqlserver#databricks-ingestion",
+  );
+  assert.equal(
+    shipped("/docs/connectors/amazon-s3/examples.html"),
+    "/docs/connectors/amazon-s3#examples",
+  );
+  assert.equal(shipped("/docs/connectors/sap"), "/docs/connectors#sap");
+  assert.equal(shipped("/docs/connectors/files-and-storage"), "/docs/connectors#files-and-storage");
+  // A connector's page itself, and the catalogue, are not redirected.
+  assert.equal(shipped("/docs/connectors/sqlserver"), undefined);
+  assert.equal(shipped("/docs/connectors/sap-hana"), undefined);
+  assert.equal(shipped("/docs/connectors"), undefined);
+});

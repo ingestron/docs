@@ -1,7 +1,8 @@
-// Native folder labels open section landing pages; grouping keeps long catalogues compact.
+// A folder's label opens its landing page; the catalogue's separators become
+// collapsed category groups, so the long list of connectors stays compact.
 import type { Folder, Node } from "fumadocs-core/page-tree";
 
-/** Keep connections in the global tree, grouped by their existing metadata headings.
+/** Keep connectors in the global tree, grouped by the categories in their metadata.
  * @example loader({ pageTree: { transformers: [connectionNavigation] }, ...options })
  */
 export const connectionNavigation = {
@@ -13,11 +14,12 @@ export const connectionNavigation = {
     return {
       ...node,
       index: index?.type === "page" ? index : node.index,
-      children: grouped(path) ? groupSections(children, path) : children,
+      children: path === "connectors" ? groupSections(children, path) : children,
     };
   },
 };
 
+/** A folder per separator, holding the pages after it. A category has no page of its own. */
 function groupSections(nodes: Node[], path: string): Node[] {
   const children: Node[] = [];
   let group: Folder | undefined;
@@ -31,17 +33,7 @@ function groupSections(nodes: Node[], path: string): Node[] {
         children: [],
       };
       children.push(group);
-    } else {
-      if (group && node.type === "page" && !group.index) {
-        group.index = node;
-        if (path === "connectors") continue;
-      }
-      (group?.children ?? children).push(node);
-    }
+    } else (group?.children ?? children).push(node);
   }
   return children;
-}
-
-function grouped(path: string): boolean {
-  return path === "connectors" || /^connectors\/[^/]+$/.test(path);
 }

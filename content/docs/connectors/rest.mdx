@@ -1,0 +1,67 @@
+---
+title: REST
+description: "Azure Data Factory copies from REST into ADLS Gen2 landing storage, for Databricks tables, Synapse serverless SQL views or DuckDB tables, or to keep as landed files."
+---
+
+<ConnectorPage id="rest">
+
+<ConnectorNote at="adf-connection">
+
+### Choose authentication [#adf-authentication]
+
+`Anonymous` is the default and needs no login fields. `Basic` requires both
+`user` and a `password` secret reference. Remove the OAuth fields when choosing
+Basic or Anonymous; fields for the wrong authentication option are rejected.
+
+The example uses `OAuth2ClientCredential`. This requires **all three** of
+`client_id`, `client_secret` and `token_endpoint`. The secret is a Key Vault
+reference; the endpoint issues tokens for the application.
+
+If the API requires additional authentication headers, put their secret
+references in the connection's `auth_headers`. These are connection settings,
+separate from the flow's `source_options` for requests, pagination and record
+selection.
+
+### OAuth audience and scopes [#adf-oauth]
+
+For `OAuth2ClientCredential`, set `resource` when the token endpoint requires
+an audience, and `scope` when it requires scopes. These fields are rejected for
+Anonymous and Basic authentication.
+
+</ConnectorNote>
+
+<ConnectorNote at="adf-reading">
+
+Use `source_options.pagination` for APIs that return several pages,
+`collection_reference` for a JSON array, and `column_paths` to map nested
+values to contract columns. Authentication headers use `auth_headers` secret
+references.
+
+</ConnectorNote>
+
+<ConnectorNote at="adf-ingestion">
+
+### Read a paginated JSON response [#adf-paginated-json]
+
+The example expects a response shaped like this synthetic payload:
+
+```json
+{
+  "items": [{ "invoice": { "id": 101, "total": 42.5 }, "updatedAt": "2026-10-01T10:30:00Z" }],
+  "nextLink": "https://source.example.test/orders?page=2"
+}
+```
+
+`collection_reference` selects the `items` array. Each `column_paths` key is a
+contract column; its value selects a field inside one array item. These paths
+start without `$` because they are relative to the selected item. A field
+outside the array uses a root path starting with `$`.
+
+`pagination.AbsoluteUrl` reads the next-page URL from the response root. Adapt
+this rule to the API's response. The sample caps requests at 100; choose a cap
+that allows the complete result. The contract contains `invoice_id`, `amount`
+and `modified_at`, matching the mapping keys.
+
+</ConnectorNote>
+
+</ConnectorPage>

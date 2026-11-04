@@ -1,4 +1,4 @@
-// Chapter-sized slices of the existing reference, without copying its facts.
+// Section-sized slices of the existing reference, without copying its facts.
 import { ingestionRows } from "@/lib/connector-settings";
 import type { FieldInfo } from "@ingestron/definitions";
 import { anchorId, fieldPath, packs, settingRows, shown } from "@/lib/reference";
@@ -18,12 +18,15 @@ export function SettingsSections({
   include,
   connector,
   exclude = [],
+  level = 3,
 }: {
   pack: string;
   method: string;
   include?: string[];
   connector?: string;
   exclude?: string[];
+  /** The heading level of each setting: 4 under a part that has its own heading. */
+  level?: 3 | 4;
 }) {
   const available = connector ? ingestionRows(connector, pack) : settingRows(pack, method);
   const rows = available.filter((field) => {
@@ -36,21 +39,22 @@ export function SettingsSections({
       <SettingPlacement fields={rows} action={actionOf(pack, method, connector)} />
       {rows.length > 3 && <SettingLinks fields={rows} />}
       {rows.map((field) => (
-        <SettingSection key={field.docs} field={field} />
+        <SettingSection key={field.docs} field={field} level={level} />
       ))}
     </div>
   );
 }
 
-function SettingSection({ field }: { field: FieldInfo }) {
+function SettingSection({ field, level }: { field: FieldInfo; level: 3 | 4 }) {
+  const Heading = level === 4 ? "h4" : "h3";
   return (
     <section id={anchorId(field)}>
       <header className="setting-heading">
-        <h3>
+        <Heading>
           <a href={`#${anchorId(field)}`}>
             <code>{fieldPath(field)}</code>
           </a>
-        </h3>
+        </Heading>
         <span className="setting-meta">
           {field.required && "Required"}
           {field.default !== undefined && (

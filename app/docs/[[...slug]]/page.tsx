@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/layouts/docs/page";
 import { getMDXComponents } from "@/components/mdx";
 import { RelatedSetup } from "@/components/reference/related-setup";
+import { catalogueToc, connectorToc } from "@/lib/connector-page";
 import { connectorEntries } from "@/lib/reference";
 import { source } from "@/lib/source";
 export default async function Page({ params }: { params: Promise<{ slug?: string[] }> }) {
@@ -10,10 +11,17 @@ export default async function Page({ params }: { params: Promise<{ slug?: string
   const page = source.getPage(slug);
   if (!page) notFound();
   const MDX = page.data.body;
-  const id = slug?.[0] === "connectors" ? slug[1] : undefined;
-  const related = id && connectorEntries(id).length ? <RelatedSetup id={id} /> : undefined;
+  const id = slug?.[0] === "connectors" && slug.length === 2 ? slug[1] : undefined;
+  const connector = id && connectorEntries(id).length ? id : undefined;
+  const related = connector ? <RelatedSetup id={connector} /> : undefined;
+  // A connector page's headings come from its component, so its contents are built here.
+  const toc = connector
+    ? connectorToc(connector, page.data.toc)
+    : slug?.join("/") === "connectors"
+      ? catalogueToc(page.data.toc)
+      : page.data.toc;
   return (
-    <DocsPage toc={page.data.toc} tableOfContent={{ footer: related }}>
+    <DocsPage toc={toc} tableOfContent={{ footer: related }}>
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription className="mb-2">{page.data.description}</DocsDescription>
       <DocsBody>
