@@ -31,6 +31,10 @@ If you have neither the command nor the extension yet, see
 
 ## Start from a connection
 
+Ingestron offers only the routes the source supports, for how it can be
+reached; [Choose where your data goes](/docs/start/choose-a-route) shows the
+platform combinations for each source.
+
 <ToolSteps>
 <Tool name="CLI">
 
@@ -111,7 +115,8 @@ own credentials. `--standard` and `--set` work as they do from a connection.
 Run **Ingestron: New project** and choose **From a starter**, then the
 starter. Enter the project name and environments, then a path or Git URL for
 your organisation's standard, or leave it empty to keep the starter's own.
-The destination folder comes last.
+Then answer the starter's own questions, if it has any. The destination folder
+comes last.
 
 </Tool>
 </ToolSteps>
@@ -122,14 +127,13 @@ To make a template of your own, see [Share a template](/docs/how-to/share-a-temp
 
 A connector's **Examples** page offers project ZIPs. Extract one into an empty
 folder, and open the folder that holds `project.yaml`. The archive contains
-the synthetic definitions and contracts, without generated files. Code blocks
-on that page name the project and the relative path of each file shown.
+the synthetic definitions and contracts, without generated files, so you can
+generate it locally without access to the source. Code blocks on that page
+name the project and the relative path of each file shown.
 
 A multi-connector project demonstrates several sources together. To start
 with only one connection, [start from a connection](#start-from-a-connection)
 instead.
-
-You can generate an unchanged example locally without access to the source.
 
 ## Use your standard
 
@@ -152,7 +156,8 @@ you deploy:
    mechanism. See [YAML references and placeholders](/docs/concepts/yaml-references)
    for values, files and secrets.
 3. Set the source objects in the flows, and adapt each contract to the columns
-   and keys of its object. See [Describe a table with a contract](/docs/how-to/write-a-contract).
+   and keys of its object. See [Describe a table with a contract](/docs/how-to/write-a-contract),
+   and the connector's ingestion page for its reading options.
 4. Check the environments, platform and standard. Use the connector reference
    and [Azure Data Factory](/docs/platforms/adf) for ADF infrastructure, and
    [Name resources](/docs/platforms/adf-pipelines#name-resources) for name

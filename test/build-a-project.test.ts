@@ -8,9 +8,9 @@ import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { parse } from "yaml";
+import { parse, stringify } from "yaml";
 import { ContractTypes } from "../components/reference/contract-types";
-import { packs, settingRows } from "../lib/reference";
+import { packName, packs, settingRows } from "../lib/reference";
 import { cli, command, commands, copy, fences, merge, read, section } from "./pages.js";
 
 /** The first project's `shop`, created with the tutorial's own command and applied. */
@@ -22,6 +22,21 @@ function shop(): string {
   const cwd = join(parent, create.find((line) => line.startsWith("cd "))!.slice("cd ".length));
   expect(cli(cwd, ["apply", "--no-diff"]).code).toBe(0);
   return cwd;
+}
+
+/** Prose with its line breaks as spaces, to find a sentence wherever the page wraps it. */
+const prose = (text: string) => text.replace(/\s+/g, " ");
+
+/** A sample's project id, which names its Databricks output folder. */
+const projectId = (cwd: string) =>
+  parse(readFileSync(join(cwd, "project.yaml"), "utf8")).id as string;
+
+/** Gives one contract column another logical type. */
+function retype(file: string, column: string, from: string, to: string): void {
+  const text = readFileSync(file, "utf8");
+  const before = `{ name: ${column}, logicalType: ${from}`;
+  expect(text, `${file} has ${before}`).toContain(before);
+  writeFileSync(file, text.replace(before, `{ name: ${column}, logicalType: ${to}`));
 }
 
 /** The values a method's setting accepts, from the pack's own schema. */
@@ -148,16 +163,96 @@ describe("how-to/add-an-environment", () => {
 describe("how-to/write-a-contract", () => {
   const page = read("how-to/write-a-contract.mdx");
 
-  it("shows each pack's type for a logical type, from the packs", () => {
+  it("shows each pack's type for a logical type, in that type's row and that pack's column", () => {
     expect(page).toContain("<ContractTypes />");
     const html = renderToStaticMarkup(createElement(ContractTypes));
-    for (const pack of packs) {
-      for (const type of Object.values(pack.defaults.types ?? {}))
-        expect(html, `${pack.id} ${type}`).toContain(`<code>${type}</code>`);
+    const cells = (row: string) =>
+      [...row.matchAll(/<t[hd]>(.*?)<\/t[hd]>/g)].map((match) => match[1]!);
+    const [header, ...rows] = [...html.matchAll(/<tr>(.*?)<\/tr>/g)].map((match) =>
+      cells(match[1]!),
+    );
+    const typed = packs.filter((pack) => Object.keys(pack.defaults.types ?? {}).length > 0);
+    expect(header!.slice(1)).toEqual(typed.map((pack) => packName(pack.id)));
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      const logical = /^<code>(.*)<\/code>$/.exec(row[0]!)![1]!;
+      typed.forEach((pack, index) => {
+        const found = pack.defaults.types?.[logical];
+        expect(row[index + 1], `${pack.id} ${logical}`).toBe(
+          found ? `<code>${found}</code>` : "no default",
+        );
+      });
     }
+    // Every type a pack gives has a row.
+    for (const pack of typed)
+      for (const logical of Object.keys(pack.defaults.types ?? {}))
+        expect(
+          rows.some((row) => row[0] === `<code>${logical}</code>`),
+          `${pack.id} ${logical}`,
+        ).toBe(true);
     // ADF types no tables, and the page says why it has no column.
     expect(Object.keys(packs.find((pack) => pack.id === "adf")!.defaults.types ?? {})).toEqual([]);
-    expect(html).not.toContain("Azure Data Factory");
+  });
+
+  it("leaves a column with no default type to the platform on Databricks, and VARCHAR on DuckDB", () => {
+    expect(prose(page)).toContain(
+      "Databricks then leaves the column out of the types it declares, so the platform decides; DuckDB reads it as `VARCHAR`.",
+    );
+    const databricks = copy("minimal");
+    retype(join(databricks, "contracts/orders.yaml"), "customer_id", "integer", "object");
+    const out = join(databricks, "out");
+    expect(cli(databricks, ["apply", "--no-diff", "--out", out]).code).toBe(0);
+    const bronze = readFileSync(
+      join(out, "dev/src", projectId(databricks), "bronze/orders.sql"),
+      "utf8",
+    );
+    expect(bronze).toContain(
+      "schemaHints => '`id` BIGINT, `total` DECIMAL(18,2), `ordered_at` TIMESTAMP'",
+    );
+
+    const duckdb = copy("duckdb");
+    retype(join(duckdb, "contracts/orders.yaml"), "customer", "string", "object");
+    expect(cli(duckdb, ["apply", "--no-diff", "--out", join(duckdb, "out")]).code).toBe(0);
+    expect(readFileSync(join(duckdb, "out/dev/tables/bronze.orders.sql"), "utf8")).toContain(
+      'CAST("customer" AS VARCHAR)',
+    );
+  });
+
+  it("checks rows by a column's logicalTypeOptions, and unique once checks are on", () => {
+    const text = prose(section(page, "## Rules about the data"));
+    expect(text).toContain("such as `customer_id_minimum`");
+    expect(text).toContain("when the platform turns on `manage.checks`");
+    const cwd = copy("minimal");
+    const contract = join(cwd, "contracts/orders.yaml");
+    writeFileSync(
+      contract,
+      readFileSync(contract, "utf8").replace(
+        "{ name: customer_id, logicalType: integer }",
+        "{ name: customer_id, logicalType: integer, unique: true, logicalTypeOptions: { minimum: 1 } }",
+      ),
+    );
+    const out = join(cwd, "out");
+    const id = projectId(cwd);
+    expect(cli(cwd, ["apply", "--no-diff", "--out", out]).code).toBe(0);
+    const bronze = readFileSync(join(out, "dev/src", id, "bronze/orders.sql"), "utf8");
+    expect(bronze).toContain(
+      "CONSTRAINT `customer_id_minimum` EXPECT (`customer_id` IS NULL OR `customer_id` >= 1)",
+    );
+    expect(bronze).not.toContain("customer_id_unique");
+    // With checks on, unique becomes a check over all rows after the refresh.
+    writeFileSync(
+      join(cwd, "platform.yaml"),
+      "apiVersion: ingestron.io/v1\nkind: Platform\nid: checks\nmanage: { checks: true }\n",
+    );
+    const project = parse(readFileSync(join(cwd, "project.yaml"), "utf8"));
+    writeFileSync(
+      join(cwd, "project.yaml"),
+      stringify({ ...project, imports: [...project.imports, "platform.yaml"] }),
+    );
+    expect(cli(cwd, ["apply", "--no-diff", "--out", out]).code).toBe(0);
+    expect(readFileSync(join(out, "dev/src", id, "apply_contract.py"), "utf8")).toContain(
+      '"name": "customer_id_unique"',
+    );
   });
 
   it("keeps the draft-from-a-sample heading the old URL redirects to", () => {

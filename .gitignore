@@ -10,3 +10,4 @@ out/
 .source/
 public/downloads/
 next-env.d.ts
+.wrangler/
