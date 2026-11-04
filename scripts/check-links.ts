@@ -7,6 +7,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { docsLinks } from "@ingestron/authoring";
 import { join, relative } from "node:path";
 import { baseOptions } from "../lib/layout.shared";
+import { categoryAnchor, sourceCategories } from "../lib/connector-page";
 import { connectorEntries, connectorIds } from "../lib/reference";
 import { patterns, redirectFor, redirects } from "../worker/redirects.js";
 
@@ -57,19 +58,28 @@ console.log(
 );
 
 /**
- * Each area's sidebar, as built: every page lists its own URL in its sidebar
- * (a connector page shows the catalogue's), and no page is in two sidebars.
- * The header's links, which the phone menu repeats above the pages, are left out.
+ * Each area's sidebar, as built. Every page but the home page has one; it
+ * lists the page (a connector page, the catalogue), no page is in two areas'
+ * sidebars, and no sidebar lists a connector: the Connectors sidebar holds
+ * the catalogue and a link to each category on it. The header's links, which
+ * the phone menu repeats above the pages, are left out.
  */
 function sidebars(): void {
   const options = baseOptions();
   // The menu's links come first, before the area's pages.
   const menu = (options.links ?? []).map((link) => ("url" in link ? link.url : ""));
   const owner = new Map<string, string>();
-  for (const file of htmlFiles(join(out, "docs"))) {
+  const pages = htmlFiles(join(out, "docs"));
+  let found = 0;
+  for (const file of pages) {
+    const path = pagePath(file);
     const html = readFileSync(file, "utf8");
     const start = html.indexOf('id="nd-sidebar"');
-    if (start === -1) continue;
+    if (start === -1) {
+      broken.add(`${path} has no sidebar`);
+      continue;
+    }
+    found++;
     const links = [
       ...html.slice(start, html.indexOf("</aside>", start)).matchAll(/href="([^"]+)"/g),
     ]
@@ -77,12 +87,22 @@ function sidebars(): void {
       .filter(
         (href, index) => href.startsWith("/") && !(index < menu.length && href === menu[index]),
       );
-    const path = pagePath(file);
-    const shown = links.filter((href) => !href.startsWith("/docs/connectors/"));
+    for (const href of links)
+      if (href.startsWith("/docs/connectors/")) broken.add(`sidebar of ${path} lists ${href}`);
     const own = path.startsWith("/docs/connectors/") ? "/docs/connectors" : path;
-    if (!shown.includes(own)) broken.add(`sidebar of ${path} does not list ${own}`);
+    if (!links.includes(own)) broken.add(`sidebar of ${path} does not list ${own}`);
+    if (own === "/docs/connectors") {
+      const expected = [
+        "/docs/connectors",
+        ...sourceCategories().map((name) => `/docs/connectors#${categoryAnchor(name)}`),
+      ];
+      if (links.join(" ") !== expected.join(" "))
+        broken.add(
+          `sidebar of ${path} is ${links.join(" ")}, not the catalogue and its categories`,
+        );
+    }
     // An area's sidebar starts with its first page; a folder lists its pages only when open.
-    const area = shown[0]!;
+    const area = links[0]!;
     for (const href of links) {
       const first = owner.get(href);
       if (first === undefined) owner.set(href, area);
@@ -90,6 +110,8 @@ function sidebars(): void {
         broken.add(`${href} is in the sidebars of ${first} and ${area} (on ${path})`);
     }
   }
+  // out/docs holds every page but the home page, which is out/docs.html.
+  if (found !== urls.length - 1) broken.add(`${found} sidebars for ${urls.length - 1} area pages`);
 }
 
 function exists(href: string): boolean {

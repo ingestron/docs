@@ -1,5 +1,6 @@
-// The page tree's one change to what the meta.json files describe: the
-// Connectors area's catalogue is its landing page, listed as "All connectors".
+// The page tree's changes to what the meta.json files describe: the
+// Connectors area's catalogue is its landing page, listed as "All connectors",
+// and its connector pages stay in the area but out of its sidebar.
 import type { Folder } from "fumadocs-core/page-tree";
 
 /** The catalogue's URL, the landing page of the Connectors area. */
@@ -25,3 +26,11 @@ export const areaNavigation = {
     };
   },
 };
+
+/**
+ * Whether the sidebar lists a page. A connector's page is in the Connectors
+ * area, so it keeps the area's tab, sidebar and breadcrumb, but the sidebar
+ * lists the catalogue and its categories, not 77 connectors.
+ * @example inSidebar("/docs/connectors/sqlserver") // false
+ */
+export const inSidebar = (url: string) => !url.startsWith(`${catalogueUrl}/`);

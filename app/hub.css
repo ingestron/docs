@@ -1,12 +1,60 @@
 /* The home page, /docs: a search band, the area cards and the two ways in,
    then the value story. One column on a phone, with a 16 px gutter. */
 
-/* The entity icons' cut-outs take this colour, so they match the card behind
-   them (brand README: set --ingestron-surface to the background colour). The
-   icons read it at the root, so it is set there for both themes. */
+/* The entity icons, drawn as the icon set's construction rules draw them
+   (stroke 2.2, round caps and joins), once for the page and only inside
+   .entity-icon. The motions are left out: these icons stand still. Cut-outs
+   take --ingestron-surface, the card's colour (brand README: set it to the
+   background colour). One signal per view: only the first card's icon keeps
+   its signal accent; the others draw it in their stroke colour. */
 :root,
 .dark {
   --ingestron-surface: var(--color-fd-card);
+}
+.entity-icon {
+  --s-acc: var(--ingestron-signal, #ff4b23);
+  --s-okc: var(--ingestron-available, #0f6b48);
+  --s-soft: color-mix(in srgb, currentColor 35%, transparent);
+  --s-accsoft: rgba(255, 75, 35, 0.2);
+  --s-cut: var(--ingestron-surface, #fff);
+}
+.area-card:not(:first-child) .entity-icon {
+  --s-acc: currentColor;
+  --s-accsoft: color-mix(in srgb, currentColor 20%, transparent);
+}
+.entity-icon .ic {
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.entity-icon .ic .solid {
+  fill: currentColor;
+  stroke: none;
+}
+.entity-icon .ic .acc {
+  stroke: var(--s-acc);
+}
+.entity-icon .ic .accf {
+  fill: var(--s-acc);
+  stroke: none;
+}
+.entity-icon .ic .okc {
+  stroke: var(--s-okc);
+}
+.entity-icon .ic .soft {
+  stroke: var(--s-soft);
+}
+.entity-icon .ic .cut {
+  fill: var(--s-cut);
+  stroke: none;
+}
+.entity-icon .ic .t {
+  font: 700 7px var(--font-mono);
+  fill: var(--s-cut);
+  stroke: none;
 }
 
 .hub-width {

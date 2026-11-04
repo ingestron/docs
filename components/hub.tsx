@@ -8,14 +8,20 @@ import type { AreaCard } from "@/lib/areas";
 
 /**
  * A brand entity icon, inline so that its strokes take the text colour and its
- * cut-outs the card's colour (`--ingestron-surface`, set in app/hub.css). The
- * card's heading names it, so screen readers skip it.
+ * cut-outs the card's colour. Each file carries the icon set's whole
+ * stylesheet, motions included; the icons here stand still, so the page drops
+ * it and app/hub.css draws them once, under `.entity-icon`. The card's heading
+ * names the icon, so screen readers skip it.
  * @example <EntityIcon name="platform" />
  */
 export function EntityIcon({ name }: { name: string }) {
   const svg = readFileSync(join(process.cwd(), "public/brand/icons", `${name}.svg`), "utf8");
   return (
-    <span className="entity-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: svg }} />
+    <span
+      className="entity-icon"
+      aria-hidden="true"
+      dangerouslySetInnerHTML={{ __html: svg.replace(/<style>[\s\S]*?<\/style>/, "") }}
+    />
   );
 }
 
