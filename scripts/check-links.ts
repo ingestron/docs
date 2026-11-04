@@ -24,13 +24,19 @@ for (const page of htmlFiles(out)) {
       broken.add(`${page.slice(out.length)} → ${href}`);
   }
 }
-// Every link to a section of a page lands on an id that page has: a heading,
-// or an old anchor a moved section keeps (components/old-anchor.tsx).
+// Every link to a section of a page, on another page or the same one, lands
+// on an id that page has: a heading, or an old anchor a moved section keeps
+// (components/old-anchor.tsx).
 let sections = 0;
 for (const page of htmlFiles(out)) {
-  for (const [, href] of readFileSync(page, "utf8").matchAll(/href="(\/docs[^"#?]*#[^"]+)"/g)) {
+  const html = readFileSync(page, "utf8");
+  for (const [, href] of html.matchAll(/href="(\/docs[^"#?]*#[^"]+)"/g)) {
     sections++;
     problem(href!, `link on ${pagePath(page)}`);
+  }
+  for (const [, anchor] of html.matchAll(/href="#([^"]+)"/g)) {
+    sections++;
+    if (!hasId(html, anchor!)) broken.add(`link on ${pagePath(page)} → #${anchor} (no anchor)`);
   }
 }
 // The editor links each connector's page, and its Reference view links the
@@ -256,8 +262,13 @@ function problem(link: string, what: string): void {
   const [path = "", anchor] = link.split("#");
   const page = [`${join(out, path)}.html`, join(out, path, "index.html")].find(existsSync);
   if (!page) broken.add(`${what} → ${link} (no page)`);
-  else if (anchor && !readFileSync(page, "utf8").includes(`id="${anchor}"`))
+  else if (anchor && !hasId(readFileSync(page, "utf8"), anchor))
     broken.add(`${what} → ${link} (no anchor)`);
+}
+
+/** Whether some element of the page has this id: `id="x"` as an attribute, not `data-id="x"`. */
+function hasId(html: string, id: string): boolean {
+  return new RegExp(`\\sid="${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`).test(html);
 }
 
 /** The route a built file serves, such as /docs/start for out/docs/start.html. */
