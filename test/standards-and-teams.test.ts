@@ -6,6 +6,7 @@ import { execFileSync } from "node:child_process";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { run } from "@ingestron/cli";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -161,8 +162,21 @@ describe("how-to/share-a-template", () => {
       .replace(standard![1]!, platformRepo)
       .split(" ")
       .slice(1);
-    const created = cli(local, [...args, "--yes"]);
+    // The page's command as written: it asks the template's questions, each answered with Enter.
+    const asked: string[] = [];
+    let output = "";
+    const code = run(args, {
+      cwd: local,
+      write: (text) => (output += text),
+      ask: (question) => (asked.push(question), ""),
+    });
+    const created = { code, output };
     expect(created.code, created.output).toBe(0);
+    expect(asked.length, "init asks the reader").toBeGreaterThan(0);
+    expect(
+      asked.some((question) => question.startsWith("Standard")),
+      "--standard answers it",
+    ).toBe(false);
     const name = args[1]!;
     const copied = readFileSync(join(local, name, "standard.yaml"), "utf8");
     expect(copied.split("\n")[0]).toBe(`# From ${platformRepo}#${standard![2]!}`);
