@@ -14,7 +14,7 @@ The standard's `packs` names each pack with its major version:
 
 <Example name="duckdb" file="standard.yaml" />
 
-`duckdb@1` accepts every DuckDB pack whose version starts with 1. A new major
+`duckdb@1` accepts every DuckDB pack whose major version is 1. A new major
 version is a new name, `duckdb@2`, and the command checks it. When the
 standard names a major the command's pack does not have, nothing is
 generated. In the [first project](/docs/start/first-project), whose command
@@ -54,10 +54,10 @@ Install the same version on your computers:
 npm install -g ingestron@1.10.1
 ```
 
-The VS Code extension carries its own copy of the command, from when it was
-built. After an upgrade, rebuild it as [Install](/docs/start/install) shows.
-Once you have applied with the command, **Ingestron: Plan** should list no
-changes; if it does, the two versions differ.
+The VS Code extension carries its own copy of the command: the version its
+own repository locked when you built it, which need not be the one you pin.
+Once you have applied with the command, **Ingestron: Plan** in VS Code should
+list no changes; if it does, the two versions differ.
 
 ## Upgrade in a pull request
 
@@ -89,8 +89,8 @@ Deploy the changed files as you deploy any other change.
 
 ## What changed in a release
 
-Each release is a commit in its repository whose message starts with the
-version, such as `1.10.1:`. Read the history of the command and of each pack
+Recent releases are commits whose message starts with the version, such as
+`1.10.1:`. Read the history of the command and of each pack
 your standard names:
 
 - the command: [ingestron/ingestron](https://github.com/ingestron/ingestron/commits/main)
