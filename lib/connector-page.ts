@@ -153,9 +153,19 @@ function access({ pack, connector }: ConnectorEntry): string[] {
   throw new Error(`No access words for the ${pack} method ${connector.method}.`);
 }
 
-function exampleWords({ connector }: ConnectorEntry): string[] {
+/** What the reader replaces in the example connection, by method: ADF's hold an endpoint and an account. */
+const replace: Record<string, string> = {
+  "lakeflow-connect": "replace the Unity Catalog connection's name in `uc_connection` with yours",
+  files: "replace the folder in `path` with yours",
+};
+
+function exampleWords({ pack, connector }: ConnectorEntry): string[] {
+  const what =
+    replace[connector.method] ??
+    (pack === "adf" ? "replace the endpoint and account details with yours" : undefined);
+  if (!what) throw new Error(`No example words for the ${pack} method ${connector.method}.`);
   return [
-    "The example uses synthetic values: replace the endpoint and account details with yours. `id` is the name a flow uses in `source`, and `connector` selects the source type." +
+    `The example uses synthetic values: ${what}. \`id\` is the name a flow uses in \`source\`, and \`connector\` selects the source type.` +
       (connector.settings.some((setting) => setting.secret)
         ? " A secret reference such as `${secret:source-password}` names a secret; it never contains the password itself."
         : ""),
@@ -231,8 +241,7 @@ function reading(id: string, entry: ConnectorEntry): Part {
 function current(id: string, entry: ConnectorEntry): Part | undefined {
   const { pack, connector } = entry;
   const lead: Record<string, string> = {
-    "adf-table":
-      "Each window copies the selection again, so a row missing from a later copy does not mean it was deleted.",
+    "adf-table": "A row missing from a later copy does not mean it was deleted.",
     "adf-copy":
       "ADF writes Parquet into landing storage. Repeated full copies land the same rows again, and a row missing from a later copy does not tell the destination to delete it.",
     "adf-files":

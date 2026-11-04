@@ -16,6 +16,8 @@ import {
 } from "../lib/connector-page.js";
 import { connectorEntries, connectorIds } from "../lib/reference.js";
 import { redirectFor } from "../worker/redirects.js";
+import { openProject, referenceForDocs } from "@ingestron/authoring";
+import { exampleFolder } from "../lib/examples.js";
 
 // The code blocks render asynchronously in the site; here each shows its file's name.
 vi.mock("@/components/example", () => ({
@@ -88,6 +90,23 @@ describe("connector pages", () => {
         ids(html).filter((item) => item === "settings"),
         id,
       ).toHaveLength(1);
+    }
+  }, 30_000);
+
+  it("put #settings on the fields of the pack whose settings the editor's Reference view lists", () => {
+    const project = openProject(exampleFolder("minimal"), new Map());
+    for (const id of connectorIds()) {
+      const entry = referenceForDocs(project, `/docs/connectors/${id}`, "dev");
+      const [first] = connectorEntries(id);
+      // The editor lists the first pack's settings, each linked to #settings.
+      expect(
+        entry?.fields?.map((field) => field.name),
+        id,
+      ).toEqual(first!.connector.settings.map((setting) => setting.name));
+      for (const field of entry?.fields ?? [])
+        expect(field.docs, id).toBe(`/docs/connectors/${id}#settings`);
+      // The page puts #settings on that same pack's connection fields.
+      expect(section(page(id), `${first!.pack}-connection`), id).toContain('id="settings"');
     }
   }, 30_000);
 

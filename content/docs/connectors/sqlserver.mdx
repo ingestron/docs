@@ -30,15 +30,10 @@ to the environments that need them.
 
 <ConnectorNote at="adf-access">
 
-Give the integration runtime network access to SQL Server and a source account
-that can read the selected tables. For a server on a private network, use a
-self-hosted runtime on a machine with access to that network. The name in
-`integration_runtime` must identify a runtime already deployed in ADF.
-
-Store the login password in Key Vault. The factory's managed identity needs
-permission to read that secret and write to ADLS Gen2 landing storage.
-Generation creates linked services, datasets, pipelines and triggers; it does
-not create the server account, runtime host, Key Vault or storage permissions.
+Give the integration runtime network access to SQL Server, and a source
+account that can read the selected tables. For a server on a private network,
+use a self-hosted runtime on a machine with access to that network. Generation
+does not create the server account or the runtime host.
 
 </ConnectorNote>
 

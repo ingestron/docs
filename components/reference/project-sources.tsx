@@ -1,5 +1,7 @@
-// Discovery uses the same metadata as the CLI and New project wizard.
+// Discovery uses the same metadata as the CLI and New project wizard. Headings
+// are MDX's own, so a jump to a category clears the sticky header.
 import { projectSources, projectRoutes } from "@ingestron/cli";
+import { Heading } from "fumadocs-ui/components/heading";
 import { categoryAnchor, sourceCategories } from "@/lib/connector-page";
 
 /** Every source, under a heading per category, with the routes it can take.
@@ -9,7 +11,9 @@ export function ProjectSources() {
   const sources = projectSources();
   return sourceCategories().map((name) => (
     <div key={name}>
-      <h2 id={categoryAnchor(name)}>{name}</h2>
+      <Heading as="h2" id={categoryAnchor(name)}>
+        {name}
+      </Heading>
       <SourceList sources={sources.filter((source) => source.category === name)} />
     </div>
   ));

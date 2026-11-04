@@ -7,12 +7,10 @@ description: "Azure Data Factory copies from Microsoft 365 into ADLS Gen2 landin
 
 <ConnectorNote at="adf-access">
 
-Use an **Azure integration runtime**: set `runtime_kind: azure` and name that
-runtime in `integration_runtime`. Microsoft 365 uses the configured
-application's credentials to write JSON landing files. Grant that application
-access to landing storage, and complete Microsoft Graph Data Connect consent
-and dataset permissions. The factory needs access to the Key Vault secrets used
-by the linked services.
+Use an **Azure integration runtime**: set `runtime_kind: azure`. Microsoft 365
+uses the configured application's credentials to write JSON landing files.
+Grant that application access to landing storage, and complete Microsoft Graph
+Data Connect consent and dataset permissions.
 
 The connection does not provision an application, grant consent or create the
 runtime. Then choose the [dataset and date filter](#adf-reading).

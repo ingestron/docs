@@ -1,6 +1,8 @@
 // A connector's whole page, from the packs' and the CLI's metadata. A
 // connector's own notes come from its MDX file as <ConnectorNote at="…">
-// children, and are placed in the slot they name.
+// children, and are placed in the slot they name. Headings are MDX's own
+// Heading, so a jump to one clears the sticky header and offers its link.
+import { Heading } from "fumadocs-ui/components/heading";
 import { Children, Fragment, isValidElement, type ReactNode } from "react";
 import { Example } from "@/components/example";
 import { FlowDiagram } from "@/components/flow-diagram";
@@ -48,7 +50,9 @@ export function ConnectorPage({ id, children }: { id: string; children?: ReactNo
     <>
       {sections.map((section) => (
         <Fragment key={section.id}>
-          <h2 id={section.id}>{section.title}</h2>
+          <Heading as="h2" id={section.id}>
+            {section.title}
+          </Heading>
           <Paragraphs texts={section.before} />
           {section.id === "routes" && <ConnectorFacts id={id} />}
           {section.id === "examples" && <ExamplesList connector={id} />}
@@ -57,7 +61,9 @@ export function ConnectorPage({ id, children }: { id: string; children?: ReactNo
               <div key={item.slot}>{slot(item.slot)}</div>
             ) : (
               <div key={item.part.id}>
-                <h3 id={item.part.id}>{item.part.title}</h3>
+                <Heading as="h3" id={item.part.id}>
+                  {item.part.title}
+                </Heading>
                 <Paragraphs texts={item.part.before} />
                 {item.part.routes && item.part.routes.length > 0 && (
                   <ul>
