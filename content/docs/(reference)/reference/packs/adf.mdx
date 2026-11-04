@@ -26,6 +26,17 @@ through the factory's deployment process. Generation itself does not publish.
 
 <PackMethods pack="adf" />
 
+## Platform configuration
+
+A trigger's state comes from the copy method's own `paused` setting first,
+then from the platform's `schedule.paused`. Where neither says, the ADF pack
+uses this default, so development copies do not run on their own:
+
+<PlatformDefaults pack="adf" />
+
+A stopped trigger is generated with `"runtimeState": "Stopped"`; a started one
+runs every window since its `start` once it is published.
+
 ## Contract fields
 
 What this pack does with each field of a table's contract. When a contract

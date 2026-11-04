@@ -156,8 +156,9 @@ A project you create from it takes its folder's name as its id, so
 `ingestron init sql-server --template sql-server` writes
 `resources/sql_server_refresh.job.yml`.
 
-Outside production the job is created paused, so development environments do
-not run on their own; set `paused: false` in the `schedule` to change that.
+Outside production the job is created paused, as the
+[platform defaults](/docs/reference/packs/databricks#platform-configuration)
+say; set `paused: false` in the `schedule` to change that.
 `ingestron request` lists the state of each schedule, so the platform team
 sees the same thing the files say.
 
