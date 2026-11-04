@@ -44,9 +44,16 @@ factory's managed identity:
 />
 
 The job's `run.sql` reads and writes `abfss://` paths only, so it runs in
-Azure:
+Azure. It reads each table's landed file, `abfss://landing@…`, at the end of
+its first line, and publishes each table to `abfss://published@…` at the end
+of the last ones:
 
-<Example name="duckdb-local" file="build/dev/duckdb/run.sql" from="read_parquet" to=";" />
+<Example
+  name="duckdb-local"
+  file="build/dev/duckdb/run.sql"
+  from="read_parquet"
+  to="TO 'abfss://published@salesdev.dfs.core.windows.net/silver"
+/>
 
 ## What it looks like in Azure [#on-the-platform]
 
@@ -54,7 +61,7 @@ Azure:
   src="/images/platforms/duckdb-in-azure/duckdb-02-parent-run.png"
   label="Azure Data Factory"
   checked="2026-11-02"
-  alt="The parent's run: run_pl_northwind…, start_job, remember_job, wait_for_job, pause, get_job_status, set_job_status and check_job, all Succeeded."
+  alt="The parent's activity runs, by name, status and type: run_pl_northwind…, start_job, remember_job, wait_for_job, pause, get_job_status, set_job_status and check_job, all Succeeded."
   caption="One run of the demo's Northwind parent pipeline: the copies, then the job's start, the wait for it and the check that it succeeded."
 />
 
@@ -100,7 +107,7 @@ The platform names the job, per environment, and where tables are published:
 
 ## Settings that shape it [#settings]
 
-### Start it after the copies
+<OldAnchor id="start-it-after-the-copies" />
 
 With `after_copy`, each schedule has one parent pipeline,
 `pl_<project>_every_<interval>_<unit>`, and one trigger in place of the
@@ -228,12 +235,13 @@ job run shows in the job's execution history:
   src="/images/platforms/duckdb-in-azure/duckdb-03-job-runs.png"
   label="Azure portal"
   checked="2026-11-02"
-  alt="Recent executions of the Container Apps job: three, each Succeeded in about 30 seconds."
-  caption="The demo job's recent executions: three runs, each about 30 seconds."
+  alt="The status and duration of the Container Apps job's three recent executions: each Succeeded, in 29 to 32 seconds."
+  caption="The demo job's three most recent executions: each succeeded in about 30 seconds."
 />
 
-- **A run that never finishes** is stopped at `after_copy.timeout` (one hour by
-  default), and the pipeline fails, saying whether the run stopped. The job's
+- **A run that never finishes** is stopped at
+  [`after_copy.timeout`](/docs/reference/packs/adf#adf-copy-after-copy-timeout),
+  and the pipeline fails, saying whether the run stopped. The job's
   own replica timeout is half of that, so a retried run also ends in time.
 - **A failed run** is retried once by the job. Retries are safe because each
   run rebuilds everything. ADF never starts the job twice for one load: a
@@ -276,8 +284,12 @@ runs confirmed what the pipeline and the job rely on:
   each table there.
 - **Running again:** a second run replaces each published file in place.
 
-A hung run, a private registry and two schedules starting the job at once have
-not been tried.
+The demo did some steps differently from this page. It created the job with an
+equivalent Terraform module, not `duckdb-job.bicep`; put the factory's
+resources through the REST API rather than publishing them; copied the SQL file
+by file; and started each run by hand, with the triggers stopped. A scheduled
+run, a hung run, the job's own retry, a private registry and two schedules
+starting the job at once have not been tried.
 
 ## Next
 
