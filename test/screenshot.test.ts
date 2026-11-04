@@ -170,10 +170,12 @@ describe("the platform screenshots", () => {
     encoding: "utf8",
   }).filter((file) => file.endsWith(".png"));
 
-  it("each fit the 760 px frame at their own size, so none is shrunk or enlarged", () => {
+  // The content column is 684 px wide at 1280 px, and the frame has a 1 px
+  // border each side, so a shot up to 682 px shows whole without scrolling.
+  it("each fit the content column at desktop width at their own size, so none is shrunk, enlarged or cut off", () => {
     expect(files.length).toBeGreaterThan(0);
     for (const file of files)
-      expect(pngWidth(`/images/platforms/${file}`), file).toBeLessThanOrEqual(756);
+      expect(pngWidth(`/images/platforms/${file}`), file).toBeLessThanOrEqual(682);
   });
 
   it("are framed at most 760 px wide, at the image's own size", () => {
