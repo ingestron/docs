@@ -81,10 +81,14 @@
    own size, one image pixel to one CSS pixel, so its text stays as large as
    the capture's and every shot on a page has the same scale. The frame is
    no wider than the image, and at most 760 px; a narrower screen scrolls
-   the image sideways rather than shrinking it. */
+   the image sideways rather than shrinking it. The caption keeps the
+   column's width, so a narrow shot's caption does not widen its frame. */
 .screenshot-platform {
-  width: fit-content;
   max-width: min(100%, 760px);
+}
+.screenshot-platform .screenshot-frame {
+  width: fit-content;
+  max-width: 100%;
 }
 .prose .screenshot-platform img {
   width: auto;

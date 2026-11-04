@@ -179,6 +179,8 @@ describe("the platform screenshots", () => {
   it("are framed at most 760 px wide, at the image's own size", () => {
     const css = readFileSync("app/screenshot.css", "utf8");
     expect(css).toMatch(/\.screenshot-platform \{[^}]*max-width: min\(100%, 760px\)/);
+    // The frame hugs the image; the caption beneath it does not widen it.
+    expect(css).toMatch(/\.screenshot-platform \.screenshot-frame \{[^}]*width: fit-content/);
     expect(css).toMatch(
       /\.prose \.screenshot-platform img \{[^}]*width: auto;[^}]*max-width: none/,
     );
