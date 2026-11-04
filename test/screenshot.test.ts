@@ -11,6 +11,7 @@ import { contentFolder } from "../lib/content-files.js";
 
 const light = "/images/vscode/editor-light.png";
 const dark = "/images/vscode/editor-dark.png";
+const platform = "/images/platforms/adf/adf-11-copy-details.png";
 const render = (props: Parameters<typeof Screenshot>[0]) =>
   renderToStaticMarkup(createElement(Screenshot, props));
 const images = (html: string) => [...html.matchAll(/<img [^>]*>/g)].map(([tag]) => tag);
@@ -37,17 +38,31 @@ describe("the screenshot frame", () => {
     expect(html).toContain("<figcaption>The editor.</figcaption>");
   });
 
-  it("shows a platform's single capture in both themes, under its own label", () => {
-    const html = render({ src: light, label: "Azure Data Factory", caption: "The pipeline." });
+  it("shows a platform's single capture at its own size, under its own label, linked full size", () => {
+    const html = render({
+      src: platform,
+      label: "Azure Data Factory",
+      caption: "The pipeline.",
+      checked: "2026-11-02",
+    });
     expect(images(html)).toHaveLength(1);
     expect(images(html)[0]).not.toContain("class=");
     expect(images(html)[0]).toContain('alt="The pipeline."');
+    expect(images(html)[0]).toContain(`width="${pngWidth(platform)}"`);
+    expect(html).toContain('<figure class="screenshot screenshot-platform">');
+    expect(html).toContain(
+      `<a class="screenshot-open" href="${platform}" aria-label="Open full size: The pipeline.">`,
+    );
     expect(html).toContain('<span class="screenshot-label">Azure Data Factory</span>');
     expect(html).toContain('aria-label="The pipeline."');
+    // An editor shot is not a link, and keeps the frame's width.
+    const editor = render({ light, dark, caption: "The editor." });
+    expect(editor).not.toContain("<a ");
+    expect(editor).toContain('<figure class="screenshot">');
   });
 
   it("ends the caption with the date the screen was checked", () => {
-    const html = render({ src: light, caption: "The pipeline.", checked: "2026-11-04" });
+    const html = render({ src: platform, caption: "The pipeline.", checked: "2026-11-04" });
     expect(html).toContain("<figcaption>The pipeline. Checked on 4 November 2026.</figcaption>");
     expect(checkedOn("2027-01-31")).toBe("31 January 2027");
     expect(() => checkedOn("4 November 2026")).toThrow(/checked must be a date/);
@@ -57,13 +72,23 @@ describe("the screenshot frame", () => {
     expect(checkedOn("2028-02-29")).toBe("29 February 2028");
   });
 
+  it("refuses a platform's screen without the date it was checked", () => {
+    expect(() => render({ src: platform, label: "Databricks", caption: "x" })).toThrow(
+      `Screenshot: ${platform} needs the date it was checked`,
+    );
+  });
+
   it("refuses captures that do not fit together", () => {
-    expect(() => render({ src: light, light, dark, caption: "x" } as never)).toThrow(/not both/);
+    expect(() =>
+      render({ src: light, light, dark, caption: "x", checked: "2026-11-02" } as never),
+    ).toThrow(/not both/);
     expect(() => render({ light, caption: "x" } as never)).toThrow(/both light and dark/);
     expect(() => render({ light, dark: "/images/vscode/check-dark.png", caption: "x" })).toThrow(
       /differ in size/,
     );
-    expect(() => render({ src: "/images/vscode/missing.png", caption: "x" })).toThrow();
+    expect(() =>
+      render({ src: "/images/vscode/missing.png", caption: "x", checked: "2026-11-02" }),
+    ).toThrow();
   });
 });
 
@@ -87,7 +112,7 @@ describe("the screenshot's scrolling frame", () => {
     ])
       expect(source).toContain(text);
     expect(readFileSync("components/screenshot.tsx", "utf8")).toContain(
-      "<ScreenshotScroll label={alt ?? caption}>",
+      "<ScreenshotScroll label={name}>",
     );
   });
 });
@@ -120,5 +145,26 @@ describe("the VS Code screenshots", () => {
       expect(site, name).toContain(`light="/images/vscode/${name}-light.png"`);
       expect(site, name).toContain(`dark="/images/vscode/${name}-dark.png"`);
     }
+  });
+});
+
+describe("the platform screenshots", () => {
+  const files = readdirSync("public/images/platforms", {
+    recursive: true,
+    encoding: "utf8",
+  }).filter((file) => file.endsWith(".png"));
+
+  it("each fit the 760 px frame at their own size, so none is shrunk or enlarged", () => {
+    expect(files.length).toBeGreaterThan(0);
+    for (const file of files)
+      expect(pngWidth(`/images/platforms/${file}`), file).toBeLessThanOrEqual(756);
+  });
+
+  it("are framed at most 760 px wide, at the image's own size", () => {
+    const css = readFileSync("app/screenshot.css", "utf8");
+    expect(css).toMatch(/\.screenshot-platform \{[^}]*max-width: min\(100%, 760px\)/);
+    expect(css).toMatch(
+      /\.prose \.screenshot-platform img \{[^}]*width: auto;[^}]*max-width: none/,
+    );
   });
 });
