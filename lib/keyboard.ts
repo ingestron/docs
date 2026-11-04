@@ -39,3 +39,11 @@ export function tabCurrent(tabs: AreaTab[], pathname: string): (string | undefin
     index !== active ? undefined : tab.url === path ? "page" : "true",
   );
 }
+
+/**
+ * Whether a frame holds more than it shows across, so it needs a tab stop for
+ * the keyboard to scroll it. A pixel of rounding is not overflow.
+ */
+export function overflows(frame: { scrollWidth: number; clientWidth: number }): boolean {
+  return frame.scrollWidth > frame.clientWidth + 1;
+}
