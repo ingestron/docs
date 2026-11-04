@@ -1,4 +1,6 @@
 // Shows one real file of a tested example; the build fails if it is missing.
+import { KindBlock } from "@/components/code-block";
+import { exampleKind } from "@/lib/block-kind";
 import { ServerCodeBlock } from "fumadocs-ui/components/codeblock.rsc";
 import { codeThemes } from "@/lib/code-themes";
 import { readExampleFile } from "@/lib/examples";
@@ -11,10 +13,18 @@ export function Example({ name, file }: { name: string; file: string }) {
       code={readExampleFile(name, file).trimEnd()}
       lang={extension === "yml" ? "yaml" : extension}
       themes={codeThemes}
-      codeblock={{
-        title: `${name}/${file}`,
-        className: "my-4",
-        viewportProps: { "aria-label": `${name}/${file}` },
+      components={{
+        pre: ({ children, ...props }) => (
+          <KindBlock
+            {...props}
+            kind={exampleKind(file)}
+            title={file}
+            className="my-4"
+            viewportProps={{ "aria-label": `${name}/${file}` }}
+          >
+            {children}
+          </KindBlock>
+        ),
       }}
     />
   );
