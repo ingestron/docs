@@ -1,0 +1,20 @@
+---
+title: Kafka
+description: "Databricks appends every message of a topic to a table, with the values parsed by the contract's column types."
+---
+
+<ConnectorPage id="kafka">
+
+<ConnectorNote at="databricks-reading">
+
+One ingestion pipeline for the connection, on the `PREVIEW` channel. It runs
+continuously in production. In other environments it runs when the refresh job
+or `databricks bundle run` starts it, which costs less; set `continuous: true`
+to change that.
+
+`value_format: json` parses message values with the contract's types. Topics
+can only be appended (`mode: append`); the pack sets this for you.
+
+</ConnectorNote>
+
+</ConnectorPage>

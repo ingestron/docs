@@ -1,0 +1,16 @@
+---
+title: SAP Business Warehouse Open Hub
+description: "Azure Data Factory copies from SAP Business Warehouse Open Hub into ADLS Gen2 landing storage, for Databricks tables, Synapse serverless SQL views or DuckDB tables, or to keep as landed files."
+---
+
+<ConnectorPage id="sap-bw-open-hub">
+
+<ConnectorNote at="adf-reading">
+
+Full snapshots include the last Open Hub request. Set
+`source_options.exclude_last_request: true` only when your extraction process
+requires ADF to exclude it.
+
+</ConnectorNote>
+
+</ConnectorPage>

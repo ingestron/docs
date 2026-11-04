@@ -1,0 +1,39 @@
+---
+title: Files
+description: "Read cloud files with Databricks, or copy private file shares with Azure Data Factory into landing storage, for Databricks tables or to keep as landed files."
+---
+
+<ConnectorPage id="files">
+
+<ConnectorNote at="databricks-reading">
+
+With `schema_hints` on, the contract's column types are passed as schema hints,
+so the table gets the types you reviewed rather than guessed ones. For CSV with
+a header, set `options: { header: true }`.
+
+</ConnectorNote>
+
+<ConnectorNote at="adf-reading">
+
+The connection's `path` is the file share, and each table's `object` is a
+folder under that share. The runtime must be self-hosted.
+
+</ConnectorNote>
+
+<ConnectorNote at="examples">
+
+### Example: a private CSV share [#private-csv-share]
+
+This complete example reads store files from a private share. The connection
+names the share and credentials; the flow selects the folder and CSV reading
+options; the standard supplies the shared schedule.
+
+<Example name="private-files" file="connections/share.yaml" />
+
+<Example name="private-files" file="flows/stores.yaml" />
+
+<Example name="private-files" file="standard.yaml" />
+
+</ConnectorNote>
+
+</ConnectorPage>

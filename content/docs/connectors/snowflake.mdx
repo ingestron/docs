@@ -1,0 +1,22 @@
+---
+title: Snowflake
+description: "Azure Data Factory copies from Snowflake into ADLS Gen2 landing storage, for Databricks tables, Synapse serverless SQL views or DuckDB tables, or to keep as landed files."
+---
+
+<ConnectorPage id="snowflake">
+
+<ConnectorNote at="adf-reading">
+
+The pack generates an Azure Blob staging linked service from `staging_sas`.
+Store the complete staging SAS URI in Key Vault. The runtime and source service
+must be able to use that storage, and the SAS must permit the export and
+cleanup.
+
+Both `source_options.staging_sas` and `source_options.staging_path` are
+required. The first names a Key Vault secret containing the complete staging
+SAS URI. The second names the relative staging folder; it must not be an
+absolute path.
+
+</ConnectorNote>
+
+</ConnectorPage>
