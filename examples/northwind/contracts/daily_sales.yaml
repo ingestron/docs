@@ -1,0 +1,32 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: northwind.daily_sales
+version: 1.0.0
+status: active
+schema:
+  - name: daily_sales
+    logicalType: object
+    description: Revenue and orders per day and country.
+    properties:
+      - name: order_day
+        logicalType: date
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: country
+        logicalType: string
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: internal
+      - name: orders
+        logicalType: integer
+        required: true
+        classification: internal
+      - name: revenue
+        logicalType: number
+        required: true
+        classification: internal
+slaProperties:
+  - { property: freshness, value: 24, unit: h }
