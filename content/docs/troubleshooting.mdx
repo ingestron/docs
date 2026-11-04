@@ -1,11 +1,39 @@
 ---
 title: Troubleshooting
-description: Find a problem by what you see, then its cause and fix, for generated files, definitions, environment variables, the editor and each route.
+description: Find a problem by what you see, then its cause and fix, for the command, generated files, definitions, environment variables, the editor and each route.
 ---
 
 Find the message or behaviour you see. Each entry gives the cause and the fix,
 and a code links to its entry in [Errors](/docs/reference/errors). Messages are
 shown as the command prints them; a name or a path in one is the project's own.
+
+## The command
+
+### `ingestron: command not found` [#ingestron-command-not-found]
+
+**Symptom:** the shell cannot find the command. Bash prints
+`bash: ingestron: command not found`, zsh prints
+`zsh: command not found: ingestron`, and PowerShell says
+`The term 'ingestron' is not recognized`.
+
+**Cause:** Ingestron is not installed globally, or npm's folder for global
+commands is not on your `PATH`.
+
+**Fix:** install it, then open a new terminal and run `ingestron --help`:
+
+```sh
+npm install -g ingestron
+```
+
+If the shell still cannot find it, print the folder npm installs into:
+
+```sh
+npm prefix -g
+```
+
+On macOS and Linux the command is in that folder's `bin` folder; on Windows it
+is in the folder itself. Add that folder to your `PATH`, such as in `~/.zshrc`
+or in Windows' environment variables, then open a new terminal.
 
 ## Generated files
 

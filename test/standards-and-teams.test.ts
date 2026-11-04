@@ -241,9 +241,9 @@ describe("how-to/upgrade", () => {
     const pins = section(page, "## What the standard pins");
     expect(pins).toContain('<Example name="duckdb" file="standard.yaml" />');
     const create = commands(section(read("start/first-project.mdx"), "## 1. Create the project"));
-    const init = create.find((line) => line.startsWith("npx ingestron@1 init "))!;
+    const init = create.find((line) => line.startsWith("ingestron init "))!;
     const parent = mkdtempSync(join(tmpdir(), "docs-upgrade-shop-"));
-    expect(cli(parent, init.split(" ").slice(2)).code).toBe(0);
+    expect(cli(parent, init.split(" ").slice(1)).code).toBe(0);
     const cwd = join(parent, create.find((line) => line.startsWith("cd "))!.slice("cd ".length));
     const standard = join(cwd, "standard.yaml");
     const text = readFileSync(standard, "utf8");
@@ -262,11 +262,11 @@ describe("how-to/upgrade", () => {
     const version = JSON.parse(
       readFileSync(join(process.cwd(), "node_modules/@ingestron/cli/package.json"), "utf8"),
     ).version as string;
-    expect(commands(choose)).toEqual([
-      `npx --yes ingestron@${version} check`,
-      `npm install -g ingestron@${version}`,
-    ]);
-    const templates = /run `(npx --yes ingestron@1 check)`/.exec(choose)![1]!;
-    expect(read("how-to/check-in-ci.mdx")).toContain(`run: ${templates}`);
+    expect(commands(choose)).toEqual([`npm install -g ingestron@${version}`]);
+    const templates = /run `(npm install -g ingestron@1)`/.exec(choose)![1]!;
+    expect(read("how-to/check-in-ci.mdx")).toContain(
+      `run: ${templates}\n      - run: ingestron check`,
+    );
+    expect(read("how-to/check-in-ci.mdx")).toContain(`script: ${templates}\n`);
   });
 });

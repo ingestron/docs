@@ -20,7 +20,7 @@ export function RouteFacts({ id }: { id: string }) {
       <li>
         <strong>Create it:</strong>{" "}
         <code>
-          npx ingestron@1 init {starter ? "shop" : "sales --connector <connector>"} {row.option}
+          ingestron init {starter ? "shop" : "sales --connector <connector>"} {row.option}
         </code>
         {starter ? (
           "."
