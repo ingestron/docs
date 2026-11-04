@@ -109,23 +109,30 @@ describe("platforms/adf", () => {
 });
 
 describe("platforms/adf-pipelines", () => {
-  it("generates the pipeline design the page's standard fragment sets", () => {
-    const [fragment] = fences(read("platforms/adf-pipelines.mdx"), "yaml");
-    const cwd = copy("private-sql-server");
-    merge(join(cwd, "standard.yaml"), fragment!);
+  it("shows the Northwind example's standard, whose pipeline has the design the page describes", () => {
+    const page = read("platforms/adf-pipelines.mdx");
+    expect(page).toContain('<Example name="northwind" file="standard.yaml" pick="ingest" />');
+    expect(fences(page, "yaml"), "no hand-written YAML").toEqual([]);
+    const cwd = copy("northwind");
     const out = join(cwd, "out");
     const applied = cli(cwd, ["apply", "--env", "dev", "--no-diff", "--out", out]);
     expect(applied.code, applied.output).toBe(0);
     const pipeline = JSON.parse(
       readFileSync(join(out, "dev/adf/pipeline", pipelineFile(applied.output)), "utf8"),
     );
-    const text = JSON.stringify(pipeline);
-    expect(text).toContain('"for_each_table"');
-    expect(text).toContain('"copy_table"');
-    expect(text).toContain('"_loaded_at"');
-    const project = parse(readFileSync(join(cwd, "project.yaml"), "utf8")).id;
-    expect(pipeline.properties.folder.name).toBe(`ingestron/${project}`);
-    expect(pipeline.properties.annotations).toContain("finance");
+    const [forEach] = pipeline.properties.activities;
+    expect(forEach.name).toBe("for_each_table");
+    expect(forEach.typeProperties.batchCount).toBe(4);
+    const [copyTable] = forEach.typeProperties.activities;
+    expect(copyTable.name).toBe("copy_table");
+    expect(copyTable.userProperties).toEqual([{ name: "table", value: "@item().table" }]);
+    expect(
+      copyTable.typeProperties.source.additionalColumns.map(
+        (column: { name: string }) => column.name,
+      ),
+    ).toEqual(["_loaded_at", "_run_id", "_source"]);
+    expect(pipeline.properties.folder.name).toBe("ingestron/northwind");
+    expect(pipeline.properties.annotations).toContain("northwind");
   });
 });
 
