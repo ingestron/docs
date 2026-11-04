@@ -8,7 +8,7 @@ import { RelatedSetup } from "../components/reference/related-setup";
 import { RouteComparison } from "../components/reference/route-comparison";
 import { RouteFacts } from "../components/reference/route-facts";
 import { RouteTable } from "../components/reference/route-table";
-import { allRoutes } from "../lib/reference";
+import { allRoutes, packName, routePacks } from "../lib/reference";
 import { routeRows } from "../lib/routes";
 import { redirectFor } from "../worker/redirects.js";
 
@@ -78,12 +78,44 @@ it("opens with one learning path, then sections by the reader's job, with no ind
       `/docs/${first}`,
     );
   }
-  // The look-up sections keep their indexes until they are restructured.
-  for (const section of ["examples", "tools", "reference"]) {
-    expect(root.pages).toContain(section);
-    expect(JSON.parse(read(`${section}/meta.json`)).pages).toContain("index");
-    expect(read(`${section}/index.mdx`)).toContain("<DocLinks");
+  // Look up is the last section: the catalogue, then each reference page, VS Code and troubleshooting.
+  expect(root.pages.slice(8)).toEqual([
+    "---Look up---",
+    "connectors",
+    "...reference",
+    "...tools",
+    "troubleshooting",
+  ]);
+  expect(JSON.parse(read("reference/meta.json")).pages).toEqual([
+    "documents",
+    "packs",
+    "errors",
+    "cli",
+    "templates",
+    "versions",
+  ]);
+  expect(JSON.parse(read("tools/meta.json")).pages).toEqual(["vscode"]);
+  // The reference, tools and examples indexes are gone, and their URLs land on a page.
+  for (const [section, first] of [
+    ["reference", "reference/documents"],
+    ["tools", "tools/vscode"],
+    ["examples", "reference/templates"],
+  ] as const) {
+    expect(existsSync(join(process.cwd(), `content/docs/${section}/index.mdx`)), section).toBe(
+      false,
+    );
+    expect(redirectFor(new URL(`https://docs.ingestron.io/docs/${section}`))).toBe(
+      `/docs/${first}`,
+    );
   }
+  // The packs page is reference, not a list of links, and keeps its index.
+  expect(JSON.parse(read("reference/packs/meta.json")).pages).toEqual([
+    "databricks",
+    "adf",
+    "synapse",
+    "duckdb",
+  ]);
+  expect(existsSync(join(process.cwd(), "content/docs/reference/packs/index.mdx"))).toBe(true);
 });
 
 it("merges the downloaded-example guide and moves the contract guide, keeping their anchors", () => {
@@ -126,7 +158,7 @@ it("merges the worked standard and the naming concept into their guides, keeping
     expect(existsSync(join(process.cwd(), `content/docs/${old}.mdx`)), old).toBe(false);
     expect(redirectFor(new URL(`https://docs.ingestron.io/docs/${old}`))).toBe(target);
   }
-  expect(JSON.parse(read("examples/meta.json")).pages).not.toContain("organisation-standards");
+  expect(existsSync(join(process.cwd(), "content/docs/examples"))).toBe(false);
   // The worked standard: the file explained, generated, and broken on purpose.
   const standard = read("how-to/configure-a-standard.mdx");
   expect(standard).toContain("title: Set your organisation's standard");
@@ -266,9 +298,14 @@ it("separates the core workflow from today's supported platform combinations", (
   expect(html).toContain("ADF ingestion, ending at the landed files");
   expect(html).toContain('href="/docs/platforms/duckdb-in-azure"');
   expect(read("index.mdx")).toContain("<RouteTable />");
+  // The combinations live here, with the packs each route needs; the pack index is reference only.
+  allRoutes().forEach(({ via }, index) =>
+    expect(rows[index + 1], `${via} packs`).toContain(routePacks(via).map(packName).join(" + ")),
+  );
   const packs = read("reference/packs/index.mdx");
-  expect(packs).toContain("ADF landing only");
-  expect(packs).toContain("/docs/platforms/duckdb-in-azure");
+  expect(packs).toContain("(/docs/start/choose-a-route)");
+  expect(packs).not.toContain("Supported combinations");
+  expect(packs).not.toContain("Required packs");
   expect(read("platforms/duckdb-in-azure.mdx")).toContain("ghcr.io/ingestron/duckdb-runner:1");
   expect(read("how-to/plan-and-generate.mdx")).toContain("does not deploy");
 });

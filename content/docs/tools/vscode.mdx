@@ -306,6 +306,33 @@ workspace, it offers to open it or add it to the workspace.
 
 ![New project's first question: From a connection, to choose a source, how it is reached and a supported route, or From a starter, a ready-made project to try, such as DuckDB on a laptop.](/images/vscode/new-project.png)
 
+## Check files with the YAML extension [#check-files-with-the-yaml-extension]
+
+Without the Ingestron extension, the
+[YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml)
+can check each definition file's fields and values against Ingestron's schemas.
+From the project folder, run:
+
+```sh
+ingestron schemas
+```
+
+It writes the schemas to `.ingestron/schemas` and prints the setting to add to
+`.vscode/settings.json`:
+
+```json
+{
+  "yaml.schemas": {
+    ".ingestron/schemas/definitions.json": "**/*.yaml"
+  }
+}
+```
+
+The glob follows `--definitions` when you pass it. A schema checks one file at
+a time: it does not follow the links between files, apply the standard or read
+your environments. The Ingestron extension does, as
+[Problems as you type](#problems-as-you-type) describes.
+
 ## Every command
 
 <ExtensionCommands />

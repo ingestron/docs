@@ -10,6 +10,9 @@ command line.
 
 ## Choose a route
 
+Under each route is the list of packs its standard uses.
+[Platforms, packs and methods](/docs/reference/packs) has each pack's methods.
+
 <RouteTable detail />
 
 Synapse and DuckDB are offered where ADF copies tables, not where it copies
@@ -19,8 +22,7 @@ well as private ones. On the `adf-databricks` route, Databricks reads the
 landed files; it does not open a second connection to the original source.
 
 Selecting another provider name in YAML will not enable a destination no pack
-implements. See the [pack catalogue](/docs/reference/packs) for the current
-boundary.
+implements.
 
 ## Reachability
 

@@ -40,6 +40,12 @@ export function RouteTable({ detail = false }: { detail?: boolean }) {
                 {detail ? row.title : <a href={`/docs/${row.guide}`}>{row.title}</a>}
                 <br />
                 <code>{row.option}</code>
+                {detail && (
+                  <>
+                    <br />
+                    <span className="setting-meta">{row.packs.map(packName).join(" + ")}</span>
+                  </>
+                )}
               </td>
               {detail ? (
                 <>
