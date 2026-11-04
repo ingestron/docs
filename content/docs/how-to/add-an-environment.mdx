@@ -40,12 +40,44 @@ Ingestron. See [Environments and platform](/docs/concepts/environments-and-platf
 ## Check what differs
 
 Before deploying, see what the new environment changes compared with one you
-know, after every value and default is resolved: the platform, the names, and
-each table's methods and settings. Secrets are never shown.
+know:
 
 ```sh
 ingestron compare --env dev --env test
 ```
+
+For the example above, it prints:
+
+```text
+# dev ↔ test: finance
+
+## Platform
+
+- `workspace.root_path`: `/Workspace/Shared/.bundle/finance/dev` → `/Workspace/Shared/.bundle/finance/test`
+- `tags.environment`: `dev` → `test`
+
+## Table journals
+
+- `full name`: `finance_dev.bronze.journals` → `finance_test.bronze.journals`
+- `ingest.connection.settings.path`: `/Volumes/dev_landing/finance/files/ledger` → `/Volumes/test_landing/finance/files/ledger`
+```
+
+`compare` resolves both environments first, with every value and default in
+place, and lists only what differs:
+
+- **Platform:** the platform document's values, and the defaults that follow
+  from the environment. Compared with `prod`, it also shows `mode` and
+  `schedule.paused`, which production changes.
+- **Names:** the pipeline and job names, which are not per table.
+- **Table:** one section for each table that differs: its full name, each
+  step's method and settings, the connection's settings and the table's
+  checks.
+
+A value one environment has and the other lacks shows as `not set`. A
+`${secret:…}` reference shows as `a secret`, never its value. Without `--env`,
+`compare` takes the first two environments in `project.yaml`. The output is
+Markdown, so you can paste it into a pull request. When either environment has
+problems, it lists them instead and exits with `1`.
 
 In VS Code, run **Ingestron: Compare environments**. With more than two
 environments it asks which two.

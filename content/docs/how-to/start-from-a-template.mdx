@@ -1,13 +1,19 @@
 ---
-title: Create a project from a connection
-description: Choose a source, a supported ingestion route and your organisation's standard.
+title: Create a project
+description: Start from a connection and a supported route, or from a starter or a downloaded example, then make the definitions yours.
 ---
 
-Create a project by choosing the connection first. Ingestron offers the
-routes supported for that source and how it can be reached. The selected
-route determines which capabilities the project needs; the output is ordinary
-YAML definitions you can edit. Check [current platform combinations](/docs/reference/packs)
-before choosing your destination.
+A project is a folder of YAML definitions with a `project.yaml` at its root.
+Create one in either of two ways:
+
+- **From a connection:** choose the source, how it can be reached, and the
+  route its data takes. The project holds only that connection, its example
+  flows and contracts, and any transforms they need.
+- **From a starter:** copy a complete project for a common situation, such as
+  [the DuckDB starter](/docs/start/first-project), or one your organisation
+  shares as a template.
+
+Either way, the result is ordinary definitions you edit, then plan and apply.
 
 <FlowDiagram
   title="Create and check a project"
@@ -19,7 +25,11 @@ before choosing your destination.
   ]}
 />
 
-For a route comparison, start with [Choose where your data goes](/docs/start/choose-a-route).
+To compare the routes first, see [Choose where your data goes](/docs/start/choose-a-route).
+If you have neither the command nor the extension yet, see
+[Install a tool](/docs/start/install).
+
+## Start from a connection
 
 <ToolSteps>
 <Tool name="CLI">
@@ -45,10 +55,8 @@ ingestron init sales --connector postgresql --connectivity private --via adf-dat
 ```
 
 This creates a project using example settings and shows its generation
-plan. Open the YAML files and replace the example host, objects and platform
-paths with yours before deployment. `--yes` accepts defaults for unanswered
-questions. Without a terminal or `--yes`, a missing answer produces an error
-naming the flag to pass.
+plan. `--yes` accepts defaults for unanswered questions. Without a terminal
+or `--yes`, a missing answer produces an error naming the flag to pass.
 
 Use `--standard ../platform/standard.yaml` to choose your organisation's
 standard. Use `--set source_server=postgres.example.invalid` to answer a
@@ -64,8 +72,7 @@ connection**. Choose a category,
 or **All sources**, then type to search connectors. Choose source
 reachability and a supported ingestion route, then answer the project,
 standard and configuration questions. The destination folder comes last.
-Cancelling a question creates no files. To try a ready-made project instead,
-choose **From a starter** first.
+Cancelling a question creates no files.
 
 The new `project.yaml` opens when creation succeeds. The generation plan
 appears in the Ingestron output panel.
@@ -73,55 +80,20 @@ appears in the Ingestron output panel.
 </Tool>
 </ToolSteps>
 
-## Use your standard
-
-A project has one standard, including when it uses several packs.
-Creation validates every environment before writing files. See
-[Configure the project standard](/docs/how-to/configure-a-standard) for
-allowed methods, settings ownership and fixed policies.
-
-## Configure the definitions
-
-The project contains only the selected connection and its example flows,
-contracts and any required transforms. Answers become `values` in
-`project.yaml`, referenced from the definition files. Secret questions take
-`${secret:name}` references rather than credentials. For current ADF
-connections, these name Key Vault secrets; follow the selected connector's
-requirements for its secret mechanism. See [YAML references and placeholders](/docs/concepts/yaml-references)
-for values, files and secret syntax.
-
 The questions cover the recipe's string connection, object and infrastructure
 values. Nested settings, alternative authentication modes, schedules and
-resource names remain editable in YAML. Use the connector reference and
-[Azure Data Factory](/docs/platforms/adf) to configure them.
-See [Name resources](/docs/platforms/adf-pipelines#name-resources) for name
-defaults and overrides.
+resource names stay editable in YAML; see [Make it yours](#make-it-yours).
 
-`init` never replaces an existing file. If any target file already exists,
-it lists the clashes and writes nothing. The one exception is `.gitignore`:
-`init` adds the lines that keep `.env` files out of Git, where they are missing,
-and says so. See [Environment files](/docs/concepts/yaml-references#use-environment-files)
-for what those files are for. After editing the definitions,
-run `ingestron plan` from the project folder to review the generated files.
+## Start from a starter [#start-from-a-starter]
 
-## Review and generate
+A starter is a complete project, often with several tables and a transform.
+[Templates](/docs/reference/templates#built-in-templates) lists the starters
+and what each one asks.
 
-From the new project folder, run `ingestron plan --no-diff`, or use
-**Ingestron: Plan** in VS Code. After reviewing the plan, run Apply to write
-the native assets. Neither creation nor Apply deploys them to a cloud platform.
+<ToolSteps>
+<Tool name="CLI">
 
-Continue with the task you need:
-
-- [Choose where your data goes](/docs/start/choose-a-route): compare every route.
-- [Azure Data Factory](/docs/platforms/adf): source, runtime, schedules and publishing.
-- [Databricks](/docs/platforms/databricks): schemas, the refresh job and deploying the bundle.
-- [Shape ADF pipelines and names](/docs/platforms/adf-pipelines): pipeline design, defaults and name overrides.
-- [Browse connectors](/docs/connectors): fields and supported routes by category.
-
-## Use a prepared project instead
-
-For a project with several connections or an organisation-specific layout,
-choose a named preset, folder or Git template explicitly:
+Name a starter, a folder or a Git URL with `--template`:
 
 ```sh
 ingestron init sales --template retail
@@ -131,5 +103,89 @@ ingestron init sales --template https://github.com/acme/data-templates.git#lakeh
 
 `--template` cannot be combined with `--connector`, `--connectivity` or
 `--via`. After `#` comes the folder inside the repository. Git uses your
-own credentials. See [Templates](/docs/reference/templates) for presets
-and [Share a template](/docs/how-to/share-a-template) to create one.
+own credentials. `--standard` and `--set` work as they do from a connection.
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: New project** and choose **From a starter**, then the
+starter. Enter the project name and environments, then a path or Git URL for
+your organisation's standard, or leave it empty to keep the starter's own.
+The destination folder comes last.
+
+</Tool>
+</ToolSteps>
+
+To make a template of your own, see [Share a template](/docs/how-to/share-a-template).
+
+### From a downloaded example
+
+A connector's **Examples** page offers project ZIPs. Extract one into an empty
+folder, and open the folder that holds `project.yaml`. The archive contains
+the synthetic definitions and contracts, without generated files. Code blocks
+on that page name the project and the relative path of each file shown.
+
+A multi-connector project demonstrates several sources together. To start
+with only one connection, [start from a connection](#start-from-a-connection)
+instead.
+
+You can generate an unchanged example locally without access to the source.
+
+## Use your standard
+
+A project has one standard, including when it uses several packs.
+Creation validates every environment before writing files. See
+[Configure the project standard](/docs/how-to/configure-a-standard) for
+allowed methods, settings ownership and fixed policies.
+
+## Make it yours
+
+A new project, or an example you downloaded, holds synthetic values. Before
+you deploy:
+
+1. Replace the example hosts, accounts, objects and platform paths with yours.
+   Answers to the creation questions are `values` in `project.yaml`, which the
+   definition files read with `${values.…}`.
+2. Keep secrets out of the YAML. Secret questions take `${secret:name}`
+   references, not credentials. For ADF connections these name Key Vault
+   secrets; follow the selected connector's requirements for its secret
+   mechanism. See [YAML references and placeholders](/docs/concepts/yaml-references)
+   for values, files and secrets.
+3. Set the source objects in the flows, and adapt each contract to the columns
+   and keys of its object. See [Describe a table with a contract](/docs/how-to/write-a-contract).
+4. Check the environments, platform and standard. Use the connector reference
+   and [Azure Data Factory](/docs/platforms/adf) for ADF infrastructure, and
+   [Name resources](/docs/platforms/adf-pipelines#name-resources) for name
+   defaults and overrides.
+5. Arrange the source credentials and platform permissions the route needs.
+   Local generation does not need them.
+
+`init` never replaces an existing file. If any target file already exists,
+it lists the clashes and writes nothing. The one exception is `.gitignore`:
+`init` adds the lines that keep `.env` files out of Git, where they are missing,
+and says so. See [Environment files](/docs/concepts/yaml-references#use-environment-files)
+for what those files are for.
+
+To grow the project later, see [Add a source and its tables](/docs/how-to/add-a-source).
+
+## Review and generate
+
+From the project folder, run `ingestron plan --no-diff`, or use
+**Ingestron: Plan** in VS Code, and select `dev`. A new project or an unchanged
+download has no generated files yet, so the plan lists every file as one to
+create. After reviewing the plan, run Apply to write the files; see
+[Plan, apply and review](/docs/how-to/plan-and-generate).
+
+Inspect the source objects, credential references, landing paths and
+destination names in the generated files. Generation validates the
+definitions; neither creation nor Apply connects to the source or deploys
+anything.
+
+Continue with your route:
+
+- [DuckDB](/docs/platforms/duckdb): build the tables on one machine.
+- [Databricks](/docs/platforms/databricks): schemas, the refresh job and deploying the bundle.
+- [Azure Data Factory](/docs/platforms/adf): source, runtime, schedules and
+  [the generated factory](/docs/platforms/adf#generate-and-inspect).
+- [Shape ADF pipelines and names](/docs/platforms/adf-pipelines): pipeline design, defaults and name overrides.
+- [Browse connectors](/docs/connectors): fields and supported routes by category.

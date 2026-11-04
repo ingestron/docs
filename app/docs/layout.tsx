@@ -16,7 +16,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             aria-label="Documentation shortcuts"
           >
             <a href="/docs/start/first-project">Start here</a>
-            <a href="/docs/how-to">Guides</a>
+            <a href="/docs/how-to/start-from-a-template">Guides</a>
             <a href="/docs/concepts/yaml-references">YAML syntax</a>
           </nav>
         ),

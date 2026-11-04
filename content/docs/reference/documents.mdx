@@ -49,25 +49,8 @@ See [Connectors](/docs/connectors) and [Reachability](/docs/start/choose-a-route
 
 Contracts use the
 [Open Data Contract Standard](https://bitol-io.github.io/open-data-contract-standard/)
-v3.1.0 unchanged. Ingestron reads, for each property: `name`,
-`logicalType`, `physicalType`, `physicalName`, `required`, `primaryKey`,
-`primaryKeyPosition` and `description`, and the schema entry's
-`description` for the table's comment. `physicalName` is the column's name
-at the source when it differs: the table keeps `name`, and the column is
-read under it.
-
-A column's `quality` rules that allow no failing row become checks on each
-row, with the standard's `quality.default` action: `nullValues`,
-`missingValues` and `invalidValues` (with `validValues` or `pattern`) when
-they must be 0. Other rules compare a count over all rows, such as a row
-count or a share of nulls, which a check of one row cannot; each is a
-[warning](/docs/reference/errors#QUALITY_RULE_NOT_CHECKED) and stays as
-documentation.
-
-What each pack does with every contract field, or why it does not yet, is
-on its page: [Databricks](/docs/reference/packs/databricks#contract-fields)
-and [Azure Data Factory](/docs/reference/packs/adf#contract-fields). A
-contract field that no pack of your standard uses yet is a
-[warning](/docs/reference/errors#CONTRACT_FIELD_UNUSED) at that field.
+v3.1.0 unchanged. The fields Ingestron reads come first. To write one, with
+its types, keys and rules, see
+[Describe a table with a contract](/docs/how-to/write-a-contract).
 
 <ContractFields />

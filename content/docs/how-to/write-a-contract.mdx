@@ -1,0 +1,114 @@
+---
+title: Describe a table with a contract
+description: Write a table's columns, types, keys and rules in a data contract, or draft one from a sample file.
+---
+
+A contract says what a table holds: its columns, their types, which columns
+make the key and which must always have a value. Ingestron reads it to type
+the table's columns, to keep rows by their key and to check them. Contracts
+use the [Open Data Contract Standard](https://bitol-io.github.io/open-data-contract-standard/)
+(ODCS) v3.1.0 unchanged, so other tools can read them too.
+
+Each contract is a file in `contracts/`. This one, from the
+[DuckDB starter](/docs/start/first-project), describes the orders table:
+
+<Example name="duckdb" file="contracts/orders.yaml" />
+
+A flow's table names its contract by `id`, and so does a transform:
+
+<Example name="duckdb" file="flows/orders.yaml" />
+
+The contract's `schema` entry whose `name` is the table's name is used, or the
+only entry when there is one. A contract with several entries and none named
+like the table is an error
+([`CONTRACT_TABLE`](/docs/reference/errors#CONTRACT_TABLE)).
+
+## What Ingestron reads
+
+For each property, Ingestron reads `name`, `logicalType`, `physicalType`,
+`physicalName`, `required`, `primaryKey`, `primaryKeyPosition` and
+`description`, and the schema entry's `description` for the table's comment.
+Every other ODCS field is listed under
+[Data contract](/docs/reference/documents#data-contract).
+
+What each pack does with a field, or why it does not yet, is on its page:
+[Databricks](/docs/reference/packs/databricks#contract-fields),
+[Azure Data Factory](/docs/reference/packs/adf#contract-fields),
+[Synapse](/docs/reference/packs/synapse#contract-fields) and
+[DuckDB](/docs/reference/packs/duckdb#contract-fields). A contract field that
+no pack of your standard uses yet is a
+[warning](/docs/reference/errors#CONTRACT_FIELD_UNUSED) at that field.
+
+## Give each column a type
+
+Write the `logicalType`, and the first pack in the standard's `packs` gives the
+column its platform type:
+
+<ContractTypes />
+
+ADF has no column here: its copy keeps the source's types, and the pack that
+stores the table applies the contract's.
+
+To change a type for every contract in a project, set it under `types` in the
+standard, such as `types: { number: DECIMAL(38,6) }`; see
+[Which setting wins](/docs/concepts/settings). To give one column a type of its
+own, write its `physicalType`:
+
+<Example name="environments" file="contracts/journals.yaml" />
+
+## Read a column under another name
+
+When a column has a different name at the source, write that name as its
+`physicalName`. The table keeps `name`, and the column is read under
+`physicalName`:
+
+<Example name="duckdb-local" file="contracts/invoices.yaml" />
+
+## Keys and required columns
+
+- `primaryKey: true` marks the table's key. With several key columns,
+  `primaryKeyPosition` orders them. The key is what `upsert` and `history`
+  keep the current row by; see [Keep a table current](/docs/how-to/keep-a-table-current).
+- `required: true` says the column always has a value. Where the pack checks
+  rows, a required column gets a check that it is not null, with the
+  standard's `quality.required` action; see
+  [Add quality checks](/docs/how-to/add-quality-checks).
+
+## Rules about the data
+
+A column's `quality` rules that allow no failing row become checks on each
+row, with the standard's `quality.default` action: `nullValues`,
+`missingValues` and `invalidValues` (with `validValues` or `pattern`) when
+they must be 0. Other rules compare a count over all rows, such as a row
+count or a share of nulls, which a check of one row cannot; where the
+platform does not check those, each is a
+[warning](/docs/reference/errors#QUALITY_RULE_NOT_CHECKED) and stays as
+documentation.
+
+## Draft from a sample [#draft-from-a-sample]
+
+When a source sends files, start its contract from a sample instead of typing
+every column:
+
+```sh
+ingestron contract exports/orders.csv --name shop.orders
+```
+
+In VS Code, right-click the file in the Explorer and choose
+**Ingestron: Draft contract from sample**, or run it from the Command Palette
+with the file open.
+
+Ingestron reads the header and up to 1,000 rows of a CSV file (comma,
+semicolon or tab separated) or a JSON file (an array of objects, or one
+object per line), and writes `contracts/<name>.yaml` with each column's name
+and the narrowest logical type every value fits: `integer`, `number`,
+`boolean`, `date`, `timestamp`, `array`, `object`, else `string`. A value
+with a leading zero, such as the code `00123`, stays a `string`, because as a
+number it would lose its zeros. It never overwrites a contract, and the draft
+holds no values from the sample.
+
+A sample cannot prove which columns are keys or always present, so the draft
+is `status: draft` with neither. Review the types, then add `primaryKey`,
+`required` and descriptions, and link it from a table with `contract`.
+[Add a source and its tables](/docs/how-to/add-a-source#add-a-table-from-a-source-you-already-read)
+drafts one and links it.
