@@ -3,7 +3,8 @@
 ADF copies four tables from Northwind, Microsoft's sample database, into
 landing storage, and Databricks reads the landed files into tables: `packs:
 [databricks@1, adf@1]` in `standard.yaml`. The platform pages' screenshots
-show this project, deployed.
+of Azure Data Factory, and of Databricks on the ADF route, show this project,
+deployed.
 
 The standard sets how the team builds its ADF pipelines, under
 `ingest.settings.adf-copy`:
@@ -24,5 +25,6 @@ The standard sets how the team builds its ADF pipelines, under
   `transforms/daily_sales.yaml`;
 - `products/`: a passport for each data product in `products/`.
 
-The server, storage, Key Vault, runtime and workspace in `project.yaml` are
-synthetic: replace them with your own before you deploy.
+The server in `connections/northwind.yaml`, and the storage, Key Vault,
+runtime and workspace in `project.yaml`, are synthetic: replace them with your
+own before you deploy.
