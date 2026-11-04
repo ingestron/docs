@@ -27,6 +27,7 @@ import { ErrorCodes, LoadingCodes } from "@/components/reference/error-codes";
 import { ExtensionCommands } from "@/components/reference/extension-commands";
 import { ExamplesList } from "@/components/reference/examples-list";
 import { PackMethods } from "@/components/reference/pack-methods";
+import { PlatformDefaults } from "@/components/reference/platform-defaults";
 import { SettingsSections } from "@/components/reference/settings-sections";
 import { SettingsTable } from "@/components/reference/settings-table";
 import {
@@ -69,6 +70,7 @@ export function getMDXComponents(components?: MDXComponents) {
     ContractTypes,
     ContractUseTable,
     PackCapabilities,
+    PlatformDefaults,
     PackNaming,
     DefaultLayers,
     SamplesCatalogue,

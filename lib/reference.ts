@@ -130,3 +130,39 @@ export function shown(value: unknown): string {
   }
   return String(value);
 }
+
+/**
+ * The Platform fields each pack reads, in the order the reference lists
+ * them: the Databricks pack builds its bundle from all of them; the ADF pack
+ * reads only whether its triggers start (`schedule.paused`, else `mode`).
+ */
+const platformFieldsRead: Record<string, string[]> = {
+  databricks: [
+    "mode",
+    "compute.serverless",
+    "schedule.timezone",
+    "schedule.paused",
+    "manage.schemas",
+    "manage.tags",
+    "manage.comments",
+    "manage.checks",
+  ],
+  adf: ["mode", "schedule.paused"],
+};
+
+/**
+ * A pack's platform defaults: each Platform field it reads, with the default
+ * the field's description gives, as the editor shows it. Throws for a pack
+ * that reads none, or a field whose description states no default.
+ */
+export function platformDefaults(pack: string): { field: FieldInfo; default: string }[] {
+  const read = platformFieldsRead[pack];
+  if (!read) throw new Error(`The ${pack} pack reads no platform defaults.`);
+  const fields = documentReference("Platform");
+  return read.map((path) => {
+    const field = fields.find((candidate) => fieldPath(candidate) === path);
+    const stated = /Default: (.+?)\.?$/.exec(field?.description ?? "")?.[1];
+    if (!field || !stated) throw new Error(`The Platform field "${path}" states no default.`);
+    return { field, default: stated };
+  });
+}
