@@ -131,42 +131,9 @@ A Snowflake staging name does not create staging for another source. Unknown
 roles, invalid names, conflicting shared names and case-insensitive collisions
 stop generation. The reference lists the accepted characters and length limit.
 
-### Review a rename before applying
-
-<ToolSteps>
-<Tool name="CLI">
-
-```sh
-ingestron plan --env dev --no-diff
-ingestron apply --env dev --no-diff
-ingestron check --env dev
-```
-
-</Tool>
-<Tool name="VS Code">
-
-Select **dev** with **Ingestron: Select environment**, then run
-**Ingestron: Plan**. Review the changes before **Ingestron: Apply** and
-**Ingestron: Check**.
-
-</Tool>
-</ToolSteps>
-
-Open `build/dev/adf/pipeline/pl_sales_orders_dev.json`. The matching trigger
-is `build/dev/adf/trigger/tr_sales_orders_dev.json`; its pipeline reference
-uses the chosen name. Linked services and datasets follow their chosen names
-in the same way.
-
-For a safe rename exercise, change `values.resource_prefix` in `project.yaml`
-from `sales` to `sales_v2` and run Plan. Expect new pipeline and trigger files
-and removal of the previously generated ones. Apply uses the existing
-ownership manifest and refuses to overwrite hand edits.
-
-Removing an owned local file does not delete a resource already published to
-the factory: review that change when you [publish](/docs/platforms/adf#publish),
-and choose the destination factory then. The integration runtime and
-credential references come from the method and connection settings;
-`resource_names` names only the resources this pack generates.
+The integration runtime and credential references come from the method and
+connection settings; `resource_names` names only the resources the ADF pack
+generates.
 
 ## Check a change of names
 
@@ -207,6 +174,17 @@ create    src/marketing_prod_ingest/raw/visits.sql
 7 files: 3 create, 3 delete, 1 unchanged. Ready to apply.
 ```
 
+<OldAnchor id="review-a-rename-before-applying" />
+
+An ADF name changes the same way. In the finished PostgreSQL project, change
+`values.resource_prefix` in `project.yaml` from `sales` to `sales_v2` and plan
+`dev`: Plan deletes `pipeline/pl_sales_orders_dev.json` and
+`trigger/tr_sales_orders_dev.json` and creates `pl_sales_v2_orders_dev.json`
+and `tr_sales_v2_orders_dev.json` in their place, and the new trigger runs the
+new pipeline.
+
 Ingestron renames files, not data. When a table's or pipeline's name changes,
 what happens to the old one on the platform depends on how you deploy, so
-review the deletes before you apply.
+review the deletes before you apply. A deleted ADF file does not delete the
+resource already in the factory: review that when you
+[publish](/docs/platforms/adf#publish).
