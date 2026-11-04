@@ -39,15 +39,17 @@ settings and defaults are in [Reference: packs and methods](/docs/reference/pack
 
 ## Names, layers, types and quality
 
-These are not method settings, and `fixed` does not apply to them. Each is
-set by the last place in this order that sets it:
+These are not method settings, and `fixed` does not apply to them. For each,
+a later place wins:
 
-| Value   | Pack                           | Standard        | Platform | Definitions                     |
-| ------- | ------------------------------ | --------------- | -------- | ------------------------------- |
-| Names   | its default patterns           | `naming`        | `naming` |                                 |
-| Layers  | its default list               | `layers`        |          | a flow's or transform's `layer` |
-| Types   | its type for each logical type | `types`, merged |          | a column's `physicalType`       |
-| Quality | its default actions            | `quality`       |          | an expectation's `action`       |
+- **Names:** the pack's default patterns, the standard's `naming`, then the
+  platform's `naming`.
+- **Layers:** the pack's default list, then the standard's `layers`. A flow or
+  transform picks one of them with `layer`.
+- **Types:** the pack's type for each logical type, the standard's `types`,
+  then a column's `physicalType`.
+- **Quality:** the pack's default actions, the standard's `quality`, then an
+  expectation's `action`.
 
 The pack is the standard's first pack. A name pattern in the platform
 document replaces the standard's pattern for that name, and the standard's
