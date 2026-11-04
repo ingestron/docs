@@ -26,6 +26,16 @@ here:
 - [Land files only](/docs/platforms/landing-only) (`adf-landing`): the landed
   files are the result.
 
+## What it looks like in Azure Data Factory [#on-the-platform]
+
+<Screenshot
+  src="/images/platforms/adf/adf-02-pipeline-foreach.png"
+  label="Azure Data Factory"
+  checked="2026-11-02"
+  alt="The pipeline canvas in ADF Studio: the ForEach for_each_table holds one Copy activity, copy_table; below it, the pipeline's parameters windowStart, windowEnd and tables."
+  caption="The demo's Northwind pipeline in ADF Studio: one ForEach copies every table in its tables parameter, and the trigger fills windowStart and windowEnd."
+/>
+
 ## Create the project
 
 [Install the command and the extension](/docs/start/install) first. Then, from a parent folder:
@@ -334,6 +344,44 @@ When the standard lists another pack, its files are a separate folder beside
   [Synapse serverless views](/docs/platforms/synapse).
 - `build/<environment>/duckdb/`: follow
   [Run DuckDB in Azure](/docs/platforms/duckdb-in-azure).
+
+## Run and operate [#operate]
+
+Once published, each trigger runs its pipeline every window; outside
+production it is stopped until you start it. Each run shows in ADF's
+monitoring view:
+
+<Screenshot
+  src="/images/platforms/adf/adf-09-pipeline-runs.png"
+  label="Azure Data Factory"
+  checked="2026-11-02"
+  alt="Four pipeline runs, each started by a manual trigger, taking 32 to 46 seconds, each Succeeded."
+  caption="Four runs of the demo's pl_northwind_northwind, each started by hand and succeeded in under a minute."
+/>
+
+A copy's details say what it wrote:
+
+<Screenshot
+  src="/images/platforms/adf/adf-11-copy-details.png"
+  label="Azure Data Factory"
+  checked="2026-11-02"
+  alt="One copy's sink: Azure Data Lake Storage Gen2, 32.778 KB in 1 file, 2,155 rows written."
+  caption="One of the demo's copies, which succeeded: 2,155 rows written to one file in the landing storage."
+/>
+
+In a development factory the trigger stays stopped:
+
+<Screenshot
+  src="/images/platforms/adf/adf-12-trigger-stopped.png"
+  label="Azure Data Factory"
+  checked="2026-11-02"
+  alt="The trigger's row in ADF Studio: type Tumbling window, status Stopped."
+  caption="The demo's tr_northwind_northwind in dev: a tumbling window trigger, stopped."
+/>
+
+When a pipeline fails or a trigger does not run, see
+[Azure Data Factory](/docs/troubleshooting#azure-data-factory) in
+Troubleshooting.
 
 ## Next
 
