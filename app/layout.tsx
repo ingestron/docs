@@ -35,7 +35,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   // The text font, fetched with the page rather than once the stylesheet asks.
   preload("/fonts/manrope-variable.woff2", { as: "font", type: "font/woff2", crossOrigin: "" });
   return (
-    <html lang="en-NZ" suppressHydrationWarning>
+    <html lang="en-GB" suppressHydrationWarning>
       <body>
         <RootProvider theme={{ enabled: true }} search={{ options: { type: "static" } }}>
           <SearchFocusReturn />

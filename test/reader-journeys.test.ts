@@ -16,7 +16,8 @@ import { RouteList } from "../components/reference/route-list";
 import { RouteTable } from "../components/reference/route-table";
 import { exampleFolder, listExamples } from "../lib/examples";
 import { routeRows } from "../lib/routes";
-import { cli, copy, merge, read, section } from "./pages.js";
+import { parse } from "yaml";
+import { cli, copy, fences, merge, read, section } from "./pages.js";
 
 // Starters and connections are created and planned; resolving them takes seconds.
 vi.setConfig({ testTimeout: 60_000 });
@@ -260,5 +261,38 @@ describe("small promises", () => {
     expect(left(read("how-to/share-a-template.mdx"))).toEqual(
       left(read("reference/templates.mdx")),
     );
+  });
+});
+
+describe("platforms/databricks", () => {
+  const page = read("platforms/databricks.mdx");
+
+  it("deploys each environment's bundle by its own target, from its own folder", () => {
+    const cwd = copy("retail");
+    expect(cli(cwd, ["apply", "--no-diff"]).code).toBe(0);
+    const environments = Object.keys(
+      parse(readFileSync(join(cwd, "project.yaml"), "utf8")).environments,
+    );
+    expect(environments).toEqual(["dev", "prod"]);
+    for (const environment of environments) {
+      const bundle = parse(readFileSync(join(cwd, "build", environment, "databricks.yml"), "utf8"));
+      expect(Object.keys(bundle.targets), environment).toEqual([environment]);
+      expect(bundle.targets[environment].default, environment).toBe(true);
+      expect(bundle.targets[environment].mode, environment).toBe(
+        environment === "prod" ? "production" : "development",
+      );
+    }
+    const ci = section(page, "### Deploy from a CI/CD pipeline");
+    expect(fences(ci, "sh")).toEqual(["databricks bundle deploy -t prod\n"]);
+    expect(ci).toContain("`build/prod/databricks.yml` holds the target `prod`");
+    expect(ci).toContain("(/docs/how-to/check-in-ci)");
+  });
+
+  it("gives the refresh time the retail platform schedules, without naming a zone", () => {
+    const platform = parse(readFileSync(join(exampleFolder("retail"), "platform.yaml"), "utf8"));
+    const [, minute, hour] = String(platform.schedule.cron).split(" ");
+    expect([hour, minute]).toEqual(["5", "0"]);
+    const where = section(page, "### 3. Where things go").replace(/\s+/g, " ");
+    expect(where).toContain("runs daily at 5 am in the time zone `schedule` names");
   });
 });
