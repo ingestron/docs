@@ -231,6 +231,6 @@ describe("scrolling frames", () => {
     expect(config).toContain("addLanguageClass: true");
     expect(config).toContain("rehypeFrameNames]");
     expect(file("components/mdx.tsx")).toContain('viewportProps={{ "aria-label": label }}');
-    expect(file("components/example.tsx")).toContain('viewportProps: { "aria-label":');
+    expect(file("components/example.tsx")).toContain('viewportProps={{ "aria-label":');
   });
 });

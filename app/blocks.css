@@ -1,0 +1,207 @@
+/* Four kinds of code block (components/code-block.tsx; lib/block-kind.ts
+   decides the kind): a command you run on ink, a file you write on paper, what
+   Ingestron prints on sand, and a file Ingestron writes inside a dashed edge.
+   Each kind has a light and a dark version. Signal orange is used twice: the
+   `$` of a command and the tile of a generated file. Fumadocs' utilities are in
+   CSS layers, so these unlayered rules win over them. */
+
+figure[data-kind] {
+  --block-bg: #ffffff;
+  --block-edge: var(--brand-line);
+  --block-head-bg: var(--brand-sand);
+  --block-head-edge: var(--brand-line);
+  --block-label: var(--brand-aubergine);
+  --block-text: var(--brand-ink);
+  --block-chip-bg: #ffffff;
+  --block-chip-fg: var(--brand-ink);
+  --block-chip-edge: var(--brand-line);
+  --block-note: var(--brand-muted);
+  background: var(--block-bg);
+  border: 1px solid var(--block-edge);
+  border-radius: 10px;
+  color: var(--block-text);
+}
+
+/* You run: an ink terminal in both themes. */
+figure[data-kind="run"] {
+  --block-bg: var(--brand-ink);
+  --block-edge: var(--brand-aubergine);
+  --block-head-bg: var(--brand-ink);
+  --block-head-edge: var(--brand-aubergine);
+  --block-label: var(--brand-signal-on-dark);
+  --block-text: var(--brand-on-dark);
+  --block-chip-bg: transparent;
+  --block-chip-fg: var(--brand-on-dark-muted);
+  --block-chip-edge: transparent;
+  /* The scroll frame's focus ring must show on ink in the light theme too. */
+  --color-fd-ring: var(--brand-lavender);
+}
+.dark figure[data-kind="run"] {
+  --block-edge: var(--color-fd-border);
+  --block-head-bg: color-mix(in srgb, var(--brand-ink) 70%, var(--brand-aubergine));
+  --block-head-edge: var(--color-fd-border);
+}
+
+/* You write: a file on paper, with a tab for its name. */
+.dark figure[data-kind="write"] {
+  --block-bg: var(--color-fd-card);
+  --block-edge: var(--color-fd-border);
+  --block-head-bg: var(--color-fd-muted);
+  --block-head-edge: var(--color-fd-border);
+  --block-label: var(--brand-on-dark);
+  --block-chip-bg: var(--brand-ink);
+  --block-chip-fg: var(--brand-on-dark);
+  --block-chip-edge: var(--color-fd-border);
+}
+
+/* Ingestron prints: sand, quiet, with a rule at its left and no copy button. */
+figure[data-kind="prints"] {
+  --block-bg: var(--brand-sand);
+  --block-head-bg: transparent;
+  --block-head-edge: transparent;
+  --block-label: var(--brand-muted);
+  --block-text: var(--brand-aubergine);
+  border-width: 0 0 0 3px;
+  border-color: var(--brand-on-dark-muted);
+  border-radius: 0 10px 10px 0;
+}
+.dark figure[data-kind="prints"] {
+  --block-bg: var(--color-fd-muted);
+  --block-label: var(--brand-on-dark-muted);
+  --block-text: var(--brand-on-dark);
+  border-color: color-mix(in srgb, var(--brand-plum) 70%, var(--brand-on-dark-muted));
+}
+figure[data-kind="prints"] > div:has(> figcaption) {
+  padding-bottom: 0;
+}
+figure[data-kind="prints"] .fd-scroll-container {
+  padding-top: 0.35rem;
+}
+
+/* Ingestron writes: a dashed edge, the signal tile, the path, and a note not to edit. */
+figure[data-kind="writes"] {
+  --block-edge: var(--brand-plum);
+  --block-head-bg: var(--brand-lavender);
+  border-style: dashed;
+}
+.dark figure[data-kind="writes"] {
+  --block-bg: var(--color-fd-card);
+  --block-edge: color-mix(in srgb, var(--brand-plum) 60%, var(--brand-on-dark-muted));
+  --block-head-bg: color-mix(in srgb, var(--brand-ink) 65%, var(--brand-plum));
+  --block-head-edge: color-mix(in srgb, var(--brand-plum) 60%, var(--brand-on-dark-muted));
+  --block-label: var(--brand-on-dark);
+  --block-chip-bg: var(--brand-ink);
+  --block-chip-fg: var(--brand-on-dark);
+  --block-chip-edge: var(--color-fd-border);
+  --block-note: var(--brand-on-dark-muted);
+}
+figure[data-kind="writes"] > div:has(> figcaption) {
+  border-bottom-style: dashed;
+}
+.block-tile {
+  flex: none;
+  fill: var(--brand-signal);
+}
+.block-note {
+  font-size: 0.8rem;
+  color: var(--block-note);
+}
+
+/* The header: the label, then the file's name in a tab, then the copy button or note. */
+figure[data-kind] > div:has(> figcaption) {
+  gap: 0.6rem;
+  padding-inline: 0.9rem;
+  background: var(--block-head-bg);
+  border-bottom-color: var(--block-head-edge);
+}
+figure[data-kind] figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.6rem;
+  min-width: 0;
+}
+.block-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--block-label);
+}
+.block-file {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--block-chip-fg);
+  background: var(--block-chip-bg);
+  border: 1px solid var(--block-chip-edge);
+  border-radius: 6px;
+  padding: 0.1rem 0.5rem;
+}
+/* The label's tile sits before it, in the same row. */
+figure[data-kind="writes"] .block-tile {
+  margin-right: -0.2rem;
+}
+
+/* A visible Copy button, a real button with its own name and focus ring. */
+.block-copy {
+  flex: none;
+  min-height: 1.7rem;
+  padding: 0.2rem 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--block-copy-fg, var(--brand-aubergine));
+  background: var(--block-copy-bg, #ffffff);
+  border: 1px solid var(--block-copy-edge, var(--brand-line));
+  border-radius: 6px;
+  cursor: pointer;
+}
+figure[data-kind="run"] .block-copy {
+  --block-copy-fg: var(--brand-on-dark);
+  --block-copy-bg: var(--brand-aubergine);
+  --block-copy-edge: transparent;
+}
+.dark figure[data-kind="write"] .block-copy {
+  --block-copy-fg: var(--brand-on-dark);
+  --block-copy-bg: var(--brand-ink);
+  --block-copy-edge: var(--color-fd-border);
+}
+.dark figure[data-kind="run"] .block-copy {
+  --block-copy-bg: color-mix(in srgb, var(--brand-aubergine) 60%, var(--brand-plum));
+}
+.block-copy:hover {
+  text-decoration: underline;
+}
+.block-copy:focus-visible {
+  outline: 2px solid var(--color-fd-ring);
+  outline-offset: 2px;
+}
+
+/* The code. A command block keeps the dark theme's token colours on ink in
+   both themes, and what Ingestron prints is plain text. */
+figure.shiki[data-kind="run"] code span,
+.dark figure.shiki[data-kind="run"] code span {
+  color: var(--shiki-dark);
+  font-style: var(--shiki-dark-font-style);
+}
+figure.shiki[data-kind="prints"] code span,
+.dark figure.shiki[data-kind="prints"] code span {
+  color: inherit;
+  font-style: normal;
+}
+/* The `$` of a command is drawn here, never in the text, so it is not copied
+   or selected. A line that continues a command lines up with its first. */
+figure[data-kind="run"] .line {
+  padding-left: calc(var(--padding-left) + 2ch);
+}
+figure[data-kind="run"] .line.cmd {
+  padding-left: var(--padding-left);
+}
+figure[data-kind="run"] .line.cmd::before {
+  content: "$ ";
+  color: var(--brand-signal);
+  user-select: none;
+}
