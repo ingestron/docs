@@ -346,8 +346,10 @@ creates them. See
 **Symptom:** the pipelines are in the factory, but a `dev` copy never starts
 on its schedule.
 
-**Cause:** outside production, a generated trigger is stopped. The trigger file
-says `"runtimeState": "Stopped"`, and the production one says `"Started"`.
+**Cause:** outside production, a generated trigger is stopped
+([platform defaults](/docs/reference/packs/adf#platform-configuration)). The
+trigger file says `"runtimeState": "Stopped"`, and the production one says
+`"Started"`.
 
 **Fix:** start the trigger in Data Factory when you want development copies to
 run, or set `paused: false` for the copy method in the platform and generate
@@ -552,8 +554,9 @@ provides.
 **Symptom:** the job and the pipelines are deployed, and nothing refreshes on
 its schedule in `dev`.
 
-**Cause:** outside production, the job is created paused. Its file says
-`pause_status: PAUSED`.
+**Cause:** outside production, the job is created paused
+([platform defaults](/docs/reference/packs/databricks#platform-configuration)).
+Its file says `pause_status: PAUSED`.
 
 **Fix:** unpause it in Databricks, or set `paused: false` in the platform's
 `schedule` and generate again. See
