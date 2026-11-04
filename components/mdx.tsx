@@ -1,7 +1,8 @@
 import type { ComponentProps } from "react";
-import { CodeBlock, Pre } from "fumadocs-ui/components/codeblock";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import type { MDXComponents } from "mdx/types";
+import { KindBlock } from "@/components/code-block";
+import type { BlockKind } from "@/lib/block-kind";
 import { NamingVariables } from "@/components/reference/naming-variables";
 import { DocLinks } from "@/components/doc-links";
 import { MarkdownTable } from "@/components/table-frame";
@@ -40,12 +41,16 @@ import { Tool, ToolSteps } from "@/components/tool-steps";
 export function getMDXComponents(components?: MDXComponents) {
   return {
     ...defaultMdxComponents,
-    // Fumadocs' code block and table, with their scrolling frames named
-    // (lib/rehype-frame-names.ts) and, for a table, the frame doing the scrolling.
-    pre: ({ "data-frame-label": label, ...props }: Framed<"pre">) => (
-      <CodeBlock {...props} viewportProps={{ "aria-label": label }}>
-        <Pre>{props.children}</Pre>
-      </CodeBlock>
+    // Fumadocs' code block, saying what it holds (lib/block-kind.ts), and its
+    // table, with their scrolling frames named (lib/rehype-frame-names.ts)
+    // and, for a table, the frame doing the scrolling.
+    pre: ({
+      "data-frame-label": label,
+      "data-kind": kind,
+      icon: _icon,
+      ...props
+    }: Framed<"pre">) => (
+      <KindBlock {...props} kind={kind} viewportProps={{ "aria-label": label }} />
     ),
     table: MarkdownTable,
     NamingVariables,
@@ -92,7 +97,11 @@ export function getMDXComponents(components?: MDXComponents) {
 export const useMDXComponents = getMDXComponents;
 
 /** An element's props, with the frame name rehypeFrameNames adds. */
-type Framed<T extends "pre" | "table"> = ComponentProps<T> & { "data-frame-label"?: string };
+type Framed<T extends "pre" | "table"> = ComponentProps<T> & {
+  "data-frame-label"?: string;
+  "data-kind"?: BlockKind;
+  icon?: unknown;
+};
 declare global {
   type MDXProvidedComponents = ReturnType<typeof getMDXComponents>;
 }

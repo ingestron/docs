@@ -21,6 +21,12 @@ example README, package README and user-facing command text.
   sets a page's area without changing its URL. A new page goes in its area's
   folder and `meta.json`, and its URL into `test/page-urls.txt`; a page never
   moves to a new URL without a redirect in `worker/redirects.js`.
+- A code block says what it is. `sh` fences are commands to run; `yaml`, `json`,
+  `csv` and `dotenv` fences and `<Example>` files are files to write; an
+  untitled `text` fence is what Ingestron prints; an `<Example>` under `build/`
+  is a file Ingestron writes. Never type the `$` prompt: the site draws it.
+  Where the rule misplaces a block, mark the fence, as in
+  `json kind="plain"`. `lib/block-kind.ts` has the whole rule.
 - Organise by the reader's job. Steps that differ between the CLI and VS Code
   go in `<ToolSteps>`; a page under Tools only when one tool alone has the
   feature.

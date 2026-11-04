@@ -3,6 +3,7 @@
 @import "fumadocs-ui/css/preset.css";
 @import "./brand.css";
 @import "./content.css";
+@import "./blocks.css";
 @import "./navigation.css";
 @import "./hub.css";
 @import "./keyboard.css";
