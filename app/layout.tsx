@@ -13,14 +13,13 @@ export const metadata: Metadata = {
   },
   description:
     "Generate data platform assets from reviewed definitions and your organisation's standards.",
-  // The brand favicon: aubergine on a light browser, paper on a dark one.
+  // The Ingestron logo's mark: aubergine on a light browser, paper on a dark one.
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml", media: "(prefers-color-scheme: light)" },
       { url: "/favicon-dark.svg", type: "image/svg+xml", media: "(prefers-color-scheme: dark)" },
     ],
     apple: "/apple-touch-icon.png",
-    other: [{ rel: "mask-icon", url: "/brand/mask-icon.svg", color: "#301336" }],
   },
 };
 

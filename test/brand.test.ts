@@ -15,17 +15,18 @@ const file = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
 const bytes = (path: string) => readFileSync(join(process.cwd(), path));
 
 /**
- * The brand's rendered files, byte for byte as the brand issues them (SHA-256 of
- * each brand file), so no logo, tile or font is recoloured or redrawn here.
+ * The brand's rendered files (SHA-256 of each file), so no logo, tile or font is
+ * recoloured or redrawn here. The logos are the brand's files with only their
+ * accessible title set to "Ingestron"; their drawing is unchanged.
  */
 const brandFiles: Record<string, string> = {
-  "public/brand/lockup-horizontal-primary.svg":
-    "c4d0ff321d8dd3c15ae7cc3c28b09892248748e26abd35a0a47572810b96c828",
-  "public/brand/lockup-horizontal-reverse.svg":
-    "53ab628532cde0baf29f704f0782478e2e9ac37eafb57a795c9447401026e7f2",
-  "public/brand/mask-icon.svg": "adc55393e995af87bb7a4ab707c4486cfbd74f6138f8f9ec062d5f530796b3fc",
-  "public/favicon.svg": "a57de6b914daad3bd6908ff5fae56c179b2b6a6ec494b4182a11b5ada02b0ca0",
-  "public/favicon-dark.svg": "c3e4cdeeb074a31c63a7df5ff280736b497aba4ccfd18770762b116e4d7be881",
+  "public/brand/ingestron-lockup-primary.svg":
+    "a68f94087d84899a7b1b4b3cfe3deedc203305157164cb50b024c651cb546458",
+  "public/brand/ingestron-lockup-reverse.svg":
+    "74b066e2d417da6acb35fdeb4940aa8ea9f83b0c11a3693f04bc1bc621c9277a",
+  // The mark alone: primary for a light browser, reverse for a dark one.
+  "public/favicon.svg": "9fee4041d74ff3a7637cd730bab5238b21aa1886685aa2bd4d8fb978de60f726",
+  "public/favicon-dark.svg": "f2d5c60c5dbd23445c10fbd028efe1a1b77a1d770ca8ef93e7a924175c33da27",
   "public/fonts/manrope-variable.woff2":
     "a30ddcd349703aff7464c34bef3fffdff405ee50c113440d7c8693c02d210972",
   "public/fonts/jetbrains-mono-variable.woff2":
@@ -92,8 +93,10 @@ it("shows the primary lockup on paper and the reverse lockup on ink, at 96 px or
   const title = renderToStaticMarkup(
     createElement("div", null, baseOptions().nav!.title as ReactNode),
   );
-  expect(title).toContain('class="docs-brand-light" src="/brand/lockup-horizontal-primary.svg"');
-  expect(title).toContain('class="docs-brand-dark" src="/brand/lockup-horizontal-reverse.svg"');
+  expect(title).toContain('class="docs-brand-light" src="/brand/ingestron-lockup-primary.svg"');
+  expect(title).toContain('class="docs-brand-dark" src="/brand/ingestron-lockup-reverse.svg"');
+  // The files' own titles are not the logo's name, so each image says it.
+  expect(title.match(/alt="Ingestron"/g)).toHaveLength(2);
   for (const width of title.matchAll(/width="(\d+)"/g))
     expect(Number(width[1])).toBeGreaterThanOrEqual(96);
   const css = file("app/brand.css");
@@ -123,19 +126,25 @@ it("draws DuckDB's boxes and the plan's arrows with JetBrains Mono, at the line 
   expect(css).toMatch(/\[data-box-drawing\] pre \{\n  line-height: 1\.32;/);
 });
 
-it("replaces the placeholder icon with the brand favicon for light and dark browsers", () => {
+it("uses the Ingestron logo's mark as the favicon for light and dark browsers", () => {
   expect(existsSync(join(process.cwd(), "app/icon.svg"))).toBe(false);
   const layout = file("app/layout.tsx");
   expect(layout).toContain('url: "/favicon.svg"');
   expect(layout).toContain('url: "/favicon-dark.svg"');
   expect(layout).toContain('apple: "/apple-touch-icon.png"');
-  for (const icon of [
-    "favicon.svg",
-    "favicon-dark.svg",
-    "apple-touch-icon.png",
+  for (const icon of ["favicon.svg", "favicon-dark.svg", "apple-touch-icon.png"])
+    expect(existsSync(join(process.cwd(), "public", icon)), icon).toBe(true);
+  // The earlier logo's files are gone.
+  for (const old of [
+    "brand/lockup-horizontal-primary.svg",
+    "brand/lockup-horizontal-reverse.svg",
     "brand/mask-icon.svg",
   ])
-    expect(existsSync(join(process.cwd(), "public", icon)), icon).toBe(true);
+    expect(existsSync(join(process.cwd(), "public", old)), old).toBe(false);
+  expect(layout).not.toContain("mask-icon");
+  // The touch icon is 180 px square.
+  const png = bytes("public/apple-touch-icon.png");
+  expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([180, 180]);
 });
 
 it("serves Manrope and JetBrains Mono itself, with their licences, and loads no third-party font", () => {
