@@ -1,0 +1,16 @@
+jetbrains-mono-box.woff2 holds the arrows (U+2190-2193) and box-drawing
+characters (U+2500-257F) of JetBrains Mono 2.304, which the site's main
+JetBrains Mono file does not include.
+
+Source: fonts/variable/JetBrainsMono[wght].ttf in the official release
+https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip
+(SHA-256 6f6376c6ed2960ea8a963cd7387ec9d76e3f629125bc33d1fdcd7eb7012f7bbf),
+downloaded 2026-11-04.
+
+Licence: SIL Open Font License 1.1, in JetBrainsMono-OFL.txt beside this file.
+
+Made with fonttools 4.68.0 (pip install fonttools==4.68.0 brotli):
+
+pyftsubset "JetBrainsMono[wght].ttf" --unicodes="U+2190-2193,U+2500-257F" \
+  --flavor=woff2 --layout-features='' --no-hinting --desubroutinize \
+  --output-file=jetbrains-mono-box.woff2
