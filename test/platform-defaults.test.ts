@@ -43,8 +43,8 @@ describe("platform defaults", () => {
   });
 
   it("lists only what the ADF pack reads, and nothing for a pack that reads none", () => {
+    // The ADF pack reads the platform's schedule.paused, never its mode.
     expect(platformDefaults("adf").map((row) => row.field.path.join("."))).toEqual([
-      "mode",
       "schedule.paused",
     ]);
     expect(() => platformDefaults("synapse")).toThrow(
