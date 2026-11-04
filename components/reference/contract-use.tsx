@@ -1,7 +1,8 @@
 // What one pack does with each contract field, from the pack's own declarations.
 import type { ContractUse } from "@ingestron/definitions";
-import { packs } from "@/lib/reference";
+import { packName, packs } from "@/lib/reference";
 import { Inline } from "./inline";
+import { TableFrame } from "@/components/table-frame";
 
 const order = { used: 0, "not-yet": 1, elsewhere: 2, documentation: 3 };
 const words = { used: "Used", "not-yet": "Not yet", elsewhere: "Elsewhere", documentation: "" };
@@ -17,36 +18,38 @@ export function ContractUseTable({ pack }: { pack: string }) {
   const documentation = entries.filter(([, use]) => use.use === "documentation");
   return (
     <>
-      <table>
-        <thead>
-          <tr>
-            <th>Field</th>
-            <th>Use</th>
-            <th>What it does, or why not</th>
-          </tr>
-        </thead>
-        <tbody>
-          {shown.map(([path, use]) => (
-            <tr key={path}>
-              <td>
-                <code>{path}</code>
-              </td>
-              <td>
-                {words[use.use]}
-                {use.use === "used" && use.needs && (
-                  <>
-                    {" "}
-                    with <code>manage.{use.needs}</code>
-                  </>
-                )}
-              </td>
-              <td>
-                <Inline text={textOf(use)} />
-              </td>
+      <TableFrame label={`How the ${packName(pack)} pack uses each contract field`}>
+        <table>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Use</th>
+              <th>What it does, or why not</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {shown.map(([path, use]) => (
+              <tr key={path}>
+                <td>
+                  <code>{path}</code>
+                </td>
+                <td>
+                  {words[use.use]}
+                  {use.use === "used" && use.needs && (
+                    <>
+                      {" "}
+                      with <code>manage.{use.needs}</code>
+                    </>
+                  )}
+                </td>
+                <td>
+                  <Inline text={textOf(use)} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </TableFrame>
       <details>
         <summary>Fields that only document the contract ({documentation.length})</summary>
         <p>

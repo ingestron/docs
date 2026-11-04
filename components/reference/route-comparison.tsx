@@ -1,6 +1,7 @@
 // A compact comparison uses the same supported routes as New project.
 import { projectRoutes, projectSources } from "@ingestron/cli";
 import { allRoutes } from "@/lib/reference";
+import { TableFrame } from "@/components/table-frame";
 
 /** Compare selected sources across every route, without maintaining a second support matrix.
  * @example <RouteComparison ids={["files", "sqlserver"]} />
@@ -9,13 +10,7 @@ export function RouteComparison({ ids }: { ids: string[] }) {
   const sources = projectSources();
   const routes = allRoutes();
   return (
-    // The same scrolling, focusable frame Fumadocs gives a Markdown table.
-    <div
-      className="relative overflow-auto prose-no-margin my-6 route-comparison"
-      tabIndex={0}
-      role="region"
-      aria-label="Routes for each source"
-    >
+    <TableFrame label="Routes for each source" className="route-comparison">
       <table>
         <thead>
           <tr>
@@ -46,7 +41,7 @@ export function RouteComparison({ ids }: { ids: string[] }) {
           })}
         </tbody>
       </table>
-    </div>
+    </TableFrame>
   );
 }
 

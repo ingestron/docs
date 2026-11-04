@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { packName, packs } from "@/lib/reference";
 import { Inline } from "./inline";
 import extension from "./vscode-extension.json";
+import { TableFrame } from "@/components/table-frame";
 
 interface Manifest {
   name: string;
@@ -37,28 +38,30 @@ export function PackageVersions() {
     ]),
   ];
   return (
-    <table>
-      <thead>
-        <tr>
-          <th>Package</th>
-          <th>What it is</th>
-          <th>Version</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map(([name, what]) => (
-          <tr key={name}>
-            <td>
-              <code>{name}</code>
-            </td>
-            <td>
-              <Inline text={what} />
-            </td>
-            <td>{installed(name).version}</td>
+    <TableFrame label="Package versions">
+      <table>
+        <thead>
+          <tr>
+            <th>Package</th>
+            <th>What it is</th>
+            <th>Version</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map(([name, what]) => (
+            <tr key={name}>
+              <td>
+                <code>{name}</code>
+              </td>
+              <td>
+                <Inline text={what} />
+              </td>
+              <td>{installed(name).version}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </TableFrame>
   );
 }
 
@@ -99,26 +102,28 @@ export function PlatformChecks() {
     ["duckdb", `DuckDB ${duckdbTested()}, which runs the SQL the pack writes in its tests`],
   ];
   return (
-    <table>
-      <thead>
-        <tr>
-          <th>Pack</th>
-          <th>Checked against</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map(([pack, checked]) => (
-          <tr key={pack}>
-            <td>
-              <a href={`/docs/reference/packs/${pack}`}>{packName(pack)}</a>
-            </td>
-            <td>
-              <Inline text={checked} />
-            </td>
+    <TableFrame label="What each pack was checked against">
+      <table>
+        <thead>
+          <tr>
+            <th>Pack</th>
+            <th>Checked against</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map(([pack, checked]) => (
+            <tr key={pack}>
+              <td>
+                <a href={`/docs/reference/packs/${pack}`}>{packName(pack)}</a>
+              </td>
+              <td>
+                <Inline text={checked} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </TableFrame>
   );
 }
 

@@ -11,7 +11,11 @@ export function Example({ name, file }: { name: string; file: string }) {
       code={readExampleFile(name, file).trimEnd()}
       lang={extension === "yml" ? "yaml" : extension}
       themes={codeThemes}
-      codeblock={{ title: `${name}/${file}`, className: "my-4" }}
+      codeblock={{
+        title: `${name}/${file}`,
+        className: "my-4",
+        viewportProps: { "aria-label": `${name}/${file}` },
+      }}
     />
   );
 }

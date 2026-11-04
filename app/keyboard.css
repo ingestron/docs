@@ -1,0 +1,85 @@
+/* Keyboard use: where the focus is must always show, and a control that takes
+   focus must be visible while it has it. Fumadocs' utilities are in CSS
+   layers, so these unlayered rules win over them. Pinned by
+   test/keyboard.test.ts and checked in a browser for each release. */
+
+/* Skip to content: hidden until focused, then above the header. */
+.skip-link {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.75rem;
+  z-index: 60;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.5rem;
+  background: var(--color-fd-primary);
+  color: var(--color-fd-primary-foreground);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+.skip-link:focus {
+  transform: none;
+  outline: 2px solid var(--color-fd-ring);
+  outline-offset: 2px;
+}
+/* Where the skip link lands: focused, so the next Tab is in the content, but
+   not ringed, and clear of the sticky header and tab bar. */
+#nd-page,
+#hub {
+  scroll-margin-top: var(--fd-docs-row-3, 0px);
+}
+#nd-page:focus,
+#hub:focus {
+  outline: none;
+}
+
+/* A heading's "Copy Anchor Link" button shows on hover only; show it on focus too. */
+:is(h1, h2, h3, h4, h5, h6) > button:focus-visible {
+  opacity: 1;
+}
+
+/* Code tabs (CLI / VS Code): the tab and the panel it opens. Inset, because the
+   tabs' box clips anything outside it; the panel's ring is drawn above the code
+   block that fills it, which would otherwise cover an outline. */
+[role="tab"]:focus-visible,
+[role="tabpanel"]:focus-visible {
+  outline: 2px solid var(--color-fd-ring);
+  outline-offset: -2px;
+}
+[role="tabpanel"]:focus-visible {
+  position: relative;
+}
+[role="tabpanel"]:focus-visible::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border: 2px solid var(--color-fd-ring);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* The phone's "On this page" bar. */
+[data-toc-popover-trigger]:focus-visible {
+  outline: 2px solid var(--color-fd-ring);
+  outline-offset: -2px;
+}
+
+/* Scrolling frames: tables (components/table-frame.tsx); code blocks have Fumadocs' ring. */
+.table-frame:focus-visible {
+  outline: 2px solid var(--color-fd-ring);
+  outline-offset: 2px;
+}
+
+/* A code block's file name wraps rather than being cut off on a phone. */
+figure.shiki figcaption {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  overflow: visible;
+  text-overflow: clip;
+}
+figure.shiki > div:has(> figcaption) {
+  height: auto;
+  min-height: 2.375rem;
+  padding-block: 0.4rem;
+}
