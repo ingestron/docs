@@ -67,7 +67,7 @@ describe("examples", () => {
     );
   });
 
-  it("fails the organisation-standards exercise with the output its page shows", () => {
+  it("fails the standard's break-a-rule exercise with the output its page shows", () => {
     const cwd = mkdtempSync(join(tmpdir(), "docs-fixed-setting-"));
     cpSync(exampleFolder("standards-and-conventions"), cwd, { recursive: true });
     appendFileSync(
@@ -77,7 +77,7 @@ describe("examples", () => {
     let output = "";
     expect(run(["plan", "--no-diff"], { cwd, write: (text) => (output += text) })).toBe(1);
     const page = readFileSync(
-      join(process.cwd(), "content/docs/examples/organisation-standards.mdx"),
+      join(process.cwd(), "content/docs/how-to/configure-a-standard.mdx"),
       "utf8",
     );
     const shown = /Plan again:\n\n```text\n([\s\S]*?)```/.exec(page)?.[1];

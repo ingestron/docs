@@ -90,7 +90,8 @@ from then on.
 
 - **One standard per project.** A platform team keeps its standard in Git, and
   `ingestron init <name> --standard <path or Git URL>` copies it into a new
-  project. A later change to the original is not copied for you.
+  project. A later change to the original is not copied for you. See
+  [Set your organisation's standard](/docs/how-to/configure-a-standard).
 - **What it holds:** the packs, and naming patterns, layers and column types.
   `settings` gives defaults, `allowed` limits the methods a project may use,
   `fixed` holds settings no project may change, and `governance` says what
@@ -103,7 +104,7 @@ from then on.
 
 - **Starters, templates and standards are folders and files in Git.**
   `ingestron init <name> --template <git url>` starts a project from a
-  template your team keeps; see [Share a template](/docs/how-to/share-a-template).
+  template your team keeps; see [Share templates and standards](/docs/how-to/share-a-template).
 - **Adopt one source at a time,** beside what you already run. `plan` and
   `apply` write only to the output folders, `build/` by default, so Ingestron
   owns only the files it generated; see

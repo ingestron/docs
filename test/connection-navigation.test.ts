@@ -133,14 +133,15 @@ it("lists the guides and concepts under their sections' separators, in order, wi
     "/docs/how-to/name-things-your-way",
     "/docs/how-to/ask-the-platform-team",
     "/docs/how-to/share-a-template",
+    "/docs/how-to/upgrade",
   ]);
   expect(under("Understand")).toEqual([
     "/docs/concepts/definitions",
     "/docs/concepts/standards-and-packs",
     "/docs/concepts/settings",
+    "/docs/concepts/layers",
     "/docs/concepts/environments-and-platform",
     "/docs/concepts/yaml-references",
-    "/docs/concepts/naming",
     "/docs/concepts/generated-files",
   ]);
   // In the design's order: the guides come before Platforms, and Understand after it.
