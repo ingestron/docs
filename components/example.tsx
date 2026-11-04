@@ -1,31 +1,146 @@
-// Shows one real file of a tested example; the build fails if it is missing.
+// Shows one real file of a tested example, or part of it, and what Ingestron
+// prints for it; the build fails if the file, part or section is missing.
 import { KindBlock } from "@/components/code-block";
-import { exampleKind } from "@/lib/block-kind";
+import { exampleKind, type BlockKind } from "@/lib/block-kind";
 import { ServerCodeBlock } from "fumadocs-ui/components/codeblock.rsc";
 import { codeThemes } from "@/lib/code-themes";
-import { readExampleFile } from "@/lib/examples";
+import {
+  exampleRequest,
+  exampleTree,
+  readExampleExtract,
+  readExampleFile,
+  requestSections,
+  type ExtractPart,
+} from "@/lib/examples";
 
-/** One file of an example, as it is in the repository. */
-export function Example({ name, file }: { name: string; file: string }) {
-  const extension = file.split(".").pop() ?? "text";
+/** A highlighted block of one kind, with its title and the name its scrolling frame reads out. */
+function Block({
+  code,
+  lang,
+  kind,
+  title,
+  label,
+}: {
+  code: string;
+  lang: string;
+  kind: BlockKind;
+  title?: string;
+  label: string;
+}) {
   return (
     <ServerCodeBlock
-      code={readExampleFile(name, file).trimEnd()}
-      lang={extension === "yml" ? "yaml" : extension}
+      code={code}
+      lang={lang}
       themes={codeThemes}
       components={{
         pre: ({ children, ...props }) => (
           <KindBlock
             {...props}
-            kind={exampleKind(file)}
-            title={file}
+            kind={kind}
+            title={title}
             className="my-4"
-            viewportProps={{ "aria-label": `${name}/${file}` }}
+            viewportProps={{ "aria-label": label }}
           >
             {children}
           </KindBlock>
         ),
       }}
+    />
+  );
+}
+
+/** Which part of the file to show, if not all of it; the props as a page writes them. */
+function extractPart({
+  pick,
+  from,
+  to,
+}: {
+  pick?: string;
+  from?: string;
+  to?: string;
+}): ExtractPart | undefined {
+  if (pick !== undefined && (from !== undefined || to !== undefined)) {
+    throw new Error("Example: give pick, or from and to, not both");
+  }
+  if ((from === undefined) !== (to === undefined)) {
+    throw new Error("Example: give from and to together");
+  }
+  if (pick !== undefined) return { pick };
+  if (from !== undefined && to !== undefined) return { from, to };
+  return undefined;
+}
+
+/**
+ * One file of an example, as it is in the repository; a `build/` file is what
+ * Ingestron generates for it. With `pick` (a YAML or JSON path), or `from`
+ * and `to` (text on the first and last lines), only that part, as it is in
+ * the file.
+ * @example <Example name="retail" file="build/dev/databricks.yml" pick="targets" />
+ * @example <Example name="synapse-views" file="build/dev/synapse/views.sql" from="CREATE OR ALTER VIEW [bronze].[customers]" to="GO" />
+ */
+export function Example({
+  name,
+  file,
+  ...parts
+}: {
+  name: string;
+  file: string;
+  pick?: string;
+  from?: string;
+  to?: string;
+}) {
+  const extension = file.split(".").pop() ?? "text";
+  const part = extractPart(parts);
+  const shown = part === undefined ? file : `${file} › ${"pick" in part ? part.pick : part.from}`;
+  return (
+    <Block
+      code={(part ? readExampleExtract(name, file, part) : readExampleFile(name, file)).trimEnd()}
+      lang={extension === "yml" ? "yaml" : extension}
+      kind={exampleKind(file)}
+      title={shown}
+      label={`${name}/${shown}`}
+    />
+  );
+}
+
+/**
+ * The listing of a folder Ingestron generates for an example, such as
+ * `build/dev/adf`: folders first, then files.
+ * @example <BuildTree name="northwind" folder="build/dev/adf" />
+ */
+export function BuildTree({ name, folder }: { name: string; folder: string }) {
+  return (
+    <Block
+      code={exampleTree(name, folder)}
+      lang="text"
+      kind="prints"
+      label={`The files under ${folder} in ${name}`}
+    />
+  );
+}
+
+/**
+ * What `ingestron request --env <env>` prints for an example: all of it, or
+ * the named `## ` sections, each with its heading.
+ * @example <Request name="landing-only" />
+ * @example <Request name="duckdb-local" sections={["DuckDB job"]} />
+ */
+export function Request({
+  name,
+  env = "dev",
+  sections,
+}: {
+  name: string;
+  env?: string;
+  sections?: string[];
+}) {
+  if (sections?.length === 0) throw new Error(`Request: name a section of ${name}'s request`);
+  return (
+    <Block
+      code={sections ? requestSections(name, env, sections) : exampleRequest(name, env)}
+      lang="text"
+      kind="prints"
+      label={`The platform request for ${name} (${env})`}
     />
   );
 }
