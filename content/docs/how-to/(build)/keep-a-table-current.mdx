@@ -43,6 +43,14 @@ primary key or column type needs the table built again: delete
 Every setting is listed under
 [`duckdb-table`](/docs/reference/packs/duckdb#duckdb-table).
 
+`append` adds each file's rows once: it reads each file name once, so a file
+re-exported under the same name is skipped and its new rows are not loaded.
+Give a re-export a new name, or delete `ingestron.duckdb` and run again to
+reload every file. In Azure each run starts with an empty database, so every
+file is read. A copy that replaces its file under the same name each load
+cannot be appended; see
+[Append would miss later loads](/docs/troubleshooting#append-would-miss-later-loads).
+
 ## On Databricks
 
 `streaming-table` keeps the current row per key, or every version, with
