@@ -119,8 +119,9 @@ When you turn `after_copy` on in an environment that already runs:
   first 180,000 vCPU-seconds and 360,000 GiB-seconds per subscription each
   month are free
   ([Container Apps pricing](https://azure.microsoft.com/en-us/pricing/details/container-apps/),
-  checked 4 November 2026), so a small daily job may cost nothing. ADF bills each activity run: the wait reads the run's status every
-  30 seconds, about three activity runs a poll.
+  checked 4 November 2026), so a small daily job may cost nothing. ADF bills
+  each activity run: the wait reads the run's status every 30 seconds, about
+  three activity runs a poll.
 - **Every run reads every landed file.** With `layout: snapshot` that is one
   file per table. With increments, each run reads them all; keep them bounded,
   knowing that deleting old files removes their rows from `append` tables.
