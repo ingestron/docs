@@ -29,7 +29,7 @@ route; [Azure Data Factory](/docs/platforms/adf) covers the copies.
   label="Databricks"
   checked="2026-11-02"
   alt="Sample data of order_value: two days, with 1 and 2 orders, worth 17.00 and 44.95."
-  caption="The rows of the demo's order_value view."
+  caption="The demo's order_value adds up each day's orders: two days, worth 17.00 and 44.95."
 />
 
 On the `adf-databricks` route, the pipeline reads the files ADF lands:
@@ -38,8 +38,8 @@ On the `adf-databricks` route, the pipeline reads the files ADF lands:
   src="/images/platforms/databricks/dbx-01-northwind-pipeline.png"
   label="Databricks"
   checked="2026-11-02"
-  alt="The northwind pipeline's graph: four Auto Loader sources from landing feed the streaming tables orders, order_details, customers and products, and orders and order_details build the materialised view daily_sales, 798 records."
-  caption="The demo's Northwind pipeline: a streaming table per table ADF landed, and daily_sales built from two of them."
+  alt="The northwind pipeline's graph: the streaming tables orders, order_details, customers and products, and the materialised view daily_sales, 798 records, built from orders and order_details."
+  caption="The demo's Northwind pipeline: a streaming table for each table ADF landed, and daily_sales built from orders and order_details."
 />
 
 ## Work through the retail project
