@@ -25,7 +25,8 @@ publishes the table as `<schema>.<table>.parquet`:
 <Example name="duckdb" file="build/dev/tables/bronze.orders.sql" />
 
 When ADF lands the files, a local environment reads a load's files from a
-local folder instead, with the same SQL around it:
+local folder instead, with the same SQL around it. The folder,
+`./samples/erp.dbo.Invoices/`, is at the end of the line:
 
 <Example name="duckdb-local" file="build/local/duckdb/run.sql" from="read_parquet" to=";" />
 
@@ -35,17 +36,17 @@ After a run, the tables are in `ingestron.duckdb` in the project folder, and
 their Parquet files in `published/`. From the starter's folder:
 
 ```sh
-duckdb ingestron.duckdb -c "SELECT schema_name, table_name, estimated_size FROM duckdb_tables() ORDER BY schema_name"
+duckdb ingestron.duckdb -c "SELECT 'bronze.orders' AS name, count(*) AS row_count FROM bronze.orders UNION ALL SELECT 'silver.customer_totals', count(*) FROM silver.customer_totals ORDER BY name"
 ```
 
 ```text
-┌─────────────┬─────────────────┬────────────────┐
-│ schema_name │   table_name    │ estimated_size │
-│   varchar   │     varchar     │     int64      │
-├─────────────┼─────────────────┼────────────────┤
-│ bronze      │ orders          │              5 │
-│ silver      │ customer_totals │              3 │
-└─────────────┴─────────────────┴────────────────┘
+┌────────────────────────┬───────────┐
+│          name          │ row_count │
+│        varchar         │   int64   │
+├────────────────────────┼───────────┤
+│ bronze.orders          │         5 │
+│ silver.customer_totals │         3 │
+└────────────────────────┴───────────┘
 ```
 
 ## Create it [#create-it]
@@ -90,8 +91,8 @@ A CSV without a header (`csv.header: false`) binds its columns in the
 contract's order, so the file's columns must be in that order. With a header,
 columns are matched by name.
 
-`duckdb-table` keeps each table by `mode`: `replace` (the default), `append` or
-`upsert`; see [Keep a table current](/docs/how-to/keep-a-table-current#on-duckdb).
+`duckdb-table` keeps each table by `mode`: `replace`, `append` or `upsert`;
+see [Keep a table current](/docs/how-to/keep-a-table-current#on-duckdb).
 The `published` folder comes from the platform and must exist. What a cast to
 the contract's type can change is in
 [What each engine makes of it](/docs/how-to/write-a-transform#what-each-engine-makes-of-it).
