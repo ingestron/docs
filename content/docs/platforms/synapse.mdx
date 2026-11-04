@@ -50,7 +50,7 @@ A transform becomes a view over its inputs' views, with its SQL inside:
   src="/images/platforms/synapse/synapse-04-sales-chart.png"
   label="Azure Synapse"
   checked="2026-11-02"
-  alt="A query over silver.daily_sales grouped by country, shown as a column chart of revenue from USA down to Ireland."
+  alt="A query over silver.daily_sales grouped by country, shown as a column chart of revenue from USA down to Canada."
   caption="A report's query over the silver.daily_sales view, as a chart: Synapse read the landed files when the query ran."
 />
 
@@ -192,9 +192,7 @@ Troubleshooting.
 
 ## Limits [#limits]
 
-- **No rows are checked.** A view checks no rows, so the contract's quality
-  rules and required columns are reported as not checked
-  (`CONTRACT_FIELD_UNUSED` warnings); see
+- **No rows are checked.** A view checks no rows; see
   [Check data quality](/docs/how-to/add-quality-checks).
 - **No merge or history.** A view shows the files as they are; see
   [Views or tables](#views-or-tables).
