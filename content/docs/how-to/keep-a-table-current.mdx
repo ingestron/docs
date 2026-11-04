@@ -5,8 +5,9 @@ description: Keep the current row for each key, or every version, from loads of 
 
 Use this when each load brings rows that change rows the table already has:
 a key, a column that orders the changes, and sometimes a column that says
-which rows are deletions. The store method's `mode`, on the table's
-`store.with`, decides what the table keeps. These modes need the contract to
+which rows are deletions. The store method's `mode` decides what the table
+keeps. Set it in the flow's `store.with` for every table of the flow, or in a
+table's own `store.with` for that table alone. These modes need the contract to
 mark the key with `primaryKey: true`; see
 [Describe a table with a contract](/docs/how-to/write-a-contract#keys-and-required-columns).
 
@@ -38,6 +39,8 @@ name, and replaces the row the table had for that key. Set `sequence_by` when
 one file can hold a key twice. Running again is safe in every mode. A changed
 primary key or column type needs the table built again: delete
 `ingestron.duckdb` and run again, which reloads everything from the files.
+Every setting is listed under
+[`duckdb-table`](/docs/reference/packs/duckdb#duckdb-table).
 
 ## On Databricks
 
@@ -52,7 +55,9 @@ primary key or column type needs the table built again: delete
   include={["mode", "sequence_by", "delete_when", "except_columns"]}
 />
 
-With `history`, each version has `__START_AT` and `__END_AT` columns.
+`upsert` keeps the current row per key (SCD type 1). `history` keeps every
+version (SCD type 2), with `__START_AT` and `__END_AT` columns. Every setting is
+listed under [`streaming-table`](/docs/reference/packs/databricks#streaming-table).
 
 <ToolSteps>
 <Tool name="CLI">

@@ -25,11 +25,19 @@ like the table is an error
 
 ## What Ingestron reads
 
-For each property, Ingestron reads `name`, `logicalType`, `physicalType`,
-`physicalName`, `required`, `primaryKey`, `primaryKeyPosition` and
-`description`, and the schema entry's `description` for the table's comment.
-Every other ODCS field is listed under
-[Data contract](/docs/reference/documents#data-contract).
+Ingestron reads:
+
+- for each column: `name`, `logicalType`, `physicalType`, `physicalName`,
+  `required`, `primaryKey`, `primaryKeyPosition` and `description`;
+- for each column's values: `logicalTypeOptions`, such as `minLength`,
+  `pattern` or `minimum`, `unique`, and its `quality` rules;
+- for the table: the schema entry's `description`, for the table's comment,
+  and its `quality` rules;
+- the table's and each column's `tags`, and each column's `classification`,
+  which it keeps for packs that tag tables.
+
+[Data contract](/docs/reference/documents#data-contract) lists every ODCS
+field.
 
 What each pack does with a field, or why it does not yet, is on its page:
 [Databricks](/docs/reference/packs/databricks#contract-fields),
@@ -48,6 +56,11 @@ column its platform type:
 
 ADF has no column here: its copy keeps the source's types, and the pack that
 stores the table applies the contract's.
+
+Where a cell says **no default**, Ingestron gives the column no type unless its
+`physicalType` or the standard's `types` sets one. Databricks then leaves the
+column out of the types it declares, so the platform decides; DuckDB reads it
+as `VARCHAR`.
 
 To change a type for every contract in a project, set it under `types` in the
 standard, such as `types: { number: DECIMAL(38,6) }`; see
@@ -76,14 +89,31 @@ When a column has a different name at the source, write that name as its
 
 ## Rules about the data
 
-A column's `quality` rules that allow no failing row become checks on each
-row, with the standard's `quality.default` action: `nullValues`,
-`missingValues` and `invalidValues` (with `validValues` or `pattern`) when
-they must be 0. Other rules compare a count over all rows, such as a row
-count or a share of nulls, which a check of one row cannot; where the
-platform does not check those, each is a
+Where the pack checks rows, these become checks on each row, with the
+standard's `quality.default` action:
+
+- A column's `logicalTypeOptions`: `minLength` and `maxLength`, `pattern`,
+  `minimum`, `maximum`, `exclusiveMinimum` and `exclusiveMaximum`,
+  `multipleOf`, `minItems`, `maxItems` and `uniqueItems`. Each check is named
+  `<column>_<option>`, such as `customer_id_minimum`, and a null value passes.
+  `format` and the other options only document the column.
+- A column's `quality` rules that allow no failing row: `nullValues`,
+  `missingValues` and `invalidValues` (with `validValues` or `pattern`) when
+  they must be 0.
+
+Other rules compare a count over all rows, such as a row count or a share of
+nulls, which a check of one row cannot. So does `unique: true`, which says no
+value repeats. These run after each refresh when the platform turns on
+`manage.checks`. Otherwise each `quality` rule is a
 [warning](/docs/reference/errors#QUALITY_RULE_NOT_CHECKED) and stays as
 documentation.
+
+## Tags and classification
+
+A contract's `tags`, a column's `tags` and its `classification` are kept for
+packs that tag tables. Databricks sets them as Unity Catalog tags after each
+refresh when the platform turns on `manage.tags`; see
+[Databricks contract fields](/docs/reference/packs/databricks#contract-fields).
 
 ## Draft from a sample [#draft-from-a-sample]
 
