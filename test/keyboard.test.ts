@@ -58,6 +58,12 @@ describe("the phone menu", () => {
       'event.key !== "Escape"',
       "setOpen(false)",
       "element.inert = true",
+      // Focus into the menu, since its own button is now inert.
+      "drawer.querySelector<HTMLElement>(focusable)?.focus();",
+      // Escape leaves a dialog opened over the menu, such as search, to close itself.
+      "(layer && layer !== drawer)",
+      // Closed, it is an ordinary sidebar again.
+      "drawer.removeAttribute(name)",
       'aria-controls="nd-sidebar-mobile"',
     ])
       expect(keyboard).toContain(text);
@@ -102,6 +108,8 @@ describe("the skip link and search", () => {
 
   it("puts focus back where it was when search closes", () => {
     expect(file("app/layout.tsx")).toContain("<SearchFocusReturn />");
+    // Not after a result has gone to another page or section.
+    expect(file("components/keyboard.tsx")).toContain("here === openedOn.current");
   });
 });
 
