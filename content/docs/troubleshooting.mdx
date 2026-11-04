@@ -1,18 +1,84 @@
 ---
 title: Troubleshooting
-description: Common problems, how to recognise them, and how to fix them.
+description: Find a problem by what you see, then its cause and fix, for generated files, definitions, environment variables, the editor and each route.
 ---
 
-## Plan reports a conflict
+Find the message or behaviour you see. Each entry gives the cause and the fix,
+and a code links to its entry in [Errors](/docs/reference/errors). Messages are
+shown as the command prints them; a name or a path in one is the project's own.
 
-**Symptom:** `conflict  src/…  Changed by hand since it was generated.`
+## Generated files
+
+### Plan reports a conflict
+
+**Symptom:** `plan`, `apply` or `check` lists a file as a conflict and exits
+with `1`:
+
+```text
+conflict  run.sql
+          Changed by hand since it was generated. Move the change into the definitions, or delete the file to generate it again.
+```
 
 **Cause:** someone edited a generated file. Ingestron never overwrites it.
 
-**Fix:** move the change into the definitions or the standard, then delete
-the file and run `ingestron apply` to generate it again.
+**Fix:** move the change into the definitions or the standard, then delete the
+file and run `ingestron apply` to generate it again. In VS Code, the file has an
+`EDITED` warning before you apply.
 
-## Check fails in CI
+### Apply stops because of `.generated.lock`
+
+**Symptom:** `ingestron apply` prints its plan, then stops with `1`:
+
+```text
+Another generation is writing to this folder. If none is, delete .generated.lock.
+```
+
+`plan` and `check` still work.
+
+**Cause:** `apply` creates `.generated.lock` in the output folder while it
+writes, and removes it when it ends, whether it succeeded or not. A lock that
+is still there means another apply is writing to the folder, such as VS Code's
+**Ingestron: Apply** or auto-apply, or an earlier one was stopped before it
+could remove the lock.
+
+**Fix:** wait for a run that is still going. If none is, delete
+`.generated.lock` from the output folder the plan names (the line before the
+changes, such as `dev → build/dev`). Then follow the next entry, because the
+folder may hold a mix of old and new files.
+
+### An apply stopped part-way
+
+**Symptom:** one of these:
+
+- With several environments, `apply` ends with a line such as
+  `Applied: dev, test. Not applied: prod.` and exits with `1`.
+- A write fails, and `apply` ends with
+  `Could not write "tables/silver.customer_totals.sql": <reason>. Nothing was changed.`
+- The process was stopped, such as a closed terminal or a cancelled CI job. The
+  lock stays, and `ingestron check` may also print a file ending in `.tmp`:
+  `dev: not generated  tables/silver.customer_totals.sql.<id>.tmp`.
+
+**Cause:** `apply` writes one output folder at a time. An environment whose plan
+has a conflict is left as it was while the others are written. When a write
+fails, Ingestron puts back the files it had already changed in that folder. If
+it cannot put one back, it adds `Some files could not be put back.` A process
+that is stopped cannot put anything back: the folder holds a mix of old and new
+files, and the lock and a temporary file may remain. Each file is whole, never
+half-written.
+
+**Fix:**
+
+- `Not applied: prod`: run `ingestron plan --env prod` and resolve what it
+  reports, such as a [conflict](#plan-reports-a-conflict), then apply again.
+- `Nothing was changed.`: fix what the reason names, such as a folder you cannot
+  write to or a full disk, and apply again.
+- A stopped process, or `Some files could not be put back.`: delete
+  `.generated.lock` and any `.tmp` file in the output folder, then run
+  `ingestron plan`. A file already written shows as unchanged, so the plan lists
+  only what is left. Run `ingestron apply`, then `ingestron check`. Restoring
+  `build/` from version control first works too.
+
+### Check fails in CI
 
 **Symptom:** `ingestron check` prints `not up to date` and exits with `1`.
 
@@ -21,7 +87,7 @@ regenerated and committed, or a generated file was edited.
 
 **Fix:** run `ingestron apply` locally, review the changes and commit them.
 
-## Check reports a folder or file that was not generated
+### Check reports a folder or file that was not generated
 
 **Symptom:** `ingestron check` prints `not generated  <file>` or
 `<folder>: no longer generated`, and exits with `1`.
@@ -33,23 +99,42 @@ second pack) is still in `build/`.
 **Fix:** move the extra file out of `build/`. Delete the old folder once
 nothing deploys from it. See [Check generated files in CI](/docs/how-to/check-in-ci).
 
-## A setting is not accepted
+## Definitions
 
-**Symptom:** `BAD_SETTING` with `"…" is not a setting` or `"…" is required`.
+### A setting is not accepted
+
+**Symptom:** [`BAD_SETTING`](/docs/reference/errors#BAD_SETTING), with one of:
+
+```text
+Settings for "duckdb-files": "frmat" is not a setting.
+Settings: format, csv.
+```
+
+```text
+"synapse-view" needs settings: data_source.
+```
 
 **Cause:** a misspelt setting, a setting of another method, or a required
 setting nobody gave.
 
 **Check:** the message's hint lists the method's settings, and
-[Reference: packs and methods](/docs/reference/packs) shows them with their
-defaults.
+[Packs and methods](/docs/reference/packs) shows them with their defaults.
 
 **Fix:** correct the name at the reported line, or add the missing setting,
-usually in the standard.
+usually in the standard or the platform.
 
-## The method cannot read this source
+### The method cannot read this source
 
-**Symptom:** `CONNECTOR_NOT_SUPPORTED` or `CONNECTIVITY_NOT_SUPPORTED`.
+**Symptom:**
+[`CONNECTOR_NOT_SUPPORTED`](/docs/reference/errors#CONNECTOR_NOT_SUPPORTED) or
+[`CONNECTIVITY_NOT_SUPPORTED`](/docs/reference/errors#CONNECTIVITY_NOT_SUPPORTED),
+such as:
+
+```text
+"duckdb-files" cannot read the "sqlserver" connector.
+Methods that read sqlserver: adf-copy (private, workspace, public).
+Fix: Use "adf-copy" for this flow.
+```
 
 **Cause:** the chosen method does not read this kind of source, or cannot
 reach it.
@@ -61,9 +146,14 @@ supports.
 that reads it to the standard's `packs`, or correct the connection's
 `connectivity`.
 
-## Two tables get the same name
+### Two tables get the same name
 
-**Symptom:** `DUPLICATE_TABLE` or `DUPLICATE_NAME`.
+**Symptom:** [`DUPLICATE_TABLE`](/docs/reference/errors#DUPLICATE_TABLE) or
+[`DUPLICATE_NAME`](/docs/reference/errors#DUPLICATE_NAME), such as:
+
+```text
+Another flow or transform already produces a table named "orders".
+```
 
 **Cause:** two flows or transforms use the same table name, or the naming
 patterns give two tables the same full name.
@@ -71,14 +161,355 @@ patterns give two tables the same full name.
 **Fix:** rename one, or include `{{ flow }}` or `{{ source }}` in the
 table pattern. See [Name tables and resources](/docs/how-to/name-things-your-way).
 
-## Databricks rejects the bundle
+### A new file is not generated
+
+**Symptom:** you added a flow, transform or other definition and `plan` lists
+nothing for it. In VS Code, the file has a warning:
+
+```text
+This file is not part of the project: no import in project.yaml matches it, so nothing is generated from it.
+```
+
+The command line says nothing: it never reads a file that no import matches.
+
+**Cause:** `project.yaml` lists what it loads under `imports`, such as
+`transforms/*.yaml`. A pattern does not reach into a subfolder, and
+`.yml` does not match `*.yaml`. The editor reports this as `NOT_IMPORTED`; it is
+not in [Errors](/docs/reference/errors), because only the editor checks for it.
+
+**Fix:** use the warning's quick fix, which adds the file's folder to `imports`
+(`Import "transforms/finance/*.yaml" in project.yaml`), or add a pattern that
+matches the file. Then plan again.
+
+## Environment variables and `.env`
+
+### A variable is not set
+
+**Symptom:** the command line stops with
+[`ENVVAR_MISSING`](/docs/reference/errors#ENVVAR_MISSING) as an error, and
+usually a link that depends on the value as well:
+
+```text
+connections/shop.yaml:8:9  error  ENVVAR_MISSING
+  Environment variable SAMPLES_DIR is not set.
+  Set SAMPLES_DIR, add it to .env.dev or .env, or remove "${envvar:SAMPLES_DIR}".
+flows/orders.yaml:4:9  error  BROKEN_LINK
+  "shop" is not the id of a Connection document.
+```
+
+In VS Code, the value has a blue information mark, not an error:
+
+```text
+SAMPLES_DIR isn't set; add it to .env.dev or set it before running Ingestron.
+```
+
+**Cause:** the variable is unset or empty in the environment of the process
+that runs Ingestron, in `.env.<environment>` and in `.env`. A document that
+uses it is not loaded, so what links to that document is reported too. The
+editor keeps checking the rest of the project and does not judge a value that
+depends on the missing one.
+
+**Fix:** add `SAMPLES_DIR=./samples` to `.env`, or to `.env.dev` for `dev`
+alone, or set the variable before you run the command. In CI, set it in the
+pipeline. The links report goes away with the variable. In VS Code, saving the
+file checks again. The editor reads the environment VS Code was started with, so a
+variable you export in a terminal afterwards is not seen: put it in `.env`. See
+[Environment files](/docs/concepts/yaml-references#use-environment-files).
+
+### A line of `.env` is ignored
+
+**Symptom:** a warning, [`ENV_FILE_LINE`](/docs/reference/errors#ENV_FILE_LINE),
+and the variable it should have set is reported as not set:
+
+```text
+.env:1:1  warning  ENV_FILE_LINE
+  .env line 1 is not a setting, so it is ignored.
+  Write NAME=value, with a name of letters, digits and _ that does not start with a digit. Close any quote, and put only a # comment after it.
+```
+
+**Cause:** the line is not `NAME=value`: it has no `=`, an unclosed quote, or
+a name with a hyphen or a leading digit. The message names the file and line,
+never the text.
+
+**Fix:** correct the line, or start it with `#` to make it a comment. A name
+that is set to nothing counts as unset.
+
+## VS Code
+
+### The editor still behaves like the old version
+
+**Symptom:** after you build and install a newer extension, a command from the
+new version is missing from the Command Palette, or problems are the old ones.
+
+**Cause:** VS Code starts an extension once for each window. Installing
+another version does not replace the one already running.
+
+**Fix:** run **Developer: Reload Window** from the Command Palette. Do this
+after every [install](/docs/start/install) of a new version.
+
+### Plan in VS Code and in the command differ
+
+**Symptom:** after `ingestron apply` in a terminal, **Ingestron: Plan** lists
+changes, or the other way round.
+
+**Cause:** the extension carries its own copy of the command, the version its
+repository locked when you built it. It need not be the one you run.
+
+**Fix:** run the same version in both, as
+[Upgrade Ingestron and its packs](/docs/how-to/upgrade) describes: install the
+command version the extension uses, or build the extension again from a checkout
+whose lock holds the version you run, install it and reload the window.
+
+## Azure Data Factory
+
+### A connection is missing a setting
+
+**Symptom:** the plan stops before any file is written:
+
+```text
+flows/postgresql.yaml:14:5  error  METHOD_CHECK
+  "adf-table" for table "postgresql_records": the connection needs "settings.server" as non-empty text.
+```
+
+**Cause:** the connector needs a setting the connection does not give, or the
+connection gives one the connector does not accept
+(`the connection setting "ssl" is not supported for postgresql`).
+
+**Fix:** add the setting to the connection, or remove the one the message says
+is not supported. The [connector page](/docs/connectors) lists the fields each
+authentication mode needs. See [Azure Data Factory](/docs/platforms/adf).
+
+### A pipeline fails when it runs
+
+**Symptom:** `plan` and `apply` succeed, but a deployed pipeline fails in Data
+Factory before it copies, or while it reads the source or writes the landing
+folder.
+
+**Cause:** Ingestron generates the factory's files. It does not provision the
+runtime, the Key Vault or the storage, and does not test credentials or
+network access. A runtime, a secret, an identity's access or a source driver
+that is missing fails only when the pipeline runs.
+
+**Fix:** run `ingestron request --env dev`, or **Ingestron: Prepare platform
+request** in VS Code. Its **ADF prerequisites** section lists, with this
+project's values, the integration runtime, the Key Vault, the landing folder
+and the source's permissions that must exist. Give the list to the team that
+creates them. See
+[Platform prerequisites](/docs/platforms/adf#platform-prerequisites).
+
+### Development triggers do not run
+
+**Symptom:** the pipelines are in the factory, but a `dev` copy never starts
+on its schedule.
+
+**Cause:** outside production, a generated trigger is stopped. The trigger file
+says `"runtimeState": "Stopped"`, and the production one says `"Started"`.
+
+**Fix:** start the trigger in Data Factory when you want development copies to
+run, or set `paused: false` for the copy method in the platform and generate
+again. Check `start` first: a started trigger runs every window since `start`. See [Retry and pause](/docs/platforms/adf#retry-and-pause).
+
+## Synapse serverless views
+
+### A view's SQL starts with WITH
+
+**Symptom:**
+
+```text
+transforms/customer_totals.yaml:3:5  error  METHOD_CHECK
+  "synapse-sql" for table "customer_totals": a view's SQL cannot start with WITH; write the common table expression as a subquery.
+```
+
+**Cause:** a transform's SQL sits inside `CREATE VIEW`, so it cannot open with
+a common table expression.
+
+**Fix:** write the expression as a subquery in `FROM`. A transform's SQL also
+names only the tables listed in `inputs`; the message
+`the SQL names {{ tables.customers }}, which is not in inputs` means one is missing.
+See [Synapse serverless views](/docs/platforms/synapse#write-a-transform-as-a-view).
+
+### A view reads files outside the data source
+
+**Symptom:**
+
+```text
+flows/erp.yaml:6:14  error  METHOD_CHECK
+  "synapse-view" for table "customers": abfss://landing@saleslakedev.dfs.core.windows.net/erp/erp.dbo.Customers/erp.dbo.Customers.parquet is not under the data source landing (abfss://other@saleslakedev.dfs.core.windows.net).
+```
+
+**Cause:** the files ADF lands are not under `data_source_location` in the
+platform, so the external data source cannot reach them.
+
+**Fix:** set `data_source_location` to a folder above every landing folder, or
+point the landing folder inside it. See
+[Name the external data source](/docs/platforms/synapse#name-the-external-data-source).
+
+### Running views.sql fails the first time
+
+**Symptom:** `views.sql` fails in Synapse for a new environment, although
+`apply` succeeded.
+
+**Cause:** Ingestron writes the views but creates nothing in Synapse. The
+serverless database, a master key, the credential, the external data source and
+the workspace's read access to the storage must exist first.
+
+**Fix:** run `ingestron request --env dev`. Its **Synapse serverless database**,
+**External data source** and **Report users** sections list each statement and
+permission, with this project's names. Ask the team that owns the workspace to
+create them, then run `views.sql` again.
+
+## DuckDB
+
+### Append would miss later loads
+
+**Symptom:**
+
+```text
+flows/erp.yaml:6:13  error  METHOD_CHECK
+  "duckdb-table" for table "invoices": append reads each file once, but "adf-copy" replaces its file each run, so later loads would be missed; use replace or upsert.
+```
+
+**Cause:** `append` reads each file name once. A copy that replaces its file
+under the same name every load would never be read again. For the same reason,
+a file you re-export under its old name is skipped.
+
+**Fix:** use `replace` or `upsert`, or give each load its own file, such as
+with `increments`. To reload everything, delete `ingestron.duckdb` and run
+again. See [DuckDB](/docs/platforms/duckdb#read-files-where-they-are).
+
+### Upsert needs a primary key
+
+**Symptom:**
+
+```text
+flows/erp.yaml:6:13  error  METHOD_CHECK
+  "duckdb-table" for table "invoices": upsert needs the contract's primaryKey.
+```
+
+**Cause:** `upsert` replaces rows with the same key, and the contract names no
+key. `sequence_by` has to be a column of the contract too.
+
+**Fix:** mark the key column `primaryKey: true` in the contract. See
+[Keep a table current](/docs/how-to/keep-a-table-current).
+
+### A run keeps going after an error
+
+**Symptom:** a DuckDB error is printed, but the run carries on, and some tables
+and Parquet files exist although another table failed.
+
+**Cause:** without `-bail`, DuckDB carries on after an error and commits what
+it built. With `-bail`, a run that fails while building publishes nothing.
+
+**Fix:** run it as the generated `README.md` says, from the project folder:
+
+```sh
+duckdb -bail ingestron.duckdb -c ".read build/dev/run.sql"
+```
+
+### Publishing fails after the tables are built
+
+**Symptom:** the run reaches the step that publishes and fails there, or no
+`<schema>.<table>.parquet` file appears.
+
+**Cause:** `run.sql` publishes each table to the `published` folder in
+`platform.yaml`, and that folder must exist.
+
+**Fix:** create the folder, such as `published/`, or correct the setting, and
+run again. Running again is safe.
+
+### Paths mix local and Azure
+
+**Symptom:** the environment's `README.md` begins:
+
+```text
+This environment reads or writes both local paths and paths in Azure storage,
+and local paths cannot run in Azure: a job there cannot see them. Give it only
+paths in Azure storage, or only local paths. `run.sql` has no Azure sign-in of
+its own.
+```
+
+and `ingestron request` adds `give this environment only paths in Azure storage`.
+
+**Cause:** one path in the environment is local, such as `./published`, and
+another is in Azure. A job in Azure cannot see a local path, and `run.sql`
+has no Azure sign-in of its own, so a laptop cannot read the Azure ones.
+
+**Fix:** give the environment only Azure paths, or only local ones. To try a
+cloud project on a laptop, use an environment with `runs-on: duckdb`. See
+[Run a cloud project locally](/docs/platforms/duckdb#run-a-cloud-project-locally).
+
+### The job after the copies fails or times out
+
+**Symptom:** the parent pipeline `pl_<project>_every_<interval>_<unit>` fails
+in Data Factory with one of:
+
+```text
+The job after the copies ended Failed.
+The job after the copies did not finish within 01:00:00, so it was stopped.
+The job after the copies did not finish within 01:00:00 and could not be stopped: <reason>
+```
+
+The status can be another word than `Failed`, and the time is the
+`after_copy` timeout.
+
+**Cause:** the Container Apps job ended without succeeding, or ran past the
+timeout (one hour by default). The pipeline reads the run's status every 30
+seconds. The last message means ADF could not stop the run: the factory's
+identity may lack the **Container Apps Jobs Operator** role on the job.
+
+**Fix:** open the job's run in Azure for the error. The job already retries a
+failed run once, and running again is safe because each run rebuilds everything.
+Raise `after_copy.timeout` for a larger load. `ingestron request --env dev`
+lists the job and the access it needs. See
+[Hangs, failures and cost](/docs/platforms/duckdb-in-azure#hangs-failures-and-cost).
+
+## Databricks
+
+### A change mode needs a key or a sequence column
+
+**Symptom:**
+
+```text
+flows/crm.yaml:9:5  error  METHOD_CHECK
+  "streaming-table" for table "accounts": mode upsert needs "sequence_by".
+```
+
+or `mode upsert needs primary key columns in the contract`.
+
+**Cause:** every `mode` but `append` keeps a table current by key, in the order
+of a column.
+
+**Fix:** set `sequence_by` to the column that orders a key's changes, and mark
+the key columns `primaryKey: true` in the contract. See
+[Keep a table current](/docs/how-to/keep-a-table-current).
+
+### Databricks rejects the bundle
 
 **Symptom:** `databricks bundle validate` or `deploy` fails.
 
 **Check:** the message names the resource and field. A missing schema means
 the schemas are not created yet: ask the team that owns them, or see
-[Let the bundle create the schemas](/docs/platforms/databricks#create-the-schemas). A missing
-Unity Catalog connection must be created by an administrator before a
+[Let the bundle create the schemas](/docs/platforms/databricks#create-the-schemas).
+A missing Unity Catalog connection must be created by an administrator before a
 Lakeflow Connect pipeline can deploy.
 
-Every code is explained in [Reference: errors](/docs/reference/errors).
+**Fix:** when the platform sets `manage.schemas`, an administrator runs the
+generated `prerequisites.sql` once before the first deploy: it grants
+`USE CATALOG` and `CREATE SCHEMA` on each catalog to the identity the pipelines
+run as, and the same must be given to the identity that deploys when it
+differs. Run `ingestron request` for everything else the platform team
+provides.
+
+### The refresh job does not run in development
+
+**Symptom:** the job and the pipelines are deployed, and nothing refreshes on
+its schedule in `dev`.
+
+**Cause:** outside production, the job is created paused. Its file says
+`pause_status: PAUSED`.
+
+**Fix:** unpause it in Databricks, or set `paused: false` in the platform's
+`schedule` and generate again. See
+[Refresh on a schedule](/docs/platforms/databricks#schedule).
+
+Every code is explained in [Errors](/docs/reference/errors).
