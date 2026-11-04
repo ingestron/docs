@@ -188,8 +188,8 @@ window to select changed files.
 
 A retry repeats a failed window; it does not move that window's bounds.
 `paused` keeps the generated trigger stopped. Without it, the trigger follows
-the platform's `schedule.paused`, and with no schedule it is stopped outside
-production, so development triggers do not run on their own. Check the
+the platform's `schedule.paused`, and otherwise the
+[platform default](/docs/reference/packs/adf#platform-configuration). Check the
 generated trigger before deploying, especially when `start` is in the past.
 
 <SettingsSections pack="adf" method="adf-copy" include={["retries", "paused"]} />
@@ -282,7 +282,9 @@ native types, and the Databricks files under `build/dev/databricks` read the
 matching landing folder. If you kept a new project's default names, use the
 filenames your plan shows.
 
-Development triggers are stopped by default. Generation checks the definitions
+Development triggers are stopped by default
+([platform defaults](/docs/reference/packs/adf#platform-configuration)).
+Generation checks the definitions
 and builds the factory's files; it does not test credentials, run queries or
 deploy the factory.
 
