@@ -112,7 +112,9 @@ export function readExampleExtract(name: string, file: string, part: ExtractPart
     try {
       found = pickPath(text, part.pick);
     } catch (error) {
-      throw new Error(`Example "${name}": "${file}": ${(error as Error).message}.`);
+      throw new Error(
+        `Example "${name}": "${file}" cannot be read for pick "${part.pick}": ${(error as Error).message}.`,
+      );
     }
     if (found === undefined)
       throw new Error(`Example "${name}": "${file}" has no path "${part.pick}".`);

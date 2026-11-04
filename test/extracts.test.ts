@@ -64,6 +64,7 @@ describe("a path into a YAML or JSON file", () => {
     expect(pickPath(yaml, "tables[1]")).toBe("  - name: customers");
     // A key that opens a list item keeps its place, without the dash.
     expect(pickPath(yaml, "tables[0].name")).toBe("    name: orders");
+    expect(pickPath("packs: [databricks@1, adf@1]", "packs[1]")).toBe(`${" ".repeat(22)}adf@1`);
   });
 
   it("shows a JSON member or item as generated, tabs and all", () => {
@@ -74,6 +75,10 @@ describe("a path into a YAML or JSON file", () => {
       '\t\t\t\t"policy": { "retry": 2 }',
     );
     expect(pickPath(json, "properties.activities[1].name")).toBe('\t\t\t  "name": "wait"');
+    // An item of a one-line list keeps its column, without what precedes it.
+    expect(pickPath('{\n\t"items": [1, {"a": 2}]\n}', "items[1]")).toBe(
+      `\t${" ".repeat(13)}{"a": 2}`,
+    );
   });
 
   it("finds nothing at a path the file does not have", () => {
@@ -135,7 +140,9 @@ describe("an extract of a sample's file", () => {
       readExampleExtract("northwind", "build/dev/databricks/src/northwind/silver/daily_sales.sql", {
         pick: "a",
       }),
-    ).toThrow('Example "northwind": "build/dev/databricks/src/northwind/silver/daily_sales.sql"');
+    ).toThrow(
+      'Example "northwind": "build/dev/databricks/src/northwind/silver/daily_sales.sql" cannot be read for pick "a": the file does not parse: Implicit keys need to be on a single line at line 2, column 1.',
+    );
     expect(() => readExampleExtract("northwind", "build/dev/nope.json", { pick: "a" })).toThrow(
       'Example "northwind" has no file "build/dev/nope.json".',
     );
@@ -225,6 +232,12 @@ describe("the platform request", () => {
     expect(request.kind).toBe("prints");
     expect(request.code).toMatch(/^## DuckDB job\n\n- A Container Apps job running `ghcr.io/);
     expect(block(Request({ name: "minimal" })).code).toBe(exampleRequest("minimal"));
+  });
+
+  it("fails with the request's output when the request fails", () => {
+    expect(() => exampleRequest("landing-only", "nope")).toThrow(
+      'Example "landing-only": the request for nope fails:\n# Platform request (nope)\n\nThe definitions have problems; fix them first.\n',
+    );
   });
 
   it("fails for a section the request does not have, naming those it has", () => {
