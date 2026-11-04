@@ -132,6 +132,29 @@ export function readExampleExtract(name: string, file: string, part: ExtractPart
 }
 
 /**
+ * Part of a file in `ci-templates/`, the templates this repository publishes
+ * for pipelines and platforms: the first line containing `from` through the
+ * next containing `to`. Throws, naming the file and marker, when the file or
+ * a marker is missing.
+ */
+export function readTemplateExtract(file: string, from: string, to: string): string {
+  const folder = join(process.cwd(), "ci-templates");
+  const path = resolve(folder, file);
+  if (relative(folder, path).startsWith("..") || !existsSync(path)) {
+    throw new Error(`Template: ci-templates has no file "${file}".`);
+  }
+  const found = pickLines(readFileSync(path, "utf8"), from, to);
+  if ("missing" in found) {
+    throw new Error(
+      found.missing === from
+        ? `Template: "${file}" has no line containing "${from}".`
+        : `Template: "${file}" has no line containing "${to}" after "${from}".`,
+    );
+  }
+  return found.lines;
+}
+
+/**
  * A generated folder of a sample, such as `build/dev/adf`, as an indented
  * listing: folders first, then files, each sorted by name. Throws when the
  * sample generates no such folder.

@@ -9,6 +9,7 @@ import {
   exampleTree,
   readExampleExtract,
   readExampleFile,
+  readTemplateExtract,
   requestSections,
   type ExtractPart,
 } from "@/lib/examples";
@@ -141,6 +142,24 @@ export function Request({
       lang="text"
       kind="prints"
       label={`The platform request for ${name} (${env})`}
+    />
+  );
+}
+
+/**
+ * Part of a template in `ci-templates/`, a file you deploy or add to a
+ * pipeline: the first line containing `from` through the next containing `to`.
+ * @example <Template file="azure/duckdb-job.bicep" from="param name" to="param memory" />
+ */
+export function Template({ file, from, to }: { file: string; from: string; to: string }) {
+  const shown = `ci-templates/${file} › ${from}`;
+  return (
+    <Block
+      code={readTemplateExtract(file, from, to).trimEnd()}
+      lang={file.split(".").pop() ?? "text"}
+      kind="write"
+      title={shown}
+      label={shown}
     />
   );
 }
