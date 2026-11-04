@@ -153,17 +153,10 @@ reliable ordering column, and a row missing from a later snapshot does not mean
 it was deleted. SQL-family copies also support watermark mode. Native table
 sources refuse incremental mode rather than invent a watermark.
 
-Use `ingest.with.source_options` for connector-specific settings:
-
-- REST: pagination rules, request method and body, JSON collection and column
-  paths.
-- HTTP: GET or POST download requests, with an optional POST body.
-- Snowflake and Databricks Delta: the staging SAS secret and staging path.
-- Microsoft 365: the date-filter declaration and column, and an optional user
-  scope.
-- Web table: the table index.
-- SAP Open Hub: whether to exclude the last request.
-- Fabric Lakehouse: the schema, for a schema-enabled lakehouse.
+Some connectors take settings of their own in `ingest.with.source_options`,
+such as REST pagination or a Snowflake staging path. Each connector's page in
+the [catalogue](/docs/connectors) lists the ones it accepts, such as
+[REST's](/docs/connectors/rest#adf-settings).
 
 Only the options the selected connector supports are accepted. An unknown
 connection or extraction setting stops generation with a diagnostic, and fixed
