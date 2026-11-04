@@ -55,14 +55,15 @@ it("opens with one learning path, then sections by the reader's job, with no ind
     "name-things-your-way",
     "ask-the-platform-team",
     "share-a-template",
+    "upgrade",
   ]);
   expect(JSON.parse(read("concepts/meta.json")).pages).toEqual([
     "definitions",
     "standards-and-packs",
     "settings",
+    "layers",
     "environments-and-platform",
     "yaml-references",
-    "naming",
     "generated-files",
   ]);
   // The two section indexes are gone, and their URLs land on each section's first page.
@@ -115,6 +116,57 @@ it("merges the downloaded-example guide and moves the contract guide, keeping th
   for (const field of ["physicalName", "primaryKeyPosition", "QUALITY_RULE_NOT_CHECKED"])
     expect(contract).toContain(field);
   expect(read("reference/documents.mdx")).toContain("(/docs/how-to/write-a-contract)");
+});
+
+it("merges the worked standard and the naming concept into their guides, keeping what they taught", () => {
+  for (const [old, target] of [
+    ["examples/organisation-standards", "/docs/how-to/configure-a-standard"],
+    ["concepts/naming", "/docs/how-to/name-things-your-way"],
+  ] as const) {
+    expect(existsSync(join(process.cwd(), `content/docs/${old}.mdx`)), old).toBe(false);
+    expect(redirectFor(new URL(`https://docs.ingestron.io/docs/${old}`))).toBe(target);
+  }
+  expect(JSON.parse(read("examples/meta.json")).pages).not.toContain("organisation-standards");
+  // The worked standard: the file explained, generated, and broken on purpose.
+  const standard = read("how-to/configure-a-standard.mdx");
+  expect(standard).toContain("title: Set your organisation's standard");
+  for (const text of [
+    "## What a standard holds [#what-a-standard-holds]",
+    '<Example name="standards-and-conventions" file="standard.yaml" />',
+    "## Try it on a project [#try-it-on-a-project]",
+    '<Example name="standards-and-conventions" file="exercises/fixed-setting.yaml" />',
+    "FIXED_SETTING",
+    "## Start each project from it",
+    "## Keep projects to it",
+    "## Require governance of data products",
+  ])
+    expect(standard).toContain(text);
+  // The naming concept: variables, every pack's defaults, valid names, ADF and renames.
+  const naming = read("how-to/name-things-your-way.mdx");
+  expect(naming).toContain("title: Name tables and resources");
+  for (const text of [
+    "<NamingVariables />",
+    "<PackNaming />",
+    "{% if source %}",
+    "BAD_NAME",
+    "BAD_PATTERN",
+    "DUPLICATE_NAME",
+    "## ADF resource names",
+    "/docs/platforms/adf-pipelines#name-resources",
+    "Ingestron renames files, not data.",
+  ])
+    expect(naming).toContain(text);
+  // Its table of identities moved to the definitions concept.
+  const definitions = read("concepts/definitions.mdx");
+  expect(definitions).toContain("## IDs and names");
+  for (const identity of ["Project and definition IDs", "Project table name", "Contract link"])
+    expect(definitions).toContain(`| ${identity}`);
+  // Each new page is linked where its subject first comes up.
+  expect(read("how-to/write-a-transform.mdx")).toContain("[second layer](/docs/concepts/layers)");
+  expect(read("how-to/add-a-source.mdx")).toContain("[first layer](/docs/concepts/layers)");
+  expect(read("how-to/check-in-ci.mdx")).toContain(
+    "(/docs/how-to/upgrade#choose-the-version-you-run)",
+  );
 });
 
 it("links the three next steps from the home page, one for each kind of reader", () => {

@@ -146,7 +146,7 @@ generates a job that refreshes the pipelines in order: Lakeflow Connect
 ingestion first, then your own pipeline. The job, and its file under
 `resources/`, are named `<project>_refresh` by default, after the project's
 `id`; `naming.job` in the standard changes that (see
-[Name Databricks resources](/docs/how-to/name-things-your-way)). The
+[Name tables and resources](/docs/how-to/name-things-your-way)). The
 `sql-server` starter reads its database through Lakeflow Connect, so its job
 has both tasks. The starter's own files use the id `erp`:
 
@@ -225,9 +225,9 @@ for the platform command (checked 28 October 2026).
   declared inputs with SQL or PySpark.
 - [Add quality checks](/docs/how-to/add-quality-checks): choose what happens
   when data breaks a rule.
-- [Name Databricks resources](/docs/how-to/name-things-your-way): naming
+- [Name tables and resources](/docs/how-to/name-things-your-way): naming
   patterns for catalogs, schemas, tables and jobs.
-- [Configure the project standard](/docs/how-to/configure-a-standard): make
+- [Set your organisation's standard](/docs/how-to/configure-a-standard): make
   the standard your organisation's.
 - [Databricks pack](/docs/reference/packs/databricks): every setting, the
   platform defaults and the `manage` switches.

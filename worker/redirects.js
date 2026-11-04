@@ -12,6 +12,8 @@ export const redirects = new Map([
     "/docs/how-to/draft-a-contract-from-a-sample",
     "/docs/how-to/write-a-contract#draft-from-a-sample",
   ],
+  ["/docs/concepts/naming", "/docs/how-to/name-things-your-way"],
+  ["/docs/examples/organisation-standards", "/docs/how-to/configure-a-standard"],
   ["/docs/concepts/connectivity", "/docs/start/choose-a-route#reachability"],
   ["/docs/how-to/serve-files-as-sql", "/docs/platforms/synapse"],
   ["/docs/how-to/run-locally-with-duckdb", "/docs/platforms/duckdb"],

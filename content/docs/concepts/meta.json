@@ -4,9 +4,9 @@
     "definitions",
     "standards-and-packs",
     "settings",
+    "layers",
     "environments-and-platform",
     "yaml-references",
-    "naming",
     "generated-files"
   ]
 }

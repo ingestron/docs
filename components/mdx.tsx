@@ -15,6 +15,7 @@ import { ConnectorFacts } from "@/components/reference/connector-facts";
 import { ContractTypes } from "@/components/reference/contract-types";
 import { ContractUseTable } from "@/components/reference/contract-use";
 import { PackCapabilities } from "@/components/reference/pack-capabilities";
+import { DefaultLayers, PackNaming } from "@/components/reference/pack-defaults";
 import { SamplesCatalogue } from "@/components/reference/samples-catalogue";
 import { ContractFields, DocumentFields } from "@/components/reference/document-fields";
 import { ErrorCodes, LoadingCodes } from "@/components/reference/error-codes";
@@ -50,6 +51,8 @@ export function getMDXComponents(components?: MDXComponents) {
     ContractTypes,
     ContractUseTable,
     PackCapabilities,
+    PackNaming,
+    DefaultLayers,
     SamplesCatalogue,
     ErrorCodes,
     LoadingCodes,
