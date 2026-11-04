@@ -10,7 +10,8 @@ the default of every pack.
 A layer changes no data by itself. Ingestron uses a table's layer for its
 names, for the standard's rules, and to decide where a table lands when its
 definition does not say. A [transform](/docs/how-to/write-a-transform) is
-what reads tables in one layer and writes a table in the next.
+what reads tables and writes a new one; it can read tables in any layer and
+write its table to any layer.
 
 ## Where a table lands
 
@@ -42,7 +43,8 @@ tables in any layer. `region_sales` reads `store_sales` in `silver`.
 ## What a layer changes
 
 **Names.** In every pack that names tables, the schema is `{{ layer }}`
-unless the standard names it another way, so each layer is a schema. On
+unless the standard's or the platform's `naming` sets it otherwise, so each
+layer is a schema. On
 Databricks, `store_sales` above is `` `dev`.`silver`.`store_sales` ``, and
 its file is `build/dev/src/sales/silver/store_sales.sql`. A name pattern can
 use `{{ layer }}` anywhere; see
