@@ -105,7 +105,7 @@ describe("routes", () => {
 
   it("says what DuckDB in Azure has run, on its page, and no route carries a status", () => {
     const page = read("platforms/duckdb-in-azure.mdx");
-    const ran = section(page, "## What has run in Azure");
+    const ran = section(page, "### What has run in Azure");
     expect(ran).toContain('<OldAnchor id="checked-against-live-azure-not-yet" />');
     expect(ran).toContain("ingestron 1.8 on 2 November 2026, in one demo\nsubscription");
     for (const point of ["**Starting the job:**", "**Signing in:**", "**Running again:**"])
