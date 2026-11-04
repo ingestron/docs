@@ -5,17 +5,13 @@ description: Rebuild a project's DuckDB tables in Azure after each ADF load, wit
 
 When ADF lands the files and DuckDB builds the tables, an Azure Container Apps
 job can rebuild them after each load. ADF runs a schedule's copies, starts the
-job, and waits for it. The job pulls the public image
+job and waits for it. The job pulls the public image
 `ghcr.io/ingestron/duckdb-runner:1`, so you need no container registry and no
-registry credentials. Each run starts with an empty database, reads every landed
-file, rebuilds every table, and publishes each one to storage as Parquet.
-Nothing is kept between runs, so running again is always safe.
+registry credentials.
 
 <RouteFacts id="adf-duckdb" />
 
-<ExampleDownload name="duckdb-local" />
-
-## How it fits together
+<OldAnchor id="how-it-fits-together" />
 
 <FlowDiagram
   title="One schedule, one job run"
@@ -27,17 +23,133 @@ Nothing is kept between runs, so running again is always safe.
   ]}
 />
 
-Ingestron creates nothing in Azure. You create the job once, from the template
-below, and your deploy step copies the generated SQL to storage.
+Each run starts with an empty database, reads every landed file, rebuilds
+every table, and publishes each one to storage as Parquet. Nothing is kept
+between runs, so running again is always safe.
 
-## Create the job
+## What Ingestron writes [#what-you-get]
+
+For each environment, the ADF pack writes the factory's resources, with one
+parent pipeline per schedule, and the DuckDB pack writes the SQL the job runs:
+
+<BuildTree name="duckdb-local" folder="build/dev" />
+
+The parent pipeline runs the schedule's copies, then starts the job with the
+factory's managed identity:
+
+<Example
+  name="duckdb-local"
+  file="build/dev/adf/pipeline/pl_sales_every_24_hour.json"
+  pick="properties.activities[1]"
+/>
+
+The job's `run.sql` reads and writes `abfss://` paths only, so it runs in
+Azure:
+
+<Example name="duckdb-local" file="build/dev/duckdb/run.sql" from="read_parquet" to=";" />
+
+## What it looks like in Azure [#on-the-platform]
+
+<Screenshot
+  src="/images/platforms/duckdb-in-azure/duckdb-02-parent-run.png"
+  label="Azure Data Factory"
+  checked="2026-11-02"
+  alt="The parent's run: run_pl_northwind…, start_job, remember_job, wait_for_job, pause, get_job_status, set_job_status and check_job, all Succeeded."
+  caption="One run of the demo's Northwind parent pipeline: the copies, then the job's start, the wait for it and the check that it succeeded."
+/>
+
+<Screenshot
+  src="/images/platforms/duckdb-in-azure/duckdb-04-published.png"
+  label="Azure portal"
+  checked="2026-11-02"
+  alt="The published container holds one Parquet file per table: bronze.customers, bronze.order_details, bronze.orders, bronze.products and silver.daily_sales."
+  caption="What the job published for the demo's Northwind project: one Parquet file per table, in the published container."
+/>
+
+## Create it [#create-it]
+
+<ToolSteps>
+<Tool name="CLI">
+
+From a parent folder:
+
+```sh
+ingestron init sales --connector sqlserver --via adf-duckdb --yes
+cd sales
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: New project**, choose **SQL Server** and the ADF route into
+DuckDB tables. See [Create a project](/docs/how-to/start-from-a-template) for
+the remaining questions.
+
+</Tool>
+</ToolSteps>
+
+For another source, choose it from the [connector catalogue](/docs/connectors);
+its page lists the routes it supports. The files on this page come from a
+finished project, which also runs on a laptop:
+
+<ExampleDownload name="duckdb-local" />
+
+The platform names the job, per environment, and where tables are published:
+
+<Example name="duckdb-local" file="platform.yaml" />
+
+## Settings that shape it [#settings]
+
+### Start it after the copies
+
+With `after_copy`, each schedule has one parent pipeline,
+`pl_<project>_every_<interval>_<unit>`, and one trigger in place of the
+connection pipelines' triggers. The parent runs the schedule's copies, starts
+the job once, reads the run's status every 30 seconds, and fails unless the run
+succeeded.
+
+<Screenshot
+  src="/images/platforms/duckdb-in-azure/duckdb-01-parent-pipeline.png"
+  label="Azure Data Factory"
+  checked="2026-11-02"
+  alt="The start of the parent pipeline: Execute Pipeline runs the copies, then the Web activity start_job, then the Set variable remember_job."
+  caption="The start of the demo's parent pipeline in ADF Studio: the copies, then start_job, then remember_job, which keeps the run's name."
+/>
+
+<SettingsSections pack="adf" method="adf-copy" include={["after_copy"]} />
+
+When you turn `after_copy` on in an environment that already runs:
+
+- set `start` to the next window, because the new trigger runs every window
+  since `start`;
+- delete the connection pipelines' old triggers from the factory, because an
+  incremental publish leaves them running, which would copy everything twice.
+
+The tables' modes are as on [DuckDB](/docs/platforms/duckdb#settings), and the
+copies' schedule and runtime as on
+[Azure Data Factory](/docs/platforms/adf#runtime-and-key-vault).
+
+## Before you deploy [#prerequisites]
+
+Ingestron creates nothing in Azure. `ingestron request --env dev` lists the
+job, its access and its limits, and puts the role ADF needs to start it under
+**ADF prerequisites**:
+
+<Request name="duckdb-local" sections={["DuckDB job"]} />
+
+See [Ask the platform team](/docs/how-to/ask-the-platform-team) for the whole
+request.
+
+### Create the job
 
 The job runs in a Container Apps environment on the consumption plan. Create
 one if you have none:
 
 ```sh
-az containerapp env create --name cae-data --resource-group rg-data --location uksouth
+az containerapp env create --name cae-data --resource-group rg-data --location <region>
 ```
+
+Replace `<region>` with the Azure region that holds your storage.
 
 Then deploy the job from the template,
 [`duckdb-job.bicep`](https://github.com/ingestron/docs/blob/main/ci-templates/azure/duckdb-job.bicep):
@@ -47,10 +159,14 @@ az deployment group create --resource-group rg-data \
   --template-file duckdb-job.bicep \
   --parameters name=sales-dev-duckdb \
     environmentId=$(az containerapp env show -n cae-data -g rg-data --query id -o tsv) \
-    sqlUrl=abfss://deploy@saleslakedev.dfs.core.windows.net/sales/dev/run.sql \
-    storageAccountName=saleslakedev \
+    sqlUrl=abfss://deploy@salesdev.dfs.core.windows.net/sales/dev/run.sql \
+    storageAccountName=salesdev \
     factoryPrincipalId=$(az datafactory show -n adf-sales-dev -g rg-data --query identity.principalId -o tsv)
 ```
+
+Its parameters:
+
+<Template file="azure/duckdb-job.bicep" from="param name" to="param memory" />
 
 The template creates the job with:
 
@@ -73,13 +189,17 @@ The template creates the job with:
 
 The template outputs the job's resource ID, `jobId`, for `after_copy`.
 
-## Deploy the SQL
+## Deploy [#deploy]
 
-Run `ingestron apply` as usual, then copy each environment's DuckDB folder to
-the folder `sqlUrl` names, in your deploy pipeline:
+<OldAnchor id="deploy-the-sql" />
+
+Run `ingestron apply` as usual, publish the factory's resources as in
+[Publish the factory](/docs/platforms/adf#publish), then copy each
+environment's DuckDB folder to the folder `sqlUrl` names, in your deploy
+pipeline:
 
 ```sh
-az storage fs directory upload --account-name saleslakedev --file-system deploy \
+az storage fs directory upload --account-name salesdev --file-system deploy \
   --source "build/dev/duckdb/*" --destination-path sales/dev --recursive --auth-mode login
 ```
 
@@ -87,27 +207,30 @@ When DuckDB is the only pack, the folder is `build/<environment>/` instead.
 The cloud environment's `run.sql` must read and write `abfss://` paths: the job
 refuses one that names local folders.
 
-## Start it after the copies
+<Screenshot
+  src="/images/platforms/duckdb-in-azure/duckdb-05-deploy-sql.png"
+  label="Azure portal"
+  checked="2026-11-02"
+  alt="The deploy container's northwind/dev folder: a tables folder, README.md and run.sql."
+  caption="The demo's deployed SQL: deploy/northwind/dev holds run.sql, its README.md and each table's SQL in tables."
+/>
 
-Name the job in the platform, per environment:
+## Run and operate [#operate]
 
-<Example name="duckdb-local" file="platform.yaml" />
+<OldAnchor id="hangs-failures-and-cost" />
 
-With `after_copy`, each schedule has one parent pipeline,
-`pl_<project>_every_<interval>_<unit>`, and one trigger in place of the
-connection pipelines' triggers. The parent runs the schedule's copies, starts
-the job once, reads the run's status every 30 seconds, and fails unless the run
-succeeded. `ingestron request --env dev` lists the job, its access and its
-limits.
+The schedule's trigger starts the parent pipeline each window; outside
+production it is stopped, as the
+[platform defaults](/docs/reference/packs/adf#platform-configuration) say. Each
+job run shows in the job's execution history:
 
-When you turn `after_copy` on in an environment that already runs:
-
-- set `start` to the next window, because the new trigger runs every window
-  since `start`;
-- delete the connection pipelines' old triggers from the factory, because an
-  incremental publish leaves them running, which would copy everything twice.
-
-## Hangs, failures and cost
+<Screenshot
+  src="/images/platforms/duckdb-in-azure/duckdb-03-job-runs.png"
+  label="Azure portal"
+  checked="2026-11-02"
+  alt="Recent executions of the Container Apps job: three, each Succeeded in about 30 seconds."
+  caption="The demo job's recent executions: three runs, each about 30 seconds."
+/>
 
 - **A run that never finishes** is stopped at `after_copy.timeout` (one hour by
   default), and the pipeline fails, saying whether the run stopped. The job's
@@ -128,7 +251,15 @@ When you turn `after_copy` on in an environment that already runs:
 - **Two schedules** may start the job at once. Each run rebuilds everything,
   and the later run's files win.
 
-## What has run in Azure
+When the parent pipeline fails, see
+[The job after the copies fails or times out](/docs/troubleshooting#the-job-after-the-copies-fails-or-times-out).
+
+## Limits [#limits]
+
+DuckDB tables check no rows yet, so a flow's `expectations` are an error; see
+[Check data quality](/docs/how-to/add-quality-checks).
+
+### What has run in Azure
 
 <OldAnchor id="checked-against-live-azure-not-yet" />
 

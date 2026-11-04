@@ -78,8 +78,8 @@ const written: Record<string, Written> = {
     afterLoad:
       "A Container Apps job you create runs the DuckDB SQL in Ingestron's public runner image; ADF can start it after the copies.",
     deploy: "The factory's Git publishing, and copying the DuckDB folder to storage.",
-    deployAt: "/docs/platforms/duckdb-in-azure#deploy-the-sql",
-    deployStep: "Deploy the SQL",
+    deployAt: "/docs/platforms/duckdb-in-azure#deploy",
+    deployStep: "Deploy",
   },
   "adf-landing": {
     choose: "Reports read the landed files themselves, such as Power BI reading Parquet.",
