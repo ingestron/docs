@@ -202,7 +202,7 @@ describe("reference/packs", () => {
     expect(read("start/choose-a-route.mdx")).toContain("<RouteTable detail />");
   });
 
-  it("leaves the DuckDB explanation to the platform page, and each page links to the other", () => {
+  it("leaves the DuckDB explanation to the platform page and the how-tos, and each page links to the other", () => {
     // What the reference page used to repeat from the platform page.
     const repeated = [
       "`append` reads each file name once",
@@ -212,16 +212,21 @@ describe("reference/packs", () => {
       "Running again is safe in every mode",
     ];
     for (const text of repeated) expect(reference, text).not.toContain(text);
-    // The platform page holds every one of them.
-    const prose = platform.replace(/\s+/g, " ");
-    for (const text of [
-      "`append` reads each file name once",
-      "A CSV without a header",
-      "A transform's columns are cast to the contract's types",
-      "`runs-on: duckdb`",
-      "Running again is safe in every mode",
-    ])
-      expect(prose, text).toContain(text);
+    // Each has one home: the platform page, or the how-to for modes and casts.
+    const flat = (text: string) => text.replace(/\s+/g, " ");
+    const homes: [string, string][] = [
+      [
+        "how-to/keep-a-table-current.mdx",
+        "`append` adds each file's rows once: it reads each file name once",
+      ],
+      ["platforms/duckdb.mdx", "A CSV without a header"],
+      ["how-to/write-a-transform.mdx", "A cast can change a value"],
+      ["platforms/duckdb.mdx", "`runs-on: duckdb`"],
+      ["how-to/keep-a-table-current.mdx", "Running again is safe in every mode"],
+    ];
+    for (const [home, text] of homes) expect(flat(read(home)), `${home}: ${text}`).toContain(text);
+    expect(platform).toContain("(/docs/how-to/keep-a-table-current#on-duckdb)");
+    expect(platform).toContain("(/docs/how-to/write-a-transform#what-each-engine-makes-of-it)");
     expect(reference).toContain("(/docs/platforms/duckdb)");
     expect(platform).toContain("(/docs/reference/packs/duckdb)");
     // What the reference page keeps: the pack's job, its order in `packs`, and its files.

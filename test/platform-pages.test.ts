@@ -1,8 +1,9 @@
-// The Databricks and ADF platform pages, run as they show them: each command
+// The platform pages, run as they show them: each command
 // is read from the page and run, and each output block is compared with what
 // the command prints, so the pages and the product cannot drift apart. The
 // pages' hand-written YAML fragments, which no sample holds, are applied to a
 // sample and generated, so they stay valid.
+import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -125,6 +126,28 @@ describe("platforms/adf-pipelines", () => {
     const project = parse(readFileSync(join(cwd, "project.yaml"), "utf8")).id;
     expect(pipeline.properties.folder.name).toBe(`ingestron/${project}`);
     expect(pipeline.properties.annotations).toContain("finance");
+  });
+});
+
+const duckdb = spawnSync("duckdb", ["--version"], { encoding: "utf8" }).status === 0;
+
+describe("platforms/duckdb", () => {
+  it(`shows the tables a run builds, as DuckDB prints them${duckdb ? "" : " (skipped: no duckdb on the PATH)"}`, ({
+    skip,
+  }) => {
+    if (!duckdb) skip();
+    const shown = section(read("platforms/duckdb.mdx"), "## What it looks like in DuckDB");
+    const cwd = copy("duckdb");
+    expect(cli(cwd, ["apply", "--no-diff"]).code).toBe(0);
+    const run = (args: string[]) =>
+      spawnSync("duckdb", ["-cmd", ".mode duckbox", ...args], { cwd, encoding: "utf8" });
+    expect(run(["-bail", "ingestron.duckdb", "-c", ".read build/dev/run.sql"]).status).toBe(0);
+    const [query] = commands(shown);
+    const words = [...query!.matchAll(/"([^"]*)"|(\S+)/g)].map((match) => match[1] ?? match[2]!);
+    expect(words.slice(0, 3)).toEqual(["duckdb", "ingestron.duckdb", "-c"]);
+    const result = run(words.slice(1));
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toBe(fences(shown, "text")[0]);
   });
 });
 
