@@ -35,7 +35,8 @@ restructuring. In short:
 - Show a small working example, then the values the reader changes.
 - Show the expected file or output after each meaningful step.
 - Warn only for a concrete consequence at that step. No preview banners,
-  backlog IDs, release gates or padding. New Zealand English.
+  backlog IDs, release gates or padding. British English spelling (organisation, colour,
+  behaviour).
 
 ## Check
 
