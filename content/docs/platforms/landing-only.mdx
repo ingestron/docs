@@ -9,19 +9,81 @@ ADF lands, and nothing loads them into tables.
 
 <RouteFacts id="adf-landing" />
 
+## What Ingestron writes [#what-you-get]
+
+For each environment, the ADF pack writes the factory's resources: linked
+services for the source, the Key Vault and the landing storage, a dataset for
+each side of the copy, a pipeline and its trigger.
+
+<BuildTree name="landing-only" folder="build/dev" />
+
+Each Copy activity writes its table to a fixed folder and file, so a report
+can read the same path after every load:
+
+<Example
+  name="landing-only"
+  file="build/dev/pipeline/pl_sales_erp.json"
+  pick="properties.activities[0].outputs"
+/>
+
+The trigger runs the pipeline once a day, and is stopped in `dev`:
+
+<Example name="landing-only" file="build/dev/trigger/tr_sales_erp.json" />
+
+## What it looks like in the Azure portal [#on-the-platform]
+
+<Screenshot
+  src="/images/platforms/landing-only/storage-01-landing-folders.png"
+  label="Azure portal"
+  checked="2026-11-02"
+  alt="A storage folder with a folder per table: northwind.dbo.Customers, northwind.dbo.Order Details, northwind.dbo.Orders and northwind.dbo.Products."
+  caption="The demo's Northwind project in the storage browser: landing/northwind holds a folder per copied table."
+/>
+
+## Create it [#create-it]
+
+<ToolSteps>
+<Tool name="CLI">
+
+From a parent folder:
+
+```sh
+ingestron init sales --connector sqlserver --via adf-landing --yes
+cd sales
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: New project**, choose **SQL Server** and the route that ends
+at the landed files. See
+[Create a project](/docs/how-to/start-from-a-template) for the remaining
+questions.
+
+</Tool>
+</ToolSteps>
+
+For another source, choose it from the [connector catalogue](/docs/connectors);
+its page lists the routes it supports. The files on this page come from a
+finished project, which you can download:
+
 <ExampleDownload name="landing-only" />
 
-## End flows at the landed files
-
-Name only the ADF pack in the standard, and set the store to `none`:
+The standard names only the ADF pack, and ends every flow at the landed files:
 
 <Example name="landing-only" file="standard.yaml" />
 
+## Settings that shape it [#settings]
+
+<OldAnchor id="end-flows-at-the-landed-files" />
+
 `store: { default: none }` ends every flow at the landed files. To end one flow
 there, write `store: { uses: none }` in that flow. When nothing chooses a store,
-`ingestron plan` reports it, and the editor offers both changes as fixes.
+`ingestron plan` reports it, and the editor offers both changes as fixes. The
+runtime, Key Vault, landing storage and schedule are set as on
+[Azure Data Factory](/docs/platforms/adf#runtime-and-key-vault).
 
-## Choose how the files are laid out
+### Choose how the files are laid out
 
 Set the layout in the standard, under the method's settings:
 
@@ -34,6 +96,14 @@ Set the layout in the standard, under the method's settings:
 Reports that read the current data need `snapshot`: the file's path never
 changes, so a report keeps working after each load.
 
+<Screenshot
+  src="/images/platforms/landing-only/storage-02-customers-file.png"
+  label="Azure portal"
+  checked="2026-11-02"
+  alt="The northwind.dbo.Customers folder holds one file, northwind.dbo.Customers.parquet."
+  caption="With layout: snapshot, the demo's Customers folder holds one file, which each load replaces."
+/>
+
 A path must include `{object}`, so each table keeps its own files. Its other
 tokens are `{connection}`, the window's start `{yyyy}`, `{MM}`, `{dd}` and
 `{HH}`, and `{run}`. A path adds a file per load when it has `{run}` or the date
@@ -44,21 +114,53 @@ Without a setting, a flow that ends at the landed files gets `snapshot`. When
 each load holds only its window's rows (`mode: incremental`, or a Microsoft 365
 dataset's date filter), it gets `increments` instead, so no rows are lost.
 Ingestron refuses a layout that would lose rows: loads holding only their
-window, written to a file the next load replaces.
+window, written to a file the next load replaces. Every value is in the
+[`layout`](/docs/reference/packs/adf#adf-copy-layout) and
+[`path`](/docs/reference/packs/adf#adf-copy-path) reference.
 
-## Generate and publish
+## Before you deploy [#prerequisites]
+
+The runtime, the Key Vault and the landing storage must exist before the
+pipeline can run. `ingestron request --env dev` lists them with this project's
+values:
+
+<Request name="landing-only" sections={["ADF prerequisites"]} />
+
+See [Ask the platform team](/docs/how-to/ask-the-platform-team) for the whole
+request.
+
+## Deploy [#deploy]
+
+<OldAnchor id="generate-and-publish" />
 
 Run `ingestron apply`. With only the ADF pack, each environment's folder under
 `build/` holds the `linkedService`, `dataset`, `pipeline` and `trigger` folders
 directly. Bring them into your factory as described in
 [Publish the factory](/docs/platforms/adf#publish).
 
-## What is not checked
+## Run and operate [#operate]
 
-Nothing reads the files before your reports do, so Ingestron checks no rows.
-Each contract quality rule and flow expectation on these tables is reported as
-not checked (`QUALITY_RULE_NOT_CHECKED`). A transform cannot read a table that
-ends at the landed files: give its flow a store step first.
+Once published, the trigger copies every table each window, and each load
+replaces its file. Outside production the trigger is stopped, as the
+[platform defaults](/docs/reference/packs/adf#platform-configuration) say:
+start it in Data Factory, or set `paused: false` for the copy method in the
+platform, when you want the copies to run. Point reports at the snapshot paths, such as
+`<landing>/erp.dbo.Customers/erp.dbo.Customers.parquet`.
+
+When a copy fails or a trigger does not run, see
+[Azure Data Factory](/docs/troubleshooting#azure-data-factory) in
+Troubleshooting.
+
+## Limits [#limits]
+
+<OldAnchor id="what-is-not-checked" />
+
+- **No rows are checked.** Nothing reads the files before your reports do, so
+  each contract quality rule and flow expectation on these tables is reported
+  as not checked (`QUALITY_RULE_NOT_CHECKED`); see
+  [Check data quality](/docs/how-to/add-quality-checks).
+- **No transforms.** A transform cannot read a table that ends at the landed
+  files: give its flow a store step first.
 
 ## Next
 
