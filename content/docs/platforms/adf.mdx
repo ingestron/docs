@@ -100,16 +100,7 @@ access or consent, and generation does not inspect Azure.
 lists them with this project's values for the team that creates them. For the
 finished PostgreSQL project, `ingestron request --env dev` ends with:
 
-```text
-## ADF prerequisites
-
-Provision these before running the generated assets. Generation does not inspect Azure or validate source credentials.
-
-- Integration runtime `synthetic-self-hosted-runtime` (self-hosted), with network access and any required source drivers.
-- Key Vault `https://synthetic-vault.vault.azure.net`, with the named secrets and factory identity access.
-- Landing `abfss://landing@syntheticlake.dfs.core.windows.net/native/postgresql`, with write access for the factory identity; Microsoft 365 uses its configured application.
-- Connection `postgresql`: source permissions and runtime prerequisites from [PostgreSQL](https://learn.microsoft.com/en-us/azure/data-factory/connector-postgresql).
-```
+<Request name="connection-first-adf" sections={["ADF prerequisites"]} />
 
 See [Ask the platform team](/docs/how-to/ask-the-platform-team) for the rest of
 the request.

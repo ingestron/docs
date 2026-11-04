@@ -8,7 +8,18 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
-import { cli, command, commands, copy, fences, merge, read, section } from "./pages.js";
+import { requestSections } from "../lib/examples.js";
+import {
+  cli,
+  command,
+  commands,
+  copy,
+  fences,
+  merge,
+  read,
+  requestUses,
+  section,
+} from "./pages.js";
 
 describe("platforms/databricks", () => {
   const page = read("platforms/databricks.mdx");
@@ -46,9 +57,18 @@ describe("platforms/adf", () => {
     const prerequisites = section(page, "## Platform prerequisites");
     const written = /`(ingestron request [^`]+)`/.exec(prerequisites);
     expect(written, "the request command, in the prose").not.toBeNull();
+    // The page shows the request's last section, rendered from the finished project.
+    expect(requestUses(prerequisites)).toEqual([
+      { name: "connection-first-adf", env: "dev", sections: ["ADF prerequisites"] },
+    ]);
     const request = cli(copy("connection-first-adf"), written![1]!.split(" ").slice(1));
     expect(request.code).toBe(0);
-    expect(request.output.trimEnd().endsWith(fences(prerequisites, "text")[0]!.trim())).toBe(true);
+    expect(
+      request.output
+        .trimEnd()
+        .endsWith(requestSections("connection-first-adf", "dev", ["ADF prerequisites"])),
+      "the request ends with the section the page shows",
+    ).toBe(true);
   });
 
   it("prints the factory's files after the Databricks ones, and the missing-server problem", () => {

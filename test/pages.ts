@@ -84,3 +84,17 @@ export function merge(file: string, fragment: string): void {
   into(document, parse(fragment));
   writeFileSync(file, stringify(document));
 }
+
+/** Each `<Request>` in some text: the sample, environment and sections it shows. */
+export function requestUses(text: string): { name: string; env: string; sections?: string[] }[] {
+  return [...text.matchAll(/<Request\s([\s\S]*?)\/>/g)].map(([, props]) => {
+    const name = /name="([^"]+)"/.exec(props!)?.[1];
+    if (!name) throw new Error(`<Request ${props}/> names no sample`);
+    const sections = /sections=\{(\[[\s\S]*?\])\}/.exec(props!)?.[1];
+    return {
+      name,
+      env: /env="([^"]+)"/.exec(props!)?.[1] ?? "dev",
+      ...(sections && { sections: JSON.parse(sections) as string[] }),
+    };
+  });
+}
