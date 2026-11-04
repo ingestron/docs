@@ -64,9 +64,12 @@ The template creates the job with:
   for your data factory, so ADF can start runs, read them and stop them. The
   role also lets the factory change a run's container, so the job holds no
   secrets.
-- **Image:** the public image, pulled anonymously. If your organisation only
-  allows its own registry, copy the image there and pass `image=`; the template
-  shows where the registry's settings go. A private registry adds its own cost.
+- **Image:** the public image, pulled anonymously. `:1` moves to each new 1.x
+  release of the runner; to choose when it changes, pass `image=` with a full
+  version tag or a digest (`ghcr.io/ingestron/duckdb-runner@sha256:…`). If your
+  organisation only allows its own registry, copy the image there and pass
+  `image=`; the template shows where the registry's settings go. A private
+  registry adds its own cost.
 
 The template outputs the job's resource ID, `jobId`, for `after_copy`.
 
@@ -112,10 +115,11 @@ When you turn `after_copy` on in an environment that already runs:
 - **A failed run** is retried once by the job. Retries are safe because each
   run rebuilds everything. ADF never starts the job twice for one load: a
   failed copy is retried in place, and the schedule's trigger does not retry.
-- **Cost:** consumption-plan jobs bill per second only while a run goes, with
-  a monthly free allowance per subscription (180,000 vCPU-seconds and 360,000
-  GiB-seconds at the time of writing), so a small daily job normally costs
-  nothing. ADF bills each activity run: the wait reads the run's status every
+- **Cost:** consumption-plan jobs bill per second only while a run goes. The
+  first 180,000 vCPU-seconds and 360,000 GiB-seconds per subscription each
+  month are free
+  ([Container Apps pricing](https://azure.microsoft.com/en-us/pricing/details/container-apps/),
+  checked 4 November 2026), so a small daily job may cost nothing. ADF bills each activity run: the wait reads the run's status every
   30 seconds, about three activity runs a poll.
 - **Every run reads every landed file.** With `layout: snapshot` that is one
   file per table. With increments, each run reads them all; keep them bounded,
@@ -136,3 +140,12 @@ yet been run in a live subscription:
 
 Try it in a development subscription first, and tell us what you find:
 hello@ingestron.io.
+
+## Next
+
+- [Add a source and its tables](/docs/how-to/add-a-source): another table, or
+  another source, in the same project.
+- [Plan, apply and review](/docs/how-to/plan-and-generate): see each change
+  before you write the files.
+- [Check generated files in CI](/docs/how-to/check-in-ci): fail a pull request
+  whose files are out of date.

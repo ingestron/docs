@@ -3,8 +3,9 @@ title: Choose where your data goes
 description: Pick a route for your source, from Databricks directly to Azure Data Factory into Databricks, Synapse views, DuckDB tables or landed files, and check that the source supports it.
 ---
 
-A route is the path your data takes from its source to where it is kept, and
-it decides which packs the project uses. Project creation, in the CLI and in
+A route is the path your data takes from its source to where it is kept. It
+decides which packs the project uses: a pack is the part of Ingestron that
+writes one platform's files. Project creation, in the CLI and in
 VS Code, offers only the routes your source supports; `--via` names one on the
 command line.
 
@@ -15,14 +16,14 @@ Under each route is the list of packs its standard uses.
 
 <RouteTable detail />
 
-Synapse and DuckDB are offered where ADF copies tables, not where it copies
-files as they are; Synapse not for Microsoft 365, which lands JSON. ADF can be
-chosen for sources on a public endpoint or reachable from the workspace, as
-well as private ones. On the `adf-databricks` route, Databricks reads the
-landed files; it does not open a second connection to the original source.
+ADF feeds Synapse views and DuckDB tables only when it copies tables, not when
+it copies files as they are. Microsoft 365 data lands as JSON, so it has no
+Synapse route. ADF works for sources on a public endpoint or reachable from the
+workspace, as well as private ones. On the `adf-databricks` route, Databricks
+reads the landed files; it does not open a second connection to the source.
 
-Selecting another provider name in YAML will not enable a destination no pack
-implements.
+These routes are all Ingestron generates for. Naming another platform in the
+YAML does not add one.
 
 ## Reachability
 
@@ -60,8 +61,10 @@ cell shows the method, the reachability it supports, and its maturity:
 
 <RouteComparison ids={["files", "sqlserver", "salesforce", "kafka", "postgresql"]} />
 
-Every other source is in the [connector catalogue](/docs/connectors), and its
-page lists its routes.
+Files can also go to DuckDB on one machine, with the DuckDB starter
+(`--template duckdb`). Every other source is in the
+[connector catalogue](/docs/connectors), and its page lists its routes and the
+command that creates each.
 
 ## Create it
 

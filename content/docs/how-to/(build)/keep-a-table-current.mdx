@@ -20,8 +20,9 @@ mark the key with `primaryKey: true`; see
 ## On DuckDB
 
 `duckdb-table` replaces the table with the files' rows each run, unless the
-table sets another `mode`. In the [DuckDB starter](/docs/start/first-project),
-this keeps one row per order, the latest by `ordered_at`:
+table sets another `mode`. To keep one row per order, the latest by
+`ordered_at`, give the orders table in the
+[DuckDB starter](/docs/start/first-project)'s `flows/orders.yaml` this `store`:
 
 ```yaml
 # flows/orders.yaml

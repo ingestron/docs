@@ -67,3 +67,12 @@ workspace's read access to the storage, and report users' permissions.
 | Cost                        | Data scanned each time a report reads a view | The job's run time, plus data scanned when read    |
 | Merge, history              | No: the files as they are                    | Yes                                                |
 | Heavy joins over large data | Recomputed on every read                     | Computed once per load                             |
+
+## Next
+
+- [Add a source and its tables](/docs/how-to/add-a-source): another table, or
+  another source, in the same project.
+- [Plan, apply and review](/docs/how-to/plan-and-generate): see each change
+  before you write the files.
+- [Check generated files in CI](/docs/how-to/check-in-ci): fail a pull request
+  whose files are out of date.

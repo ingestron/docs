@@ -383,7 +383,7 @@ export function connectorSections(id: string): Section[] {
       id: "routes",
       title: "Routes",
       before: [
-        `These are the routes a project can take for ${title}, by the pack that reads the source. To compare them, see [Choose where your data goes](/docs/start/choose-a-route). To create a project from this connection, see [Start from a connection](/docs/how-to/start-from-a-template#start-from-a-connection).`,
+        `These are the routes a project can take for ${title}, by the pack that reads the source. To compare them, see [Choose where your data goes](/docs/start/choose-a-route). Create it gives the command that starts a project on each route; \`init\` asks for the rest, as [Start from a connection](/docs/how-to/start-from-a-template#start-from-a-connection) describes.`,
       ],
       items: [],
     },

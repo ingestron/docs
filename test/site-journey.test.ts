@@ -321,7 +321,7 @@ it("separates the core workflow from today's supported platform combinations", (
   const routes = read("start/choose-a-route.mdx");
   expect(routes).toContain("<RouteTable detail />");
   expect(routes).toContain("## Reachability");
-  expect(routes).toContain("will not enable a destination no pack");
+  expect(routes).toContain("Naming another platform in the\nYAML does not add one.");
   const html = renderToStaticMarkup(createElement(RouteTable, { detail: true }));
   const rows = [...html.matchAll(/<tr>(.*?)<\/tr>/g)].map((match) => match[1]!).slice(1);
   // The starter, then every route New project offers, each with its guide.
