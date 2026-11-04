@@ -16,6 +16,11 @@ example README, package README and user-facing command text.
 - Facts the code knows (settings, defaults, connector facts, error codes,
   document fields, CLI commands) are rendered by components in
   `components/reference/`. Change the code, not the page.
+- Every page belongs to one of seven areas, each a folder whose `meta.json`
+  says `"root": true`. A folder in brackets, such as `how-to/(build)/`,
+  sets a page's area without changing its URL. A new page goes in its area's
+  folder and `meta.json`, and its URL into `test/page-urls.txt`; a page never
+  moves to a new URL without a redirect in `worker/redirects.js`.
 - Organise by the reader's job. Steps that differ between the CLI and VS Code
   go in `<ToolSteps>`; a page under Tools only when one tool alone has the
   feature.

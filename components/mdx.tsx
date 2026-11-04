@@ -4,6 +4,7 @@ import { NamingVariables } from "@/components/reference/naming-variables";
 import { DocLinks } from "@/components/doc-links";
 import { Example, ExampleDownload } from "@/components/example";
 import { FlowDiagram } from "@/components/flow-diagram";
+import { Path, Paths } from "@/components/hub";
 import { RouteComparison } from "@/components/reference/route-comparison";
 import { RouteFacts } from "@/components/reference/route-facts";
 import { RouteTable } from "@/components/reference/route-table";
@@ -59,6 +60,8 @@ export function getMDXComponents(components?: MDXComponents) {
     BuiltInTemplates,
     ProjectSources,
     FlowDiagram,
+    Path,
+    Paths,
     RouteComparison,
     RouteFacts,
     RouteTable,

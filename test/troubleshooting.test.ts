@@ -20,6 +20,7 @@ import { codeHelp, loadingCodeHelp } from "@ingestron/definitions";
 import { describe, expect, it } from "vitest";
 import { redirectFor } from "../worker/redirects.js";
 import { cli, copy, fences, read, section } from "./pages.js";
+import { contentFile, contentFolder } from "../lib/content-files.js";
 
 const page = read("troubleshooting.mdx");
 const entry = (heading: string) => section(page, `### ${heading}`);
@@ -612,7 +613,7 @@ describe("links", () => {
       .map((line) => /\[#([^\]]+)\]$/.exec(line)?.[1] ?? slug(line.replace(/^#+ /, "")));
   const pageOf = (path: string) => {
     for (const candidate of [`${path}.mdx`, `${path}/index.mdx`]) {
-      if (existsSync(join(process.cwd(), "content/docs", candidate))) return read(candidate);
+      if (existsSync(join(contentFolder, contentFile(candidate)))) return read(candidate);
     }
     return undefined;
   };

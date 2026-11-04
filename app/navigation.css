@@ -32,19 +32,10 @@
   color: var(--color-fd-primary);
 }
 
-.docs-shortcuts {
-  display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-  font-size: 0.8rem;
-}
-.docs-shortcuts a {
-  padding: 0.3rem 0.45rem;
-  border-radius: 0.3rem;
-  background: var(--color-fd-muted);
-  color: var(--color-fd-foreground);
-}
-.docs-shortcuts a:hover {
-  color: var(--color-fd-primary);
-  text-decoration: underline;
+/* The Connectors area's sidebar lists its catalogue and categories, not its
+   77 connectors. Each connector page stays in the area's page tree, so it
+   keeps the Connectors tab, sidebar and breadcrumb; Fumadocs has no setting
+   to keep a page in the tree but out of the sidebar, so this hides it there. */
+:is(#nd-sidebar, #nd-sidebar-mobile) a[href^="/docs/connectors/"] {
+  display: none;
 }

@@ -1,7 +1,33 @@
 ---
-title: Ingestron
+title: Ingestron documentation
 description: Describe ingestion in YAML your team reviews, and get the Databricks, Azure Data Factory, Synapse or DuckDB files you would otherwise write by hand, with your standards applied.
 ---
+
+## Start here
+
+<Paths>
+  <Path reader="Data engineers" title="Run a project on your laptop, no cloud needed">
+    Create the DuckDB starter, generate its SQL and query the tables DuckDB
+    builds from it. [Run it on your laptop](#run-it-on-your-laptop) shows every
+    command.
+
+    [Run your first project on your laptop](/docs/start/first-project)
+
+  </Path>
+  <Path reader="Platform teams" title="Make every project follow your rules">
+    One standard sets the names, layers, types and the settings no project may
+    change. VS Code marks a break as you type, and `ingestron check` fails the
+    CI build.
+
+    [Set your organisation's standard](/docs/how-to/configure-a-standard), then
+    [Ask the platform team](/docs/how-to/ask-the-platform-team)
+
+  </Path>
+</Paths>
+
+Comparing routes first? Read [Choose where your data goes](/docs/start/choose-a-route).
+
+## What Ingestron does
 
 Ingestron writes the files a data engineer would otherwise write by hand:
 Databricks bundles and pipelines, Azure Data Factory pipelines, Synapse
@@ -69,7 +95,7 @@ The generated files need only your platform, so if you stop using Ingestron,
 they still deploy and run, and you edit them yourself from then on. One
 optional route uses something Ingestron publishes:
 DuckDB in Azure runs in a public container image, which you can copy to your
-own registry. [Generated files](/docs/concepts/generated-files) explains what
+own registry. [Generated files and ownership](/docs/concepts/generated-files) explains what
 Ingestron writes and how it tracks it.
 
 ### Your standards on every project
@@ -108,10 +134,3 @@ each one and what runs after each load.
   secret's name.
 - It doesn't send telemetry, from the command line or from VS Code.
 - It doesn't overwrite a file someone edited. It reports a conflict instead.
-
-## Next
-
-- **Data engineers:** [Run your first project on your laptop](/docs/start/first-project).
-- **Platform teams:** [Set your organisation's standard](/docs/how-to/configure-a-standard),
-  then [Ask the platform team](/docs/how-to/ask-the-platform-team).
-- **Comparing routes:** [Choose where your data goes](/docs/start/choose-a-route).

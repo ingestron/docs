@@ -1,5 +1,7 @@
 {
   "title": "Platforms",
+  "description": "What each platform runs after a load, and how you deploy it.",
+  "root": true,
   "pages": [
     "duckdb",
     "duckdb-in-azure",

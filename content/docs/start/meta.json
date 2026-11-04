@@ -1,4 +1,6 @@
 {
   "title": "Get started",
+  "description": "A first project on your laptop, and how Ingestron works.",
+  "root": true,
   "pages": ["first-project", "how-it-works", "choose-a-route", "install"]
 }

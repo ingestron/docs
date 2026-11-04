@@ -4,6 +4,7 @@
 @import "./brand.css";
 @import "./content.css";
 @import "./navigation.css";
+@import "./hub.css";
 /* Fumadocs styles search matches with ::highlight(), which the CSS parser in
    Next.js 16.3 does not know and warns about; leave those two classes out. */
 @source not inline("[&_::highlight(fd-search)]:text-fd-primary");

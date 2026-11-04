@@ -1,0 +1,91 @@
+<svg class="ic" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" role="img"><title>Activity</title><style>:root{--s-acc:var(--ingestron-signal,#ff4b23);--s-okc:var(--ingestron-available,#0f6b48);--s-soft:color-mix(in srgb,currentColor 35%,transparent);--s-accsoft:rgba(255,75,35,.2);--s-cut:var(--ingestron-surface,#fff)}/* ---------- Icon construction ---------- */
+  .ic { width: 72px; height: 72px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .ic .solid { fill: currentColor; stroke: none; }
+  .ic .acc { stroke: var(--s-acc); }
+  .ic .accf { fill: var(--s-acc); stroke: none; }
+  .ic .okc { stroke: var(--s-okc); }
+  .ic .soft { stroke: var(--s-soft); }
+  .ic .cut { fill: var(--s-cut); stroke: none; }
+  .ic .t { font: 700 7px var(--mono); fill: var(--s-cut); stroke: none; }
+  .ic :is(.drop, .out, .plug, .badge, .scan, .spin, .lift, .knob, .seat, .print, .fan, .bar, .lens, .stamp, .shackle) { transform-box: fill-box; transform-origin: center; }
+  .ic .fan, .ic .bar { transform-origin: 50% 100%; }
+
+  /* ---------- Motions (each says what the entity does) ---------- */
+  .drop { animation: drop 2.8s cubic-bezier(.3, 1.5, .5, 1) infinite; }
+  @keyframes drop { 0% { transform: translate(6px, -6px); opacity: 0; } 25%, 82% { transform: translate(0, 0); opacity: 1; } 100% { transform: translate(6px, -6px); opacity: 0; } }
+
+  .lay { animation: lay 3s linear infinite; }
+  .lay.l2 { animation-delay: 1s; } .lay.l3 { animation-delay: 2s; }
+  @keyframes lay { 0%, 36%, 100% { fill: transparent; stroke: currentColor; } 6%, 30% { fill: var(--s-accsoft); stroke: var(--s-acc); } }
+
+  .out { animation: out 1.5s ease-in infinite; }
+  .out.d2 { animation-delay: .5s; } .out.d3 { animation-delay: 1s; }
+  @keyframes out { 0% { transform: translateX(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateX(13px); opacity: 0; } }
+
+  .plug { animation: plug 2.6s ease-in-out infinite; }
+  @keyframes plug { 0%, 100% { transform: translateX(7px); } 30%, 70% { transform: translateX(0); } }
+  .spark { animation: spark 2.6s ease-in-out infinite; opacity: 0; }
+  @keyframes spark { 0%, 28%, 72%, 100% { opacity: 0; } 34%, 64% { opacity: 1; } }
+
+  .badge { animation: badge 2.4s ease-in-out infinite; }
+  @keyframes badge { 0%, 60%, 100% { transform: scale(1); } 20% { transform: scale(1.25); } 35% { transform: scale(0.95); } }
+
+  .tick { stroke-dasharray: 9; stroke-dashoffset: 9; animation: tick 3.6s ease-out infinite; }
+  .tick.t2 { animation-delay: .6s; } .tick.t3 { animation-delay: 1.2s; }
+  @keyframes tick { 0%, 8% { stroke-dashoffset: 9; } 22%, 85% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 9; } }
+
+  .scan { animation: scan 2.4s steps(1) infinite; }
+  @keyframes scan { 0% { transform: translateY(0); } 33% { transform: translateY(7px); } 66% { transform: translateY(14px); } }
+
+  .spin { animation: spin 2.4s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .lift { animation: lift 3s ease-in-out infinite; }
+  @keyframes lift { 0%, 100% { transform: translate(0, 0); } 40%, 70% { transform: translate(-2px, -3px); } }
+
+  .knob { animation: knob 3s cubic-bezier(.6, 0, .3, 1) infinite; }
+  @keyframes knob { 0%, 35% { transform: translateX(0); fill: var(--s-okc); } 50%, 85% { transform: translateX(20px); fill: var(--s-acc); } 100% { transform: translateX(0); fill: var(--s-okc); } }
+
+  .seat { animation: seat 2.8s cubic-bezier(.3, 1.3, .5, 1) infinite; }
+  @keyframes seat { 0% { transform: translateY(-8px); opacity: .2; } 30%, 80% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-8px); opacity: .2; } }
+
+  .print { animation: print 3s linear infinite; }
+  @keyframes print { 0% { transform: translateY(-17px); } 60%, 90% { transform: translateY(0); } 100% { transform: translateY(-17px); } }
+
+  .fan { animation: fanc 3s ease-in-out infinite; transform-origin: 50% 100%; }
+  .fan.fl { animation-name: fanl; } .fan.fr { animation-name: fanr; }
+  @keyframes fanl { 0%, 100% { transform: rotate(0) translateX(0); } 35%, 75% { transform: rotate(-20deg) translateX(-5px); } }
+  @keyframes fanr { 0%, 100% { transform: rotate(0) translateX(0); } 35%, 75% { transform: rotate(20deg) translateX(5px); } }
+  @keyframes fanc { 0%, 100% { transform: translateY(0); } 35%, 75% { transform: translateY(-3px); } }
+
+  .link { stroke-dasharray: 20; stroke-dashoffset: 20; animation: link 3.6s ease-out infinite; }
+  .link.k2 { animation-delay: .5s; } .link.k3 { animation-delay: 1s; }
+  @keyframes link { 0%, 5% { stroke-dashoffset: 20; } 25%, 85% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 20; } }
+
+  .bar { transform-origin: 50% 100%; animation: bar 3s ease-out infinite; }
+  .bar.b2 { animation-delay: .25s; } .bar.b3 { animation-delay: .5s; }
+  @keyframes bar { 0% { transform: scaleY(.15); } 30%, 85% { transform: scaleY(1); } 100% { transform: scaleY(.15); } }
+
+  .lens { animation: lens 3.2s ease-in-out infinite; }
+  @keyframes lens { 0%, 100% { transform: translate(-9px, -12px); } 33% { transform: translate(0, -6px); } 66% { transform: translate(-6px, 0); } }
+
+  .stamp { animation: stamp 3s cubic-bezier(.5, 0, .3, 1.4) infinite; }
+  @keyframes stamp { 0% { transform: scale(1.35); opacity: 0; } 20%, 85% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.35); opacity: 0; } }
+  .stamp-tick { stroke-dasharray: 22; stroke-dashoffset: 22; animation: stick 3s ease-out infinite; }
+  @keyframes stick { 0%, 22% { stroke-dashoffset: 22; } 40%, 85% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 22; } }
+
+  .shield-tick { stroke-dasharray: 20; stroke-dashoffset: 20; animation: shtick 2.8s ease-out infinite; }
+  @keyframes shtick { 0%, 12% { stroke-dashoffset: 20; } 40%, 85% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 20; } }
+
+  .shackle { animation: shackle 2.8s cubic-bezier(.5, 0, .3, 1.4) infinite; }
+  @keyframes shackle { 0%, 100% { transform: translateY(-5px); } 35%, 80% { transform: translateY(0); } }
+
+  .ants { stroke-dasharray: 3 3; animation: ants 1s linear infinite; }
+  @keyframes ants { to { stroke-dashoffset: -6; } }
+
+  .ic *{animation:none!important}.tick,.link,.stamp-tick,.shield-tick{stroke-dashoffset:0}.spark{opacity:1}</style>
+            <rect x="12" y="12" width="24" height="24" rx="5"/>
+            <path d="M2 24 H9 M6.5 21 L9.5 24 L6.5 27"/>
+            <path d="M39 24 H46 M43.5 21 L46.5 24 L43.5 27"/>
+            <circle class="acc spin" cx="24" cy="24" r="6" style="stroke-dasharray: 4 3.4"/>
+          </svg>
