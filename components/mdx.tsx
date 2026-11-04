@@ -36,6 +36,7 @@ import {
   PackNames,
   PlatformChecks,
 } from "@/components/reference/versions";
+import { Screenshot } from "@/components/screenshot";
 import { Tool, ToolSteps } from "@/components/tool-steps";
 
 export function getMDXComponents(components?: MDXComponents) {
@@ -57,6 +58,7 @@ export function getMDXComponents(components?: MDXComponents) {
     DocLinks,
     Example,
     ExampleDownload,
+    Screenshot,
     Tool,
     ToolSteps,
     SettingsTable,

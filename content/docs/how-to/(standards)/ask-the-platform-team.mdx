@@ -196,6 +196,16 @@ Ingestron has not checked these; the generated files expect them.
 - No schedule: the pipelines run only when someone starts them.
 ```
 
+In VS Code, **Ingestron: Prepare platform request** opens the same request,
+unsaved:
+
+<Screenshot
+  light="/images/vscode/platform-request-light.png"
+  dark="/images/vscode/platform-request-dark.png"
+  alt="An unsaved Markdown document titled Platform request: shop (dev). Under Values to provide, it lists LANDING_PATH, used for values.landing in project.yaml: not set yet, and says how to set it and what is left out until it is set."
+  caption="The request opens with the values still to provide: here LANDING_PATH, not set yet."
+/>
+
 - Each variable is listed once, with each field it feeds and its file.
 - Once it is set, the line says where from: the environment Ingestron runs
   in, `.env.dev` or `.env`. This section never shows a variable's value; the

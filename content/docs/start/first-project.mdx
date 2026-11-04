@@ -46,6 +46,13 @@ Create an empty folder named `shop`. Run **Ingestron: New project**, choose
 environment `dev`, leave the standard empty to keep the starter's own, and
 select the `shop` folder. Open that folder in VS Code.
 
+<Screenshot
+  light="/images/vscode/new-project-starter-light.png"
+  dark="/images/vscode/new-project-starter-dark.png"
+  alt="The New project: starter picker with duckdb typed in its search box. The one match is DuckDB on a laptop, duckdb: sample orders loaded into a local DuckDB database, a SQL transform over them."
+  caption="Type duckdb to find the starter among the others."
+/>
+
 </Tool>
 </ToolSteps>
 
@@ -98,7 +105,16 @@ ingestron apply
 </Tool>
 <Tool name="VS Code">
 
-Run **Ingestron: Apply**.
+Run **Ingestron: Apply**. The Explorer then shows the files in `build/dev/`,
+and each table in a flow is labelled with the methods that build it, the
+file generated for it and its full name:
+
+<Screenshot
+  light="/images/vscode/first-project-light.png"
+  dark="/images/vscode/first-project-dark.png"
+  alt="The Explorer lists the shop project, with build/dev open: tables/bronze.orders.sql, tables/silver.customer_totals.sql, .generated.json, README.md and run.sql, then the project's folders and files. Beside it, flows/orders.yaml labels the orders table duckdb-files → duckdb-table | bronze.orders.sql, and → shop.bronze.orders."
+  caption="The shop project after Apply: the generated files under build/dev, and the orders flow labelled with what it becomes."
+/>
 
 </Tool>
 </ToolSteps>

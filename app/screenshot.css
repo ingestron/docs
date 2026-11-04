@@ -1,0 +1,79 @@
+/* The frame round a screenshot (components/screenshot.tsx): a neutral window
+   bar labelled with the product, a 10 px radius and a soft shadow. The image
+   inside is the editor alone, in the theme that matches the site's. */
+.screenshot {
+  --shot-edge: var(--brand-line);
+  --shot-bar: var(--brand-sand);
+  --shot-bar-text: var(--brand-muted);
+  --shot-dot: color-mix(in srgb, var(--brand-muted) 35%, var(--brand-sand));
+  --shot-shadow: 0 1px 2px rgb(22 11 26 / 0.06), 0 12px 32px -12px rgb(22 11 26 / 0.28);
+  margin: 1.5rem 0;
+}
+.dark .screenshot {
+  --shot-edge: color-mix(in srgb, var(--brand-ink) 55%, var(--brand-plum));
+  --shot-bar: color-mix(in srgb, var(--brand-ink) 78%, var(--brand-plum));
+  --shot-bar-text: var(--brand-on-dark-muted);
+  --shot-dot: color-mix(in srgb, var(--brand-on-dark-muted) 40%, var(--brand-ink));
+  --shot-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 14px 36px -12px rgb(0 0 0 / 0.7);
+}
+.screenshot-frame {
+  overflow: hidden;
+  border: 1px solid var(--shot-edge);
+  border-radius: 10px;
+  box-shadow: var(--shot-shadow);
+}
+.screenshot-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 2.1rem;
+  padding-inline: 0.8rem;
+  background: var(--shot-bar);
+  border-bottom: 1px solid var(--shot-edge);
+}
+.screenshot-dots {
+  display: inline-flex;
+  gap: 0.4rem;
+}
+.screenshot-dots i {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: var(--shot-dot);
+}
+.screenshot-label {
+  position: absolute;
+  inset-inline: 0;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--shot-bar-text);
+  pointer-events: none;
+}
+/* Never smaller than 80% of the capture (640 px of 800), which is body size
+   or close to it; a narrower screen scrolls the image sideways. */
+.screenshot-scroll {
+  overflow-x: auto;
+}
+.prose .screenshot img {
+  display: block;
+  width: 100%;
+  max-width: none;
+  min-width: 640px;
+  height: auto;
+  margin: 0;
+}
+.prose .screenshot img.screenshot-dark,
+.dark .prose .screenshot img.screenshot-light {
+  display: none;
+}
+.dark .prose .screenshot img.screenshot-dark {
+  display: block;
+}
+.screenshot figcaption {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--color-fd-muted-foreground);
+}

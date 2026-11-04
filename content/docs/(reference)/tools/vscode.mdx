@@ -16,7 +16,12 @@ Open a folder that holds an Ingestron project. The environment the extension
 uses appears in the status bar, such as `Ingestron: dev`; click it to choose
 another. VS Code remembers the choice for each project in the workspace.
 
-![The environment picker lists dev and prod.](/images/vscode/environment.png)
+<Screenshot
+  light="/images/vscode/environment-light.png"
+  dark="/images/vscode/environment-dark.png"
+  alt="The environment picker lists dev and prod, over the first lines of project.yaml."
+  caption="Ingestron: Select environment lists the project's environments, dev and prod, over its project.yaml."
+/>
 
 ## Get started
 
@@ -43,6 +48,13 @@ on the missing one is not judged until it is set. A line in an `.env` file that
 Ingestron cannot read is a warning (`ENV_FILE_LINE`) at that line. See
 [Environment files](/docs/concepts/yaml-references#use-environment-files).
 
+<Screenshot
+  light="/images/vscode/envvar-info-light.png"
+  dark="/images/vscode/envvar-info-dark.png"
+  alt="In project.yaml, landing: ${envvar:LANDING_PATH} has a blue wavy underline. Its hover says LANDING_PATH isn't set, to add it to .env.dev or set it before running Ingestron, with the code ENVVAR_MISSING."
+  caption="A variable that is set nowhere is marked as information, ENVVAR_MISSING, and its hover names .env.dev, the file to add it to."
+/>
+
 A definitions file that no import in `project.yaml` matches, such as a new
 transform in `transforms/` when the project imports only `flows/*.yaml`, is
 not part of the project: nothing is generated from it. The editor warns on
@@ -51,7 +63,12 @@ the file (`NOT_IMPORTED`), and its quick fix adds the folder to `imports`.
 A file in `build/` that was changed by hand gets a warning: the next apply
 reports it as a conflict.
 
-![The Problems panel lists a broken link in flows/shop.yaml: "shops" is not the id of a Connection document, with the known ids, and the value is underlined in the editor.](/images/vscode/problems.png)
+<Screenshot
+  light="/images/vscode/problems-light.png"
+  dark="/images/vscode/problems-dark.png"
+  alt="flows/shop.yaml with source: shops underlined in red. The Problems panel below lists one problem for shop.yaml: “shops” is not the id of a Connection document, BROKEN_LINK, at line 5, column 9, with Known Connection ids: shop."
+  caption="A broken link, source: shops, is underlined in the editor and listed in the Problems panel with its code and the known ids."
+/>
 
 ## Fix a problem
 
@@ -74,7 +91,12 @@ A fix may change several files; one undo reverts it. You choose the fix: each
 one means something different, such as one flow or the whole standard. The
 CLI prints the first fix under the problem, as `Fix: …`.
 
-![The quick fix menu on the broken link "shops" offers: Change to "shop", and Create Connection "shops".](/images/vscode/quick-fix.png)
+<Screenshot
+  light="/images/vscode/quick-fix-light.png"
+  dark="/images/vscode/quick-fix-dark.png"
+  alt="The Quick Fix menu under source: shops offers Change to “shop” and Create Connection “shops”."
+  caption="The quick fixes for the broken link: the closest id, or a new connection with that id."
+/>
 
 When the same problem has a fix in several places, the menu also offers
 **Fix all N … problems**, which applies each one's first fix in one change; an
@@ -130,7 +152,12 @@ marked **fixed by the standard**, and marks the others **not allowed**. If a
 definition sets a fixed value anyway, the `FIXED_SETTING` problem has a quick
 fix, **Remove this setting**, so the standard's value applies.
 
-![Under a table's store with:, completion lists the streaming table's settings: mode with its default append, sequence_by, delete_when, except_columns, changes_suffix, cluster_by and properties.](/images/vscode/completion.png)
+<Screenshot
+  light="/images/vscode/completion-light.png"
+  dark="/images/vscode/completion-dark.png"
+  alt="Under a new store with: in the customers table, completion lists mode with default: append, then sequence_by, delete_when, except_columns, changes_suffix, cluster_by and properties."
+  caption="Under a table's store with:, completion lists the settings of the method the table uses, streaming-table, with mode's default."
+/>
 
 It also fills in what the project already decides:
 
@@ -148,7 +175,12 @@ It also fills in what the project already decides:
 Hover a pattern under `naming` to see the names it gives in the selected
 environment.
 
-![A new, empty flows/web.yaml filled from the Flow document skeleton: id web, and the source chosen from the project's connections.](/images/vscode/new-file.png)
+<Screenshot
+  light="/images/vscode/new-file-light.png"
+  dark="/images/vscode/new-file-dark.png"
+  alt="A new flows/web.yaml filled from the Flow skeleton: apiVersion, kind: Flow, id: web, source: shop with the project's one connection, shop, offered, and a table web with object web and contract shop.web."
+  caption="A new, empty flow file filled from the skeleton: the id comes from the file name, and Tab moves to the source, offered from the project's connections."
+/>
 
 ## What each line becomes
 
@@ -165,7 +197,12 @@ it resolves to:
 Turn these off with VS Code's `editor.inlayHints.enabled` and
 `editor.codeLens` settings.
 
-![In flows/shop.yaml, "files → streaming-table | orders.sql" above the orders table and "→ dev_sales.bronze.orders" after it; the same for customers.](/images/vscode/annotations.png)
+<Screenshot
+  light="/images/vscode/editor-light.png"
+  dark="/images/vscode/editor-dark.png"
+  alt="In flows/shop.yaml, 'files → streaming-table | orders.sql' above the orders table and '→ dev_sales.bronze.orders' after it, the same for customers, and a hover on sequence_by explaining the setting."
+  caption="Above each table, the methods that build it and its generated file; after it, its full name. The hover on sequence_by says what set it and what it means."
+/>
 
 ## Why is this value what it is?
 
@@ -183,7 +220,12 @@ docs, and each problem's code in the Problems panel links to its entry in
 `ingestron.docs.url` setting; set it to a local build, such as
 `http://localhost:3000`, to read the docs offline.
 
-![Hovering the orders table shows its full name dev_sales.bronze.orders, the files method with its pack defaults, and the streaming table's settings: mode set by this table, cluster_by fixed by the standard, properties from the standard, each with file and line.](/images/vscode/hover.png)
+<Screenshot
+  light="/images/vscode/hover-light.png"
+  dark="/images/vscode/hover-dark.png"
+  alt="The hover on the orders table: orders → dev_sales.bronze.orders; ingest: files (databricks) with its pack defaults; store: streaming-table (databricks) with a table of settings: mode upsert from this table, cluster_by auto from the standard, fixed, properties from the standard, sequence_by updated_at from this table, each with its file and line; and the pack default changes_suffix."
+  caption="The hover on a table: its full name, the method for each step, and each setting with the layer that set it, the file and the line."
+/>
 
 ## Project view
 
@@ -203,6 +245,12 @@ fold or open by hand stays as you left it until the active project changes. A
 workspace with no project shows **New project**. The view follows the environments in `project.yaml`, so adding
 one to the file adds it to the list.
 
+<Screenshot
+  light="/images/vscode/project-view-light.png"
+  dark="/images/vscode/project-view-dark.png"
+  alt="The Ingestron tab beside flows/orders.yaml in a workspace with three projects. The Project section lists erp and retail folded, and shop open, with Environments (dev, selected), Check, Plan, Apply, Compare environments, Prepare platform request and Show generated files. The Reference section is folded below."
+  caption="A workspace with three projects: shop, the project of the file in the editor, is open, and erp and retail are folded."
+/>
 ## Reference beside the editor
 
 The **Reference** section below the Project view, in the same **Ingestron** tab,
@@ -219,7 +267,12 @@ In editors built on VS Code without a secondary side bar, the tab is a
 **Reference** section at the bottom of the side bar on the left, under the
 Explorer.
 
-![The Ingestron tab beside standard.yaml, with the cursor on mode: incremental: mode, a setting of adf-copy, what each window copies, its values full and incremental with incremental marked, the default full, and that it is usually set in a flow or transform.](/images/vscode/reference.png)
+<Screenshot
+  light="/images/vscode/reference-light.png"
+  dark="/images/vscode/reference-dark.png"
+  alt="The Ingestron tab beside standard.yaml, with the cursor on mode: incremental. The Reference section shows mode, a setting of adf-copy: what each window copies, its values full and incremental with incremental marked, the default full, that it is usually set in a flow or transform, and a Reference link."
+  caption="The Reference section follows the cursor: here mode, a setting of adf-copy, with its values, the one written marked, and its default."
+/>
 
 ## See what will be generated
 
@@ -235,7 +288,12 @@ on the preview's project and on the environment it shows, even when another
 environment is selected for the project: Apply from a `dev` preview applies
 `dev`. While a preview is active, the status bar shows its environment.
 
-![Show generated files opens orders.sql read-only: the streaming table over read_files, its checks, and the AUTO CDC flow that keeps orders current.](/images/vscode/preview.png)
+<Screenshot
+  light="/images/vscode/preview-light.png"
+  dark="/images/vscode/preview-dark.png"
+  alt="orders.sql open beside shop.yaml: a streaming table orders_changes over read_files, the streaming table orders with a NOT NULL check on each key column, its comment, clustering and properties, and the AUTO CDC flow that keeps orders current by id and updated_at."
+  caption="Show generated files on the orders table: the SQL Ingestron would write for it, read-only, without writing anything."
+/>
 
 ## Ask the platform team
 
@@ -270,7 +328,26 @@ chosen for that project:
   request** are under the **…** menu beside them.
 - **The Project view** lists the same actions; see [Project view](#project-view).
 
-![The Ingestron output panel after Ingestron: Plan: three files to create in build/dev, ready to apply.](/images/vscode/plan.png)
+<Screenshot
+  light="/images/vscode/context-menu-light.png"
+  dark="/images/vscode/context-menu-dark.png"
+  alt="In the Explorer, the shop project folder's menu ends with Check, Plan, Apply, Compare environments and Prepare platform request, after VS Code's own items."
+  caption="Right-click a project folder in the Explorer: Ingestron's commands come last."
+/>
+
+<Screenshot
+  light="/images/vscode/title-buttons-light.png"
+  dark="/images/vscode/title-buttons-dark.png"
+  alt="The editor title bar of flows/shop.yaml shows the Plan and Apply buttons. Its … menu is open and ends with Check, Compare environments and Prepare platform request."
+  caption="With a project's YAML file open, Plan and Apply are buttons in the editor title; Check, Compare environments and Prepare platform request are under …."
+/>
+
+<Screenshot
+  light="/images/vscode/plan-light.png"
+  dark="/images/vscode/plan-dark.png"
+  alt="The Output panel, Ingestron channel, after Ingestron: Plan: dev → build/dev, create databricks.yml, resources/shop.pipeline.yml and src/shop/bronze/orders.sql, then 3 files: 3 create. Ready to apply."
+  caption="The Ingestron output panel after Ingestron: Plan: three files to create in build/dev."
+/>
 
 ## Generate on save
 
@@ -285,7 +362,12 @@ It applies nothing while the definitions have problems, and nothing when a
 generated file was changed by hand: the log says so, as `apply` would. It starts
 off, and VS Code remembers the choice for each workspace.
 
-![The status bar shows Auto-apply: on. The output panel logs "applied: 1 update, 2 unchanged" and the updated file, src/shop/bronze/orders.sql.](/images/vscode/auto-apply.png)
+<Screenshot
+  light="/images/vscode/auto-apply-light.png"
+  dark="/images/vscode/auto-apply-dark.png"
+  alt="The Ingestron output panel logs auto-apply on: applying dev now, then after each save; dev: up to date; and, after a save, dev: applied: 1 update, 2 unchanged, with update src/shop/bronze/orders.sql. The status bar below shows Auto-apply: on (dev) and Ingestron: dev."
+  caption="Auto-apply on for dev: each save applies the environment again, and the output panel logs the files it changed."
+/>
 
 ## Start a project
 
@@ -304,7 +386,12 @@ off, and VS Code remembers the choice for each workspace.
 It asks for the destination folder last. When the folder is outside the
 workspace, it offers to open it or add it to the workspace.
 
-![New project's first question: From a connection, to choose a source, how it is reached and a supported route, or From a starter, a ready-made project to try, such as DuckDB on a laptop.](/images/vscode/new-project.png)
+<Screenshot
+  light="/images/vscode/new-project-light.png"
+  dark="/images/vscode/new-project-dark.png"
+  alt="The New project picker asks How do you want to start? and offers From a connection, to choose a source, how it is reached and a supported route, and From a starter, a ready-made project to try, such as DuckDB on a laptop."
+  caption="New project's first question: from a connection or from a starter."
+/>
 
 ## Check files with the YAML extension [#check-files-with-the-yaml-extension]
 
