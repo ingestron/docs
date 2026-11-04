@@ -3,7 +3,11 @@ import { projectRoutes } from "@ingestron/cli";
 import { connectorEntries, packName, packs, pageTitle, routePacks } from "@/lib/reference";
 import { routeGuides } from "@/lib/routes";
 
-const common = ["how-to/start-from-a-template", "how-to/configure-a-standard"];
+const common = [
+  "how-to/start-from-a-template",
+  "how-to/add-a-source",
+  "how-to/configure-a-standard",
+];
 /** Setup guides for a pack, shown when one of the connector's routes uses it,
  * unless the Routes list already links the page. */
 const packGuides: Record<string, string[]> = {

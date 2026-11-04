@@ -34,7 +34,7 @@ function groupSections(nodes: Node[], path: string): Node[] {
     } else {
       if (group && node.type === "page" && !group.index) {
         group.index = node;
-        if (path === "connectors" || path === "how-to") continue;
+        if (path === "connectors") continue;
       }
       (group?.children ?? children).push(node);
     }
@@ -43,5 +43,5 @@ function groupSections(nodes: Node[], path: string): Node[] {
 }
 
 function grouped(path: string): boolean {
-  return path === "connectors" || path === "how-to" || /^connectors\/[^/]+$/.test(path);
+  return path === "connectors" || /^connectors\/[^/]+$/.test(path);
 }

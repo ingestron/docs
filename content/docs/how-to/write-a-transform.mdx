@@ -1,28 +1,52 @@
 ---
 title: Write a transform
-description: Build a table from other tables with SQL or PySpark.
+description: Build a table from other tables with SQL on DuckDB, Synapse or Databricks, or with PySpark on Databricks.
 ---
-
-This guide uses SQL and PySpark methods from the Databricks pack.
 
 A transform builds one table from tables your flows or other transforms
 produce. It lands in the second layer, `silver` by default, unless it sets
-`layer`.
+`layer`. Its code runs on the engine that keeps the table, so you write that
+engine's SQL: DuckDB's with [`duckdb-sql`](/docs/reference/packs/duckdb#duckdb-sql),
+T-SQL with [`synapse-sql`](/docs/reference/packs/synapse#synapse-sql), and
+Databricks SQL with [`sql`](/docs/reference/packs/databricks#sql), or Python
+with [`pyspark`](/docs/reference/packs/databricks#pyspark). A transform names
+its method with `transform.uses`; without it, the standard's rules and
+default choose, then its packs'.
 
-## In SQL
+## Write the SQL
 
-Write the query in its own file and refer to inputs as
-`{{ tables.<name> }}`:
+This transform, from the [DuckDB starter](/docs/start/first-project), totals
+each customer's orders:
+
+<Example name="duckdb" file="transforms/customer_totals.yaml" />
+
+Refer to each input as `{{ tables.<name> }}`, and list it in `inputs`.
+Ingestron replaces each `{{ tables.… }}` with the input's full name, and runs
+the transform after the tables it reads. The `contract` gives the table's
+columns and their types.
+
+For longer SQL, keep the query in its own file and read it with `${file:…}`,
+which reads the file next to the definition:
 
 <Example name="layers-and-transforms" file="transforms/store_sales.sql" />
 
 <Example name="layers-and-transforms" file="transforms/store_sales.yaml" />
 
-`${file:…}` reads the code from the file next to the definition. Every input
-must be listed in `inputs`. Ingestron replaces each `{{ tables.… }}` with the
-input's full name and generates a materialised view:
+## What each engine makes of it
+
+On DuckDB, the transform is a table, built again each run from its query,
+with each column cast to the contract's type, and published as Parquet:
+
+<Example name="duckdb" file="build/dev/tables/silver.customer_totals.sql" />
+
+On Databricks, it is a materialised view:
 
 <Example name="layers-and-transforms" file="build/dev/src/sales/silver/store_sales.sql" />
+
+On Synapse, it is a view over its inputs' views, in `synapse/views.sql`. A view
+keeps no rows and reads its inputs each time a report queries it. Its SQL sits
+inside the view, which limits how it can start and end; see
+[Write a transform as a view](/docs/platforms/synapse#write-a-transform-as-a-view).
 
 ## Read a table another team owns
 
@@ -47,9 +71,9 @@ such as a SQL parameter, stay as written.
 
 ## In PySpark
 
-Set `transform: { uses: pyspark }` and define a function `transform(tables)`.
-`tables` is a dictionary of DataFrames keyed by input name, such as
-`tables["invoices"]`; the function returns one DataFrame:
+On Databricks, set `transform: { uses: pyspark }` and define a function
+`transform(tables)`. `tables` is a dictionary of DataFrames keyed by input
+name, such as `tables["invoices"]`; the function returns one DataFrame:
 
 <Example name="pyspark" file="transforms/monthly_revenue.py" />
 
@@ -80,6 +104,8 @@ Run **Ingestron: Plan** from the Command Palette (⇧⌘P on macOS, Ctrl+Shift+P
 </Tool>
 </ToolSteps>
 
-Transforms run after the tables they read. A transform that reads itself,
-directly or through others, is an error
-([`INPUT_CYCLE`](/docs/reference/errors#INPUT_CYCLE)).
+A transform that reads itself, directly or through others, is an error
+([`INPUT_CYCLE`](/docs/reference/errors#INPUT_CYCLE)). When the query's outer
+`SELECT` names its columns, they are compared with the contract's, and a
+column one has and the other lacks is a warning
+([`TRANSFORM_COLUMNS`](/docs/reference/errors#TRANSFORM_COLUMNS)).

@@ -1,21 +1,21 @@
 {
   "title": "Guides",
   "pages": [
-    "index",
+    "---Build a project---",
     "start-from-a-template",
-    "configure-a-standard",
-    "add-an-environment",
-    "plan-and-generate",
-    "check-in-ci",
-    "draft-a-contract-from-a-sample",
-    "define-a-data-product",
-    "ask-the-platform-team",
-    "share-a-template",
-    "use-an-example",
+    "add-a-source",
+    "write-a-contract",
     "write-a-transform",
     "keep-a-table-current",
     "add-quality-checks",
-    "name-things-your-way"
-  ],
-  "defaultOpen": false
+    "define-a-data-product",
+    "add-an-environment",
+    "plan-and-generate",
+    "check-in-ci",
+    "---Standards and teams---",
+    "configure-a-standard",
+    "name-things-your-way",
+    "ask-the-platform-team",
+    "share-a-template"
+  ]
 }

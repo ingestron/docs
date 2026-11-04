@@ -10,10 +10,11 @@ import { RouteFacts } from "../components/reference/route-facts";
 import { RouteTable } from "../components/reference/route-table";
 import { allRoutes } from "../lib/reference";
 import { routeRows } from "../lib/routes";
+import { redirectFor } from "../worker/redirects.js";
 
 const read = (path: string) => readFileSync(join(process.cwd(), "content/docs", path), "utf8");
 
-it("opens with one learning path, then one guide collection with discoverable landing pages", () => {
+it("opens with one learning path, then sections by the reader's job, with no index pages", () => {
   const root = JSON.parse(read("meta.json"));
   expect(root.pages).not.toContain("tutorials");
   // Get started is a separator with its pages in reading order, not an index page of links.
@@ -25,11 +26,95 @@ it("opens with one learning path, then one guide collection with discoverable la
     "install",
   ]);
   expect(existsSync(join(process.cwd(), "content/docs/start/index.mdx"))).toBe(false);
-  for (const section of ["concepts", "how-to", "examples", "tools", "reference"]) {
+  // Build a project and Standards and teams (the guides), Platforms, then Understand.
+  expect(root.pages.slice(3, 8)).toEqual([
+    "...how-to",
+    "---Platforms---",
+    "...platforms",
+    "---Understand---",
+    "...concepts",
+  ]);
+  const guides = JSON.parse(read("how-to/meta.json")).pages as string[];
+  const build = guides.indexOf("---Build a project---");
+  const standards = guides.indexOf("---Standards and teams---");
+  expect(build).toBe(0);
+  expect(guides.slice(build + 1, standards)).toEqual([
+    "start-from-a-template",
+    "add-a-source",
+    "write-a-contract",
+    "write-a-transform",
+    "keep-a-table-current",
+    "add-quality-checks",
+    "define-a-data-product",
+    "add-an-environment",
+    "plan-and-generate",
+    "check-in-ci",
+  ]);
+  expect(guides.slice(standards + 1)).toEqual([
+    "configure-a-standard",
+    "name-things-your-way",
+    "ask-the-platform-team",
+    "share-a-template",
+  ]);
+  expect(JSON.parse(read("concepts/meta.json")).pages).toEqual([
+    "definitions",
+    "standards-and-packs",
+    "settings",
+    "environments-and-platform",
+    "yaml-references",
+    "naming",
+    "generated-files",
+  ]);
+  // The two section indexes are gone, and their URLs land on each section's first page.
+  for (const [section, first] of [
+    ["how-to", "how-to/start-from-a-template"],
+    ["concepts", "concepts/definitions"],
+  ] as const) {
+    expect(existsSync(join(process.cwd(), `content/docs/${section}/index.mdx`)), section).toBe(
+      false,
+    );
+    expect(redirectFor(new URL(`https://docs.ingestron.io/docs/${section}`))).toBe(
+      `/docs/${first}`,
+    );
+  }
+  // The look-up sections keep their indexes until they are restructured.
+  for (const section of ["examples", "tools", "reference"]) {
     expect(root.pages).toContain(section);
     expect(JSON.parse(read(`${section}/meta.json`)).pages).toContain("index");
     expect(read(`${section}/index.mdx`)).toContain("<DocLinks");
   }
+});
+
+it("merges the downloaded-example guide and moves the contract guide, keeping their anchors", () => {
+  for (const [old, target, heading] of [
+    [
+      "how-to/use-an-example",
+      "/docs/how-to/start-from-a-template#start-from-a-starter",
+      "## Start from a starter [#start-from-a-starter]",
+    ],
+    [
+      "how-to/draft-a-contract-from-a-sample",
+      "/docs/how-to/write-a-contract#draft-from-a-sample",
+      "## Draft from a sample [#draft-from-a-sample]",
+    ],
+  ] as const) {
+    expect(existsSync(join(process.cwd(), `content/docs/${old}.mdx`)), old).toBe(false);
+    expect(redirectFor(new URL(`https://docs.ingestron.io/docs/${old}`))).toBe(target);
+    expect(read(`${target.slice("/docs/".length).split("#")[0]}.mdx`)).toContain(heading);
+  }
+  // What the downloaded-example guide said lives on: the download, and adapting it.
+  const create = read("how-to/start-from-a-template.mdx");
+  for (const text of [
+    "### From a downloaded example",
+    "## Make it yours",
+    "without generated files",
+  ])
+    expect(create).toContain(text);
+  // The contract prose moved from the document reference to the guide.
+  const contract = read("how-to/write-a-contract.mdx");
+  for (const field of ["physicalName", "primaryKeyPosition", "QUALITY_RULE_NOT_CHECKED"])
+    expect(contract).toContain(field);
+  expect(read("reference/documents.mdx")).toContain("(/docs/how-to/write-a-contract)");
 });
 
 it("links the three next steps from the home page, one for each kind of reader", () => {

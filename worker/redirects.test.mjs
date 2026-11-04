@@ -110,6 +110,28 @@ test("the merged Databricks and ADF guides land on their sections, with the quer
   assert.equal(shipped("/docs/how-to/adf-runtimes"), undefined);
 });
 
+test("the guide and concept indexes, and the merged and moved guides, land on their pages", () => {
+  const shipped = (path) => redirectFor(new URL(path, "https://docs.ingestron.io"));
+  for (const [from, to] of [
+    ["/docs/how-to", "/docs/how-to/start-from-a-template"],
+    ["/docs/how-to/", "/docs/how-to/start-from-a-template"],
+    ["/docs/concepts.html", "/docs/concepts/definitions"],
+    ["/docs/how-to/use-an-example", "/docs/how-to/start-from-a-template#start-from-a-starter"],
+    [
+      "/docs/how-to/draft-a-contract-from-a-sample/",
+      "/docs/how-to/write-a-contract#draft-from-a-sample",
+    ],
+  ])
+    assert.equal(shipped(from), to, from);
+  assert.equal(
+    shipped("/docs/how-to/use-an-example?x=1"),
+    "/docs/how-to/start-from-a-template?x=1#start-from-a-starter",
+  );
+  // A page inside a section that lost its index is not redirected.
+  assert.equal(shipped("/docs/how-to/write-a-transform"), undefined);
+  assert.equal(shipped("/docs/concepts/settings"), undefined);
+});
+
 test("the worker answers the root with 307", () => {
   const response = redirectResponseFor(new URL("https://docs.ingestron.io/?q=1"));
   assert.deepEqual(response, { location: "https://docs.ingestron.io/docs?q=1", status: 307 });

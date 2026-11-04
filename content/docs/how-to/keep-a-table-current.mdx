@@ -1,26 +1,58 @@
 ---
-title: Keep a table current from change records
-description: Turn files of inserts, updates and deletes into a table of current rows, or of every version.
+title: Keep a table current
+description: Keep the current row for each key, or every version, from loads of changed rows on DuckDB or Databricks.
 ---
 
-This guide uses the Databricks `streaming-table` method.
+Use this when each load brings rows that change rows the table already has:
+a key, a column that orders the changes, and sometimes a column that says
+which rows are deletions. The store method's `mode`, on the table's
+`store.with`, decides what the table keeps. These modes need the contract to
+mark the key with `primaryKey: true`; see
+[Describe a table with a contract](/docs/how-to/write-a-contract#keys-and-required-columns).
 
-Use this when your source drops one row per change: a key, a column that
-orders the changes, and often an operation column.
+| Engine     | Current row per key | Every version | Deleted keys  |
+| ---------- | ------------------- | ------------- | ------------- |
+| DuckDB     | `upsert`            | No            | No            |
+| Databricks | `upsert`            | `history`     | `delete_when` |
+| Synapse    | No                  | No            | No            |
 
-Set the store method's `mode` on the table:
+## On DuckDB
+
+`duckdb-table` replaces the table with the files' rows each run, unless the
+table sets another `mode`. In the [DuckDB starter](/docs/start/first-project),
+this keeps one row per order, the latest by `ordered_at`:
+
+```yaml
+# flows/orders.yaml
+tables:
+  orders:
+    object: orders.csv
+    contract: shop.orders
+    store: { with: { mode: upsert, sequence_by: ordered_at } }
+```
+
+<SettingsSections pack="duckdb" method="duckdb-table" include={["mode", "sequence_by"]} />
+
+Each run then inserts each key's latest row, by `sequence_by` and then by file
+name, and replaces the row the table had for that key. Set `sequence_by` when
+one file can hold a key twice. Running again is safe in every mode. A changed
+primary key or column type needs the table built again: delete
+`ingestron.duckdb` and run again, which reloads everything from the files.
+
+## On Databricks
+
+`streaming-table` keeps the current row per key, or every version, with
+`AUTO CDC`. Set its `mode` on each table:
 
 <Example name="change-data" file="flows/crm.yaml" />
 
-- `mode: upsert` keeps the current row per key (SCD type 1).
-- `mode: history` keeps every version, with `__START_AT` and `__END_AT`
-  columns (SCD type 2).
-- `sequence_by` names the column that orders changes. It is required.
-- `delete_when` is a SQL condition for rows that delete the key.
-- `except_columns` leaves change-only columns out of the table.
+<SettingsSections
+  pack="databricks"
+  method="streaming-table"
+  include={["mode", "sequence_by", "delete_when", "except_columns"]}
+/>
 
-The contract must mark the key with `primaryKey: true`; it becomes the
-table's key.
+With `history`, each version has `__START_AT` and `__END_AT` columns.
 
 <ToolSteps>
 <Tool name="CLI">
@@ -44,5 +76,16 @@ and `accounts`, kept current with `AUTO CDC`:
 
 <Example name="change-data" file="build/dev/src/crm/bronze/accounts.sql" />
 
-The settings are listed under
-[`streaming-table`](/docs/reference/packs/databricks#streaming-table).
+## On Synapse
+
+A Synapse view reads the landed files each time a report queries it, so it
+shows them as they are: it cannot merge changes or keep history. To keep
+current rows, keep the table with DuckDB, whose tables are published as files,
+and serve it with `synapse-serve`; see [Views or tables](/docs/platforms/synapse#views-or-tables).
+
+## When ADF lands the rows
+
+ADF copies the rows; the pack that stores the table keeps it current. A
+native table copy lands the whole selection each window, so a row missing
+from a later copy does not mean it was deleted. See
+[Choose the source and its tables](/docs/platforms/adf#choose-the-source-and-its-tables).

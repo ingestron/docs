@@ -107,8 +107,56 @@ it("lists Get started's pages under its separator, in reading order, with no ind
   expect(source.getPage(["start"])).toBeUndefined();
 });
 
+it("lists the guides and concepts under their sections' separators, in order, with no index page", () => {
+  const under = (name: string) => {
+    const at = tree.children.findIndex((node) => node.type === "separator" && node.name === name);
+    expect(at, `a ${name} separator`).toBeGreaterThan(-1);
+    const next = tree.children.findIndex((node, index) => index > at && node.type === "separator");
+    return tree.children
+      .slice(at + 1, next)
+      .map((node) => (node.type === "page" ? node.url : node.type));
+  };
+  expect(under("Build a project")).toEqual([
+    "/docs/how-to/start-from-a-template",
+    "/docs/how-to/add-a-source",
+    "/docs/how-to/write-a-contract",
+    "/docs/how-to/write-a-transform",
+    "/docs/how-to/keep-a-table-current",
+    "/docs/how-to/add-quality-checks",
+    "/docs/how-to/define-a-data-product",
+    "/docs/how-to/add-an-environment",
+    "/docs/how-to/plan-and-generate",
+    "/docs/how-to/check-in-ci",
+  ]);
+  expect(under("Standards and teams")).toEqual([
+    "/docs/how-to/configure-a-standard",
+    "/docs/how-to/name-things-your-way",
+    "/docs/how-to/ask-the-platform-team",
+    "/docs/how-to/share-a-template",
+  ]);
+  expect(under("Understand")).toEqual([
+    "/docs/concepts/definitions",
+    "/docs/concepts/standards-and-packs",
+    "/docs/concepts/settings",
+    "/docs/concepts/environments-and-platform",
+    "/docs/concepts/yaml-references",
+    "/docs/concepts/naming",
+    "/docs/concepts/generated-files",
+  ]);
+  // In the design's order: the guides come before Platforms, and Understand after it.
+  const order = tree.children.filter((node) => node.type === "separator").map((node) => node.name);
+  expect(order.slice(0, 5)).toEqual([
+    "Get started",
+    "Build a project",
+    "Standards and teams",
+    "Platforms",
+    "Understand",
+  ]);
+  for (const name of ["concepts", "how-to"]) expect(source.getPage([name]), name).toBeUndefined();
+});
+
 it("opens every other main section from its folder label without a duplicate index item", () => {
-  for (const name of ["concepts", "how-to", "examples", "reference", "tools"]) {
+  for (const name of ["examples", "reference", "tools"]) {
     const url = `/docs/${name}`;
     const folder = tree.children.find((node) => node.type === "folder" && node.index?.url === url);
     expect(folder?.type).toBe("folder");
