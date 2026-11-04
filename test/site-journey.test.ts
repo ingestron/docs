@@ -11,34 +11,35 @@ import { RouteTable } from "../components/reference/route-table";
 import { allRoutes, packName, routePacks } from "../lib/reference";
 import { routeRows } from "../lib/routes";
 import { redirectFor } from "../worker/redirects.js";
+import { section } from "./pages.js";
+import { contentFile, contentFolder } from "../lib/content-files.js";
 
-const read = (path: string) => readFileSync(join(process.cwd(), "content/docs", path), "utf8");
+const read = (path: string) => readFileSync(join(contentFolder, contentFile(path)), "utf8");
 
-it("opens with one learning path, then sections by the reader's job, with no index pages", () => {
+it("opens with one learning path, then areas by the reader's job, with no index pages", () => {
   const root = JSON.parse(read("meta.json"));
   expect(root.pages).not.toContain("tutorials");
-  // Get started is a separator with its pages in reading order, not an index page of links.
-  expect(root.pages.slice(0, 3)).toEqual(["index", "---Get started---", "...start"]);
+  // The home page, then the seven areas; each area is a root folder (test/areas.test.ts).
+  expect(root.pages).toEqual([
+    "index",
+    "start",
+    "how-to/(build)",
+    "platforms",
+    "how-to/(standards)",
+    "concepts",
+    "connectors",
+    "(reference)",
+  ]);
+  // Get started lists its pages in reading order, not an index page of links.
   expect(JSON.parse(read("start/meta.json")).pages).toEqual([
     "first-project",
     "how-it-works",
     "choose-a-route",
     "install",
   ]);
-  expect(existsSync(join(process.cwd(), "content/docs/start/index.mdx"))).toBe(false);
-  // Build a project and Standards and teams (the guides), Platforms, then Understand.
-  expect(root.pages.slice(3, 8)).toEqual([
-    "...how-to",
-    "---Platforms---",
-    "...platforms",
-    "---Understand---",
-    "...concepts",
-  ]);
-  const guides = JSON.parse(read("how-to/meta.json")).pages as string[];
-  const build = guides.indexOf("---Build a project---");
-  const standards = guides.indexOf("---Standards and teams---");
-  expect(build).toBe(0);
-  expect(guides.slice(build + 1, standards)).toEqual([
+  expect(existsSync(join(contentFolder, contentFile("start/index.mdx")))).toBe(false);
+  // The guides keep their how-to/ URLs in two folder groups: Build a project, and Standards and teams.
+  expect(JSON.parse(read("how-to/(build)/meta.json")).pages).toEqual([
     "start-from-a-template",
     "add-a-source",
     "write-a-contract",
@@ -50,7 +51,7 @@ it("opens with one learning path, then sections by the reader's job, with no ind
     "plan-and-generate",
     "check-in-ci",
   ]);
-  expect(guides.slice(standards + 1)).toEqual([
+  expect(JSON.parse(read("how-to/(standards)/meta.json")).pages).toEqual([
     "configure-a-standard",
     "name-things-your-way",
     "ask-the-platform-team",
@@ -71,17 +72,15 @@ it("opens with one learning path, then sections by the reader's job, with no ind
     ["how-to", "how-to/start-from-a-template"],
     ["concepts", "concepts/definitions"],
   ] as const) {
-    expect(existsSync(join(process.cwd(), `content/docs/${section}/index.mdx`)), section).toBe(
+    expect(existsSync(join(contentFolder, contentFile(`${section}/index.mdx`))), section).toBe(
       false,
     );
     expect(redirectFor(new URL(`https://docs.ingestron.io/docs/${section}`))).toBe(
       `/docs/${first}`,
     );
   }
-  // Look up is the last section: the catalogue, then each reference page, VS Code and troubleshooting.
-  expect(root.pages.slice(8)).toEqual([
-    "---Look up---",
-    "connectors",
+  // Reference is the last area: each reference page, VS Code and troubleshooting.
+  expect(JSON.parse(read("(reference)/meta.json")).pages).toEqual([
     "...reference",
     "...tools",
     "troubleshooting",
@@ -101,7 +100,7 @@ it("opens with one learning path, then sections by the reader's job, with no ind
     ["tools", "tools/vscode"],
     ["examples", "reference/templates"],
   ] as const) {
-    expect(existsSync(join(process.cwd(), `content/docs/${section}/index.mdx`)), section).toBe(
+    expect(existsSync(join(contentFolder, contentFile(`${section}/index.mdx`))), section).toBe(
       false,
     );
     expect(redirectFor(new URL(`https://docs.ingestron.io/docs/${section}`))).toBe(
@@ -115,7 +114,7 @@ it("opens with one learning path, then sections by the reader's job, with no ind
     "synapse",
     "duckdb",
   ]);
-  expect(existsSync(join(process.cwd(), "content/docs/reference/packs/index.mdx"))).toBe(true);
+  expect(existsSync(join(contentFolder, contentFile("reference/packs/index.mdx")))).toBe(true);
 });
 
 it("merges the downloaded-example guide and moves the contract guide, keeping their anchors", () => {
@@ -131,7 +130,7 @@ it("merges the downloaded-example guide and moves the contract guide, keeping th
       "## Draft from a sample [#draft-from-a-sample]",
     ],
   ] as const) {
-    expect(existsSync(join(process.cwd(), `content/docs/${old}.mdx`)), old).toBe(false);
+    expect(existsSync(join(contentFolder, contentFile(`${old}.mdx`))), old).toBe(false);
     expect(redirectFor(new URL(`https://docs.ingestron.io/docs/${old}`))).toBe(target);
     expect(read(`${target.slice("/docs/".length).split("#")[0]}.mdx`)).toContain(heading);
   }
@@ -155,10 +154,10 @@ it("merges the worked standard and the naming concept into their guides, keeping
     ["examples/organisation-standards", "/docs/how-to/configure-a-standard"],
     ["concepts/naming", "/docs/how-to/name-things-your-way"],
   ] as const) {
-    expect(existsSync(join(process.cwd(), `content/docs/${old}.mdx`)), old).toBe(false);
+    expect(existsSync(join(contentFolder, contentFile(`${old}.mdx`))), old).toBe(false);
     expect(redirectFor(new URL(`https://docs.ingestron.io/docs/${old}`))).toBe(target);
   }
-  expect(existsSync(join(process.cwd(), "content/docs/examples"))).toBe(false);
+  expect(existsSync(join(contentFolder, contentFile("examples")))).toBe(false);
   // The worked standard: the file explained, generated, and broken on purpose.
   const standard = read("how-to/configure-a-standard.mdx");
   expect(standard).toContain("title: Set your organisation's standard");
@@ -201,18 +200,25 @@ it("merges the worked standard and the naming concept into their guides, keeping
   );
 });
 
-it("links the three next steps from the home page, one for each kind of reader", () => {
-  const next = read("index.mdx").split("\n## Next\n")[1];
-  expect(next, "a Next section").toBeDefined();
+it("starts each kind of reader on the home page, before its value story", () => {
+  const home = read("index.mdx");
+  const start = section(home, "## Start here");
   for (const [reader, links] of [
-    ["Data engineers", ["/docs/start/first-project"]],
+    ["Data engineers", ["#run-it-on-your-laptop", "/docs/start/first-project"]],
     ["Platform teams", ["/docs/how-to/configure-a-standard", "/docs/how-to/ask-the-platform-team"]],
-    ["Comparing routes", ["/docs/start/choose-a-route"]],
   ] as const) {
-    const line = next!.split("\n- ").find((item) => item.includes(`**${reader}:**`));
-    expect(line, reader).toBeDefined();
-    for (const link of links) expect(line, `${reader} → ${link}`).toContain(`(${link})`);
+    const path = start.split("<Path ").find((item) => item.startsWith(`reader="${reader}"`));
+    expect(path, reader).toBeDefined();
+    for (const link of links) expect(path, `${reader} → ${link}`).toContain(`(${link})`);
   }
+  expect(start).toContain("(/docs/start/choose-a-route)");
+  // The ways in come first, then what Ingestron does and the laptop run.
+  const headings = home.split("\n").filter((line) => line.startsWith("## "));
+  expect(headings.slice(0, 3)).toEqual([
+    "## Start here",
+    "## What Ingestron does",
+    "## Run it on your laptop",
+  ]);
 });
 
 it("runs the first project with no cloud account, source or deployment", () => {
@@ -277,8 +283,9 @@ it("keeps the front door's claims to what is shown and measured", () => {
 });
 
 it("makes YAML reference syntax reachable from every page and from concepts", () => {
-  const layout = readFileSync(join(process.cwd(), "app/docs/layout.tsx"), "utf8");
-  expect(layout).toContain('href="/docs/concepts/yaml-references"');
+  // The header's links, on every page of every area and on the home page.
+  const layout = readFileSync(join(process.cwd(), "lib/layout.shared.tsx"), "utf8");
+  expect(layout).toContain('url: "/docs/concepts/yaml-references"');
   expect(read("start/how-it-works.mdx")).toContain("/docs/concepts/yaml-references");
   expect(JSON.parse(read("concepts/meta.json")).pages).toContain("yaml-references");
   const syntax = read("concepts/yaml-references.mdx");
@@ -342,9 +349,8 @@ it("separates the core workflow from today's supported platform combinations", (
 });
 
 it("gives each route a platform page that opens with what runs, what deploys and how to create it", () => {
-  const root = JSON.parse(read("meta.json"));
-  expect(root.pages).toContain("...platforms");
-  expect(root.pages.indexOf("---Platforms---")).toBe(root.pages.indexOf("...platforms") - 1);
+  expect(JSON.parse(read("meta.json")).pages).toContain("platforms");
+  expect(JSON.parse(read("platforms/meta.json")).root).toBe(true);
   const platforms = JSON.parse(read("platforms/meta.json")).pages as string[];
   expect(platforms).toEqual([
     "duckdb",
@@ -373,7 +379,7 @@ it("gives each route a platform page that opens with what runs, what deploys and
     "how-to/design-adf-pipelines",
     "how-to/name-adf-resources",
   ])
-    expect(existsSync(join(process.cwd(), `content/docs/${old}.mdx`)), old).toBe(false);
+    expect(existsSync(join(contentFolder, contentFile(`${old}.mdx`))), old).toBe(false);
   for (const [id, page] of [
     ["duckdb", "duckdb"],
     ["adf-duckdb", "duckdb-in-azure"],
@@ -395,7 +401,7 @@ it("gives each route a platform page that opens with what runs, what deploys and
     );
     expect(facts).toContain(row.option);
   }
-  expect(existsSync(join(process.cwd(), "content/docs/platforms/index.mdx"))).toBe(false);
+  expect(existsSync(join(contentFolder, contentFile("platforms/index.mdx")))).toBe(false);
   // The ADF page is the setup for every route ADF feeds, and says so before its first heading.
   const adf = read("platforms/adf.mdx").split("\n## ")[0]!;
   for (const via of ["adf-synapse", "adf-duckdb", "adf-landing"]) {

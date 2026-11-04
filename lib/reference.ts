@@ -15,6 +15,7 @@ import { databricks } from "@ingestron/pack-databricks";
 import { duckdb } from "@ingestron/pack-duckdb";
 import { synapse } from "@ingestron/pack-synapse";
 import { parse } from "yaml";
+import { contentFile, contentFolder } from "./content-files";
 
 /** The packs the CLI provides, in the order a standard usually lists them. */
 export const packs: Pack[] = [databricks, adf, synapse, duckdb];
@@ -26,7 +27,7 @@ export function packPages(): { pack: string; url: string }[] {
 
 /** A page's title, from its front matter, by its path under `/docs/`. */
 export function pageTitle(path: string): string {
-  const text = readFileSync(join(process.cwd(), "content/docs", `${path}.mdx`), "utf8");
+  const text = readFileSync(join(contentFolder, contentFile(`${path}.mdx`)), "utf8");
   const title = (parse(text.split("---")[1] ?? "") as { title?: string } | null)?.title;
   if (!title) throw new Error(`The page "${path}" has no title.`);
   return title;

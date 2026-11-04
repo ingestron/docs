@@ -1,0 +1,6 @@
+{
+  "title": "Reference",
+  "description": "Document fields, pack settings, errors and commands.",
+  "root": true,
+  "pages": ["...reference", "...tools", "troubleshooting"]
+}

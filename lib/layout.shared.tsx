@@ -27,5 +27,8 @@ export function baseOptions(): BaseLayoutProps {
       ),
       url: "/docs",
     },
+    // In the header on wide screens and at the top of the menu on narrow ones.
+    links: [{ text: "YAML syntax", url: "/docs/concepts/yaml-references" }],
+    githubUrl: "https://github.com/ingestron",
   };
 }

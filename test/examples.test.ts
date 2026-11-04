@@ -7,6 +7,7 @@ import { run } from "@ingestron/cli";
 import { exampleFiles, exampleFolder, listExamples, readExampleFile } from "../lib/examples.js";
 import { connectorExample, watermarkExample } from "../lib/connector-page.js";
 import { connectorEntries, connectorIds } from "../lib/reference.js";
+import { contentFile, contentFolder } from "../lib/content-files.js";
 
 describe("examples", () => {
   it("includes every connector example preview in its downloadable archive", () => {
@@ -89,7 +90,7 @@ describe("examples", () => {
     let output = "";
     expect(run(["plan", "--no-diff"], { cwd, write: (text) => (output += text) })).toBe(1);
     const page = readFileSync(
-      join(process.cwd(), "content/docs/how-to/configure-a-standard.mdx"),
+      join(contentFolder, contentFile("how-to/configure-a-standard.mdx")),
       "utf8",
     );
     const shown = /Plan again:\n\n```text\n([\s\S]*?)```/.exec(page)?.[1];

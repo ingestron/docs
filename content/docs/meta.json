@@ -1,17 +1,12 @@
 {
   "pages": [
     "index",
-    "---Get started---",
-    "...start",
-    "...how-to",
-    "---Platforms---",
-    "...platforms",
-    "---Understand---",
-    "...concepts",
-    "---Look up---",
+    "start",
+    "how-to/(build)",
+    "platforms",
+    "how-to/(standards)",
+    "concepts",
     "connectors",
-    "...reference",
-    "...tools",
-    "troubleshooting"
+    "(reference)"
   ]
 }

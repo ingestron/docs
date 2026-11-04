@@ -1,11 +1,12 @@
 // Each connector is one page at its old overview URL: a short MDX file that
 // renders <ConnectorPage> and holds only that connector's own notes. The old
-// chapters and category pages are gone, and the sidebar lists every page once.
+// chapters and category pages are gone, and the area's page tree holds every page once.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { projectSources } from "@ingestron/cli";
 import { expect, it } from "vitest";
 import { parse } from "yaml";
+import { categoryAnchor, sourceCategories } from "../lib/connector-page.js";
 import { connectorEntries, connectorIds } from "../lib/reference.js";
 
 const root = join(process.cwd(), "content/docs/connectors");
@@ -50,14 +51,18 @@ it("has no page left from the chapters or the category pages", () => {
   );
 });
 
-it("lists the connectors under their categories' separators, with no category pages", () => {
-  const separators = meta.pages.filter((page) => /^---.*---$/.test(page));
-  const categories = [...new Set(projectSources().map((source) => source.category))];
-  expect(separators.map((page) => page.slice(3, -3)).sort()).toEqual([...categories].sort());
+it("lists the catalogue, then each category's link to its heading on it, with that category's connectors", () => {
+  const links = meta.pages.filter((page) => page.startsWith("["));
+  // In the catalogue's order, each linking to its heading there.
+  expect(links).toEqual(
+    sourceCategories().map((name) => `[${name}](/docs/connectors#${categoryAnchor(name)})`),
+  );
   for (const source of projectSources()) {
     const at = meta.pages.indexOf(source.id);
-    const separator = meta.pages.slice(0, at).findLast((page) => page.startsWith("---"));
-    expect(separator, source.id).toBe(`---${source.category}---`);
+    const link = meta.pages.slice(0, at).findLast((page) => page.startsWith("["));
+    expect(link, source.id).toBe(
+      `[${source.category}](/docs/connectors#${categoryAnchor(source.category)})`,
+    );
   }
   expect(meta.pages[0]).toBe("index");
 });

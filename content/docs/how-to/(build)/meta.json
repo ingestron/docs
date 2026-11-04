@@ -1,7 +1,8 @@
 {
-  "title": "Guides",
+  "title": "Build a project",
+  "description": "Sources, contracts, transforms, quality and environments.",
+  "root": true,
   "pages": [
-    "---Build a project---",
     "start-from-a-template",
     "add-a-source",
     "write-a-contract",
@@ -11,12 +12,6 @@
     "define-a-data-product",
     "add-an-environment",
     "plan-and-generate",
-    "check-in-ci",
-    "---Standards and teams---",
-    "configure-a-standard",
-    "name-things-your-way",
-    "ask-the-platform-team",
-    "share-a-template",
-    "upgrade"
+    "check-in-ci"
   ]
 }

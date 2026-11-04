@@ -1,27 +1,28 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/layouts/docs/page";
+import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/layouts/notebook/page";
 import { getMDXComponents } from "@/components/mdx";
 import { RelatedSetup } from "@/components/reference/related-setup";
 import { catalogueToc, connectorToc } from "@/lib/connector-page";
 import { connectorEntries } from "@/lib/reference";
 import { source } from "@/lib/source";
-export default async function Page({ params }: { params: Promise<{ slug?: string[] }> }) {
+export default async function Page({ params }: { params: Promise<{ slug: string[] }> }) {
   const { slug } = await params;
   const page = source.getPage(slug);
   if (!page) notFound();
   const MDX = page.data.body;
-  const id = slug?.[0] === "connectors" && slug.length === 2 ? slug[1] : undefined;
+  const id = slug[0] === "connectors" && slug.length === 2 ? slug[1] : undefined;
   const connector = id && connectorEntries(id).length ? id : undefined;
   const related = connector ? <RelatedSetup id={connector} /> : undefined;
   // A connector page's headings come from its component, so its contents are built here.
   const toc = connector
     ? connectorToc(connector, page.data.toc)
-    : slug?.join("/") === "connectors"
+    : slug.join("/") === "connectors"
       ? catalogueToc(page.data.toc)
       : page.data.toc;
   return (
-    <DocsPage toc={toc} tableOfContent={{ footer: related }}>
+    // The breadcrumb starts at the page's area, such as "Connectors" on a connector's page.
+    <DocsPage toc={toc} tableOfContent={{ footer: related }} breadcrumb={{ includeRoot: true }}>
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription className="mb-2">{page.data.description}</DocsDescription>
       <DocsBody>
@@ -31,13 +32,14 @@ export default async function Page({ params }: { params: Promise<{ slug?: string
     </DocsPage>
   );
 }
+// Every page but the home page, which app/docs/(hub) builds.
 export function generateStaticParams() {
-  return source.generateParams();
+  return source.generateParams().filter(({ slug }) => slug.length > 0);
 }
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug?: string[] }>;
+  params: Promise<{ slug: string[] }>;
 }): Promise<Metadata> {
   const { slug } = await params;
   const page = source.getPage(slug);

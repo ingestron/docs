@@ -1,0 +1,12 @@
+{
+  "title": "Standards and teams",
+  "description": "One standard for every project, shared from Git.",
+  "root": true,
+  "pages": [
+    "configure-a-standard",
+    "name-things-your-way",
+    "ask-the-platform-team",
+    "share-a-template",
+    "upgrade"
+  ]
+}
