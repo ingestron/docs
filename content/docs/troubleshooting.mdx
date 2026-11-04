@@ -35,6 +35,15 @@ On macOS and Linux the command is in that folder's `bin` folder; on Windows it
 is in the folder itself. Add that folder to your `PATH`, such as in `~/.zshrc`
 or in Windows' environment variables, then open a new terminal.
 
+With a Node.js version manager such as nvm or fnm, each Node.js version has its
+own global packages: after you switch versions, run `npm install -g ingestron`
+again.
+
+If `npm install -g` fails with `EACCES`, npm cannot write to the folder of a
+Node.js installed for the whole system. Install Node.js with a version manager
+instead, or set npm's prefix to a folder you own, such as
+`npm config set prefix ~/.npm-global`, and add its `bin` folder to your `PATH`.
+
 ## Generated files
 
 ### Plan reports a conflict

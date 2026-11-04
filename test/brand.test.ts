@@ -1,14 +1,92 @@
 // The brand on the site: the lockup that suits each theme, the favicon for
 // light and dark browsers, self-hosted fonts with their licences, and the
 // colours each theme reads with.
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { brotliDecompressSync } from "node:zlib";
 import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it } from "vitest";
 import { baseOptions } from "../lib/layout.shared";
+import { rehypeBoxDrawing } from "../lib/rehype-box-drawing";
 
 const file = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
+const bytes = (path: string) => readFileSync(join(process.cwd(), path));
+
+/**
+ * The brand's rendered files, byte for byte as the brand issues them (SHA-256 of
+ * each brand file), so no logo, tile or font is recoloured or redrawn here.
+ */
+const brandFiles: Record<string, string> = {
+  "public/brand/lockup-horizontal-primary.svg":
+    "c4d0ff321d8dd3c15ae7cc3c28b09892248748e26abd35a0a47572810b96c828",
+  "public/brand/lockup-horizontal-reverse.svg":
+    "53ab628532cde0baf29f704f0782478e2e9ac37eafb57a795c9447401026e7f2",
+  "public/brand/mask-icon.svg": "adc55393e995af87bb7a4ab707c4486cfbd74f6138f8f9ec062d5f530796b3fc",
+  "public/favicon.svg": "a57de6b914daad3bd6908ff5fae56c179b2b6a6ec494b4182a11b5ada02b0ca0",
+  "public/favicon-dark.svg": "c3e4cdeeb074a31c63a7df5ff280736b497aba4ccfd18770762b116e4d7be881",
+  "public/fonts/manrope-variable.woff2":
+    "a30ddcd349703aff7464c34bef3fffdff405ee50c113440d7c8693c02d210972",
+  "public/fonts/jetbrains-mono-variable.woff2":
+    "18be452724bfdc236c074ca94a249a7f41a86752c7d04ab258ce9ed5651f6a7e",
+};
+
+/** Reads a UIntBase128 from a WOFF2 table directory. */
+function base128(data: Buffer, at: { offset: number }): number {
+  let value = 0;
+  for (let i = 0; i < 5; i++) {
+    const byte = data[at.offset++]!;
+    value = value * 128 + (byte & 0x7f);
+    if (!(byte & 0x80)) return value;
+  }
+  throw new Error("bad UIntBase128");
+}
+
+/** The characters a WOFF2 font maps to a glyph, read from its cmap table. */
+function woff2Characters(data: Buffer): Set<number> {
+  expect(data.toString("latin1", 0, 4)).toBe("wOF2");
+  const numTables = data.readUInt16BE(12);
+  const at = { offset: 48 };
+  const tables: { tag: number; length: number }[] = [];
+  for (let i = 0; i < numTables; i++) {
+    const flags = data[at.offset++]!;
+    const tag = flags & 0x3f;
+    if (tag === 63) at.offset += 4;
+    const version = flags >> 6;
+    const length = base128(data, at);
+    // glyf (10) and loca (11) are transformed at version 0, other tables at any other.
+    const transformed = tag === 10 || tag === 11 ? version === 0 : version !== 0;
+    tables.push({ tag, length: transformed ? base128(data, at) : length });
+  }
+  const stream = brotliDecompressSync(data.subarray(at.offset));
+  let offset = 0;
+  let cmap: Buffer | undefined;
+  for (const table of tables) {
+    // cmap is table tag 0 and is never transformed.
+    if (table.tag === 0) cmap = stream.subarray(offset, offset + table.length);
+    offset += table.length;
+  }
+  const found = new Set<number>();
+  for (let i = 0; i < cmap!.readUInt16BE(2); i++) {
+    const sub = cmap!.subarray(cmap!.readUInt32BE(4 + i * 8 + 4));
+    if (sub.readUInt16BE(0) === 12) {
+      for (let g = 0; g < sub.readUInt32BE(12); g++) {
+        const [start, end] = [sub.readUInt32BE(16 + g * 12), sub.readUInt32BE(20 + g * 12)];
+        for (let code = start; code <= end; code++) found.add(code);
+      }
+    } else if (sub.readUInt16BE(0) === 4) {
+      const segments = sub.readUInt16BE(6) / 2;
+      for (let s = 0; s < segments; s++) {
+        const end = sub.readUInt16BE(14 + s * 2);
+        const start = sub.readUInt16BE(16 + segments * 2 + s * 2);
+        if (start === 0xffff) continue;
+        for (let code = start; code <= end; code++) found.add(code);
+      }
+    }
+  }
+  return found;
+}
 
 it("shows the primary lockup on paper and the reverse lockup on ink, at 96 px or wider", () => {
   const title = renderToStaticMarkup(
@@ -21,9 +99,28 @@ it("shows the primary lockup on paper and the reverse lockup on ink, at 96 px or
   const css = file("app/brand.css");
   expect(css).toContain(".dark .docs-brand .docs-brand-light {\n  display: none;");
   expect(css).toMatch(/\.docs-brand img \{[^}]*min-width: 96px;/);
-  // The signal tile keeps the brand's colour in every file the site serves.
-  for (const svg of ["brand/lockup-horizontal-primary.svg", "brand/lockup-horizontal-reverse.svg"])
-    expect(file(`public/${svg}`)).toContain('fill="#FF4B23"');
+});
+
+it("serves the brand's logo, favicon and font files exactly as the brand issues them", () => {
+  for (const [path, sha256] of Object.entries(brandFiles))
+    expect(createHash("sha256").update(bytes(path)).digest("hex"), path).toBe(sha256);
+});
+
+it("draws DuckDB's boxes and the plan's arrows with JetBrains Mono, at the line height where they join", () => {
+  const characters = woff2Characters(bytes("public/fonts/jetbrains-mono-box.woff2"));
+  for (const character of "┌─┬┐│├┼┤└┴┘→")
+    expect(characters.has(character.codePointAt(0)!), character).toBe(true);
+  // Its source and licence are recorded beside it.
+  const source = file("public/fonts/jetbrains-mono-box.txt");
+  expect(source).toContain("JetBrains Mono 2.304");
+  expect(source).toContain("releases/download/v2.304/JetBrainsMono-2.304.zip");
+  expect(source).toContain("JetBrainsMono-OFL.txt");
+  const css = file("app/brand.css");
+  expect(css).toContain(
+    'font-family: "Ingestron Box";\n  src: url("/fonts/jetbrains-mono-box.woff2")',
+  );
+  expect(css).not.toContain("local(");
+  expect(css).toMatch(/\[data-box-drawing\] pre \{\n  line-height: 1\.32;/);
 });
 
 it("replaces the placeholder icon with the brand favicon for light and dark browsers", () => {
@@ -68,4 +165,16 @@ it("maps paper to the light theme and ink to the dark one, with signal deep and 
   // No colour from the placeholder theme is left.
   for (const path of ["app/brand.css", "app/global.css", "app/content.css", "app/navigation.css"])
     expect(file(path), path).not.toMatch(/#096e63|#4fc2b3|#172b2b/i);
+});
+
+it("marks the code blocks that hold box-drawing characters, and only those", () => {
+  const block = (line: string) => ({
+    type: "element",
+    tagName: "pre",
+    properties: {},
+    children: [{ type: "element", tagName: "code", children: [{ type: "text", value: line }] }],
+  });
+  const tree = { type: "root", children: [block("│ Aroha │ 2 │"), block("dev → build/dev")] };
+  rehypeBoxDrawing()(tree);
+  expect(tree.children.map((pre) => "dataBoxDrawing" in pre.properties)).toEqual([true, false]);
 });

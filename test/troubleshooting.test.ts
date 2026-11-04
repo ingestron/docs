@@ -56,6 +56,10 @@ describe("the command", () => {
     expect(text).toContain("`bash: ingestron: command not found`");
     expect(text).toContain("`zsh: command not found: ingestron`");
     expect(fences(text, "sh")).toEqual(["npm install -g ingestron\n", "npm prefix -g\n"]);
+    // Globals are per Node.js version, and a system Node.js needs another prefix.
+    expect(text).toContain("after you switch versions, run `npm install -g ingestron`");
+    expect(text).toContain("`EACCES`");
+    expect(text).toContain("`npm config set prefix ~/.npm-global`");
     expect(fences(read("start/install.mdx"), "sh")[0]).toMatch(/^npm install -g ingestron\n/);
     // The pages that install send a reader here.
     for (const from of ["start/install.mdx", "start/first-project.mdx"])
