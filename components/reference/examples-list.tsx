@@ -1,6 +1,7 @@
 // Download cards describe the same resolved samples that the archive builder uses.
 import { listExamples, type ExampleInfo } from "@/lib/examples";
 import { packName } from "@/lib/reference";
+import { starterCommand } from "@/lib/routes";
 
 /** Matching downloadable projects, with their platforms and connector scope.
  * @example <ExamplesList connector="sqlserver" />
@@ -46,6 +47,12 @@ function Download({ example }: { example: ExampleInfo }) {
           ? `Multi-connector project (${facts.connectors.length} connector types)`
           : `${facts.connectors[0]} project`}
       </p>
+      {example.template && (
+        <p>
+          A built-in starter: create it without the download with{" "}
+          <code>{starterCommand(example.template)}</code>.
+        </p>
+      )}
       <p>
         Holds the project's definition files, not its generated files: run{" "}
         <code>ingestron apply</code> in the folder to write them. File previews use these same

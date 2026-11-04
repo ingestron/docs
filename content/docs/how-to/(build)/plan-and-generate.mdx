@@ -48,8 +48,9 @@ ingestron apply --env dev
 </Tool>
 <Tool name="VS Code">
 
-Run **Ingestron: Apply** for the selected environment. Read the result in the
-output panel; do not assume every output succeeded if a problem is reported.
+Run **Ingestron: Apply** for the selected environment, and read the result in
+the output panel. If it reports a problem, some folders may not have been
+written.
 
 </Tool>
 </ToolSteps>
@@ -67,20 +68,10 @@ your packs. Commit both definitions and generated output so reviewers can see
 the platform effect.
 
 Use [CI checking](/docs/how-to/check-in-ci) to detect drift without rewriting files.
-When ready to deploy, follow the selected pack's instructions. Applying Ingestron
-definitions and deploying platform resources are separate actions.
+Applying writes files; deploying them is a separate step, with your platform's
+own tools. Each route's guide says how:
 
-<DocLinks
-  items={[
-    {
-      title: "Platform capabilities and deployment",
-      href: "/docs/reference/packs",
-      description: "Find the generated format and platform-specific procedures.",
-    },
-    {
-      title: "Troubleshoot a problem",
-      href: "/docs/troubleshooting",
-      description: "Resolve diagnostics, conflicts and unexpected output.",
-    },
-  ]}
-/>
+<RouteList deploy />
+
+If something goes wrong, see [Troubleshooting](/docs/troubleshooting) for
+diagnostics, conflicts and unexpected output.

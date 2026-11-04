@@ -1,4 +1,5 @@
-// Copies the VS Code extension's Command Palette entries into this site.
+// Copies the VS Code extension's Command Palette entries, and its version,
+// into this site.
 // The extension lives in its own repository, so the site keeps a copy:
 //   pnpm sync:vscode <path to an ingestron/vscode checkout>
 import { readFileSync, writeFileSync } from "node:fs";
@@ -11,8 +12,18 @@ export const commandsFile = join(
   "../components/reference/vscode-commands.json",
 );
 
-/** Writes the extension's commands (command, title, category) to `out`. */
-export function syncVscodeCommands(extensionFolder, out = commandsFile) {
+/** Where the site reads the extension's version from. */
+export const extensionFile = join(
+  import.meta.dirname,
+  "../components/reference/vscode-extension.json",
+);
+
+/** Writes the extension's commands (command, title, category) to `out`, and its version to `versionOut`. */
+export function syncVscodeCommands(
+  extensionFolder,
+  out = commandsFile,
+  versionOut = extensionFile,
+) {
   const manifest = JSON.parse(readFileSync(join(extensionFolder, "package.json"), "utf8"));
   const commands = manifest.contributes.commands.map(({ command, title, category }) => ({
     command,
@@ -20,6 +31,7 @@ export function syncVscodeCommands(extensionFolder, out = commandsFile) {
     category,
   }));
   writeFileSync(out, `${JSON.stringify(commands, null, 2)}\n`);
+  writeFileSync(versionOut, `${JSON.stringify({ version: manifest.version }, null, 2)}\n`);
   return commands.length;
 }
 

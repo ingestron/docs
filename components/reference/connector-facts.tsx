@@ -2,9 +2,11 @@
 import { Fragment, type ReactNode } from "react";
 import { projectRoutes } from "@ingestron/cli";
 import { ingestionRows } from "@/lib/connector-settings";
+import { listExamples } from "@/lib/examples";
 import { connectorEntries, packName, type ConnectorEntry } from "@/lib/reference";
+import { connectorCommand, starter, starterCommand } from "@/lib/routes";
 
-/** A compact summary of each pack that reads the connector and the routes it starts, linking to its sections.
+/** A compact summary of each pack that reads the connector, the routes it starts and the command for each, then the starters that read it.
  * @example <ConnectorFacts id="sqlserver" />
  */
 export function ConnectorFacts({ id }: { id: string }) {
@@ -15,6 +17,7 @@ export function ConnectorFacts({ id }: { id: string }) {
       {entries.map((entry) => (
         <Route key={entry.pack} id={id} entry={entry} />
       ))}
+      <Starters id={id} />
     </div>
   );
 }
@@ -60,6 +63,16 @@ function routeFacts(
         ))}
       </ul>,
     ],
+    [
+      "Create it",
+      <ul key="create" className="route-list">
+        {routes.map(({ via }) => (
+          <li key={via}>
+            <code>{connectorCommand(id, via)}</code>
+          </li>
+        ))}
+      </ul>,
+    ],
     ["Method", <code key="method">{connector.method}</code>],
     ["Connectivity", connectivity.join(", ") || "any"],
     ["Source object", <code key="object">{connector.object}</code>],
@@ -73,4 +86,26 @@ function routeFacts(
   else if (modes) facts.push(["Reading modes", modes.map((mode) => String(mode.value)).join(", ")]);
   if (maturity) facts.push(["Availability", `${maturity.status} · checked ${maturity.checked}`]);
   return facts;
+}
+
+/** The built-in starters whose connections use the connector, the one with no cloud first. */
+function Starters({ id }: { id: string }) {
+  const starters = listExamples()
+    .filter((example) => example.template && example.facts.connectors.includes(id))
+    .sort((a, b) => Number(b.template === starter) - Number(a.template === starter));
+  if (starters.length === 0) return null;
+  return (
+    <section>
+      <h3>Starters</h3>
+      <p>Complete projects that read this source, ready to create:</p>
+      <ul className="route-list">
+        {starters.map((example) => (
+          <li key={example.name}>
+            {example.title} ({example.facts.packs.map(packName).join(" + ")}):{" "}
+            <code>{starterCommand(example.template!)}</code>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }

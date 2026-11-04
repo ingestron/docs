@@ -18,6 +18,12 @@ export interface RouteRow {
   choose: string;
   afterLoad: string;
   deploy: string;
+  /** The section that says how to deploy it, or run it where there is nothing to deploy. */
+  deployAt: string;
+  /** That section's heading. */
+  deployStep: string;
+  /** What has not been tried yet, when something has not. */
+  status?: string;
 }
 
 /** The guide for each route, by its `--via` value. */
@@ -30,9 +36,12 @@ export const routeGuides: Record<string, string> = {
 };
 
 /** The starter that needs no source and no cloud. */
-const starter = "duckdb";
+export const starter = "duckdb";
 
-type Written = Pick<RouteRow, "choose" | "afterLoad" | "deploy">;
+type Written = Pick<
+  RouteRow,
+  "choose" | "afterLoad" | "deploy" | "deployAt" | "deployStep" | "status"
+>;
 
 /** What each route is for, in the docs' words, by `--via` (or the starter's name). */
 const written: Record<string, Written> = {
@@ -41,17 +50,23 @@ const written: Record<string, Written> = {
     afterLoad:
       "You run `run.sql` with the DuckDB command line: it rebuilds the tables and publishes them as Parquet.",
     deploy: "Nothing. It runs where you are.",
+    deployAt: "/docs/start/first-project#4-build-the-tables",
+    deployStep: "Build the tables",
   },
   databricks: {
     choose: "Databricks can reach the source, and the tables live in Databricks.",
     afterLoad: "Nothing more. The Databricks pipeline that reads the source writes the tables.",
     deploy: "The Databricks CLI: `databricks bundle deploy`.",
+    deployAt: "/docs/platforms/databricks#deploy",
+    deployStep: "Deploy the bundle",
   },
   "adf-databricks": {
     choose:
       "ADF copies the source, for example through a self-hosted integration runtime on a private network, and the tables live in Databricks.",
     afterLoad: "Databricks pipelines read the landed files into tables, on their own schedule.",
     deploy: "The factory's Git publishing for ADF, and `databricks bundle deploy`.",
+    deployAt: "/docs/platforms/adf#publish",
+    deployStep: "Publish the factory",
   },
   "adf-synapse": {
     choose:
@@ -59,6 +74,8 @@ const written: Record<string, Written> = {
     afterLoad: "Nothing. Synapse serverless SQL reads the files each time a report queries a view.",
     deploy:
       "The factory's Git publishing, and running `views.sql` against the serverless database when the definitions change.",
+    deployAt: "/docs/platforms/synapse#generate-then-run-the-views",
+    deployStep: "Generate, then run the views",
   },
   "adf-duckdb": {
     choose:
@@ -66,11 +83,17 @@ const written: Record<string, Written> = {
     afterLoad:
       "A Container Apps job you create runs the DuckDB SQL in Ingestron's public runner image; ADF can start it after the copies.",
     deploy: "The factory's Git publishing, and copying the DuckDB folder to storage.",
+    deployAt: "/docs/platforms/duckdb-in-azure#deploy-the-sql",
+    deployStep: "Deploy the SQL",
+    status:
+      "Not yet run in a live Azure subscription: see [Checked against live Azure](/docs/platforms/duckdb-in-azure#checked-against-live-azure-not-yet).",
   },
   "adf-landing": {
     choose: "Reports read the landed files themselves, such as Power BI reading Parquet.",
     afterLoad: "Nothing. The copied files are the result.",
     deploy: "The factory's Git publishing.",
+    deployAt: "/docs/platforms/landing-only#generate-and-publish",
+    deployStep: "Generate and publish",
   },
 };
 
@@ -115,4 +138,14 @@ export function routeRow(id: string): RouteRow {
   const row = routeRows().find((item) => item.id === id);
   if (!row) throw new Error(`No route "${id}".`);
   return row;
+}
+
+/** The command that creates a project from a connector on one route; `init` asks for the rest. */
+export function connectorCommand(connector: string, via: string): string {
+  return `ingestron init sales --connector ${connector} --via ${via}`;
+}
+
+/** The command that creates a project from a built-in starter; `init` asks the starter's questions. */
+export function starterCommand(template: string): string {
+  return `ingestron init ${template === starter ? "shop" : "sales"} --template ${template}`;
 }
