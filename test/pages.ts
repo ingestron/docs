@@ -13,6 +13,24 @@ import { contentFile, contentFolder } from "../lib/content-files.js";
 /** A page's source, by its path under content/docs without folder groups, such as `how-to/add-a-source.mdx`. */
 export const read = (path: string) => readFileSync(join(contentFolder, contentFile(path)), "utf8");
 
+export /** The page's heading anchors: `[#id]` where given, else the heading's slug. */
+function anchors(text: string): Map<string, string> {
+  const found = new Map<string, string>();
+  let fenced = false;
+  for (const line of text.split("\n")) {
+    if (line.trimStart().startsWith("```")) fenced = !fenced;
+    const heading = !fenced && /^#{2,6} (.*?)(?: \[#([^\]]+)\])?$/.exec(line);
+    if (!heading) continue;
+    const slug = heading[1]!
+      .toLowerCase()
+      .replace(/[^a-z0-9 -]/g, "")
+      .trim()
+      .replace(/ +/g, "-");
+    found.set(heading[2] ?? slug, heading[1]!);
+  }
+  return found;
+}
+
 /** The text under a heading, such as `## Generate and inspect`, up to the next heading at its level or above. */
 export function section(text: string, heading: string): string {
   const level = /^#+/.exec(heading)![0].length;

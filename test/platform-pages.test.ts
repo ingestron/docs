@@ -158,6 +158,22 @@ describe("platforms/duckdb", () => {
   });
 });
 
+describe("each restructured platform page's Create it", () => {
+  it.each(["synapse", "landing-only", "duckdb", "duckdb-in-azure"])(
+    "%s: creates a project that plans, with the page's commands",
+    (page) => {
+      const create = commands(section(read(`platforms/${page}.mdx`), "## Create it"));
+      const init = command(create, "init");
+      expect(create[1], "then into the project").toBe(`cd ${init[1]}`);
+      const parent = mkdtempSync(join(tmpdir(), `docs-create-${page}-`));
+      const created = cli(parent, init);
+      expect(created.code, created.output).toBe(0);
+      const planned = cli(join(parent, init[1]!), ["plan", "--no-diff"]);
+      expect(planned.code, planned.output).toBe(0);
+    },
+  );
+});
+
 /** The one pipeline file a plan or apply lists. */
 function pipelineFile(output: string): string {
   const found = [...output.matchAll(/create {4}pipeline\/(\S+\.json)/g)].map((match) => match[1]!);
