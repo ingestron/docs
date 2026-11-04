@@ -9,6 +9,7 @@
 // platform, which ends the caption.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { ScreenshotScroll } from "@/components/screenshot-scroll";
 
 /** A PNG's size in pixels, from its header: the build fails if the file is missing. */
 function pngSize(source: string): { width: number; height: number } {
@@ -31,15 +32,20 @@ const months = [
   "December",
 ];
 
-/** `2026-11-04` as `4 November 2026`. */
+/** `2026-11-04` as `4 November 2026`; a day the month does not have, such as `2026-02-31`, is refused. */
 export function checkedOn(date: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
-  const month = match ? Number(match[2]) : 0;
-  const day = match ? Number(match[3]) : 0;
-  if (!match || month < 1 || month > 12 || day < 1 || day > 31) {
+  const [year, month, day] = match ? match.slice(1).map(Number) : [0, 0, 0];
+  const real = new Date(Date.UTC(year, month - 1, day));
+  if (
+    !match ||
+    real.getUTCFullYear() !== year ||
+    real.getUTCMonth() !== month - 1 ||
+    real.getUTCDate() !== day
+  ) {
     throw new Error(`Screenshot: checked must be a date such as 2026-11-04, not "${date}"`);
   }
-  return `${day} ${months[month - 1]} ${match[1]}`;
+  return `${day} ${months[month - 1]} ${year}`;
 }
 
 type Captures =
@@ -97,14 +103,9 @@ export function Screenshot({
           </span>
           <span className="screenshot-label">{label}</span>
         </div>
-        {/* On a narrow screen the image keeps a readable size and scrolls; the
-            scroll area is named and takes focus, as a table's does. */}
-        <div
-          className="screenshot-scroll"
-          tabIndex={0}
-          role="region"
-          aria-label={`${label} screenshot`}
-        >
+        {/* On a narrow screen the image keeps a readable size and scrolls in a
+            frame named after the shot, which takes focus only while it scrolls. */}
+        <ScreenshotScroll label={alt ?? caption}>
           {/* With two captures, the page shows one of them with CSS, as it does the logo. */}
           {images.map((image) => (
             <img
@@ -118,7 +119,7 @@ export function Screenshot({
               decoding="async"
             />
           ))}
-        </div>
+        </ScreenshotScroll>
       </div>
       <figcaption>{text}</figcaption>
     </figure>

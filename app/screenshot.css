@@ -51,8 +51,8 @@
   color: var(--shot-bar-text);
   pointer-events: none;
 }
-/* Never smaller than 80% of the capture (640 px of 800), which is body size
-   or close to it; a narrower screen scrolls the image sideways. */
+/* Never smaller than 80% of the capture (640 px of 800): the editor's 15 px
+   text then shows at 12 px. A narrower screen scrolls the image sideways. */
 .screenshot-scroll {
   overflow-x: auto;
 }
