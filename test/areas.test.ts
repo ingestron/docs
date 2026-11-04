@@ -4,17 +4,15 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { projectSources } from "@ingestron/cli";
-import {
-  findPath,
-  findProjection,
-  flattenTree,
-  type Folder,
-  type Item,
-} from "fumadocs-core/page-tree";
+import { findPath, findProjection, flattenTree, type Folder } from "fumadocs-core/page-tree";
 import { getLayoutTabs } from "fumadocs-ui/layouts/shared";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { areaCardSettings, areaCards, areaFolder, troubleshootingCard } from "../lib/areas.js";
+import { EntityIcon } from "../components/hub";
+import { areaCardSettings, areaCards, areaTabs, troubleshootingCard } from "../lib/areas.js";
 import { categoryAnchor, sourceCategories } from "../lib/connector-page.js";
+import { inSidebar } from "../lib/page-tree.js";
 import { connectorIds } from "../lib/reference.js";
 import { source, tree } from "./tree.js";
 
@@ -92,9 +90,8 @@ const areaOf = (url: string) =>
   findPath(tree.children, (node) => node.type === "page" && node.url === url)?.findLast(
     (node): node is Folder => node.type === "folder" && node.root === true,
   );
-/** What a sidebar shows: the area's items, less the connector pages app/navigation.css hides. */
-const hidden = (item: Item) => item.url.startsWith("/docs/connectors/");
-const shown = (root: Folder) => flattenTree(root.children).filter((item) => !hidden(item));
+/** What a sidebar shows: the area's items that components/sidebar-item.tsx draws. */
+const shown = (root: Folder) => flattenTree(root.children).filter((item) => inSidebar(item.url));
 
 describe("areas", () => {
   it("are the seven areas, in order, each a root folder and a tab", () => {
@@ -106,6 +103,18 @@ describe("areas", () => {
     expect(getLayoutTabs(tree).map((tab) => [tab.title, tab.url])).toEqual(
       Object.entries(areas).map(([name, pages]) => [name, pages[0]]),
     );
+    // The tab bar's tabs open their area's first page from any page, and are
+    // active on every page of their area and no other.
+    const tabs = areaTabs(tree);
+    expect(tabs.map((tab) => [tab.title, tab.url])).toEqual(
+      Object.entries(areas).map(([name, pages]) => [name, pages[0]]),
+    );
+    for (const [index, tab] of tabs.entries()) {
+      expect(tab.$folder, String(tab.title)).toBeUndefined();
+      expect([...tab.urls!].filter((url) => !url.includes("#"))).toEqual(
+        pagesOf(roots[index]!).map((item) => item.url),
+      );
+    }
     // Each tab says what is in it, in the phone menu's area picker and on the home page.
     for (const root of roots)
       expect(String(root.description ?? ""), String(root.name)).toMatch(/\.$/);
@@ -151,18 +160,18 @@ describe("areas", () => {
       ["All connectors", "/docs/connectors"],
       ...sourceCategories().map((name) => [name, `/docs/connectors#${categoryAnchor(name)}`]),
     ]);
-    // Every connector page is in the area, hidden from its sidebar by one rule.
+    // Every connector page is in the area, and left out of its sidebar.
     for (const url of connectors) {
       expect(areaOf(url)?.name, url).toBe("Connectors");
-      expect(hidden({ type: "page", name: "", url }), url).toBe(true);
+      expect(inSidebar(url), url).toBe(false);
     }
     for (const root of roots)
       if (root.name !== "Connectors")
         expect(shown(root), String(root.name)).toEqual(flattenTree(root.children));
-    const css = readFileSync(join(process.cwd(), "app/navigation.css"), "utf8");
-    expect(css).toContain(
-      ':is(#nd-sidebar, #nd-sidebar-mobile) a[href^="/docs/connectors/"] {\n  display: none;',
-    );
+    // The layout draws the sidebar's items with the item that leaves them out;
+    // scripts/check-links.ts checks the built sidebars.
+    const layout = readFileSync(join(process.cwd(), "app/docs/(areas)/layout.tsx"), "utf8");
+    expect(layout).toContain("sidebar={{ components: { Item: SidebarPageItem } }}");
     // The breadcrumb's and the tab's "Connectors" open the catalogue.
     expect(root.index?.url).toBe("/docs/connectors");
     expect(projectSources().length).toBe(connectors.length);
@@ -198,8 +207,8 @@ describe("the home page's cards", () => {
         expect(areaOf(link.url)?.name, `${card.title} → ${link.url}`).toBe(card.title);
     }
     expect(cards.at(-1)).toEqual(troubleshootingCard);
-    expect(roots.map((root) => areaFolder(root))).toEqual(
-      areaCardSettings.map((area) => area.folder),
+    expect(areaCardSettings.map((setting) => setting.area)).toEqual(
+      Object.values(areas).map((pages) => pages[0]),
     );
   });
 
@@ -217,5 +226,14 @@ describe("the home page's cards", () => {
     );
     const css = readFileSync(join(process.cwd(), "app/hub.css"), "utf8");
     expect(css).toContain("--ingestron-surface: var(--color-fd-card);");
+    // The page draws them still, from one stylesheet: no icon brings its own.
+    for (const icon of icons) {
+      const markup = renderToStaticMarkup(createElement(EntityIcon, { name: icon }));
+      expect(markup, icon).toContain('<svg class="ic"');
+      expect(markup, icon).not.toContain("<style>");
+    }
+    expect(css).toMatch(/\.entity-icon \.ic \{[^}]*stroke-width: 2\.2;/);
+    // One signal per view: only the first card's icon keeps the signal accent.
+    expect(css).toContain(".area-card:not(:first-child) .entity-icon {\n  --s-acc: currentColor;");
   });
 });

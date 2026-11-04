@@ -1,9 +1,9 @@
 // The home page's area cards. Each area is a root folder in content/docs
 // (`"root": true` in its meta.json), which gives its name, its one-line
 // description and its pages; this file adds only the brand icon and the three
-// links a card shows first.
-import { flattenTree, type Folder, type Root } from "fumadocs-core/page-tree";
-import { getLayoutTabs } from "fumadocs-ui/layouts/shared";
+// links a card shows first, and finds each area by the page its tab opens.
+import { flattenTree, type Root } from "fumadocs-core/page-tree";
+import { getLayoutTabs, type LayoutTab } from "fumadocs-ui/layouts/shared";
 
 /** One link on a card. */
 export interface CardLink {
@@ -21,15 +21,15 @@ export interface AreaCard {
   links: CardLink[];
 }
 
-/** Each area's folder under content/docs, its icon, and the pages its card links first. */
-export const areaCardSettings: { folder: string; icon: string; links: string[] }[] = [
+/** Each area, by the page its tab opens; its icon; and the pages its card links first. */
+export const areaCardSettings: { area: string; icon: string; links: string[] }[] = [
   {
-    folder: "start",
+    area: "/docs/start/first-project",
     icon: "project",
     links: ["/docs/start/first-project", "/docs/start/how-it-works", "/docs/start/choose-a-route"],
   },
   {
-    folder: "how-to/(build)",
+    area: "/docs/how-to/start-from-a-template",
     icon: "activity",
     links: [
       "/docs/how-to/add-a-source",
@@ -38,12 +38,12 @@ export const areaCardSettings: { folder: string; icon: string; links: string[] }
     ],
   },
   {
-    folder: "platforms",
+    area: "/docs/platforms/duckdb",
     icon: "platform",
     links: ["/docs/platforms/databricks", "/docs/platforms/adf", "/docs/platforms/duckdb"],
   },
   {
-    folder: "how-to/(standards)",
+    area: "/docs/how-to/configure-a-standard",
     icon: "standard",
     links: [
       "/docs/how-to/configure-a-standard",
@@ -52,17 +52,17 @@ export const areaCardSettings: { folder: string; icon: string; links: string[] }
     ],
   },
   {
-    folder: "concepts",
+    area: "/docs/concepts/definitions",
     icon: "data-model",
     links: ["/docs/concepts/definitions", "/docs/concepts/settings", "/docs/concepts/layers"],
   },
   {
-    folder: "connectors",
+    area: "/docs/connectors",
     icon: "connection",
     links: ["/docs/connectors/sqlserver", "/docs/connectors/salesforce", "/docs/connectors"],
   },
   {
-    folder: "(reference)",
+    area: "/docs/reference/documents",
     icon: "contract",
     links: ["/docs/reference/errors", "/docs/reference/cli", "/docs/reference/packs"],
   },
@@ -87,9 +87,6 @@ export const troubleshootingCard: AreaCard = {
   ],
 };
 
-/** The folder under content/docs that an area's root folder comes from. */
-export const areaFolder = (folder: Folder) => folder.$ref?.folder;
-
 /**
  * The home page's cards, in the areas' order: the name, description and first
  * page come from the page tree, and each link's title from its page.
@@ -97,11 +94,9 @@ export const areaFolder = (folder: Folder) => folder.$ref?.folder;
  */
 export function areaCards(tree: Root): AreaCard[] {
   const tabs = getLayoutTabs(tree, { transform: (tab) => tab });
-  const cards = areaCardSettings.map(({ folder, icon, links }) => {
-    const tab = tabs.find(
-      (candidate) => candidate.$folder && areaFolder(candidate.$folder) === folder,
-    );
-    if (!tab?.$folder) throw new Error(`No area comes from content/docs/${folder}.`);
+  const cards = areaCardSettings.map(({ area, icon, links }) => {
+    const tab = tabs.find((candidate) => candidate.url === area);
+    if (!tab?.$folder) throw new Error(`No area's tab opens ${area}.`);
     const pages = flattenTree(tab.$folder.children);
     return {
       title: String(tab.title),
@@ -117,4 +112,21 @@ export function areaCards(tree: Root): AreaCard[] {
     };
   });
   return [...cards, troubleshootingCard];
+}
+
+/**
+ * The tab bar's tabs: each opens its area's first page, and is active on any
+ * page of its area. A tab bound to its folder would open the page at the same
+ * place in another area, and the current page in its own.
+ * @example <DocsLayout tabs={areaTabs(tree)} tabMode="navbar" … />
+ */
+export function areaTabs(tree: Root): LayoutTab[] {
+  return getLayoutTabs(tree, {
+    transform: (tab, folder) => ({
+      title: tab.title,
+      description: tab.description,
+      url: tab.url,
+      urls: new Set(flattenTree(folder.children).map((page) => page.url)),
+    }),
+  });
 }
