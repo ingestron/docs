@@ -1,8 +1,12 @@
 "use client";
 // Small additions to Fumadocs' layouts for keyboard and screen-reader use,
 // where Fumadocs 16.17.8 has no option for them. Each works on the markup
-// Fumadocs renders, by its ids and data attributes; test/keyboard.test.ts and
-// scripts/check-links.ts fail if those change.
+// Fumadocs renders, by its ids and data attributes. scripts/check-links.ts
+// fails when the built pages lose the ones that are in the HTML: the header
+// (#nd-subnav) and its menu button, the tab bar, the "On this page" bar and
+// the headings' anchor buttons. The drawer itself (#nd-sidebar-mobile) and
+// its overlay are drawn only in the browser, so a Fumadocs upgrade must be
+// checked there with the keyboard.
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "fumadocs-ui/components/sidebar/base";
@@ -20,10 +24,15 @@ export function SkipLink({ target }: { target: string }) {
   );
 }
 
+/** What can take focus, for the first stop in the menu. */
+const focusable =
+  'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 /**
- * The phone menu as a modal dialog: named, the page behind it inert while it
- * is open, Escape closing it, and focus back on the menu button when it closes
- * without leaving the page. Fumadocs' drawer is `#nd-sidebar-mobile`.
+ * The phone menu as a modal dialog: named, focus inside it, the page behind it
+ * inert while it is open, Escape closing it, and focus back on the menu button
+ * when it closes without leaving the page. Fumadocs' drawer is
+ * `#nd-sidebar-mobile`.
  */
 export function MenuDialog() {
   const { open, setOpen, mode } = useSidebar();
@@ -51,15 +60,31 @@ export function MenuDialog() {
       (element) => !element.inert,
     );
     for (const element of behind) element.inert = true;
+    // The menu button that opened it is now inert, which drops its focus, so
+    // focus goes to the menu's first control. The drawer can take focus only
+    // once Fumadocs has made it visible, a frame or two after it opens.
+    let frame = 0;
+    let tries = 0;
+    const focusIn = () => {
+      if (drawer.contains(document.activeElement)) return;
+      drawer.querySelector<HTMLElement>(focusable)?.focus();
+      if (!drawer.contains(document.activeElement) && ++tries < 30)
+        frame = window.requestAnimationFrame(focusIn);
+    };
+    focusIn();
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
+      // Escape closes the top layer only: search, opened over the menu, first.
+      const layer = (event.target as Element).closest?.('[role="dialog"]');
+      if (event.key !== "Escape" || (layer && layer !== drawer)) return;
       event.preventDefault();
       setOpen(false);
     };
     document.addEventListener("keydown", onKey);
     return () => {
+      window.cancelAnimationFrame(frame);
       document.removeEventListener("keydown", onKey);
       for (const element of behind) element.inert = false;
+      for (const name of ["role", "aria-modal", "aria-label"]) drawer.removeAttribute(name);
       const lost = !document.activeElement || document.activeElement === document.body;
       const inMenu = drawer.contains(document.activeElement);
       if (window.location.pathname === page && (lost || inMenu)) button?.focus();
@@ -105,9 +130,13 @@ export function SearchFocusReturn() {
     return () => document.removeEventListener("focusin", remember);
   }, []);
   const wasOpen = useRef(open);
+  // The page the dialog opened on: a result that goes to another page takes
+  // focus with it, so focus is put back only on the same page.
+  const openedOn = useRef("");
   useEffect(() => {
     const closed = wasOpen.current && !open;
     wasOpen.current = open;
+    if (open) openedOn.current = window.location.pathname + window.location.hash;
     if (!closed) return;
     // The dialog plays its closing animation, then leaves, dropping focus on
     // the body; wait for that, for up to a second, then put focus back.
@@ -116,7 +145,8 @@ export function SearchFocusReturn() {
     const settle = () => {
       const active = document.activeElement;
       if (!active || active === document.body) {
-        if (last.current?.isConnected) last.current.focus();
+        const here = window.location.pathname + window.location.hash;
+        if (here === openedOn.current && last.current?.isConnected) last.current.focus();
         return;
       }
       if (!active.closest('[role="dialog"]') || ++frames > 60) return;
