@@ -11,9 +11,19 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { PackNaming } from "../components/reference/pack-defaults";
-import { exampleFolder } from "../lib/examples";
+import { exampleFolder, exampleRequest, requestSections } from "../lib/examples";
 import { packName, packs } from "../lib/reference";
-import { cli, command, commands, copy, fences, merge, read, section } from "./pages.js";
+import {
+  cli,
+  command,
+  commands,
+  copy,
+  fences,
+  merge,
+  read,
+  requestUses,
+  section,
+} from "./pages.js";
 
 /** The `sh` lines of some text, with each `\` continuation joined to its line. */
 const joined = (text: string) =>
@@ -57,10 +67,11 @@ describe("how-to/ask-the-platform-team", () => {
   const page = read("how-to/ask-the-platform-team.mdx");
 
   it("prints the smallest project's request, from the minimal starter, as the page shows", () => {
-    const shown = fences(section(page, "### Databricks"), "text")[0]!;
+    // The page renders the starter's request; a project created from it prints the same.
+    expect(requestUses(section(page, "### Databricks"))).toEqual([{ name: "minimal", env: "dev" }]);
     const printed = request(page, shop(page));
     expect(printed.code).toBe(0);
-    expect(printed.output.trim()).toBe(shown.trim());
+    expect(printed.output.trim()).toBe(exampleRequest("minimal"));
   });
 
   it("prints what the ADF, Synapse and DuckDB routes add, from each platform page's project", () => {
@@ -73,11 +84,17 @@ describe("how-to/ask-the-platform-team", () => {
       // The project is the one the linked platform page works with.
       expect(route, heading).toContain(`(/docs/${guide})`);
       expect(read(`${guide}.mdx`), guide).toContain(`<ExampleDownload name="${sample}" />`);
+      const [shown, ...more] = requestUses(route);
+      expect(more, heading).toEqual([]);
+      expect(shown?.name, heading).toBe(sample);
+      expect(shown?.sections === undefined, `${heading}: the whole request`).toBe(whole);
       const printed = request(page, copy(sample));
       expect(printed.code, heading).toBe(0);
-      const shown = fences(route, "text")[0]!.trim();
-      if (whole) expect(printed.output.trim(), heading).toBe(shown);
-      else expect(printed.output, heading).toContain(`\n${shown}\n`);
+      if (shown?.sections)
+        expect(printed.output, heading).toContain(
+          `\n${requestSections(sample, "dev", shown.sections)}\n`,
+        );
+      else expect(printed.output.trim(), heading).toBe(exampleRequest(sample));
     }
   });
 
