@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { preload } from "react-dom";
 import { RootProvider } from "fumadocs-ui/provider/next";
 
 import "./global.css";
@@ -12,9 +13,27 @@ export const metadata: Metadata = {
   },
   description:
     "Generate data platform assets from reviewed definitions and your organisation's standards.",
+  // The brand favicon: aubergine on a light browser, paper on a dark one.
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml", media: "(prefers-color-scheme: light)" },
+      { url: "/favicon-dark.svg", type: "image/svg+xml", media: "(prefers-color-scheme: dark)" },
+    ],
+    apple: "/apple-touch-icon.png",
+    other: [{ rel: "mask-icon", url: "/brand/mask-icon.svg", color: "#301336" }],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fbf8f3" },
+    { media: "(prefers-color-scheme: dark)", color: "#160b1a" },
+  ],
 };
 
 export default function Layout({ children }: { children: ReactNode }) {
+  // The text font, fetched with the page rather than once the stylesheet asks.
+  preload("/fonts/manrope-variable.woff2", { as: "font", type: "font/woff2", crossOrigin: "" });
   return (
     <html lang="en-NZ" suppressHydrationWarning>
       <body>

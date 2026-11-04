@@ -1,0 +1,27 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="100"
+  height="100"
+  viewBox="0 0 100 100"
+  role="img"
+  aria-labelledby="logos-mask-icon-title logos-mask-icon-desc"
+>
+  <title id="logos-mask-icon-title">Ingestron</title>
+  <desc id="logos-mask-icon-desc">
+    Single-colour mask symbol; apply the desired colour in the consuming
+    application.
+  </desc>
+  <g transform="translate(0 0) scale(1.0)">
+    <g transform="translate(3 2)">
+      <path
+        fill="#000000"
+        d="M0 91L0 17Q0 12 5 12L43 12Q48 12 48 17L48 39Q48 44 43 44L29 44Q24 44 24 49L24 91Q24 96 19 96L5 96Q0 96 0 91Z"
+      />
+      <path
+        fill="#000000"
+        d="M62 53L62 51Q62 46 67 46L89 46Q94 46 94 51L94 91Q94 96 89 96L43 96Q38 96 38 91L38 63Q38 58 43 58L57 58Q62 58 62 53Z"
+      />
+      <rect x="62" y="0" width="32" height="32" rx="5" fill="#000000" />
+    </g>
+  </g>
+</svg>
