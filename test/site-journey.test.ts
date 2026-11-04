@@ -183,7 +183,8 @@ it("merges the worked standard and the naming concept into their guides, keeping
     "BAD_PATTERN",
     "DUPLICATE_NAME",
     "## ADF resource names",
-    "/docs/platforms/adf-pipelines#name-resources",
+    "### Choose where the name belongs",
+    "### Review a rename before applying",
     "Ingestron renames files, not data.",
   ])
     expect(naming).toContain(text);
