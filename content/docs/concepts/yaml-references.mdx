@@ -101,6 +101,13 @@ A variable that is unset everywhere reports
 as an error. The editor reports it as information that names the file to add it
 to, so the rest of the project is still checked.
 
+<Screenshot
+  light="/images/vscode/envvar-info-light.png"
+  dark="/images/vscode/envvar-info-dark.png"
+  alt="In project.yaml, landing: ${envvar:LANDING_PATH} has a blue wavy underline. Its hover says LANDING_PATH isn't set, to add it to .env.dev or set it before running Ingestron, with the code ENVVAR_MISSING."
+  caption="In VS Code, a variable that is set nowhere is information, not an error: the hover names .env.dev, the file to add it to."
+/>
+
 An environment variable's value becomes ordinary resolved text and may reach
 generated files. Use `${secret:…}` for credentials instead.
 
