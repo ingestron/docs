@@ -1,10 +1,12 @@
 // Every internal link, download and image in the built site points at a file
 // that exists, and every documentation link the editor shows lands on its page
 // and anchor. Every redirect lands on a built page and anchor, and no redirect
-// starts from a page that is still built.
+// starts from a page that is still built. Every page URL built before the
+// areas came in is still built, and each area's sidebar lists only its pages.
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { docsLinks } from "@ingestron/authoring";
 import { join, relative } from "node:path";
+import { baseOptions } from "../lib/layout.shared";
 import { connectorEntries, connectorIds } from "../lib/reference";
 import { patterns, redirectFor, redirects } from "../worker/redirects.js";
 
@@ -36,11 +38,59 @@ for (const page of htmlFiles(out)) {
   const target = redirectFor(new URL(path, "https://docs.ingestron.io"));
   if (target !== undefined) broken.add(`redirect source ${path} is still a built page → ${target}`);
 }
+// No URL moved: test/page-urls.txt lists the pages main built before the areas.
+const urls = readFileSync(join(process.cwd(), "test/page-urls.txt"), "utf8").trim().split("\n");
+for (const url of urls) problem(url, "page built before the areas");
+// The home page's cards and ways in link to built pages and anchors.
+for (const [, href] of readFileSync(join(out, "docs.html"), "utf8").matchAll(
+  /href="(\/docs[^"]*#[^"]+)"/g,
+))
+  problem(href!, "home page link");
+sidebars();
+
 if (broken.size > 0) {
   console.log(`✗ ${broken.size} broken links:\n${[...broken].join("\n")}`);
   process.exit(1);
 }
-console.log(`✓ every internal link resolves, and all ${editorLinks.length} editor links land`);
+console.log(
+  `✓ every internal link resolves, all ${editorLinks.length} editor links land, all ${urls.length} pages built before the areas are built, and each sidebar lists only its area`,
+);
+
+/**
+ * Each area's sidebar, as built: every page lists its own URL in its sidebar
+ * (a connector page shows the catalogue's), and no page is in two sidebars.
+ * The header's links, which the phone menu repeats above the pages, are left out.
+ */
+function sidebars(): void {
+  const options = baseOptions();
+  // The menu's links come first, before the area's pages.
+  const menu = (options.links ?? []).map((link) => ("url" in link ? link.url : ""));
+  const owner = new Map<string, string>();
+  for (const file of htmlFiles(join(out, "docs"))) {
+    const html = readFileSync(file, "utf8");
+    const start = html.indexOf('id="nd-sidebar"');
+    if (start === -1) continue;
+    const links = [
+      ...html.slice(start, html.indexOf("</aside>", start)).matchAll(/href="([^"]+)"/g),
+    ]
+      .map((match) => match[1]!)
+      .filter(
+        (href, index) => href.startsWith("/") && !(index < menu.length && href === menu[index]),
+      );
+    const path = pagePath(file);
+    const shown = links.filter((href) => !href.startsWith("/docs/connectors/"));
+    const own = path.startsWith("/docs/connectors/") ? "/docs/connectors" : path;
+    if (!shown.includes(own)) broken.add(`sidebar of ${path} does not list ${own}`);
+    // An area's sidebar starts with its first page; a folder lists its pages only when open.
+    const area = shown[0]!;
+    for (const href of links) {
+      const first = owner.get(href);
+      if (first === undefined) owner.set(href, area);
+      else if (first !== area)
+        broken.add(`${href} is in the sidebars of ${first} and ${area} (on ${path})`);
+    }
+  }
+}
 
 function exists(href: string): boolean {
   const path = join(out, href);

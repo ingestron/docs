@@ -38,7 +38,7 @@ deploying belongs to your platform's tools and your release pipeline.
   which say who owns a set of tables.
 
 A pack is the part of Ingestron that turns these files into files for one
-platform. [Definitions and their relationships](/docs/concepts/definitions)
+platform. [Definitions and how they link](/docs/concepts/definitions)
 describes each document.
 
 ## What Ingestron writes
@@ -57,7 +57,7 @@ default, with a folder per pack when the standard lists several:
 Each folder also holds `.generated.json`, which records every file as it was
 generated. That is what lets Ingestron generate again without losing your
 edits: a file changed by hand is reported as a conflict and never overwritten.
-See [Generated files](/docs/concepts/generated-files).
+See [Generated files and ownership](/docs/concepts/generated-files).
 
 ## The same result as writing it by hand
 
@@ -98,7 +98,7 @@ from then on.
   every data product must declare.
 - **The project overrides only what the standard leaves open.** A flow that
   changes a fixed setting reports `FIXED_SETTING`, and nothing is generated.
-  [Settings](/docs/concepts/settings) explains which setting wins.
+  [Which setting wins](/docs/concepts/settings) explains the order.
 
 ## Reuse
 

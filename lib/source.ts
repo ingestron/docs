@@ -1,9 +1,9 @@
 import { docs } from "collections/server";
 import { loader } from "fumadocs-core/source";
-import { connectionNavigation } from "./connection-navigation";
+import { areaNavigation } from "./page-tree";
 
 export const source = loader({
   baseUrl: "/docs",
-  pageTree: { transformers: [connectionNavigation] },
+  pageTree: { transformers: [areaNavigation] },
   source: docs.toFumadocsSource(),
 });

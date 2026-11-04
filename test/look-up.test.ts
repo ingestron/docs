@@ -12,8 +12,9 @@ import { BuiltInTemplates } from "../components/reference/built-in-templates";
 import { SamplesCatalogue } from "../components/reference/samples-catalogue";
 import { redirectFor } from "../worker/redirects.js";
 import { cli, commands, copy, fences, merge, read, section } from "./pages.js";
+import { contentFile, contentFolder } from "../lib/content-files.js";
 
-const exists = (path: string) => existsSync(join(process.cwd(), "content/docs", path));
+const exists = (path: string) => existsSync(join(contentFolder, contentFile(path)));
 const redirect = (path: string) => redirectFor(new URL(path, "https://docs.ingestron.io"));
 const args = (line: string) => line.split(" ").slice(1);
 

@@ -8,10 +8,10 @@ import { run } from "@ingestron/cli";
 import { expect } from "vitest";
 import { parse, stringify } from "yaml";
 import { exampleFolder } from "../lib/examples.js";
+import { contentFile, contentFolder } from "../lib/content-files.js";
 
-/** A page's source, by its path under content/docs. */
-export const read = (path: string) =>
-  readFileSync(join(process.cwd(), "content/docs", path), "utf8");
+/** A page's source, by its path under content/docs without folder groups, such as `how-to/add-a-source.mdx`. */
+export const read = (path: string) => readFileSync(join(contentFolder, contentFile(path)), "utf8");
 
 /** The text under a heading, such as `## Generate and inspect`, up to the next heading at its level or above. */
 export function section(text: string, heading: string): string {

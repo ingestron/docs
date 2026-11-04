@@ -1,0 +1,214 @@
+/* The home page, /docs: a search band, the area cards and the two ways in,
+   then the value story. One column on a phone, with a 16 px gutter. */
+
+/* The entity icons' cut-outs take this colour, so they match the card behind
+   them (brand README: set --ingestron-surface to the background colour). The
+   icons read it at the root, so it is set there for both themes. */
+:root,
+.dark {
+  --ingestron-surface: var(--color-fd-card);
+}
+
+.hub-width {
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+  padding-inline: 2rem;
+}
+@media (max-width: 639px) {
+  .hub-width {
+    padding-inline: 16px;
+  }
+}
+
+.hub-hero {
+  background: var(--color-fd-muted);
+  border-bottom: 1px solid var(--color-fd-border);
+  padding-block: 3.5rem 3rem;
+}
+.hub-hero h1 {
+  margin: 0 0 0.9rem;
+  color: var(--docs-heading);
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.hub-hero p {
+  max-width: 46rem;
+  margin: 0 0 1.75rem;
+  font-size: 1.15rem;
+  line-height: 1.6;
+}
+.hub-search {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  max-width: 40rem;
+  min-height: 3.2rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.65rem;
+  background: var(--color-fd-background);
+  color: var(--color-fd-muted-foreground);
+  font-size: 1rem;
+  text-align: start;
+  cursor: text;
+}
+.hub-search:hover {
+  border-color: var(--color-fd-primary);
+}
+.hub-search:focus-visible {
+  outline: 2px solid var(--color-fd-ring);
+  outline-offset: 2px;
+}
+.hub-search svg {
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+}
+.hub-search-keys {
+  display: inline-flex;
+  gap: 0.2rem;
+  margin-inline-start: auto;
+}
+.hub-search kbd {
+  padding: 0 0.4rem;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.3rem;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+}
+@media (max-width: 639px) {
+  .hub-search-keys {
+    display: none;
+  }
+}
+
+.hub-body {
+  padding-block: 2.5rem 4rem;
+}
+.hub-body > section > h2 {
+  margin: 0 0 0.4rem;
+  color: var(--docs-heading);
+  font-size: 1.5rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+.hub-lead {
+  margin: 0 0 1.25rem;
+  color: var(--color-fd-muted-foreground);
+}
+
+/* Four cards a row on a wide screen, two on a tablet, one on a phone. */
+.area-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.area-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.25rem;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.75rem;
+  background: var(--color-fd-card);
+}
+.area-card .entity-icon {
+  display: block;
+  color: var(--docs-heading);
+}
+.area-card .entity-icon .ic {
+  display: block;
+  width: 2.75rem;
+  height: 2.75rem;
+}
+.area-card h3 {
+  margin: 0.2rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+.area-card h3 a {
+  color: var(--docs-heading);
+}
+.area-card h3 a:hover {
+  text-decoration: underline;
+}
+.area-card > p {
+  margin: 0;
+  min-height: 2.6rem;
+  color: var(--color-fd-muted-foreground);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.area-card ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.7rem 0 0;
+  border-top: 1px solid var(--color-fd-border);
+  list-style: none;
+  font-size: 0.9rem;
+}
+.area-card ul a {
+  color: var(--docs-link);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--docs-link) 35%, transparent);
+  text-underline-offset: 0.15em;
+}
+.area-card ul a:hover {
+  text-decoration-color: currentColor;
+}
+.area-card a:focus-visible,
+.reader-path a:focus-visible {
+  outline: 2px solid var(--color-fd-ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* The value story reads at article width; the ways in, code and tables use the page's. */
+.hub-prose {
+  margin-top: 2.5rem;
+  max-width: none;
+}
+.hub-prose > :where(p, ul, ol, h2, h3) {
+  max-width: 46rem;
+}
+.reader-paths {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 1rem;
+  margin-block: 1rem;
+}
+.reader-path {
+  padding: 1.35rem;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.75rem;
+  background: var(--color-fd-card);
+}
+.prose .reader-path > * {
+  margin-block: 0 0.75rem;
+}
+.prose .reader-path > :last-child {
+  margin-bottom: 0;
+}
+.prose .reader-path-reader {
+  margin-bottom: 0.4rem;
+  color: var(--color-fd-muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.prose .reader-path h3 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}

@@ -1,5 +1,7 @@
 {
-  "title": "Understand",
+  "title": "Concepts",
+  "description": "How definitions, standards, packs and layers fit together.",
+  "root": true,
   "pages": [
     "definitions",
     "standards-and-packs",

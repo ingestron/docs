@@ -15,8 +15,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { run } from "@ingestron/cli";
 import { afterAll, describe, expect, it } from "vitest";
+import { contentFile, contentFolder } from "../lib/content-files.js";
 
-const read = (path: string) => readFileSync(join(process.cwd(), "content/docs", path), "utf8");
+const read = (path: string) => readFileSync(join(contentFolder, contentFile(path)), "utf8");
 const page = read("start/first-project.mdx");
 /** The one setup line: Ingestron installed globally from npm, so every command is `ingestron …`. */
 const install = "npm install -g ingestron";
