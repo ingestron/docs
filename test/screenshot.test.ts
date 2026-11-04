@@ -6,6 +6,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { checkedOn, Screenshot } from "../components/screenshot";
+import { overflows } from "../lib/keyboard";
 import { contentFolder } from "../lib/content-files.js";
 
 const light = "/images/vscode/editor-light.png";
@@ -28,7 +29,11 @@ describe("the screenshot frame", () => {
     expect(first).toContain('alt="A flow in the editor."');
     expect(html).toContain('<span class="screenshot-label">VS Code · Ingestron</span>');
     expect(html).toContain('role="region"');
-    expect(html).toContain('aria-label="VS Code · Ingestron screenshot"');
+    // The frame is named after the shot, and is a tab stop until the page
+    // finds that nothing scrolls.
+    expect(html).toMatch(
+      /<div class="screenshot-scroll" role="region" aria-label="A flow in the editor." tabindex="0">/,
+    );
     expect(html).toContain("<figcaption>The editor.</figcaption>");
   });
 
@@ -38,7 +43,7 @@ describe("the screenshot frame", () => {
     expect(images(html)[0]).not.toContain("class=");
     expect(images(html)[0]).toContain('alt="The pipeline."');
     expect(html).toContain('<span class="screenshot-label">Azure Data Factory</span>');
-    expect(html).toContain('aria-label="Azure Data Factory screenshot"');
+    expect(html).toContain('aria-label="The pipeline."');
   });
 
   it("ends the caption with the date the screen was checked", () => {
@@ -47,6 +52,9 @@ describe("the screenshot frame", () => {
     expect(checkedOn("2027-01-31")).toBe("31 January 2027");
     expect(() => checkedOn("4 November 2026")).toThrow(/checked must be a date/);
     expect(() => checkedOn("2026-13-01")).toThrow(/checked must be a date/);
+    expect(() => checkedOn("2026-02-31")).toThrow(/checked must be a date/);
+    expect(() => checkedOn("2026-02-29")).toThrow(/checked must be a date/);
+    expect(checkedOn("2028-02-29")).toBe("29 February 2028");
   });
 
   it("refuses captures that do not fit together", () => {
@@ -56,6 +64,31 @@ describe("the screenshot frame", () => {
       /differ in size/,
     );
     expect(() => render({ src: "/images/vscode/missing.png", caption: "x" })).toThrow();
+  });
+});
+
+describe("the screenshot's scrolling frame", () => {
+  it("is a tab stop only while the image is wider than the frame", () => {
+    expect(overflows({ scrollWidth: 640, clientWidth: 358 })).toBe(true);
+    expect(overflows({ scrollWidth: 684, clientWidth: 684 })).toBe(false);
+    expect(overflows({ scrollWidth: 685, clientWidth: 684 })).toBe(false);
+  });
+
+  it("checks again when it is mounted, when an image loads and when it changes size", () => {
+    const source = readFileSync("components/screenshot-scroll.tsx", "utf8");
+    for (const text of [
+      '"use client"',
+      "overflows(element)",
+      'addEventListener("load", check)',
+      "new ResizeObserver(check)",
+      "tabIndex={scrolls ? 0 : undefined}",
+      'role="region"',
+      "aria-label={label}",
+    ])
+      expect(source).toContain(text);
+    expect(readFileSync("components/screenshot.tsx", "utf8")).toContain(
+      "<ScreenshotScroll label={alt ?? caption}>",
+    );
   });
 });
 

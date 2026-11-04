@@ -156,7 +156,7 @@ fix, **Remove this setting**, so the standard's value applies.
   light="/images/vscode/completion-light.png"
   dark="/images/vscode/completion-dark.png"
   alt="Under a new store with: in the customers table, completion lists mode with default: append, then sequence_by, delete_when, except_columns, changes_suffix, cluster_by and properties."
-  caption="Under a table's store with:, completion lists the settings of the method the table uses, streaming-table, with mode's default."
+  caption="Under a table's store and with, completion lists the settings of the method the table uses, streaming-table, with mode's default."
 />
 
 It also fills in what the project already decides:
@@ -200,7 +200,7 @@ Turn these off with VS Code's `editor.inlayHints.enabled` and
 <Screenshot
   light="/images/vscode/editor-light.png"
   dark="/images/vscode/editor-dark.png"
-  alt="In flows/shop.yaml, 'files → streaming-table | orders.sql' above the orders table and '→ dev_sales.bronze.orders' after it, the same for customers, and a hover on sequence_by explaining the setting."
+  alt="In flows/shop.yaml, “files → streaming-table | orders.sql” above the orders table and “→ dev_sales.bronze.orders” after it, the same for customers, and a hover on sequence_by explaining the setting."
   caption="Above each table, the methods that build it and its generated file; after it, its full name. The hover on sequence_by says what set it and what it means."
 />
 
@@ -232,7 +232,7 @@ docs, and each problem's code in the Problems panel links to its entry in
 The **Ingestron** tab in the secondary side bar, on the right, opens with a
 **Project** section. For a workspace with one project it lists:
 
-- **Environments**, each with a circle, and a check and **selected** on the one
+- **Environments**, each with a circle, or a check and **selected** on the one
   commands use now. Click an environment to select it, as in the status bar.
 - **Check**, **Plan**, **Apply**, **Compare environments**, **Prepare platform
   request** and **Show generated files**. Click one to run it for the project.
@@ -248,9 +248,10 @@ one to the file adds it to the list.
 <Screenshot
   light="/images/vscode/project-view-light.png"
   dark="/images/vscode/project-view-dark.png"
-  alt="The Ingestron tab beside flows/orders.yaml in a workspace with three projects. The Project section lists erp and retail folded, and shop open, with Environments (dev, selected), Check, Plan, Apply, Compare environments, Prepare platform request and Show generated files. The Reference section is folded below."
-  caption="A workspace with three projects: shop, the project of the file in the editor, is open, and erp and retail are folded."
+  alt="The Ingestron tab beside retail's connections/shop.yaml in a workspace with three projects. The Project section lists erp folded, retail open and shop folded. Under retail, Environments shows dev with a check and selected, and prod with a circle, then Check, Plan, Apply, Compare environments, Prepare platform request and Show generated files. The Reference section is folded below."
+  caption="A workspace with three projects: retail, the project of the file in the editor, is open, with dev selected and prod beside it, and erp and shop are folded."
 />
+
 ## Reference beside the editor
 
 The **Reference** section below the Project view, in the same **Ingestron** tab,
@@ -277,9 +278,8 @@ Explorer.
 ## See what will be generated
 
 - **Ingestron: Show generated files** opens what would be generated for the
-  table at the cursor, in a read-only preview, without writing anything.
-  The path above it starts with the project folder and the environment, such
-  as `retail › dev › build › …`, and it updates as you edit the definitions.
+  table at the cursor, in a read-only preview, without writing anything. It
+  updates as you edit the definitions.
 - **Ingestron: Compare with build** shows the difference between that and the
   file in `build/`: what the next apply changes.
 
@@ -291,7 +291,7 @@ environment is selected for the project: Apply from a `dev` preview applies
 <Screenshot
   light="/images/vscode/preview-light.png"
   dark="/images/vscode/preview-dark.png"
-  alt="orders.sql open beside shop.yaml: a streaming table orders_changes over read_files, the streaming table orders with a NOT NULL check on each key column, its comment, clustering and properties, and the AUTO CDC flow that keeps orders current by id and updated_at."
+  alt="orders.sql open in a tab after shop.yaml: a streaming table orders_changes over read_files, the streaming table orders with a NOT NULL check on each required column, its comment, clustering and properties, and the AUTO CDC flow that keeps orders current by id and updated_at."
   caption="Show generated files on the orders table: the SQL Ingestron would write for it, read-only, without writing anything."
 />
 
@@ -338,8 +338,8 @@ chosen for that project:
 <Screenshot
   light="/images/vscode/title-buttons-light.png"
   dark="/images/vscode/title-buttons-dark.png"
-  alt="The editor title bar of flows/shop.yaml shows the Plan and Apply buttons. Its … menu is open and ends with Check, Compare environments and Prepare platform request."
-  caption="With a project's YAML file open, Plan and Apply are buttons in the editor title; Check, Compare environments and Prepare platform request are under …."
+  alt="The editor title bar of flows/shop.yaml shows the Plan button, a list icon, and the Apply button, a play icon. Its … menu is open and ends with Check, Compare environments and Prepare platform request."
+  caption="Plan (the list icon) and Apply (the play icon) are buttons in the editor title; Check, Compare environments and Prepare platform request are in the … menu."
 />
 
 <Screenshot
