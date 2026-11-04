@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { HomeLayout } from "fumadocs-ui/layouts/home";
 import { getLayoutTabs } from "fumadocs-ui/layouts/shared";
+import { SkipLink } from "@/components/keyboard";
 import { baseOptions } from "@/lib/layout.shared";
 import { source } from "@/lib/source";
 
@@ -15,11 +16,14 @@ export default function Layout({ children }: { children: ReactNode }) {
     url: tab.url,
   }));
   return (
-    <HomeLayout
-      {...options}
-      links={[{ type: "menu", text: "Areas", items: areas }, ...(options.links ?? [])]}
-    >
-      {children}
-    </HomeLayout>
+    <>
+      <SkipLink target="hub" />
+      <HomeLayout
+        {...options}
+        links={[{ type: "menu", text: "Areas", items: areas }, ...(options.links ?? [])]}
+      >
+        {children}
+      </HomeLayout>
+    </>
   );
 }

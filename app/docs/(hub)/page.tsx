@@ -13,7 +13,8 @@ export default function Hub() {
   if (!page) notFound();
   const MDX = page.data.body;
   return (
-    <div className="hub">
+    // The skip link's target; tabIndex so the next Tab is in the content.
+    <div className="hub" id="hub" tabIndex={-1}>
       <section className="hub-hero">
         <div className="hub-width">
           <h1>{page.data.title}</h1>

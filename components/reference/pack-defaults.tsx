@@ -1,6 +1,7 @@
 // The names and layers each pack gives a project whose standard sets none, from the packs' own defaults.
 import type { Naming } from "@ingestron/definitions";
 import { packName, packs } from "@/lib/reference";
+import { TableFrame } from "@/components/table-frame";
 
 /** The patterns a standard's `naming` can set, in the order the document reference lists them. */
 const names: (keyof Naming)[] = ["catalog", "schema", "table", "pipeline", "job"];
@@ -17,30 +18,32 @@ const naming = () => packs.filter((pack) => pack.id !== "adf");
  */
 export function PackNaming() {
   return (
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          {naming().map((pack) => (
-            <th key={pack.id}>{packName(pack.id)}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {names.map((name) => (
-          <tr key={name}>
-            <td>
-              <code>{name}</code>
-            </td>
+    <TableFrame label="Default names, by pack">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
             {naming().map((pack) => (
-              <td key={pack.id}>
-                <code>{pack.defaults.naming[name]}</code>
-              </td>
+              <th key={pack.id}>{packName(pack.id)}</th>
             ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {names.map((name) => (
+            <tr key={name}>
+              <td>
+                <code>{name}</code>
+              </td>
+              {naming().map((pack) => (
+                <td key={pack.id}>
+                  <code>{pack.defaults.naming[name]}</code>
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </TableFrame>
   );
 }
 

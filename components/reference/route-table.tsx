@@ -2,6 +2,7 @@
 import { packName, pageTitle } from "@/lib/reference";
 import { routeRows } from "@/lib/routes";
 import { Inline } from "./inline";
+import { TableFrame } from "@/components/table-frame";
 
 /** Every way to start a project: compact on the home page, with the decision columns on the route page.
  * @example <RouteTable />
@@ -10,13 +11,7 @@ import { Inline } from "./inline";
 export function RouteTable({ detail = false }: { detail?: boolean }) {
   const rows = routeRows();
   return (
-    // The same scrolling, focusable frame Fumadocs gives a Markdown table.
-    <div
-      className="relative overflow-auto prose-no-margin my-6 route-table"
-      tabIndex={0}
-      role="region"
-      aria-label="Where your data can go"
-    >
+    <TableFrame label="Where your data can go" className="route-table">
       <table>
         <thead>
           <tr>
@@ -77,6 +72,6 @@ export function RouteTable({ detail = false }: { detail?: boolean }) {
           ))}
         </tbody>
       </table>
-    </div>
+    </TableFrame>
   );
 }

@@ -22,7 +22,13 @@ export default async function Page({ params }: { params: Promise<{ slug: string[
       : page.data.toc;
   return (
     // The breadcrumb starts at the page's area, such as "Connectors" on a connector's page.
-    <DocsPage toc={toc} tableOfContent={{ footer: related }} breadcrumb={{ includeRoot: true }}>
+    // tabIndex: the skip link focuses the article, so the next Tab is in it.
+    <DocsPage
+      toc={toc}
+      tableOfContent={{ footer: related }}
+      breadcrumb={{ includeRoot: true }}
+      tabIndex={-1}
+    >
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription className="mb-2">{page.data.description}</DocsDescription>
       <DocsBody>

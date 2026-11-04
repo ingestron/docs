@@ -1,7 +1,10 @@
+import type { ComponentProps } from "react";
+import { CodeBlock, Pre } from "fumadocs-ui/components/codeblock";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import type { MDXComponents } from "mdx/types";
 import { NamingVariables } from "@/components/reference/naming-variables";
 import { DocLinks } from "@/components/doc-links";
+import { MarkdownTable } from "@/components/table-frame";
 import { Example, ExampleDownload } from "@/components/example";
 import { FlowDiagram } from "@/components/flow-diagram";
 import { Path, Paths } from "@/components/hub";
@@ -37,6 +40,14 @@ import { Tool, ToolSteps } from "@/components/tool-steps";
 export function getMDXComponents(components?: MDXComponents) {
   return {
     ...defaultMdxComponents,
+    // Fumadocs' code block and table, with their scrolling frames named
+    // (lib/rehype-frame-names.ts) and, for a table, the frame doing the scrolling.
+    pre: ({ "data-frame-label": label, ...props }: Framed<"pre">) => (
+      <CodeBlock {...props} viewportProps={{ "aria-label": label }}>
+        <Pre>{props.children}</Pre>
+      </CodeBlock>
+    ),
+    table: MarkdownTable,
     NamingVariables,
     DocLinks,
     Example,
@@ -79,6 +90,9 @@ export function getMDXComponents(components?: MDXComponents) {
   } satisfies MDXComponents;
 }
 export const useMDXComponents = getMDXComponents;
+
+/** An element's props, with the frame name rehypeFrameNames adds. */
+type Framed<T extends "pre" | "table"> = ComponentProps<T> & { "data-frame-label"?: string };
 declare global {
   type MDXProvidedComponents = ReturnType<typeof getMDXComponents>;
 }
