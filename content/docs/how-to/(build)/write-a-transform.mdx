@@ -40,14 +40,21 @@ with each column cast to the contract's type, and published as Parquet:
 
 <Example name="duckdb" file="build/dev/tables/silver.customer_totals.sql" />
 
+A cast can change a value: a timestamp with a time zone loses its offset when
+the contract says `timestamp`, and a `timestamptz` shows the time in the
+session's time zone; a decimal rounds when the contract says `integer`. Give
+the contract the type you want to keep.
+
 On Databricks, it is a materialised view:
 
 <Example name="layers-and-transforms" file="build/dev/src/sales/silver/store_sales.sql" />
 
 On Synapse, it is a view over its inputs' views, in `synapse/views.sql`. A view
 keeps no rows and reads its inputs each time a report queries it. Its SQL sits
-inside the view, which limits how it can start and end; see
-[Write a transform as a view](/docs/platforms/synapse#write-a-transform-as-a-view).
+inside the view, so it cannot start with `WITH` (write a common table
+expression as a subquery in `FROM`) or end with `ORDER BY`, and it names only
+tables listed in `inputs`. A view cannot merge changes or keep history; see
+[Keep a table current](/docs/how-to/keep-a-table-current#on-synapse).
 
 ## Read a table another team owns
 
