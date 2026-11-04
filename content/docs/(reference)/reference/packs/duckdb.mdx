@@ -5,10 +5,8 @@ description: DuckDB tables, transforms and local runs, with their settings and d
 
 `duckdb@1` loads files into tables in a DuckDB database, runs transforms, and
 publishes each table as Parquet, with SQL that DuckDB runs on a laptop or
-wherever DuckDB runs. List it first, so it names and types the tables:
-`packs: [duckdb@1]`, or `packs: [duckdb@1, adf@1]` when ADF lands the files.
-The order in `packs` is not the order things run; ADF only copies.
-The settings below come from the pack itself.
+wherever DuckDB runs. List it first, as in `packs: [duckdb@1, adf@1]` when
+ADF lands the files; see [Combine packs](/docs/concepts/standards-and-packs#combine-packs-when-their-actions-fit). The settings below come from the pack itself.
 
 For a task walkthrough, with the modes, CSV headers and casts explained, use
 [DuckDB](/docs/platforms/duckdb). The pack writes `run.sql`, every table in

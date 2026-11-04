@@ -5,9 +5,9 @@ description: Views in Azure Synapse serverless SQL, with their settings and defa
 
 `synapse@1` shows tables to reporting tools as views in Azure Synapse serverless
 SQL: over the files another pack lands, over a transform's query, or over the
-files a store pack keeps. For views only, list it first, so it provides the
-defaults: `packs: [synapse@1, adf@1]`. The settings below come from the pack
-itself.
+files a store pack keeps. For views only, list it first:
+`packs: [synapse@1, adf@1]`; see [Combine packs](/docs/concepts/standards-and-packs#combine-packs-when-their-actions-fit). The settings below come from the
+pack itself.
 
 For a task walkthrough, use [Synapse serverless views](/docs/platforms/synapse).
 The pack writes `views.sql` for each environment; run it against the serverless
