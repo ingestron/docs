@@ -12,6 +12,7 @@ import { BuiltInTemplates } from "@/components/reference/built-in-templates";
 import { CliCommands } from "@/components/reference/cli-commands";
 import { ConnectorSettings } from "@/components/reference/connector-settings";
 import { ConnectorFacts } from "@/components/reference/connector-facts";
+import { ContractTypes } from "@/components/reference/contract-types";
 import { ContractUseTable } from "@/components/reference/contract-use";
 import { PackCapabilities } from "@/components/reference/pack-capabilities";
 import { SamplesCatalogue } from "@/components/reference/samples-catalogue";
@@ -46,6 +47,7 @@ export function getMDXComponents(components?: MDXComponents) {
     PackMethods,
     ConnectorFacts,
     ConnectorSettings,
+    ContractTypes,
     ContractUseTable,
     PackCapabilities,
     SamplesCatalogue,

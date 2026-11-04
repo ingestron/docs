@@ -1,0 +1,143 @@
+---
+title: Add a source and its tables
+description: Grow a project after you create it with another table, another source, or a first source beside what you already run.
+---
+
+A project grows by adding files. `imports` in `project.yaml` lists the files
+to load, by pattern, so a new file that a pattern matches is part of the
+project with no other change:
+
+<Example name="duckdb" file="project.yaml" />
+
+A file that no pattern matches is not part of the project, and nothing is
+generated from it. VS Code warns on such a file (`NOT_IMPORTED`), and its
+quick fix adds the folder to `imports`. A project created from a connection
+imports only the folders it was created with: add `transforms/*.yaml` before
+its first transform.
+
+## Add a table from a source you already read
+
+These steps add a customers table to the `shop` project from
+[Run your first project on your laptop](/docs/start/first-project). Work in
+the `shop` folder, after you applied it there; if you cleaned it up, create
+and apply it again first.
+
+1. Save the customers export as `samples/customers.csv`, beside `orders.csv`:
+
+   ```csv
+   customer_id,name,region
+   1,Aroha,North
+   2,Ben,South
+   3,Chen,North
+   ```
+
+2. Draft its contract from the file:
+
+   ```sh
+   ingestron contract samples/customers.csv --name shop.customers
+   ```
+
+   ```text
+   Wrote contracts/shop.customers.yaml. Review the types, then add keys, required columns and descriptions.
+   ```
+
+   In VS Code, right-click the file and choose **Ingestron: Draft contract from
+   sample**. Then mark `customer_id` with `primaryKey: true` and
+   `required: true`, as [Describe a table with a contract](/docs/how-to/write-a-contract)
+   explains.
+
+3. Add the table to the flow that reads the `shop` connection. In
+   `flows/orders.yaml`, add this line under `tables`, below `orders`:
+
+   {/* prettier-ignore */}
+   ```yaml
+     customers: { object: customers.csv, contract: shop.customers }
+   ```
+
+   The key, `customers`, is the table's name. `object` is the file in the
+   connection's folder, and `contract` is the contract's `id`. In VS Code,
+   completion under `tables` offers each contract no table uses yet as a
+   table, with its object and contract filled in.
+
+4. Plan:
+
+   ```sh
+   ingestron plan --no-diff
+   ```
+
+   ```text
+   dev → build/dev
+   update    run.sql
+   create    tables/bronze.customers.sql
+
+   5 files: 1 create, 1 update, 3 unchanged. Ready to apply.
+   ```
+
+   The new table lands in `bronze`, the first layer, like `orders`. Apply,
+   then run `run.sql` again to build it.
+
+Every table in a flow reads the flow's connection with the same ingest method.
+A table can change that method's settings with its own `ingest.with`.
+
+## Add another source
+
+Each source is a connection, in `connections/`, and the flows that read it, in
+`flows/`.
+
+1. Write the connection: its `id`, the `connector`, how it can be reached
+   (`connectivity`) and its `settings`. The [connector's page](/docs/connectors)
+   lists its settings and the routes that read it. This is the `shop`
+   connection:
+
+   <Example name="duckdb" file="connections/shop.yaml" />
+
+   In VS Code, a new, empty file in `connections/` offers a connection for
+   each connector, with the settings it needs. Keep credentials out of the
+   file: use `${secret:…}` or `${envvar:…}`; see
+   [YAML references and placeholders](/docs/concepts/yaml-references).
+
+2. Write a flow whose `source` is the connection's `id`, with a table for each
+   object, as in `flows/orders.yaml` above. Give each table a contract.
+
+3. Plan. The plan checks that a method of your standard's packs reads the
+   connector, and says what is missing. For example, a flow that reads a
+   PostgreSQL connection in the `shop` project prints:
+
+   ```text
+   dev: the definitions have problems
+   flows/crm.yaml:4:9  error  CONNECTOR_NOT_SUPPORTED
+     "duckdb-files" cannot read the "postgresql" connector.
+     No pack in the standard reads postgresql.
+     Fix: Add the "adf" pack and use "adf-table" for this flow.
+   ```
+
+   VS Code offers the same fix, and each other one, from the light bulb.
+   Adding a pack changes the project's route: see
+   [Choose where your data goes](/docs/start/choose-a-route). When a method
+   needs settings that nobody set, the plan names them, with a fix that adds
+   each one where it belongs.
+
+To see working files for a connector on your route first, create a project
+for it in another folder with `ingestron init`, as
+[Create a project](/docs/how-to/start-from-a-template#start-from-a-connection)
+shows. Copy its connection, flow and contracts, and the `values` they read
+from its `project.yaml`, renaming any value your project already has.
+
+## Start beside what you already run
+
+`plan` and `apply` write only to the output folder, `build/` by default, so a
+project owns only the files it generated. A first project can hold one source
+while the rest of your platform stays as it is:
+
+- **Keep the project in a folder of its own,** in your repository or in a new
+  one. Commands run from that folder, or name it with `--definitions`.
+- **Read tables you already have** without taking them over: a transform can
+  name a table another team keeps, and Ingestron never creates or changes it.
+  See [Read a table another team owns](/docs/how-to/write-a-transform#read-a-table-another-team-owns).
+- **Choose names that do not clash** with what is deployed; see
+  [Name Databricks resources](/docs/how-to/name-things-your-way).
+- **Keep your own files out of `build/`.** `ingestron check` fails on a file
+  there that it did not generate; see
+  [Check generated files in CI](/docs/how-to/check-in-ci).
+
+Then add the next source when you are ready, as above.

@@ -5,6 +5,13 @@
 /** Exact old path to new path. A target may end in `#anchor`. */
 export const redirects = new Map([
   ["/docs/start", "/docs/start/first-project"],
+  ["/docs/how-to", "/docs/how-to/start-from-a-template"],
+  ["/docs/concepts", "/docs/concepts/definitions"],
+  ["/docs/how-to/use-an-example", "/docs/how-to/start-from-a-template#start-from-a-starter"],
+  [
+    "/docs/how-to/draft-a-contract-from-a-sample",
+    "/docs/how-to/write-a-contract#draft-from-a-sample",
+  ],
   ["/docs/concepts/connectivity", "/docs/start/choose-a-route#reachability"],
   ["/docs/how-to/serve-files-as-sql", "/docs/platforms/synapse"],
   ["/docs/how-to/run-locally-with-duckdb", "/docs/platforms/duckdb"],

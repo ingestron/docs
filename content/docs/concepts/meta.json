@@ -1,7 +1,6 @@
 {
-  "title": "Concepts",
+  "title": "Understand",
   "pages": [
-    "index",
     "definitions",
     "standards-and-packs",
     "settings",
@@ -9,6 +8,5 @@
     "yaml-references",
     "naming",
     "generated-files"
-  ],
-  "defaultOpen": false
+  ]
 }

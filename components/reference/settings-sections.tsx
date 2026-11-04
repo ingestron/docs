@@ -1,13 +1,12 @@
 // Chapter-sized slices of the existing reference, without copying its facts.
 import { ingestionRows } from "@/lib/connector-settings";
 import type { FieldInfo } from "@ingestron/definitions";
-import { anchorId, fieldPath, settingRows, shown } from "@/lib/reference";
+import { anchorId, fieldPath, packs, settingRows, shown } from "@/lib/reference";
 import { Meaning } from "./field-rows";
 
 const homes = {
   platform: "platform settings",
   standard: "standard settings",
-  definition: "the flow's ingest.with",
 };
 
 /** Explain method settings as sections. Prefixes include nested fields.
@@ -34,7 +33,7 @@ export function SettingsSections({
   });
   return (
     <div className="setting-sections">
-      <SettingPlacement fields={rows} />
+      <SettingPlacement fields={rows} action={actionOf(pack, method, connector)} />
       {rows.length > 3 && <SettingLinks fields={rows} />}
       {rows.map((field) => (
         <SettingSection key={field.docs} field={field} />
@@ -83,10 +82,18 @@ function SettingLinks({ fields }: { fields: FieldInfo[] }) {
   );
 }
 
-function SettingPlacement({ fields }: { fields: FieldInfo[] }) {
+/** The action whose `with` holds a definition's settings: a connector's are ingest's. */
+function actionOf(pack: string, method: string, connector?: string): string {
+  if (connector) return "ingest";
+  return packs.find((candidate) => candidate.id === pack)?.methods[method]?.action ?? "ingest";
+}
+
+function SettingPlacement({ fields, action }: { fields: FieldInfo[]; action: string }) {
   const places = [...new Set(fields.map((field) => field.placement))]
     .filter((home) => home !== undefined)
-    .map((home) => homes[home!]);
+    .map((home) =>
+      home === "definition" ? `the flow's ${action}.with` : homes[home as keyof typeof homes],
+    );
   return (
     <p className="setting-meta">
       Configure these fields in {places.join(" or ")}. See{" "}

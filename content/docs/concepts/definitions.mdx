@@ -49,9 +49,11 @@ A transform's `inputs` names tables produced by the project.
 <Example name="minimal" file="flows/orders.yaml" />
 
 Here `shop` is the source connection, `orders` is the project table, and
-`shop.orders` is its contract. Contracts use Open Data Contract Standard v3.1.0.
-The [document reference](/docs/reference/documents) lists supported fields, and
-pack references explain which contract capabilities affect their output.
+`shop.orders` is its contract. Contracts use Open Data Contract Standard v3.1.0;
+[Describe a table with a contract](/docs/how-to/write-a-contract) says what
+Ingestron reads from one. The [document reference](/docs/reference/documents)
+lists supported fields, and pack references explain which contract
+capabilities affect their output.
 
 ## Keep reusable values out of individual definitions
 
