@@ -10,17 +10,21 @@ interface Props {
   pack: string;
   sample?: string;
   file?: string;
+  /** The id of the whole list, for links to every field at once. */
+  anchor?: string;
+  /** Each field's id is this and its name, so two packs' fields on one page differ. */
+  prefix: string;
 }
 
 /** Field explanations with values from the displayed, validated sample.
- * @example <ConnectorSettings id="sqlserver" pack="adf" />
+ * @example <ConnectorSettings id="sqlserver" pack="adf" prefix="adf-connection-" />
  */
-export function ConnectorSettings({ id, pack, sample, file }: Props) {
+export function ConnectorSettings({ id, pack, sample, file, anchor, prefix }: Props) {
   const connector = connectorEntries(id).find((entry) => entry.pack === pack)?.connector;
   if (!connector) throw new Error(`No ${pack} connector ${id}`);
   const example = sample && file ? parse(readExampleFile(sample, file)).settings : {};
   return (
-    <div className="setting-sections" id="settings">
+    <div className="setting-sections" id={anchor}>
       <p>
         These fields go under <code>settings</code> in the connection YAML. Optional fields may
         become required when you choose a particular authentication option; the conditions are
@@ -35,14 +39,19 @@ export function ConnectorSettings({ id, pack, sample, file }: Props) {
       <ul aria-label="Connection settings">
         {connector.settings.map((setting) => (
           <li key={setting.name}>
-            <a href={`#connection-${setting.name}`}>
+            <a href={`#${prefix}${setting.name}`}>
               <code>{setting.name}</code>
             </a>
           </li>
         ))}
       </ul>
       {connector.settings.map((setting) => (
-        <ConnectionField key={setting.name} setting={setting} example={example?.[setting.name]} />
+        <ConnectionField
+          key={setting.name}
+          id={`${prefix}${setting.name}`}
+          setting={setting}
+          example={example?.[setting.name]}
+        />
       ))}
     </div>
   );
@@ -50,18 +59,25 @@ export function ConnectorSettings({ id, pack, sample, file }: Props) {
 
 type Setting = Connector["settings"][number];
 
-function ConnectionField({ setting, example }: { setting: Setting; example: unknown }) {
+function ConnectionField({
+  id,
+  setting,
+  example,
+}: {
+  id: string;
+  setting: Setting;
+  example: unknown;
+}) {
   return (
-    <section id={`connection-${setting.name}`}>
+    <section id={id}>
       <header className="setting-heading">
-        <h3>
-          <a href={`#connection-${setting.name}`}>
+        <h4>
+          <a href={`#${id}`}>
             <code>{setting.name}</code>
           </a>
-        </h3>
+        </h4>
         <span className="setting-meta">
-          {!setting.optional && "Required · "}
-          {setting.type}
+          {[!setting.optional && "Required", setting.type].filter(Boolean).join(" · ")}
         </span>
       </header>
       <p>

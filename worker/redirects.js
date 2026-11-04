@@ -35,10 +35,35 @@ export const redirects = new Map([
   ["/docs/how-to/publish-adf", "/docs/platforms/adf#publish"],
   ["/docs/how-to/design-adf-pipelines", "/docs/platforms/adf-pipelines"],
   ["/docs/how-to/name-adf-resources", "/docs/platforms/adf-pipelines#name-resources"],
+  // The connector categories are headings on the catalogue now. Listed one by
+  // one: a pattern for /docs/connectors/<name> would also match every connector.
+  ["/docs/connectors/databases-and-analytics", "/docs/connectors#databases-and-analytics"],
+  ["/docs/connectors/business-applications", "/docs/connectors#business-applications"],
+  ["/docs/connectors/sap", "/docs/connectors#sap"],
+  ["/docs/connectors/apis-and-protocols", "/docs/connectors#apis-and-protocols"],
+  ["/docs/connectors/files-and-storage", "/docs/connectors#files-and-storage"],
+  ["/docs/connectors/streaming", "/docs/connectors#streaming"],
 ]);
 
-/** Old paths by shape: a pattern and the function that builds the new path. */
-export const patterns = [];
+/**
+ * Old paths by shape: a pattern and the function that builds the new path.
+ * A connector's chapters are sections of its one page now.
+ * @type {[RegExp, (match: RegExpMatchArray) => string][]}
+ */
+export const patterns = [
+  [
+    /^\/docs\/connectors\/([a-z0-9-]+)\/([a-z0-9]+)-connection$/,
+    (match) => `/docs/connectors/${match[1]}#${match[2]}-connection`,
+  ],
+  [
+    /^\/docs\/connectors\/([a-z0-9-]+)\/([a-z0-9]+)-ingestion$/,
+    (match) => `/docs/connectors/${match[1]}#${match[2]}-ingestion`,
+  ],
+  [
+    /^\/docs\/connectors\/([a-z0-9-]+)\/examples$/,
+    (match) => `/docs/connectors/${match[1]}#examples`,
+  ],
+];
 
 /**
  * The path to send an old URL to, with its query kept, or undefined when the

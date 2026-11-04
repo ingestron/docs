@@ -1,8 +1,8 @@
-// Chapter grouping is presentation only; field meanings and capabilities stay in packs.
+// Which settings a connector's Read section shows is presentation only; field meanings and capabilities stay in packs.
 import type { Connector, FieldInfo } from "@ingestron/definitions";
 import { connectorEntries, fieldPath, settingRows } from "./reference";
 
-/** The settings shown in a connection's ingestion chapter and indexed for search.
+/** The settings a connector page's Read section shows for one pack, and search indexes.
  * @example ingestionRows("rest", "adf")
  */
 export function ingestionRows(id: string, pack: string): FieldInfo[] {

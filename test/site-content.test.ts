@@ -1,10 +1,13 @@
 // Example downloads, connector facts, search and the error reference.
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { exampleFiles, exampleFolder } from "../lib/examples.js";
 import { connectorEntries } from "../lib/reference.js";
 import { extraStructure } from "../lib/search.js";
+
+// Connector search entries resolve every sample the first time, which takes seconds on a busy machine.
+vi.setConfig({ testTimeout: 30_000 });
 
 describe("example downloads", () => {
   it("hold the definitions, not generated output", () => {
@@ -42,9 +45,16 @@ describe("search", () => {
     expect(text("/docs/reference/packs/adf")).toContain("watermark_column");
   });
 
-  it("indexes native connection fields in their access chapter", () => {
-    expect(text("/docs/connectors/snowflake/adf-connection")).toContain("private_key");
-    expect(text("/docs/connectors/rest/adf-connection")).toContain("auth_headers");
+  it("indexes native connection fields on the connector's page, under its ADF fields", () => {
+    expect(text("/docs/connectors/snowflake")).toContain('"adf-connection-private_key"');
+    expect(text("/docs/connectors/snowflake")).toContain("private_key");
+    expect(text("/docs/connectors/rest")).toContain('"adf-connection-auth_headers"');
+    expect(text("/docs/connectors/rest")).toContain("auth_headers");
+  });
+
+  it("indexes the catalogue's categories", () => {
+    expect(text("/docs/connectors")).toContain('"databases-and-analytics"');
+    expect(text("/docs/connectors")).toContain("SQL Server");
   });
 
   it("adds nothing to other pages", () => {

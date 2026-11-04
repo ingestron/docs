@@ -5,8 +5,8 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { docsLinks } from "@ingestron/authoring";
 import { join, relative } from "node:path";
-import { connectorIds, packs } from "../lib/reference";
-import { redirectFor, redirects } from "../worker/redirects.js";
+import { connectorEntries, connectorIds } from "../lib/reference";
+import { patterns, redirectFor, redirects } from "../worker/redirects.js";
 
 const out = join(process.cwd(), "out");
 const broken = new Set<string>();
@@ -16,8 +16,16 @@ for (const page of htmlFiles(out)) {
       broken.add(`${page.slice(out.length)} → ${href}`);
   }
 }
+// The editor links each connector's page, and its Reference view links the
+// page's settings (authoring's connectorEntry).
 const editorLinks = [
-  ...new Set([...docsLinks(), ...connectorIds().map((id) => `/docs/connectors/${id}`)]),
+  ...new Set([
+    ...docsLinks(),
+    ...connectorIds().flatMap((id) => [
+      `/docs/connectors/${id}`,
+      `/docs/connectors/${id}#settings`,
+    ]),
+  ]),
 ];
 for (const link of editorLinks) problem(link, "editor link");
 
@@ -65,19 +73,24 @@ function pagePath(file: string): string {
 }
 
 /**
- * Where the patterns send the old connector chapter URLs, found by trying every
- * connector id and chapter. A pattern for another shape is checked through its
- * redirects entries or a probe added here with it.
+ * Where the patterns send the old connector chapter URLs: every chapter that
+ * was built, one per pack that reads the connector, and its examples. A
+ * pattern no probe matches is a problem, so no pattern goes unchecked.
  */
 function patternTargets(): string[] {
-  const chapters = [
-    "examples",
-    ...packs.flatMap((pack) => [`${pack.id}-connection`, `${pack.id}-ingestion`]),
-  ];
-  const probes = connectorIds().flatMap((id) =>
-    chapters.map((chapter) => `/docs/connectors/${id}/${chapter}`),
-  );
-  return probes
-    .map((path) => redirectFor(new URL(path, "https://docs.ingestron.io")))
-    .filter((target): target is string => target !== undefined);
+  const probes = connectorIds().flatMap((id) => [
+    `/docs/connectors/${id}/examples`,
+    ...connectorEntries(id).flatMap(({ pack }) => [
+      `/docs/connectors/${id}/${pack}-connection`,
+      `/docs/connectors/${id}/${pack}-ingestion`,
+    ]),
+  ]);
+  for (const [pattern] of patterns)
+    if (!probes.some((probe) => pattern.test(probe)))
+      broken.add(`redirect pattern ${pattern} has no probe, so its targets go unchecked`);
+  return probes.map((path) => {
+    const target = redirectFor(new URL(path, "https://docs.ingestron.io"));
+    if (target === undefined) broken.add(`old chapter ${path} does not redirect`);
+    return target ?? path;
+  });
 }

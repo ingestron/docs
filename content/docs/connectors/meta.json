@@ -3,7 +3,6 @@
   "pages": [
     "index",
     "---Databases and analytics---",
-    "databases-and-analytics",
     "amazon-rds-oracle",
     "amazon-rds-sqlserver",
     "amazon-redshift",
@@ -43,7 +42,6 @@
     "teradata",
     "vertica",
     "---Business applications---",
-    "business-applications",
     "dataverse",
     "dynamics-365",
     "dynamics-ax",
@@ -61,7 +59,6 @@
     "square",
     "xero",
     "---SAP---",
-    "sap",
     "sap-bw-open-hub",
     "sap-bw-mdx",
     "sap-c4c",
@@ -69,14 +66,12 @@
     "sap-hana",
     "sap-table",
     "---APIs and protocols---",
-    "apis-and-protocols",
     "http",
     "odbc",
     "odata",
     "rest",
     "web-table",
     "---Files and storage---",
-    "files-and-storage",
     "amazon-s3",
     "s3-compatible",
     "azure-blob",
@@ -89,7 +84,6 @@
     "oracle-cloud-storage",
     "sftp",
     "---Streaming---",
-    "streaming",
     "kafka"
   ]
 }

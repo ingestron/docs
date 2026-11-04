@@ -6,6 +6,7 @@ import { loader, type VirtualFile } from "fumadocs-core/source";
 import { findPath, getPageTreeRoots } from "fumadocs-core/page-tree";
 import { expect, it } from "vitest";
 import { connectionNavigation } from "../lib/connection-navigation.js";
+import { categoryAnchor } from "../lib/connector-page.js";
 import { connectorEntries, connectorIds } from "../lib/reference.js";
 
 const folder = join(process.cwd(), "content/docs");
@@ -28,14 +29,12 @@ const pathTo = (url: string) =>
     includeSeparator: false,
   });
 
-it("keeps connection chapters and shared guides under the same global root", () => {
+it("keeps connector pages and shared guides under the same global root", () => {
   expect(getPageTreeRoots(tree)).toHaveLength(1);
-  expect(pathTo("/docs/connectors/sqlserver/adf-connection")?.map((node) => node.name)).toEqual([
+  expect(pathTo("/docs/connectors/sqlserver")?.map((node) => node.name)).toEqual([
     "Connections",
     "Databases and analytics",
     "SQL Server",
-    "Azure Data Factory",
-    "Connection and access",
   ]);
   // The shared ADF setup page sits in the same root, in the Platforms group.
   expect(pathTo("/docs/platforms/adf")?.map((node) => node.name)).toEqual(["Azure Data Factory"]);
@@ -51,34 +50,37 @@ it("keeps connection chapters and shared guides under the same global root", () 
   expect(adf).toBeLessThan(next);
 });
 
-it("keeps every overview and supported route reachable at its existing URL", () => {
+it("keeps every connector reachable at its existing URL, as one page with no chapters", () => {
   for (const id of connectorIds()) {
-    expect(pathTo(`/docs/connectors/${id}`), id).not.toBeNull();
-    for (const { pack } of connectorEntries(id)) {
-      for (const chapter of ["connection", "ingestion"]) {
-        const path = pathTo(`/docs/connectors/${id}/${pack}-${chapter}`);
-        expect(path, `${id}/${pack}-${chapter}`).not.toBeNull();
-        expect(path?.filter((node) => node.type === "folder" && node.defaultOpen)).toEqual([]);
-      }
-    }
+    const path = pathTo(`/docs/connectors/${id}`);
+    expect(path, id).not.toBeNull();
+    expect(path?.at(-1)?.type, id).toBe("page");
+    expect(path?.filter((node) => node.type === "folder" && node.defaultOpen)).toEqual([]);
+    for (const { pack } of connectorEntries(id))
+      for (const chapter of ["connection", "ingestion"])
+        expect(
+          pathTo(`/docs/connectors/${id}/${pack}-${chapter}`),
+          `${id}/${pack}-${chapter}`,
+        ).toBeNull();
+    expect(pathTo(`/docs/connectors/${id}/examples`), `${id}/examples`).toBeNull();
   }
 });
 
-it("opens landing pages from category and connector folder labels", () => {
-  const path = pathTo("/docs/connectors/sqlserver/adf-ingestion")!;
+it("opens the catalogue from its folder label, and groups connectors by category without category pages", () => {
+  const path = pathTo("/docs/connectors/sqlserver")!;
   const folders = path.filter((node) => node.type === "folder");
-  expect(folders.map((node) => node.index?.url)).toEqual([
-    "/docs/connectors",
-    "/docs/connectors/databases-and-analytics",
-    "/docs/connectors/sqlserver",
-    "/docs/connectors/sqlserver/adf-connection",
-  ]);
-  expect(pathTo("/docs/connectors/sqlserver/examples")?.map((node) => node.name)).toEqual([
-    "Connections",
-    "Databases and analytics",
-    "SQL Server",
-    "Examples",
-  ]);
+  expect(folders.map((node) => node.index?.url)).toEqual(["/docs/connectors", undefined]);
+  const catalogue = folders[0]!;
+  const groups = catalogue.type === "folder" ? catalogue.children : [];
+  expect(
+    groups.every((node) => node.type === "folder"),
+    "only category groups",
+  ).toBe(true);
+  expect(groups.map((node) => String(node.name)).sort()).toEqual(
+    [...new Set(projectSources().map((source) => source.category))].sort(),
+  );
+  for (const category of groups.map((node) => node.name))
+    expect(source.getPage(["connectors", categoryAnchor(String(category))])).toBeUndefined();
 });
 
 it("lists each connector in the category used by the project builder", () => {

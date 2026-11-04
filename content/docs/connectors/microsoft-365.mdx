@@ -1,0 +1,30 @@
+---
+title: Microsoft 365
+description: "Azure Data Factory copies from Microsoft 365 into ADLS Gen2 landing storage, for Databricks or DuckDB tables, or to keep as landed files."
+---
+
+<ConnectorPage id="microsoft-365">
+
+<ConnectorNote at="adf-access">
+
+Use an **Azure integration runtime**: set `runtime_kind: azure`. Microsoft 365
+uses the configured application's credentials to write JSON landing files.
+Grant that application access to landing storage, and complete Microsoft Graph
+Data Connect consent and dataset permissions.
+
+The connection does not provision an application, grant consent or create the
+runtime. Then choose the [dataset and date filter](#adf-reading).
+
+</ConnectorNote>
+
+<ConnectorNote at="adf-reading">
+
+The copy extracts the selected date window, or the selected dataset when no
+date filter is required. Always set `source_options.requires_date_filter` to
+`true` or `false` according to the dataset requirements. When it is `true`,
+`source_options.date_filter_column` is also required. Extraction uses the
+trigger window. Source column names must match contract names.
+
+</ConnectorNote>
+
+</ConnectorPage>

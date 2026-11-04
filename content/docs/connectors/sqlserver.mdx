@@ -1,0 +1,61 @@
+---
+title: SQL Server
+description: "Choose how SQL Server reaches your tables: Lakeflow Connect captures source changes directly in Databricks; Azure Data Factory copies a full table or a time window into landing storage, for Databricks tables, Synapse serverless SQL views or DuckDB tables, or to keep as landed files."
+---
+
+<ConnectorPage id="sqlserver">
+
+<ConnectorNote at="databricks-access">
+
+Turn on change tracking or change data capture for the source tables, as that
+guide describes.
+
+</ConnectorNote>
+
+<ConnectorNote at="databricks-reading">
+
+Each connection gets an **ingestion gateway** that captures changes, and an
+**ingestion pipeline** that writes the tables. With a schedule, the refresh job
+runs the ingestion first and then your own pipeline, so transforms see fresh
+data.
+
+`gateway_policy_id` and `staging_schema` belong to the gateway, which all
+tables of one connection share, so they must be the same for all of them.
+
+The gateway runs continuously, on classic compute, in every environment it is
+deployed to, and costs compute while it runs. Deploy database connections only
+to the environments that need them.
+
+</ConnectorNote>
+
+<ConnectorNote at="adf-access">
+
+Give the integration runtime network access to SQL Server, and a source
+account that can read the selected tables. For a server on a private network,
+use a self-hosted runtime on a machine with access to that network. Generation
+does not create the server account or the runtime host.
+
+</ConnectorNote>
+
+<ConnectorNote at="adf-connection">
+
+### Choose authentication [#adf-authentication]
+
+**SQL authentication** is the default. Set `user` to the SQL login and
+`password` to the name of its Key Vault secret. You can leave `authentication`
+out, as the example does, or set it to `SQL` explicitly.
+
+**Windows authentication** uses a Windows account. Set `authentication` to
+`Windows`, `user` to the domain account, and `password` to its Key Vault
+secret. Set `runtime_kind` to `self-hosted` in the platform's
+`settings.adf-copy`. The runtime must be able to reach the domain and SQL
+Server.
+
+These are the authentication choices supported for the Ingestron `sqlserver`
+connector. Azure SQL has its own connector pages with different choices:
+[Azure SQL Database](/docs/connectors/azure-sql-database) and
+[Azure SQL Managed Instance](/docs/connectors/azure-sql-managed-instance).
+
+</ConnectorNote>
+
+</ConnectorPage>
