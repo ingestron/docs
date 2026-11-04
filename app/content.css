@@ -213,3 +213,9 @@
 pre code > .line {
   min-height: 1lh;
 }
+/* An old anchor kept on a page (components/old-anchor.tsx) lands where the heading would. */
+.old-anchor {
+  display: block;
+  height: 0;
+  scroll-margin-top: 7rem;
+}
