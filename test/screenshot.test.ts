@@ -62,7 +62,12 @@ describe("the screenshot frame", () => {
   });
 
   it("ends the caption with the date the screen was checked", () => {
-    const html = render({ src: platform, caption: "The pipeline.", checked: "2026-11-04" });
+    const html = render({
+      src: platform,
+      label: "Azure Data Factory",
+      caption: "The pipeline.",
+      checked: "2026-11-04",
+    });
     expect(html).toContain("<figcaption>The pipeline. Checked on 4 November 2026.</figcaption>");
     expect(checkedOn("2027-01-31")).toBe("31 January 2027");
     expect(() => checkedOn("4 November 2026")).toThrow(/checked must be a date/);
@@ -70,6 +75,12 @@ describe("the screenshot frame", () => {
     expect(() => checkedOn("2026-02-31")).toThrow(/checked must be a date/);
     expect(() => checkedOn("2026-02-29")).toThrow(/checked must be a date/);
     expect(checkedOn("2028-02-29")).toBe("29 February 2028");
+  });
+
+  it("refuses a platform's screen without the product's label", () => {
+    expect(() => render({ src: platform, caption: "x", checked: "2026-11-02" })).toThrow(
+      `Screenshot: ${platform} needs the label of the product it shows`,
+    );
   });
 
   it("refuses a platform's screen without the date it was checked", () => {
@@ -87,8 +98,13 @@ describe("the screenshot frame", () => {
       /differ in size/,
     );
     expect(() =>
-      render({ src: "/images/vscode/missing.png", caption: "x", checked: "2026-11-02" }),
-    ).toThrow();
+      render({
+        src: "/images/vscode/missing.png",
+        label: "Databricks",
+        caption: "x",
+        checked: "2026-11-02",
+      }),
+    ).toThrow(/no such file/);
   });
 });
 
