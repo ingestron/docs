@@ -95,7 +95,8 @@ standard's `quality.default` action:
 - A column's `logicalTypeOptions`: `minLength` and `maxLength`, `pattern`,
   `minimum`, `maximum`, `exclusiveMinimum` and `exclusiveMaximum`,
   `multipleOf`, `minItems`, `maxItems` and `uniqueItems`. Each check is named
-  `<column>_<option>`, such as `customer_id_minimum`, and a null value passes.
+  after the column and the option in snake case, such as `customer_id_minimum`
+  or `name_min_length`, and a null value passes.
   `format` and the other options only document the column.
 - A column's `quality` rules that allow no failing row: `nullValues`,
   `missingValues` and `invalidValues` (with `validValues` or `pattern`) when
@@ -103,14 +104,15 @@ standard's `quality.default` action:
 
 Other rules compare a count over all rows, such as a row count or a share of
 nulls, which a check of one row cannot. So does `unique: true`, which says no
-value repeats. These run after each refresh when the platform turns on
-`manage.checks`. Otherwise each `quality` rule is a
+value repeats. Where the pack checks rows, these run after each refresh when
+the platform turns on `manage.checks`. Otherwise, and always for a `custom`
+rule, each `quality` rule is a
 [warning](/docs/reference/errors#QUALITY_RULE_NOT_CHECKED) and stays as
 documentation.
 
 ## Tags and classification
 
-A contract's `tags`, a column's `tags` and its `classification` are kept for
+A table's `tags`, a column's `tags` and its `classification` are kept for
 packs that tag tables. Databricks sets them as Unity Catalog tags after each
 refresh when the platform turns on `manage.tags`; see
 [Databricks contract fields](/docs/reference/packs/databricks#contract-fields).
