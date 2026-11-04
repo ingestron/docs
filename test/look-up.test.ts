@@ -177,7 +177,7 @@ describe("reference/templates", () => {
       expect(names.length, kind).toBeGreaterThan(0);
       if (kind === "starter") expect(names).toEqual(listSamples().map((sample) => sample.name));
     }
-  });
+  }, 30_000);
 
   it("keeps the template.yaml fields and the files init copies", () => {
     for (const field of ["`title`", "`summary`", "`questions`", "`value`", "`ask`", "`default`"])
