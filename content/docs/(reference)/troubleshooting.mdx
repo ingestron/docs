@@ -372,7 +372,7 @@ a common table expression.
 **Fix:** write the expression as a subquery in `FROM`. A transform's SQL also
 names only the tables listed in `inputs`; the message
 `the SQL names {{ tables.customers }}, which is not in inputs` means one is missing.
-See [Synapse serverless views](/docs/platforms/synapse#write-a-transform-as-a-view).
+See [What each engine makes of it](/docs/how-to/write-a-transform#what-each-engine-makes-of-it).
 
 ### A view reads files outside the data source
 
@@ -421,7 +421,7 @@ a file you re-export under its old name is skipped.
 
 **Fix:** use `replace` or `upsert`, or give each load its own file, such as
 with `increments`. To reload everything, delete `ingestron.duckdb` and run
-again. See [DuckDB](/docs/platforms/duckdb#read-files-where-they-are).
+again. See [Keep a table current](/docs/how-to/keep-a-table-current#on-duckdb).
 
 ### Upsert needs a primary key
 
