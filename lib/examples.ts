@@ -17,6 +17,7 @@ import {
 } from "@ingestron/cli";
 import { recipesFolder } from "@ingestron/pack-adf";
 import { parse } from "yaml";
+import { pickLines, pickPath } from "./extract";
 
 /** What a page needs to list a sample. */
 export interface ExampleInfo extends Sample {
@@ -94,6 +95,112 @@ export function readExampleFile(name: string, file: string): string {
     : resolve(folder, file);
   if (!existsSync(path)) throw new Error(`Example "${name}" has no file "${file}".`);
   return readFileSync(path, "utf8");
+}
+
+/** Which part of a file an extract shows: a YAML or JSON path, or the lines between two markers. */
+export type ExtractPart = { pick: string } | { from: string; to: string };
+
+/**
+ * Part of one file of a sample, as it is in the file. Throws, naming the
+ * sample, file and path or marker, when the part is not there, so a page
+ * cannot show an extract that has drifted from the file.
+ */
+export function readExampleExtract(name: string, file: string, part: ExtractPart): string {
+  const text = readExampleFile(name, file);
+  if ("pick" in part) {
+    let found: string | undefined;
+    try {
+      found = pickPath(text, part.pick);
+    } catch (error) {
+      throw new Error(`Example "${name}": "${file}": ${(error as Error).message}.`);
+    }
+    if (found === undefined)
+      throw new Error(`Example "${name}": "${file}" has no path "${part.pick}".`);
+    return found;
+  }
+  const found = pickLines(text, part.from, part.to);
+  if ("missing" in found) {
+    throw new Error(
+      found.missing === part.from
+        ? `Example "${name}": "${file}" has no line containing "${part.from}".`
+        : `Example "${name}": "${file}" has no line containing "${part.to}" after "${part.from}".`,
+    );
+  }
+  return found.lines;
+}
+
+/**
+ * A generated folder of a sample, such as `build/dev/adf`, as an indented
+ * listing: folders first, then files, each sorted by name. Throws when the
+ * sample generates no such folder.
+ */
+export function exampleTree(name: string, folder: string): string {
+  const path = folder.replace(/\/+$/, "");
+  if (!path.startsWith("build/")) {
+    throw new Error(`Example "${name}": "${folder}" is not a generated folder under build/.`);
+  }
+  const root = resolve(generatedFolder(name), path.slice("build/".length));
+  if (relative(generatedFolder(name), root).startsWith("..") || !existsSync(root)) {
+    throw new Error(`Example "${name}" generates no folder "${folder}".`);
+  }
+  const listing = (at: string, depth: number): string[] => {
+    const entries = readdirSync(at, { withFileTypes: true })
+      .filter((entry) => !entry.name.startsWith("."))
+      .sort(
+        (a, b) =>
+          Number(b.isDirectory()) - Number(a.isDirectory()) || a.name.localeCompare(b.name, "en"),
+      );
+    return entries.flatMap((entry) =>
+      entry.isDirectory()
+        ? [`${"  ".repeat(depth)}${entry.name}/`, ...listing(join(at, entry.name), depth + 1)]
+        : [`${"  ".repeat(depth)}${entry.name}`],
+    );
+  };
+  return [`${path}/`, ...listing(root, 1)].join("\n");
+}
+
+const requests = new Map<string, string>();
+
+/** What `ingestron request --env <env>` prints for a sample. Throws when it fails. */
+export function exampleRequest(name: string, env = "dev"): string {
+  const key = `${name}\u0000${env}`;
+  let text = requests.get(key);
+  if (text === undefined) {
+    const folder = exampleFolder(name);
+    let output = "";
+    const code = run(["request", "--env", env, "--definitions", folder], {
+      cwd: folder,
+      write: (chunk) => (output += chunk),
+    });
+    if (code !== 0) throw new Error(`Example "${name}": the request for ${env} fails:\n${output}`);
+    text = output.trimEnd();
+    requests.set(key, text);
+  }
+  return text;
+}
+
+/**
+ * The named `## ` sections of a request, each with its heading, in the
+ * order asked for. Throws, naming the sample and section, when one is missing.
+ */
+export function requestSections(name: string, env: string, titles: string[]): string {
+  const text = exampleRequest(name, env);
+  const sections = new Map<string, string>();
+  for (const block of text.split(/\n(?=## )/)) {
+    const title = /^## (.+)$/m.exec(block.split("\n")[0] ?? "")?.[1];
+    if (title) sections.set(title, block.trimEnd());
+  }
+  return titles
+    .map((title) => {
+      const section = sections.get(title);
+      if (section === undefined) {
+        throw new Error(
+          `Example "${name}": the request for ${env} has no section "${title}". It has: ${[...sections.keys()].join(", ")}.`,
+        );
+      }
+      return section;
+    })
+    .join("\n\n");
 }
 
 /** The definition files of a sample, relative to it: everything but generated output. */

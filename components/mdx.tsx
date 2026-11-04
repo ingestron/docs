@@ -6,7 +6,7 @@ import type { BlockKind } from "@/lib/block-kind";
 import { NamingVariables } from "@/components/reference/naming-variables";
 import { DocLinks } from "@/components/doc-links";
 import { MarkdownTable } from "@/components/table-frame";
-import { Example, ExampleDownload } from "@/components/example";
+import { BuildTree, Example, ExampleDownload, Request } from "@/components/example";
 import { FlowDiagram } from "@/components/flow-diagram";
 import { Path, Paths } from "@/components/hub";
 import { RouteComparison } from "@/components/reference/route-comparison";
@@ -59,6 +59,8 @@ export function getMDXComponents(components?: MDXComponents) {
     DocLinks,
     Example,
     ExampleDownload,
+    BuildTree,
+    Request,
     Screenshot,
     Tool,
     ToolSteps,
