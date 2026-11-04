@@ -1,0 +1,346 @@
+---
+title: Azure Data Factory
+description: Copy a source into landing storage with ADF, prepare the runtime and Key Vault, schedule the copies, and publish the factory.
+---
+
+When Databricks cannot reach the source, for example a database on a private
+network, Azure Data Factory copies it. ADF reaches the source through an
+integration runtime and copies each table into ADLS Gen2 landing storage on a
+schedule. Ingestron writes the factory's linked services, datasets, Copy
+pipelines and triggers from your definitions; on this route, the Databricks
+pack writes the pipelines that read the landed files into tables.
+
+<RouteFacts id="adf-databricks" />
+
+ADF feeds the other routes too. Everything on this page, from the runtime and
+Key Vault to the schedules and publishing, applies to them as well; their own
+pages cover what reads the files:
+
+- [Synapse serverless views](/docs/platforms/synapse) (`adf-synapse`): views
+  over the landed files.
+- [Run DuckDB in Azure](/docs/platforms/duckdb-in-azure) (`adf-duckdb`): DuckDB
+  tables rebuilt after each load.
+- [Land files only](/docs/platforms/landing-only) (`adf-landing`): the landed
+  files are the result.
+
+## Create the project
+
+[Install a tool](/docs/start/install) first. Then, from a parent folder:
+
+```sh
+ingestron init sales --connector postgresql --connectivity private --via adf-databricks --yes
+cd sales
+```
+
+In VS Code, run **Ingestron: New project** and choose **PostgreSQL**,
+**private** and the ADF route into Databricks. When a source supports only one
+route, it is selected for you. See
+[Create a project](/docs/how-to/start-from-a-template) for the remaining
+questions. For another source, choose it from the
+[connector catalogue](/docs/connectors); its page lists the routes it supports.
+
+The files on this page come from the finished PostgreSQL project, which also
+sets the ADF resource names; a new project uses the default names. To follow
+its exact settings and filenames, <ExampleDownload name="connection-first-adf" />
+and extract it into an empty folder. Open the folder containing `project.yaml`
+in VS Code, or change into it in your terminal. You can generate it with the
+synthetic values before arranging live source access. The source hosts,
+accounts, tables and contract are synthetic: replace them and adapt the
+contract before you deploy.
+
+To compare sources, <ExampleDownload name="adf-native-connectors" /> holds a
+connection for every native connector in one project. You don't need to copy
+them into yours.
+
+### Change the project values
+
+The connection and platform files read these values. Change the server,
+database, object, landing path, Key Vault and runtime to match your setup.
+`source_password` holds a Key Vault secret reference. `resource_prefix`
+supplies the prefix the example's ADF names use.
+
+<Example name="connection-first-adf" file="project.yaml" />
+
+### Where each setting goes
+
+<FlowDiagram
+  title="Where a setting belongs"
+  steps={[
+    { title: "Connection", detail: "Source endpoint and authentication" },
+    { title: "Platform", detail: "Runtime, landing storage and Key Vault" },
+    { title: "Standard and flow", detail: "Shared schedule and table-specific reading choices" },
+  ]}
+/>
+
+The connection holds the source's credentials, the platform the shared
+infrastructure, and the standard the shared ingestion defaults. Choices for one
+table belong in the flow. Ingestron resolves these files together before it
+generates anything.
+
+## Platform prerequisites
+
+These must exist before the generated pipelines can run. Ingestron generates
+files; it does not provision accounts, drivers, runtime machines, network
+access or consent, and generation does not inspect Azure.
+
+- **An integration runtime that reaches the source.** A self-hosted runtime
+  runs on infrastructure you manage and needs the source's drivers and network
+  access. An Azure runtime uses Azure's managed integration runtime.
+- **Key Vault**, holding the source's secrets, with access for the factory's
+  identity.
+- **ADLS Gen2 landing storage**, with write access for the factory's identity.
+  Microsoft 365 uses its configured application for landing storage instead.
+- **Source access:** the permissions, drivers, versions and authentication
+  setup in the source's vendor prerequisites, linked from its connector page.
+
+`ingestron request`, or **Ingestron: Prepare platform request** in VS Code,
+lists them with this project's values for the team that creates them. For the
+finished PostgreSQL project, `ingestron request --env dev` ends with:
+
+```text
+## ADF prerequisites
+
+Provision these before running the generated assets. Generation does not inspect Azure or validate source credentials.
+
+- Integration runtime `synthetic-self-hosted-runtime` (self-hosted), with network access and any required source drivers.
+- Key Vault `https://synthetic-vault.vault.azure.net`, with the named secrets and factory identity access.
+- Landing `abfss://landing@syntheticlake.dfs.core.windows.net/native/postgresql`, with write access for the factory identity; Microsoft 365 uses its configured application.
+- Connection `postgresql`: source permissions and runtime prerequisites from [PostgreSQL](https://learn.microsoft.com/en-us/azure/data-factory/connector-postgresql).
+```
+
+See [Ask the platform team](/docs/how-to/ask-the-platform-team) for the rest of
+the request.
+
+## Runtime and Key Vault
+
+Name the runtime, Key Vault and landing storage in the platform, under the
+method your flows select:
+
+<Example name="connection-first-adf" file="platform.yaml" />
+
+The example configures `adf-table`, for native full selections. Use `adf-copy`
+for SQL-family tables or `adf-files` for file copies; these settings mean the
+same for all three methods.
+
+`integration_runtime` names an existing ADF runtime; naming it does not create
+or rename it. `runtime_kind` says which kind it is, and must match the runtime
+deployed in ADF. The default is `self-hosted`, as in this example. Set
+`runtime_kind: azure` in the method settings when the source needs Azure's
+runtime. Windows SQL authentication, File System and HDFS need a self-hosted
+runtime; other sources' needs are in their connector pages.
+
+<SettingsSections
+  pack="adf"
+  method="adf-copy"
+  include={["integration_runtime", "runtime_kind", "landing", "key_vault"]}
+/>
+
+## Choose the source and its tables
+
+Open the [connector reference](/docs/connectors/postgresql) for your source.
+Its connection table lists the required fields and the fields each
+authentication mode needs. Secrets use `${secret:name}`: put the value in Key
+Vault under that name.
+
+<Example name="connection-first-adf" file="connections/postgresql.yaml" />
+
+<Example name="connection-first-adf" file="flows/postgresql.yaml" />
+
+Each flow selects its ADF method, so you can also use ADF for a public or
+workspace source that another pack can read. The `object` selects the native
+table, collection, dataset or relative path. Give each source its own landing
+folder.
+
+For native table copies, ADF writes a full selection each window. On the
+`adf-databricks` route, repeated snapshots append repeated rows with the
+default store; choose [upsert or history](/docs/how-to/keep-a-table-current)
+when you need current rows or change history. These store modes need a
+reliable ordering column, and a row missing from a later snapshot does not mean
+it was deleted. SQL-family copies also support watermark mode. Native table
+sources refuse incremental mode rather than invent a watermark.
+
+Use `ingest.with.source_options` for connector-specific settings:
+
+- REST: pagination rules, request method and body, JSON collection and column
+  paths.
+- HTTP: GET or POST download requests, with an optional POST body.
+- Snowflake and Databricks Delta: the staging SAS secret and staging path.
+- Microsoft 365: the date-filter declaration and column, and an optional user
+  scope.
+- Web table: the table index.
+- SAP Open Hub: whether to exclude the last request.
+- Fabric Lakehouse: the schema, for a schema-enabled lakehouse.
+
+Only the options the selected connector supports are accepted. An unknown
+connection or extraction setting stops generation with a diagnostic, and fixed
+settings in your standard still take precedence.
+
+## Schedule the copies
+
+### Define the time windows
+
+The generated pipelines run from tumbling window triggers, which divide time
+into consecutive, non-overlapping windows. `start` is the first window's
+start, in UTC, and `every` sets each window's length. For full selections,
+every window copies the selection again. For SQL incremental copies, the
+window's bounds filter the watermark column. File copies in `new` mode use the
+window to select changed files.
+
+<Example name="connection-first-adf" file="standard.yaml" />
+
+<SettingsSections pack="adf" method="adf-copy" include={["every", "start"]} />
+
+### Retry and pause
+
+A retry repeats a failed window; it does not move that window's bounds.
+`paused` keeps the generated trigger stopped. Without it, the trigger follows
+the platform's `schedule.paused`, and with no schedule it is stopped outside
+production, so development triggers do not run on their own. Check the
+generated trigger before deploying, especially when `start` is in the past.
+
+<SettingsSections pack="adf" method="adf-copy" include={["retries", "paused"]} />
+
+To stop only the copies, for example while the source database is down for
+maintenance, set `paused` for the copy method in the platform (here
+`adf-copy`; use the method your flows select):
+
+```yaml
+settings:
+  adf-copy:
+    paused: true
+```
+
+`paused: true` in the platform's `schedule` stops the Databricks refresh job
+and the triggers together; see
+[Refresh on a schedule](/docs/platforms/databricks#schedule).
+
+On the `adf-databricks` route, ADF and Databricks run on their own schedules:
+deploying their files does not combine them into one run. On `adf-duckdb`,
+ADF can start the DuckDB job after the copies; see
+[Run DuckDB in Azure](/docs/platforms/duckdb-in-azure).
+
+### Tables that share a schedule
+
+SQL-family tables in one connection and source database share their runtime,
+encryption, schedule, retries and paused state. File tables in one connection
+share their runtime and schedule. Give tables that need their own shared
+settings separate connections; a watermark per table does not make a separate
+trigger.
+
+Native full-copy sources generate a pipeline per table. Their shared linked
+service and dataset names still need compatible definitions; generation
+refuses conflicting shared resources.
+
+## Set policy and names
+
+The finished example names its shared resources in `platform.yaml`, and its
+pipeline, trigger and Copy activity in the PostgreSQL flow. Leave those roles
+out to keep the default names.
+[Name resources](/docs/platforms/adf-pipelines#name-resources) covers where each
+name goes, per-environment names, sharing rules and safe renames, and
+[Shape ADF pipelines and names](/docs/platforms/adf-pipelines) covers ForEach,
+retries inside a run, audit columns and factory folders.
+
+For the allowed methods and the fixed settings across both packs, follow
+[Configure the project standard](/docs/how-to/configure-a-standard). A flow
+cannot override a fixed setting.
+
+## Generate and inspect
+
+<ToolSteps>
+<Tool name="CLI">
+
+```sh
+ingestron plan --env dev --no-diff
+ingestron apply --env dev
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Select **dev** with **Ingestron: Select environment**, then run
+**Ingestron: Plan** and **Ingestron: Apply**.
+
+</Tool>
+</ToolSteps>
+
+For the finished PostgreSQL project, the plan lists the ADF files after the
+Databricks ones:
+
+```text
+dev/adf → build/dev/adf
+create    dataset/ds_sales_parquet.json
+create    dataset/ds_sales_postgresql_postgresql_records.json
+create    linkedService/ls_sales_lake.json
+create    linkedService/ls_sales_postgresql.json
+create    linkedService/ls_sales_secrets.json
+create    pipeline/pl_sales_orders_dev.json
+create    trigger/tr_sales_orders_dev.json
+
+7 files: 7 create. Ready to apply.
+```
+
+Inspect `build/dev/adf/linkedService`, `dataset`, `pipeline` and `trigger`.
+With ADF alone, on the `adf-landing` route, these folders are directly in
+`build/dev/`. The pipeline's Copy source and linked service use PostgreSQL's
+native types, and the Databricks files under `build/dev/databricks` read the
+matching landing folder. If you kept a new project's default names, use the
+filenames your plan shows.
+
+Development triggers are stopped by default. Generation checks the definitions
+and builds the factory's files; it does not test credentials, run queries or
+deploy the factory.
+
+To see a failure safely, remove `server` from `connections/postgresql.yaml`
+and plan again:
+
+```text
+dev: the definitions have problems
+flows/postgresql.yaml:14:5  error  METHOD_CHECK
+  "adf-table" for table "postgresql_records": the connection needs "settings.server" as non-empty text.
+```
+
+The diagnostic names the missing setting, and no generated files change.
+Restore the field before you apply.
+
+## Publish the factory [#publish]
+
+With ADF alone (the `adf-landing` route), the factory's files are in
+`build/<environment>/`; when the standard lists another pack too, they are in
+`build/<environment>/adf/`. Ingestron does not publish the factory.
+
+### Review the generated resources
+
+Inspect the `linkedService`, `dataset`, `pipeline` and `trigger` folders.
+Confirm the names, credential references, landing paths, schedules and paused
+state for the environment you are publishing. Prepare the
+[platform prerequisites](#platform-prerequisites) and the connector's access
+requirements before running the pipelines.
+
+Keep Ingestron's ownership files in its output folder; the ADF resource JSON
+is what you bring into the factory's configured Git root.
+
+### Use the factory's publishing workflow
+
+Bring the reviewed resources into a feature branch of the factory repository,
+then review and merge them into its collaboration branch. In ADF, publish from
+that collaboration branch. Committing to Git alone does not update the live
+factory. Publishing includes all the factory's pending changes, so review the
+complete set with the factory owner.
+
+Follow Microsoft's
+[source-control and publishing instructions](https://learn.microsoft.com/en-us/azure/data-factory/source-control#publish-code-changes)
+for the factory's Git integration and permissions. For an automated release
+pipeline, use your organisation's established ADF deployment process.
+
+### Deploy what reads the files
+
+When the standard lists another pack, its files are a separate folder beside
+`adf/`. Publishing the factory does not deploy or schedule them:
+
+- `build/<environment>/databricks/`: follow
+  [Deploy the bundle](/docs/platforms/databricks#deploy).
+- `build/<environment>/synapse/`: run its `views.sql`, as in
+  [Synapse serverless views](/docs/platforms/synapse).
+- `build/<environment>/duckdb/`: follow
+  [Run DuckDB in Azure](/docs/platforms/duckdb-in-azure).

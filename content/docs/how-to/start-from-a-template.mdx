@@ -93,9 +93,9 @@ for values, files and secret syntax.
 The questions cover the recipe's string connection, object and infrastructure
 values. Nested settings, alternative authentication modes, schedules and
 resource names remain editable in YAML. Use the connector reference and
-[ADF settings guide](/docs/how-to/adf-native-connectors) to configure them.
-See [Name ADF resources](/docs/how-to/name-adf-resources) for name defaults
-and overrides.
+[Azure Data Factory](/docs/platforms/adf) to configure them.
+See [Name resources](/docs/platforms/adf-pipelines#name-resources) for name
+defaults and overrides.
 
 `init` never replaces an existing file. If any target file already exists,
 it lists the clashes and writes nothing. The one exception is `.gitignore`:
@@ -113,8 +113,9 @@ the native assets. Neither creation nor Apply deploys them to a cloud platform.
 Continue with the task you need:
 
 - [Choose where your data goes](/docs/start/choose-a-route): compare every route.
-- [Configure native ADF ingestion](/docs/how-to/adf-native-connectors): source, runtime and extraction.
-- [Name ADF resources](/docs/how-to/name-adf-resources): defaults and YAML overrides.
+- [Azure Data Factory](/docs/platforms/adf): source, runtime, schedules and publishing.
+- [Databricks](/docs/platforms/databricks): schemas, the refresh job and deploying the bundle.
+- [Shape ADF pipelines and names](/docs/platforms/adf-pipelines): pipeline design, defaults and name overrides.
 - [Browse connectors](/docs/connectors): fields and supported routes by category.
 
 ## Use a prepared project instead

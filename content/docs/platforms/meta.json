@@ -1,4 +1,12 @@
 {
   "title": "Platforms",
-  "pages": ["duckdb", "duckdb-in-azure", "synapse", "landing-only"]
+  "pages": [
+    "duckdb",
+    "duckdb-in-azure",
+    "databricks",
+    "synapse",
+    "adf",
+    "adf-pipelines",
+    "landing-only"
+  ]
 }
