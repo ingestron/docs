@@ -7,6 +7,11 @@ export const redirects = new Map([
   ["/docs/start", "/docs/start/first-project"],
   ["/docs/how-to", "/docs/how-to/start-from-a-template"],
   ["/docs/concepts", "/docs/concepts/definitions"],
+  ["/docs/reference", "/docs/reference/documents"],
+  ["/docs/tools", "/docs/tools/vscode"],
+  ["/docs/tools/cli", "/docs/reference/cli"],
+  ["/docs/examples", "/docs/reference/templates"],
+  ["/docs/examples/catalogue", "/docs/reference/templates"],
   ["/docs/how-to/use-an-example", "/docs/how-to/start-from-a-template#start-from-a-starter"],
   [
     "/docs/how-to/draft-a-contract-from-a-sample",

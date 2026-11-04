@@ -1,12 +1,11 @@
 ---
 title: Platforms, packs and methods
-description: Check the capabilities available today and the combinations that can complete a project.
+description: The packs Ingestron ships, what each is responsible for, and what it generates.
 ---
 
-Ingestron's common model is definitions, standards, environments and generated
-files. Packs implement platform-specific methods for ingestion, transformation
-or storage. A standard can select several packs when their methods are compatible.
-Tools are separate interfaces to that model.
+A pack turns definitions into the files for one platform: its methods ingest,
+transform or store a table. Each pack has a page of its methods, settings and
+defaults, rendered from the pack itself.
 
 ## Available packs
 
@@ -17,46 +16,16 @@ Tools are separate interfaces to that model.
 | [Synapse serverless](/docs/reference/packs/synapse) (`synapse@1`) | SQL views over landed files and transforms               | `views.sql` for the serverless database                            |
 | [DuckDB](/docs/reference/packs/duckdb) (`duckdb@1`)               | Tables, transforms and local runs, published as Parquet  | `run.sql` and each table's SQL                                     |
 
-Exact methods, defaults and settings are rendered from the packs on their pages.
-Connector-specific access and ingestion requirements are in [Connections](/docs/connectors).
+Connector-specific access and ingestion requirements are in
+[Connections](/docs/connectors).
 
-## Supported combinations today
+These four packs come with the command and the editor. Adding another name to
+`packs` does not install a provider plugin. Do not assume a combination that no
+route offers works.
 
-| Project route                         | Required packs          | Result                                                                                               |
-| ------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------- |
-| Direct ingestion into Databricks      | Databricks              | Tables produced by the supported direct ingestion and storage methods                                |
-| ADF ingestion with Databricks storage | Databricks + ADF        | ADF lands files; Databricks reads those files into tables                                            |
-| ADF landing only                      | ADF, with `store: none` | ADF lands files that reports read directly ([guide](/docs/platforms/landing-only))                   |
-| ADF with Synapse views                | Synapse + ADF           | ADF lands files; Synapse serverless SQL shows them as views ([guide](/docs/platforms/synapse))       |
-| DuckDB on a laptop                    | DuckDB                  | DuckDB loads local files into tables and publishes them as Parquet ([guide](/docs/platforms/duckdb)) |
-| ADF with DuckDB tables                | DuckDB + ADF            | ADF lands files; DuckDB builds the tables, and `runs-on: duckdb` runs them locally                   |
+## Which packs a project uses
 
-In Azure, ADF's `after_copy` starts a Container Apps job after each schedule's
-copies, and the job rebuilds the DuckDB tables with a public image
-([guide](/docs/platforms/duckdb-in-azure)). Ingestron creates neither the job
-nor its access; `ingestron request` lists them.
-
-This is the current capability boundary. Do not assume an unlisted provider or
-arbitrary pack combination works. The current command and editor use their
-bundled packs; adding a name to `packs` does not install a provider plugin.
-
-## Decide which capabilities you need
-
-Start from the source and the intended result. Check connector support and
-reachability, then the methods that ingest and store the result. Add transforms
-only when needed and supported. Your standard may further restrict those choices.
-
-<DocLinks
-  items={[
-    {
-      title: "Choose where your data goes",
-      href: "/docs/start/choose-a-route",
-      description: "Compare the supported combinations before creating a project.",
-    },
-    {
-      title: "Understand standards and packs",
-      href: "/docs/concepts/standards-and-packs",
-      description: "How methods are selected and checked for compatibility.",
-    },
-  ]}
-/>
+[Choose where your data goes](/docs/start/choose-a-route) lists the packs
+each route needs, and what runs after each load. How a standard selects methods,
+and how Ingestron checks that they fit together, is in
+[Standards, packs and methods](/docs/concepts/standards-and-packs).

@@ -1,9 +1,38 @@
 ---
-title: CLI
+title: Command line
 description: The ingestron command's commands, options, output and exit codes.
 ---
 
+The `ingestron` command reads a project folder and writes each environment's
+files. [Install it](/docs/start/install) first. `ingestron init` creates a
+project; see [Create a project](/docs/how-to/start-from-a-template). Then
+`ingestron plan` and `ingestron apply` are the everyday loop; see
+[Plan, apply and review](/docs/how-to/plan-and-generate). In CI, run
+`ingestron check`; see [Check generated files in CI](/docs/how-to/check-in-ci).
+
 <CliCommands />
+
+## Choose the project and the output [#choose-the-project-and-the-output]
+
+Run the command from the folder that holds `project.yaml`. It reads the
+project there and writes to `build` there. Four options change that:
+
+- `--env dev` limits the work to one environment; repeat it for more.
+- `--definitions <folder>` reads a project that is not the current folder.
+- `--out <folder>` writes somewhere other than `build`.
+- `--no-diff` lists changed files without their line differences.
+
+Relative `--definitions` and `--out` paths are resolved from your current
+folder, and changing `--definitions` does not move the output folder. To work
+on a project from outside it, set both. From the folder above `shop`:
+
+```sh
+ingestron apply --definitions shop --out shop/build
+ingestron check --definitions shop --out shop/build
+```
+
+With `--definitions shop` alone, `apply` would write `build` in the folder you
+ran it from, not in `shop`.
 
 ## Output
 
@@ -20,40 +49,17 @@ folder inside it, such as `build/dev/databricks/`. See
 | `1`  | Problems in the definitions, or output that is not up to date or in conflict. |
 | `2`  | A mistake in the command, such as an unknown option.                          |
 
-## Project builder API
+## Editor schemas
 
-The CLI package exposes the catalogue and composed questions used by VS Code.
-`projectSources()` returns source IDs, titles and categories.
-`projectRoutes(connector, connectivity?)` returns compatible routes, methods,
-reachability and maturity. `projectRecipe(connector, via, connectivity)`
-returns a `ProjectRecipe` containing the selected definition files and a
-`Template` with configuration questions. It reads the packaged recipes but
-writes no project files. Use `run` to apply answers, validate and create it:
+`ingestron schemas` writes JSON schemas to `.ingestron/schemas` and prints the
+`yaml.schemas` setting that points the YAML extension at them. See
+[Check files with the YAML extension](/docs/tools/vscode#check-files-with-the-yaml-extension).
 
-```ts
-import { projectSources, projectRoutes, projectRecipe, run } from "@ingestron/cli";
+## Use the command from code
 
-const source = projectSources().find((item) => item.id === "postgresql")!;
-const route = projectRoutes(source.id, "private")[0]!;
-const recipe = projectRecipe(source.id, route.via, "private");
-console.log(recipe.template.questions);
-const code = run(
-  [
-    "init",
-    "sales",
-    "--connector",
-    source.id,
-    "--via",
-    route.via,
-    "--connectivity",
-    "private",
-    "--yes",
-  ],
-  { cwd: process.cwd(), write: (text) => process.stdout.write(text) },
-);
-process.exitCode = code;
-```
-
-The exported `ProjectSource`, `ProjectRoute` and `ProjectRecipe` types describe
-these plain objects. The catalogue comes from installed pack metadata; a
-selected standard is checked during creation, before writing any files.
+The CLI package is also a library: `run` takes the same arguments as the
+command, and `projectSources`, `projectRoutes` and `projectRecipe` return the
+sources, routes and questions that `init` and **Ingestron: New project** offer.
+The
+[`@ingestron/cli` README](https://github.com/ingestron/ingestron/tree/main/packages/cli#project-builder-api)
+describes them.
