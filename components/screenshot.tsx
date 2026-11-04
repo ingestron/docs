@@ -62,7 +62,7 @@ type Captures =
 export function Screenshot({
   caption,
   alt,
-  label = "VS Code · Ingestron",
+  label,
   checked,
   ...captures
 }: Captures & {
@@ -70,7 +70,7 @@ export function Screenshot({
   caption: string;
   /** Describes the image for a reader who cannot see it; the caption when left out. */
   alt?: string;
-  /** The window bar's label. */
+  /** The window bar's label: the product, such as "Azure Data Factory". A platform's screen (`src`) needs it; an editor shot's is VS Code's. */
   label?: string;
   /** The date the screen was last checked, such as `2026-11-04`; it ends the caption. A platform's screen (`src`) needs it. */
   checked?: string;
@@ -94,6 +94,10 @@ export function Screenshot({
       `Screenshot: ${captures.src} needs the date it was checked, such as 2026-11-04`,
     );
   }
+  if (platform && !label) {
+    throw new Error(`Screenshot: ${captures.src} needs the label of the product it shows`);
+  }
+  const bar = label ?? "VS Code · Ingestron";
   const sizes = images.map((image) => pngSize(image.src));
   const [size] = sizes;
   if (sizes.some((other) => other.width !== size.width || other.height !== size.height)) {
@@ -122,7 +126,7 @@ export function Screenshot({
             <i />
             <i />
           </span>
-          <span className="screenshot-label">{label}</span>
+          <span className="screenshot-label">{bar}</span>
         </div>
         {/* On a narrow screen the image keeps a readable size and scrolls in a
             frame named after the shot, which takes focus only while it scrolls. */}
