@@ -133,8 +133,10 @@ export function shown(value: unknown): string {
 
 /**
  * The Platform fields each pack reads, in the order the reference lists
- * them: the Databricks pack builds its bundle from all of them; the ADF pack
- * reads only whether its triggers start (`schedule.paused`, else `mode`).
+ * them: the Databricks pack builds its bundle from all of them. Of the
+ * Platform's fields, the ADF pack reads only `schedule.paused`, after a
+ * trigger's own `paused` setting. Without either, pack-adf 1.x falls back to
+ * `mode` and 2.0 to the environment's name, so `mode` is not listed.
  */
 const platformFieldsRead: Record<string, string[]> = {
   databricks: [
@@ -147,7 +149,7 @@ const platformFieldsRead: Record<string, string[]> = {
     "manage.comments",
     "manage.checks",
   ],
-  adf: ["mode", "schedule.paused"],
+  adf: ["schedule.paused"],
 };
 
 /**
