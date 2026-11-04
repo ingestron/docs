@@ -5,61 +5,131 @@ description: Show the files ADF lands to reports as Synapse serverless SQL views
 
 When reports need SQL tables, but nothing should run or be stored after each
 load, Synapse serverless SQL can show the files ADF lands as views. A transform
-becomes a view over other views. Synapse reads the files each time a report
+becomes a view over other views, and Synapse reads the files each time a report
 queries a view.
 
 <RouteFacts id="adf-synapse" />
 
+## What Ingestron writes [#what-you-get]
+
+For each environment, the ADF pack writes the factory's resources and the
+Synapse pack writes one script of views:
+
+<BuildTree name="synapse-views" folder="build/dev" />
+
+Each copied table becomes a view over the file ADF lands, read through the
+external data source `landing`, with the contract's column types:
+
+<Example
+  name="synapse-views"
+  file="build/dev/synapse/views.sql"
+  from="CREATE OR ALTER VIEW [bronze].[customers]"
+  to="GO"
+/>
+
+A transform becomes a view over its inputs' views, with its SQL inside:
+
+<Example
+  name="synapse-views"
+  file="build/dev/synapse/views.sql"
+  from="CREATE OR ALTER VIEW [silver].[customer_totals]"
+  to="GO"
+/>
+
+## What it looks like in Azure Synapse [#on-the-platform]
+
+<Screenshot
+  src="/images/platforms/synapse/synapse-01-views.png"
+  label="Azure Synapse"
+  checked="2026-11-02"
+  alt="The serverless database northwind_dev in Synapse Studio, with the views bronze.customers, bronze.order_details, bronze.orders, bronze.products and silver.daily_sales."
+  caption="The demo's Northwind project in Synapse Studio: the serverless database northwind_dev holds a view per copied table in bronze, and the daily_sales transform in silver."
+/>
+
+<Screenshot
+  src="/images/platforms/synapse/synapse-04-sales-chart.png"
+  label="Azure Synapse"
+  checked="2026-11-02"
+  alt="A query over silver.daily_sales grouped by country, shown as a column chart of revenue from USA down to Ireland."
+  caption="A report's query over the silver.daily_sales view, as a chart: Synapse read the landed files when the query ran."
+/>
+
+## Create it [#create-it]
+
+<ToolSteps>
+<Tool name="CLI">
+
+From a parent folder:
+
+```sh
+ingestron init sales --connector sqlserver --via adf-synapse --yes
+cd sales
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: New project**, choose **SQL Server** and the ADF route into
+Synapse serverless views. See
+[Create a project](/docs/how-to/start-from-a-template) for the remaining
+questions.
+
+</Tool>
+</ToolSteps>
+
+For another source, choose it from the [connector catalogue](/docs/connectors);
+its page lists the routes it supports. The files on this page come from a
+finished project, which you can download:
+
 <ExampleDownload name="synapse-views" />
 
-## List Synapse first, and keep tables as views
+The standard lists Synapse first, so it names and types the views (see
+[Combine packs](/docs/concepts/standards-and-packs#combine-packs-when-their-actions-fit)),
+and keeps every table as a view:
 
 <Example name="synapse-views" file="standard.yaml" />
 
-Synapse comes first even though ADF runs first: the order in `packs` is not
-the order things run. The first pack names and types the tables, here the
-database name, `{{ project }}_{{ environment }}`, and the column types; ADF only
-copies, so it has nothing to name.
-`store: { default: synapse-view }` keeps every table as a view over the files
-ADF lands. `layout: snapshot` lands one file per table, so each view shows the
-current data. A view over files that each load adds shows every load's rows.
-
-## Name the external data source
-
-The views read the files through an external data source in the serverless
-database. Name it, and where it points, in the platform:
+The platform names the external data source the views read through:
 
 <Example name="synapse-views" file="platform.yaml" />
-
-Every file a view reads must be under `data_source_location`.
-
-## Write a transform as a view
 
 A transform's SQL is T-SQL over its inputs' views, written
 `{{ tables.<input> }}`:
 
 <Example name="synapse-views" file="transforms/customer_totals.yaml" />
 
-A view checks no rows, so the contract's quality rules and required columns
-are reported as not checked (`CONTRACT_FIELD_UNUSED` warnings).
+## Settings that shape it [#settings]
 
-The SQL sits inside the view: it cannot start with `WITH` or end with
-`ORDER BY`, and it names only tables listed in `inputs`. A view cannot merge
-changes or keep history; for that, keep the table with a store pack and serve
-it with `synapse-serve`.
+<OldAnchor id="list-synapse-first-and-keep-tables-as-views" />
+<OldAnchor id="name-the-external-data-source" />
+<OldAnchor id="write-a-transform-as-a-view" />
 
-## Generate, then run the views
+`store: { default: synapse-view }` keeps every table as a view over the files
+ADF lands. The database is named by the standard's `naming.catalog`, here the
+Synapse pack's default, `{{ project }}_{{ environment }}`; see
+[Name tables and resources](/docs/how-to/name-things-your-way).
 
-Run `ingestron apply`. Each environment's folder holds the ADF resources under
-`adf/` and the views in `synapse/views.sql`. Run `views.sql` against the
-serverless database, with Synapse Studio, `sqlcmd` or a CI step, whenever the
-definitions change; loads need nothing more.
+`data_source` and `data_source_location` name the external data source in
+every view, and every file a view reads must be under the location:
 
-`ingestron request` lists what the platform team creates first: the serverless
-database, the external data source with a managed-identity credential, the
-workspace's read access to the storage, and report users' permissions.
+<SettingsSections
+  pack="synapse"
+  method="synapse-view"
+  include={["data_source", "data_source_location"]}
+/>
 
-## Views or tables
+`layout: snapshot` lands one file per table, so each view shows the current
+data; a view over files that each load adds shows every load's rows. ADF's
+schedule, runtime and landing settings are on
+[Azure Data Factory](/docs/platforms/adf#runtime-and-key-vault). What a view's
+SQL can do is in
+[What each engine makes of it](/docs/how-to/write-a-transform#what-each-engine-makes-of-it).
+
+### Views or tables
+
+A view cannot merge changes or keep history. For that, keep the table with a
+store pack and serve it with `synapse-serve`; see
+[Keep a table current](/docs/how-to/keep-a-table-current#on-synapse).
 
 |                             | Views (Synapse)                              | Tables (a store pack, served with `synapse-serve`) |
 | --------------------------- | -------------------------------------------- | -------------------------------------------------- |
@@ -68,11 +138,72 @@ workspace's read access to the storage, and report users' permissions.
 | Merge, history              | No: the files as they are                    | Yes                                                |
 | Heavy joins over large data | Recomputed on every read                     | Computed once per load                             |
 
+## Before you deploy [#prerequisites]
+
+Ingestron creates nothing in Synapse. `ingestron request --env dev` lists what
+the team that owns the workspace creates first, with this project's names: the
+serverless database, the external data source with a managed-identity
+credential, the workspace's read access to the storage, and report users'
+permissions.
+
+<Request
+  name="synapse-views"
+  sections={["Synapse serverless database", "External data source", "Report users"]}
+/>
+
+The same request lists what ADF needs first, as in
+[Platform prerequisites](/docs/platforms/adf#platform-prerequisites). See
+[Ask the platform team](/docs/how-to/ask-the-platform-team) for the whole
+request.
+
+## Deploy [#deploy]
+
+<OldAnchor id="generate-then-run-the-views" />
+
+Run `ingestron apply`. Each environment's folder holds the ADF resources under
+`adf/` and the views in `synapse/views.sql`. Publish the factory's resources as
+in [Publish the factory](/docs/platforms/adf#publish).
+
+Then run `views.sql` against the environment's serverless database, here
+`sales_dev`, with Synapse Studio, a CI step or the Go version of `sqlcmd`,
+signed in with `az login`:
+
+```sh
+sqlcmd -S <workspace>-ondemand.sql.azuresynapse.net -d sales_dev \
+  --authentication-method ActiveDirectoryDefault -b -i build/dev/synapse/views.sql
+```
+
+Replace `<workspace>` with your Synapse workspace's name. `-b` stops at the
+first error. See
+[Authenticate with Microsoft Entra ID in sqlcmd](https://learn.microsoft.com/en-us/sql/tools/sqlcmd/sqlcmd-authentication)
+for the other ways to sign in (checked 5 November 2026).
+
+## Run and operate [#operate]
+
+Loads need nothing more: ADF replaces the files on its schedule, and each query
+reads the files as they are then. Run `views.sql` again whenever the
+definitions change, such as a new table or column. It creates or alters every
+view, so running it again is safe; it drops nothing, so a view for a table you
+removed stays until you drop it.
+
+When a view fails to create or to read its files, see
+[Synapse serverless views](/docs/troubleshooting#synapse-serverless-views) in
+Troubleshooting.
+
+## Limits [#limits]
+
+- **No rows are checked.** A view checks no rows, so the contract's quality
+  rules and required columns are reported as not checked
+  (`CONTRACT_FIELD_UNUSED` warnings); see
+  [Check data quality](/docs/how-to/add-quality-checks).
+- **No merge or history.** A view shows the files as they are; see
+  [Views or tables](#views-or-tables).
+
 ## Next
 
-- [Add a source and its tables](/docs/how-to/add-a-source): another table, or
-  another source, in the same project.
-- [Plan, apply and review](/docs/how-to/plan-and-generate): see each change
-  before you write the files.
-- [Check generated files in CI](/docs/how-to/check-in-ci): fail a pull request
-  whose files are out of date.
+- [Write a transform](/docs/how-to/write-a-transform): build another view from
+  the views you have.
+- [Define a data product](/docs/how-to/define-a-data-product): describe the
+  views reports use, for the people who read them.
+- [Ask the platform team](/docs/how-to/ask-the-platform-team): send the
+  request for the database and its access.
