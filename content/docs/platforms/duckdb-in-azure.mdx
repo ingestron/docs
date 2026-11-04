@@ -128,19 +128,25 @@ When you turn `after_copy` on in an environment that already runs:
 - **Two schedules** may start the job at once. Each run rebuilds everything,
   and the later run's files win.
 
-## Checked against live Azure: not yet
+## What has run in Azure
 
-These parts follow Microsoft's and DuckDB's current documentation, but have not
-yet been run in a live subscription:
+<OldAnchor id="checked-against-live-azure-not-yet" />
 
-- the start call's response when Azure answers asynchronously, from which the
-  pipeline reads the run's name;
-- the empty body on the start call;
-- DuckDB signing in with the job's managed identity, and overwriting published
-  files on `abfss://`.
+This route ran end to end with ingestron 1.8 on 2 November 2026, in one demo
+subscription, on Microsoft's Northwind sample: ADF copied four tables, started
+the job and waited for it, and DuckDB built five tables, twice in a row. The
+runs confirmed what the pipeline and the job rely on:
 
-Try it in a development subscription first, and tell us what you find:
-hello@ingestron.io.
+- **Starting the job:** the start call, with its empty body, is accepted, and
+  the pipeline reads the run's name from Azure's response, then reads the
+  run's status until it ends.
+- **Signing in:** DuckDB signs in to storage with the job's managed identity,
+  reads the landed files and `run.sql` from `abfss://` paths, and publishes
+  each table there.
+- **Running again:** a second run replaces each published file in place.
+
+A hung run, a private registry and two schedules starting the job at once have
+not been tried.
 
 ## Next
 

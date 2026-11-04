@@ -35,14 +35,6 @@ export function RouteTable({ detail = false }: { detail?: boolean }) {
                 {detail ? row.title : <a href={`/docs/${row.guide}`}>{row.title}</a>}
                 <br />
                 <code>{row.option}</code>
-                {row.status && (
-                  <>
-                    <br />
-                    <span className="setting-meta">
-                      <Inline text={row.status} />
-                    </span>
-                  </>
-                )}
                 {detail && (
                   <>
                     <br />
