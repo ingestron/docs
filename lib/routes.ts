@@ -22,8 +22,6 @@ export interface RouteRow {
   deployAt: string;
   /** That section's heading. */
   deployStep: string;
-  /** What has not been tried yet, when something has not. */
-  status?: string;
 }
 
 /** The guide for each route, by its `--via` value. */
@@ -38,10 +36,7 @@ export const routeGuides: Record<string, string> = {
 /** The starter that needs no source and no cloud. */
 export const starter = "duckdb";
 
-type Written = Pick<
-  RouteRow,
-  "choose" | "afterLoad" | "deploy" | "deployAt" | "deployStep" | "status"
->;
+type Written = Pick<RouteRow, "choose" | "afterLoad" | "deploy" | "deployAt" | "deployStep">;
 
 /** What each route is for, in the docs' words, by `--via` (or the starter's name). */
 const written: Record<string, Written> = {
@@ -85,8 +80,6 @@ const written: Record<string, Written> = {
     deploy: "The factory's Git publishing, and copying the DuckDB folder to storage.",
     deployAt: "/docs/platforms/duckdb-in-azure#deploy-the-sql",
     deployStep: "Deploy the SQL",
-    status:
-      "Not yet run in a live Azure subscription: see [Checked against live Azure](/docs/platforms/duckdb-in-azure#checked-against-live-azure-not-yet).",
   },
   "adf-landing": {
     choose: "Reports read the landed files themselves, such as Power BI reading Parquet.",
