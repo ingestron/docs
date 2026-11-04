@@ -2,3 +2,8 @@ Ingestron
 Copyright 2026 Otrera Limited, trading as IntentLabs
 
 This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+The site serves two fonts under the SIL Open Font License, Version 1.1:
+Manrope, Copyright 2019 The Manrope Project Authors, and JetBrains Mono,
+Copyright 2020 The JetBrains Mono Project Authors. Their licences are in
+public/fonts/.
