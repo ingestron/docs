@@ -53,8 +53,8 @@ the definitions read these values, so nothing else changes between them.
 <Example name="retail" file="platform.yaml" />
 
 The pipelines run as a service principal, engineers can manage them and
-analysts can view them. The refresh job runs daily at 5 am in the time zone
-`schedule` names, paused in `dev`, and failures are emailed.
+analysts can view them. The refresh job runs daily at 5 am London time
+(`Europe/London`), paused in `dev`, and failures are emailed.
 
 ### 4. The tables
 
@@ -200,7 +200,7 @@ Each environment's bundle is its own folder, `build/<environment>/`
 `databricks.yml` has one target, named after the environment and set as the
 default: `build/prod/databricks.yml` holds the target `prod`. The target's
 `mode` is `production` for an environment named `prod` or `production`, and
-`development` otherwise.
+`development` otherwise, unless the platform sets `mode` itself.
 
 Commit `build/` with the definitions, so one commit holds every environment's
 bundle. A pipeline that already deploys Databricks bundles promotes that commit
