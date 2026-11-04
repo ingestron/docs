@@ -1,6 +1,6 @@
 ---
 title: Databricks
-description: Read sources into Databricks tables with a generated bundle, work through a two-environment project, create the schemas, refresh on a schedule and deploy.
+description: Read sources into Databricks tables with a generated bundle, work through a project with dev and prod environments, create the schemas, refresh on a schedule and deploy.
 ---
 
 When Databricks can reach the source, Databricks reads it and writes the
@@ -16,8 +16,8 @@ route; [Azure Data Factory](/docs/platforms/adf) covers the copies.
 
 ## Work through the retail project
 
-In this example you read a complete Databricks project, generate it for two
-environments, and break it once on purpose to see how Ingestron reports a
+In this example you read a complete Databricks project, generate it for its `dev`
+and `prod` environments, and break it once on purpose to see how Ingestron reports a
 problem. It builds on
 [Run your first project on your laptop](/docs/start/first-project).
 
@@ -41,7 +41,7 @@ Every catalog is named `<environment>_sales`, rows missing a required value
 are dropped, and every streaming table is clustered automatically, which no
 project can change because it is `fixed`.
 
-### 2. Two environments
+### 2. Dev and prod environments
 
 <Example name="retail" file="project.yaml" />
 
@@ -53,8 +53,8 @@ the definitions read these values, so nothing else changes between them.
 <Example name="retail" file="platform.yaml" />
 
 The pipelines run as a service principal, engineers can manage them and
-analysts can view them. The refresh job runs at 5 am Auckland time, paused in
-`dev`, and failures are emailed.
+analysts can view them. The refresh job runs daily at 5 am in the time zone
+`schedule` names, paused in `dev`, and failures are emailed.
 
 ### 4. The tables
 
@@ -192,6 +192,29 @@ databricks bundle deploy
 On the `adf-databricks` route, publish the ADF resources separately, as in
 [Publish the factory](/docs/platforms/adf#publish). The bundle does not start
 the ADF copies; the landed files must be there before the pipelines read them.
+
+### Deploy from a CI/CD pipeline [#deploy-from-ci]
+
+Each environment's bundle is its own folder, `build/<environment>/`
+(`build/<environment>/databricks/` on the `adf-databricks` route). Its
+`databricks.yml` has one target, named after the environment and set as the
+default: `build/prod/databricks.yml` holds the target `prod`. The target's
+`mode` is `production` for an environment named `prod` or `production`, and
+`development` otherwise.
+
+Commit `build/` with the definitions, so one commit holds every environment's
+bundle. A pipeline that already deploys Databricks bundles promotes that commit
+stage by stage: each stage signs in to its environment's workspace, as it does
+for any bundle, and runs this from that environment's folder, here for `prod`:
+
+```sh
+databricks bundle deploy -t prod
+```
+
+The deploy stages need the Databricks CLI only, not Ingestron: they deploy the
+committed files. Keep `ingestron check` on pull requests, so the committed
+bundles are what the definitions generate; the GitHub Actions and Azure DevOps
+templates are in [Check generated files in CI](/docs/how-to/check-in-ci).
 
 ### Run the complete refresh
 

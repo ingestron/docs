@@ -410,7 +410,7 @@ it("gives each route a platform page that opens with what runs, what deploys and
   }
 });
 
-it("keeps the Databricks worked example: two environments and a deliberate break", () => {
+it("keeps the Databricks worked example: dev and prod environments and a deliberate break", () => {
   const page = read("platforms/databricks.mdx");
   expect(page).toContain("## Work through the retail project");
   for (const file of [
