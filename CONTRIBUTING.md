@@ -11,8 +11,9 @@ example README, package README and user-facing command text.
   to the site.
 - Samples live in `examples/<name>/` here (one idea each); the starters
   (complete projects to start from) are the CLI's project templates. Pages show their files
-  with `<Example name="<name>" file="…" />`; never paste sample YAML into a
-  page. What a sample uses comes from resolving it; never hand-write it.
+  with `<Example name="<name>" file="…" />`, or part of one with `pick` or
+  `from` and `to`; never paste sample YAML into a page. `<Template>` shows
+  part of a file in `ci-templates/` the same way. What a sample uses comes from resolving it; never hand-write it.
 - Facts the code knows (settings, defaults, connector facts, error codes,
   document fields, CLI commands) are rendered by components in
   `components/reference/`. Change the code, not the page.
@@ -20,7 +21,9 @@ example README, package README and user-facing command text.
   says `"root": true`. A folder in brackets, such as `how-to/(build)/`,
   sets a page's area without changing its URL. A new page goes in its area's
   folder and `meta.json`, and its URL into `test/page-urls.txt`; a page never
-  moves to a new URL without a redirect in `worker/redirects.js`.
+  moves to a new URL without a redirect in `worker/redirects.js`. A section
+  that moves or is renamed keeps its old id with `<OldAnchor id="…" />`,
+  because a browser cannot redirect a fragment.
 - A code block says what it is. `sh` fences are commands to run; `yaml`, `json`,
   `csv` and `dotenv` fences and `<Example>` files are files to write; an
   untitled `text` fence is what Ingestron prints; an `<Example>` under `build/`

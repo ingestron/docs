@@ -1,16 +1,17 @@
 // Parts of a sample's files (components/example.tsx): a YAML or JSON path, the
 // lines between two markers, a generated folder's listing and the platform
-// request, each read from the sample so it cannot drift, and each failing the
+// request, and the lines of a template in ci-templates/, each read from the sample so it cannot drift, and each failing the
 // build, with the sample, file and path named, when it is not there.
 import type { ReactElement } from "react";
 import { describe, expect, it } from "vitest";
-import { BuildTree, Example, Request } from "../components/example";
+import { BuildTree, Example, Request, Template } from "../components/example";
 import { pathParts, pickLines, pickPath } from "../lib/extract";
 import {
   exampleRequest,
   exampleTree,
   readExampleExtract,
   readExampleFile,
+  readTemplateExtract,
   requestSections,
 } from "../lib/examples";
 
@@ -245,5 +246,37 @@ describe("the platform request", () => {
       'Example "minimal": the request for dev has no section "DuckDB job". It has: Must exist before deploying, Schedules.',
     );
     expect(() => Request({ name: "minimal", sections: [] })).toThrow(/name a section/);
+  });
+});
+
+describe("part of a template in ci-templates", () => {
+  it("shows the lines between two markers, titled with the file and the first marker", () => {
+    const shown = readTemplateExtract("azure/duckdb-job.bicep", "param name", "param memory");
+    expect(shown.split("\n")[0]).toBe("param name string");
+    expect(shown.trimEnd().split("\n").at(-1)).toBe("param memory string = '1Gi'");
+    const props = block(
+      Template({ file: "azure/duckdb-job.bicep", from: "param name", to: "param memory" }),
+    );
+    expect(props.code).toBe(shown.trimEnd());
+    expect(props.lang).toBe("bicep");
+    expect(props.kind).toBe("write");
+    expect(props.title).toBe("ci-templates/azure/duckdb-job.bicep › param name");
+  });
+
+  it("fails with the file and the marker named", () => {
+    expect(() => readTemplateExtract("azure/nope.bicep", "a", "b")).toThrow(
+      'Template: ci-templates has no file "azure/nope.bicep".',
+    );
+    expect(() => readTemplateExtract("../package.json", "a", "b")).toThrow(
+      'Template: ci-templates has no file "../package.json".',
+    );
+    expect(() => readTemplateExtract("azure/duckdb-job.bicep", "param nope", "x")).toThrow(
+      'Template: "azure/duckdb-job.bicep" has no line containing "param nope".',
+    );
+    expect(() =>
+      readTemplateExtract("azure/duckdb-job.bicep", "param name", "no such line"),
+    ).toThrow(
+      'Template: "azure/duckdb-job.bicep" has no line containing "no such line" after "param name".',
+    );
   });
 });

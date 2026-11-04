@@ -1,7 +1,8 @@
 // Every internal link, download and image in the built site points at a file
-// that exists, and every documentation link the editor shows lands on its page
-// and anchor. Every redirect lands on a built page and anchor, and no redirect
-// starts from a page that is still built. Every page URL built before the
+// that exists, every link to a section of a page lands on its anchor, and
+// every documentation link the editor shows lands on its page and anchor.
+// Every redirect lands on a built page and anchor, and no redirect starts
+// from a page that is still built. Every page URL built before the
 // areas came in is still built, and each area's sidebar lists only its pages.
 // Every page opens with a skip link to an element it has, every table and
 // code block scrolls in a named frame, and the Fumadocs markup the keyboard
@@ -21,6 +22,15 @@ for (const page of htmlFiles(out)) {
   for (const [, href] of readFileSync(page, "utf8").matchAll(/(?:href|src)="(\/[^"#?]*)/g)) {
     if (!href!.startsWith("/_next/") && !exists(href!))
       broken.add(`${page.slice(out.length)} → ${href}`);
+  }
+}
+// Every link to a section of a page lands on an id that page has: a heading,
+// or an old anchor a moved section keeps (components/old-anchor.tsx).
+let sections = 0;
+for (const page of htmlFiles(out)) {
+  for (const [, href] of readFileSync(page, "utf8").matchAll(/href="(\/docs[^"#?]*#[^"]+)"/g)) {
+    sections++;
+    problem(href!, `link on ${pagePath(page)}`);
   }
 }
 // The editor links each connector's page, and its Reference view links the
@@ -61,7 +71,7 @@ if (broken.size > 0) {
   process.exit(1);
 }
 console.log(
-  `✓ every internal link resolves, all ${editorLinks.length} editor links land, all ${urls.length} pages built before the areas are built, each sidebar lists only its area, every page has a skip link, ${framed} named frames and the markup the keyboard fixes use, and none of ${scanned} built and downloadable files names New Zealand`,
+  `✓ every internal link resolves, ${sections} links to a section land on it, all ${editorLinks.length} editor links land, all ${urls.length} pages built before the areas are built, each sidebar lists only its area, every page has a skip link, ${framed} named frames and the markup the keyboard fixes use, and none of ${scanned} built and downloadable files names New Zealand`,
 );
 
 /**
