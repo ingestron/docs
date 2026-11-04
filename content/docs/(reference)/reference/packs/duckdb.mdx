@@ -8,8 +8,9 @@ publishes each table as Parquet, with SQL that DuckDB runs on a laptop or
 wherever DuckDB runs. List it first, as in `packs: [duckdb@1, adf@1]` when
 ADF lands the files; see [Combine packs](/docs/concepts/standards-and-packs#combine-packs-when-their-actions-fit). The settings below come from the pack itself.
 
-For a task walkthrough, with the modes, CSV headers and casts explained, use
-[DuckDB](/docs/platforms/duckdb). The pack writes `run.sql`, every table in
+For a task walkthrough, use [DuckDB](/docs/platforms/duckdb); the modes are
+explained in [Keep a table current](/docs/how-to/keep-a-table-current#on-duckdb).
+The pack writes `run.sql`, every table in
 order, and `tables/`, each table's SQL alone, for each environment. Run
 `run.sql` from the project folder with the DuckDB command line; generation
 itself runs nothing.
