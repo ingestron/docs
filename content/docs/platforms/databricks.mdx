@@ -8,7 +8,8 @@ tables. The Databricks pack writes one
 [Databricks bundle](https://docs.databricks.com/aws/en/dev-tools/bundles/) per
 environment: Lakeflow pipelines with their SQL and Python files, Lakeflow
 Connect ingestion for databases, and a refresh job when the platform has a
-schedule. The same bundle reads the files ADF lands on the `adf-databricks`
+schedule or a contract task (tags, column comments or table checks) runs after
+the refresh. The same bundle reads the files ADF lands on the `adf-databricks`
 route; [Azure Data Factory](/docs/platforms/adf) covers the copies.
 
 <RouteFacts id="databricks" />
@@ -142,10 +143,18 @@ Add a `schedule` to the platform, with a
 [Quartz cron expression](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)
 and, if not UTC, a time zone, as the retail platform above does. Ingestron
 generates a job that refreshes the pipelines in order: Lakeflow Connect
-ingestion first, then your own pipeline. The `sql-server` starter reads its
-database through Lakeflow Connect, so its job has both tasks:
+ingestion first, then your own pipeline. The job, and its file under
+`resources/`, are named `<project>_refresh` by default, after the project's
+`id`; `naming.job` in the standard changes that (see
+[Name Databricks resources](/docs/how-to/name-things-your-way)). The
+`sql-server` starter reads its database through Lakeflow Connect, so its job
+has both tasks. The starter's own files use the id `erp`:
 
 <Example name="sql-server" file="build/dev/resources/erp_refresh.job.yml" />
+
+A project you create from it takes its folder's name as its id, so
+`ingestron init sql-server --template sql-server` writes
+`resources/sql_server_refresh.job.yml`.
 
 Outside production the job is created paused, so development environments do
 not run on their own; set `paused: false` in the `schedule` to change that.
