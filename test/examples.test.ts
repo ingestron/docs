@@ -87,14 +87,16 @@ describe("examples", () => {
       join(cwd, "flows/web.yaml"),
       readExampleFile("standards-and-conventions", "exercises/fixed-setting.yaml"),
     );
-    let output = "";
-    expect(run(["plan", "--no-diff"], { cwd, write: (text) => (output += text) })).toBe(1);
     const page = readFileSync(
       join(contentFolder, contentFile("how-to/configure-a-standard.mdx")),
       "utf8",
     );
-    const shown = /Plan again:\n\n```text\n([\s\S]*?)```/.exec(page)?.[1];
-    expect(shown).toBeDefined();
+    // "Plan again:", the command the page shows, then what it prints.
+    const [, command, shown] =
+      /Plan again:\n\n```sh\ningestron (.*)\n```\n\n```text\n([\s\S]*?)```/.exec(page) ?? [];
+    expect(command, "the plan command after Plan again").toBe("plan");
+    let output = "";
+    expect(run(command!.split(" "), { cwd, write: (text) => (output += text) })).toBe(1);
     expect(output).toBe(shown);
   });
 });

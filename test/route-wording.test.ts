@@ -1,6 +1,6 @@
 // A connector's page names every route New project offers for it, and no
-// destination none of those routes reaches: in its description, its sections,
-// its notes and its related setup.
+// destination none of those routes, or the built-in starters that read it,
+// reaches: in its description, its sections, its notes and its related setup.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { projectRoutes } from "@ingestron/cli";
@@ -10,6 +10,7 @@ import { expect, it, vi } from "vitest";
 import { parse } from "yaml";
 import { ConnectorPage } from "../components/reference/connector-page";
 import { RelatedSetup } from "../components/reference/related-setup";
+import { listExamples } from "../lib/examples.js";
 import { connectorEntries, connectorIds } from "../lib/reference.js";
 
 vi.mock("@/components/example", () => ({ Example: () => null }));
@@ -24,6 +25,20 @@ const destinations: [string, string[]][] = [
   ["DuckDB", ["adf-duckdb"]],
   ["Azure Data Factory", ["adf-databricks", "adf-synapse", "adf-duckdb", "adf-landing"]],
 ];
+
+/** Each destination, by the pack a starter uses to reach it. */
+const packDestinations: Record<string, string> = {
+  databricks: "Databricks",
+  synapse: "Synapse",
+  duckdb: "DuckDB",
+  adf: "Azure Data Factory",
+};
+
+/** The destinations the built-in starters that read the connector reach, by their packs. */
+const starterDestinations = (id: string) =>
+  listExamples()
+    .filter((example) => example.template && example.facts.connectors.includes(id))
+    .flatMap((example) => example.facts.packs.map((pack) => packDestinations[pack]));
 
 /**
  * The page's description, and its text as a reader sees it: the rendered page
@@ -60,7 +75,9 @@ for (const id of connectorIds()) {
       expect(text, `${id} names --via ${route.via}`).toContain(route.via);
     }
     for (const [destination, vias] of destinations) {
-      const reached = routes.some((route) => vias.includes(route.via));
+      const reached =
+        routes.some((route) => vias.includes(route.via)) ||
+        starterDestinations(id).includes(destination);
       if (!reached) expect(text, `${id} page mentions ${destination}`).not.toContain(destination);
       expect(description.includes(destination), `${id} description and ${destination}`).toBe(
         reached,

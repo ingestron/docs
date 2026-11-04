@@ -41,6 +41,9 @@ again is safe in every mode; see
 folder comes from the platform and must exist. Every method and setting is in
 the [DuckDB pack reference](/docs/reference/packs/duckdb).
 
+DuckDB tables check no rows yet. A flow's `expectations` is an error here,
+so leave them out; see [Check data quality](/docs/how-to/add-quality-checks).
+
 A CSV without a header (`csv.header: false`) binds its columns in the
 contract's order, so the file's columns must be in that order. With a header,
 columns are matched by name.
@@ -111,3 +114,12 @@ modes and transforms, but not failures inside ADF: connectors, credentials,
 networking, the self-hosted integration runtime, or the source itself. Tables
 ADF lands in other ways find no files locally: Microsoft 365 data (JSON), files
 `adf-files` copies as they are, and custom `path` layouts.
+
+## Next
+
+- [Add a source and its tables](/docs/how-to/add-a-source): another table, or
+  another source, in the same project.
+- [Plan, apply and review](/docs/how-to/plan-and-generate): see each change
+  before you write the files.
+- [Check generated files in CI](/docs/how-to/check-in-ci): fail a pull request
+  whose files are out of date.

@@ -64,9 +64,9 @@ or `--yes`, a missing answer produces an error naming the flag to pass.
 
 Use `--standard ../platform/standard.yaml` to choose your organisation's
 standard. Use `--set source_server=postgres.example.invalid` to answer a
-configuration question by its value key. The keys for the selected recipe
-are visible under `values` in the resulting `project.yaml`; an unknown key
-is rejected with the available keys.
+configuration question by its value key. The keys for the connection and
+route you chose are under `values` in the new `project.yaml`; an unknown key
+is rejected with the keys you can use.
 
 </Tool>
 <Tool name="VS Code">
@@ -84,8 +84,8 @@ appears in the Ingestron output panel.
 </Tool>
 </ToolSteps>
 
-The questions cover the recipe's string connection, object and infrastructure
-values. Nested settings, alternative authentication modes, schedules and
+The questions ask for the connection's text values, such as its server, and
+for the source objects and the platform's infrastructure. Nested settings, alternative authentication modes, schedules and
 resource names stay editable in YAML; see [Make it yours](#make-it-yours).
 
 ## Start from a starter [#start-from-a-starter]
@@ -125,10 +125,10 @@ To make a template of your own, see [Share templates and standards](/docs/how-to
 
 ### From a downloaded example
 
-A connector's **Examples** page offers project ZIPs. Extract one into an empty
-folder, and open the folder that holds `project.yaml`. The archive contains
-the synthetic definitions and contracts, without generated files, so you can
-generate it locally without access to the source. Code blocks on that page
+The **Examples** section of a connector's page offers project ZIPs. Extract
+one into an empty folder, and open the folder that holds `project.yaml`. The
+archive contains the synthetic definitions and contracts, without generated files,
+so you can generate it locally without access to the source. Code blocks there
 name the project and the relative path of each file shown.
 
 A multi-connector project demonstrates several sources together. To start
@@ -157,7 +157,8 @@ you deploy:
    for values, files and secrets.
 3. Set the source objects in the flows, and adapt each contract to the columns
    and keys of its object. See [Describe a table with a contract](/docs/how-to/write-a-contract),
-   and the connector's ingestion page for its reading options.
+   and the **Read with …** section of the connector's page for its reading
+   options.
 4. Check the environments, platform and standard. Use the connector reference
    and [Azure Data Factory](/docs/platforms/adf) for ADF infrastructure, and
    [Name resources](/docs/platforms/adf-pipelines#name-resources) for name
@@ -188,9 +189,8 @@ anything.
 
 Continue with your route:
 
-- [DuckDB](/docs/platforms/duckdb): build the tables on one machine.
-- [Databricks](/docs/platforms/databricks): schemas, the refresh job and deploying the bundle.
-- [Azure Data Factory](/docs/platforms/adf): source, runtime, schedules and
-  [the generated factory](/docs/platforms/adf#generate-and-inspect).
-- [Shape ADF pipelines and names](/docs/platforms/adf-pipelines): pipeline design, defaults and name overrides.
-- [Browse connectors](/docs/connectors): fields and supported routes by category.
+<RouteList />
+
+For pipeline design and resource names in ADF, see
+[Shape ADF pipelines and names](/docs/platforms/adf-pipelines). Each source's
+fields and routes are in the [connector catalogue](/docs/connectors).

@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { packName, packs } from "@/lib/reference";
 import { Inline } from "./inline";
+import extension from "./vscode-extension.json";
 
 interface Manifest {
   name: string;
@@ -140,4 +141,11 @@ export function PackNames() {
       ))}
     </>
   );
+}
+
+/** The VS Code extension's version, as `pnpm sync:vscode` last copied it.
+ * @example <ExtensionVersion />
+ */
+export function ExtensionVersion() {
+  return <>{extension.version}</>;
 }

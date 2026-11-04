@@ -19,9 +19,10 @@ defaults, rendered from the pack itself.
 Connector-specific access and ingestion requirements are in
 [Connectors](/docs/connectors).
 
-These four packs come with the command and the editor. Adding another name to
-`packs` does not install a provider plugin. Do not assume a combination that no
-route offers works.
+These four packs come with the command and the editor, and there are no others
+to install: a name in `packs` that is not one of them is an error
+([`UNKNOWN_PACK`](/docs/reference/errors#UNKNOWN_PACK)). The packs
+work together in the combinations the routes offer.
 
 ## Which packs a project uses
 

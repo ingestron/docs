@@ -34,7 +34,8 @@ Databricks bundles and pipelines, Azure Data Factory pipelines, Synapse
 serverless views and DuckDB SQL. You describe the sources, tables and rules in
 YAML your team reviews. Ingestron applies your organisation's standard and
 writes ordinary platform files, and you deploy them with your platform's own
-tools. Nothing in them calls Ingestron; the one optional route that runs
+tools. Each platform's files come from a pack, the part of Ingestron that
+knows that platform; the packs come inside the command. Nothing in them calls Ingestron; the one optional route that runs
 something Ingestron publishes is [named below](#no-dependency-once-its-deployed).
 
 ## Run it on your laptop
@@ -95,8 +96,8 @@ The generated files need only your platform, so if you stop using Ingestron,
 they still deploy and run, and you edit them yourself from then on. One
 optional route uses something Ingestron publishes:
 DuckDB in Azure runs in a public container image, which you can copy to your
-own registry. [Generated files and ownership](/docs/concepts/generated-files) explains what
-Ingestron writes and how it tracks it.
+own registry. [Nothing of Ingestron at run time](/docs/concepts/generated-files#nothing-of-ingestron-at-run-time)
+says what in the files names Ingestron, and what to do with it if you stop.
 
 ### Your standards on every project
 

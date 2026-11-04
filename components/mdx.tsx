@@ -7,6 +7,7 @@ import { FlowDiagram } from "@/components/flow-diagram";
 import { Path, Paths } from "@/components/hub";
 import { RouteComparison } from "@/components/reference/route-comparison";
 import { RouteFacts } from "@/components/reference/route-facts";
+import { RouteList } from "@/components/reference/route-list";
 import { RouteTable } from "@/components/reference/route-table";
 import { ProjectSources } from "@/components/reference/project-sources";
 import { BuiltInTemplates } from "@/components/reference/built-in-templates";
@@ -26,6 +27,7 @@ import { SettingsSections } from "@/components/reference/settings-sections";
 import { SettingsTable } from "@/components/reference/settings-table";
 import {
   DuckdbTested,
+  ExtensionVersion,
   PackageVersions,
   PackNames,
   PlatformChecks,
@@ -64,6 +66,7 @@ export function getMDXComponents(components?: MDXComponents) {
     Paths,
     RouteComparison,
     RouteFacts,
+    RouteList,
     RouteTable,
     ExamplesList,
     ExtensionCommands,
@@ -71,6 +74,7 @@ export function getMDXComponents(components?: MDXComponents) {
     PackNames,
     PlatformChecks,
     DuckdbTested,
+    ExtensionVersion,
     ...components,
   } satisfies MDXComponents;
 }
