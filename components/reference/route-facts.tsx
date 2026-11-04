@@ -2,7 +2,7 @@
 import { routeRow } from "@/lib/routes";
 import { Inline } from "./inline";
 
-/** What has not been tried yet, what runs after each load, what you deploy with, and the command that creates the project.
+/** What runs after each load, what you deploy with, and the command that creates the project.
  * @example <RouteFacts id="adf-synapse" />
  * @example <RouteFacts id="duckdb" />
  */
@@ -11,11 +11,6 @@ export function RouteFacts({ id }: { id: string }) {
   const starter = id === "duckdb";
   return (
     <ul>
-      {row.status && (
-        <li>
-          <strong>Status:</strong> <Inline text={row.status} />
-        </li>
-      )}
       <li>
         <strong>After each load:</strong> <Inline text={row.afterLoad} />
       </li>

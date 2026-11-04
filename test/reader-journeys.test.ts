@@ -101,27 +101,22 @@ describe("routes", () => {
     expect(deploy.match(/<li>/g)).toHaveLength(routeRows().length);
   });
 
-  it("says, where the route is offered, that DuckDB in Azure has not been run in a live subscription", () => {
-    const status = routeRows().filter((row) => row.status);
-    expect(status.map((row) => row.id)).toEqual(["adf-duckdb"]);
-    const live = section(
-      read("platforms/duckdb-in-azure.mdx"),
-      "## Checked against live Azure: not yet",
-    );
-    expect(live).toContain("not");
+  it("says what DuckDB in Azure has run, on its page, and no route carries a status", () => {
+    const page = read("platforms/duckdb-in-azure.mdx");
+    const ran = section(page, "## What has run in Azure");
+    expect(ran).toContain('<OldAnchor id="checked-against-live-azure-not-yet" />');
+    expect(ran).toContain("ingestron 1.8 on 2 November 2026, in one demo\nsubscription");
+    for (const point of ["**Starting the job:**", "**Signing in:**", "**Running again:**"])
+      expect(ran).toContain(point);
+    expect(page).not.toContain("not yet");
     for (const html of [
       renderToStaticMarkup(createElement(RouteFacts, { id: "adf-duckdb" })),
       renderToStaticMarkup(createElement(RouteTable)),
       renderToStaticMarkup(createElement(RouteTable, { detail: true })),
     ]) {
-      expect(html).toContain("Not yet run in a live Azure subscription");
-      expect(html).toContain(
-        'href="/docs/platforms/duckdb-in-azure#checked-against-live-azure-not-yet"',
-      );
+      expect(html).not.toContain("Status:");
+      expect(html).not.toContain("Not yet run");
     }
-    expect(renderToStaticMarkup(createElement(RouteFacts, { id: "adf-databricks" }))).not.toContain(
-      "Status:",
-    );
   });
 });
 
