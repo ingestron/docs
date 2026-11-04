@@ -1,0 +1,40 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: northwind.order_details
+version: 1.0.0
+status: active
+schema:
+  - name: order_details
+    logicalType: object
+    description: One row per product on an order.
+    properties:
+      - name: order_id
+        physicalName: OrderID
+        logicalType: integer
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: product_id
+        physicalName: ProductID
+        logicalType: integer
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: internal
+      - name: unit_price
+        physicalName: UnitPrice
+        logicalType: number
+        physicalType: "decimal(19,4)"
+        required: true
+        classification: internal
+      - name: quantity
+        physicalName: Quantity
+        logicalType: integer
+        required: true
+        classification: internal
+      - name: discount
+        physicalName: Discount
+        logicalType: number
+        required: true
+        classification: internal

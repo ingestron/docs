@@ -1,0 +1,24 @@
+apiVersion: v1.1.0
+kind: DataProduct
+id: customers
+name: Customers
+version: 1.0.0
+domain: sales
+type: sourceAligned
+status: active
+description:
+  purpose: The companies that buy from Northwind Traders, for sales reporting and service.
+  usage: Join on customer_id. Contact names, phone numbers and addresses are confidential.
+team:
+  members:
+    - username: customer-data-owner@example.com
+      name: Customer data owner
+      role: owner
+support:
+  - channel: customer-data
+    url: "https://example.com/teams/customer-data"
+    tool: teams
+outputPorts:
+  - name: customers
+    contractId: northwind.customers
+    description: One row per customer

@@ -1,0 +1,16 @@
+id: northwind
+environments:
+  dev: {}
+values:
+  landing: abfss://landing@northwinddev.dfs.core.windows.net
+  key_vault: https://kv-northwind-dev.vault.azure.net
+  runtime: ir-northwind
+  host: https://adb-1111111111111111.1.azuredatabricks.net
+imports:
+  - standard.yaml
+  - platform.yaml
+  - connections/*.yaml
+  - flows/*.yaml
+  - transforms/*.yaml
+  - contracts/*.yaml
+  - products/*.yaml

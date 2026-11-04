@@ -1,0 +1,14 @@
+apiVersion: ingestron.io/v1
+kind: Transform
+id: daily_sales
+description: Revenue and orders per day and country.
+inputs: [orders, order_details]
+code: |
+  SELECT CAST(o.order_date AS DATE) AS order_day,
+         o.ship_country AS country,
+         COUNT(DISTINCT o.order_id) AS orders,
+         SUM(d.unit_price * d.quantity * (1 - d.discount)) AS revenue
+  FROM {{ tables.orders }} AS o
+  JOIN {{ tables.order_details }} AS d ON d.order_id = o.order_id
+  GROUP BY CAST(o.order_date AS DATE), o.ship_country
+contract: northwind.daily_sales

@@ -1,0 +1,29 @@
+apiVersion: ingestron.io/v1
+kind: Standard
+id: northwind
+packs: [databricks@1, adf@1] # Databricks names, types and keeps the tables; ADF copies
+ingest:
+  default: adf-copy
+  settings:
+    adf-copy:
+      layout: snapshot
+      start: 2026-11-01T00:00:00Z
+      # The team's ADF design: one ForEach over the table list, a retry policy,
+      # audit columns on every landed row, and one factory folder.
+      pattern: foreach
+      parallel: 4
+      activity: { retries: 2, retry_interval: 60, timeout: 60 }
+      audit_columns:
+        _loaded_at: run.trigger_time
+        _run_id: run.id
+        _source: source.object
+      folder: ingestron/${project.id}
+      annotations: [northwind]
+governance: # every data product is checked against these before anything is generated
+  products: { require: [owner, purpose] }
+  classification:
+    values: [public, internal, confidential, restricted]
+    columns: required
+    sensitive: [confidential, restricted]
+  access:
+    sensitive: { require: [description, firstLevelApprovers] }

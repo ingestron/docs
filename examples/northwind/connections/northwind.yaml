@@ -1,0 +1,10 @@
+apiVersion: ingestron.io/v1
+kind: Connection
+id: northwind
+description: Northwind Traders' orders system, an Azure SQL database.
+connector: azure-sql-database
+connectivity: public
+settings:
+  server: northwind-sql.database.windows.net
+  user: northwind_reader
+  password: ${secret:northwind-sql-password} # a Key Vault secret name

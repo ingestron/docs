@@ -1,0 +1,70 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: northwind.orders
+version: 1.0.0
+status: active
+schema:
+  - name: orders
+    logicalType: object
+    description: One row per order placed with Northwind Traders.
+    properties:
+      - name: order_id
+        physicalName: OrderID
+        logicalType: integer
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: customer_id
+        physicalName: CustomerID
+        logicalType: string
+        classification: internal
+      - name: employee_id
+        physicalName: EmployeeID
+        logicalType: integer
+        classification: internal
+      - name: order_date
+        physicalName: OrderDate
+        logicalType: timestamp
+        classification: internal
+      - name: required_date
+        physicalName: RequiredDate
+        logicalType: timestamp
+        classification: internal
+      - name: shipped_date
+        physicalName: ShippedDate
+        logicalType: timestamp
+        classification: internal
+      - name: ship_via
+        physicalName: ShipVia
+        logicalType: integer
+        classification: internal
+      - name: freight
+        physicalName: Freight
+        logicalType: number
+        physicalType: "decimal(19,4)"
+        classification: internal
+      - name: ship_name
+        physicalName: ShipName
+        logicalType: string
+        classification: confidential
+      - name: ship_address
+        physicalName: ShipAddress
+        logicalType: string
+        classification: confidential
+      - name: ship_city
+        physicalName: ShipCity
+        logicalType: string
+        classification: internal
+      - name: ship_region
+        physicalName: ShipRegion
+        logicalType: string
+        classification: internal
+      - name: ship_postal_code
+        physicalName: ShipPostalCode
+        logicalType: string
+        classification: confidential
+      - name: ship_country
+        physicalName: ShipCountry
+        logicalType: string
+        classification: internal
