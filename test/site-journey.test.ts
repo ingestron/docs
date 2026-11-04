@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { projectRoutes } from "@ingestron/cli";
 import { createElement } from "react";
@@ -225,7 +225,38 @@ it("runs the first project with no cloud account, source or deployment", () => {
   expect(commands.length).toBeGreaterThan(0);
   // Only Ingestron, DuckDB and the shell: no cloud command line, nothing deployed.
   for (const command of commands)
-    expect(command).toMatch(/^(npx ingestron@1 |cd |duckdb |rm build\/|ls published$)/);
+    expect(command).toMatch(
+      /^(npm install -g ingestron$|ingestron |cd |duckdb |rm build\/|ls published$)/,
+    );
+});
+
+it("installs Ingestron first, then runs every command as ingestron, never through npx", () => {
+  // The home page, the first project and Install a tool install globally from npm.
+  for (const page of ["index.mdx", "start/first-project.mdx", "start/install.mdx"]) {
+    const sh = [...read(page).matchAll(/^```sh\n([\s\S]*?)^```$/gm)].map((match) => match[1]!);
+    expect(
+      sh.some((block) => block.startsWith("npm install -g ingestron\n")),
+      page,
+    ).toBe(true);
+  }
+  expect(read("start/first-project.mdx")).toContain("Node.js 22.13 or later");
+  expect(read("start/install.mdx")).toContain("Node.js 22.13 or later");
+  // No page, component or CI template runs it through npx.
+  const files = [
+    ...readdirSync(join(process.cwd(), "content/docs"), { recursive: true })
+      .map(String)
+      .filter((file) => file.endsWith(".mdx"))
+      .map((file) => join("content/docs", file)),
+    ...readdirSync(join(process.cwd(), "components"), { recursive: true })
+      .map(String)
+      .filter((file) => file.endsWith(".tsx"))
+      .map((file) => join("components", file)),
+    "ci-templates/github-actions/ingestron-check.yml",
+    "ci-templates/azure-devops/ingestron-check.yml",
+  ];
+  expect(files.length).toBeGreaterThan(100);
+  for (const file of files)
+    expect(readFileSync(join(process.cwd(), file), "utf8"), file).not.toMatch(/npx\b/);
 });
 
 it("keeps the front door's claims to what is shown and measured", () => {
@@ -359,7 +390,9 @@ it("gives each route a platform page that opens with what runs, what deploys and
     const facts = renderToStaticMarkup(createElement(RouteFacts, { id }));
     expect(facts).toContain("After each load:");
     expect(facts).toContain("Deploy with:");
-    expect(facts).toContain(`init ${id === "duckdb" ? "shop" : "sales --connector"}`);
+    expect(facts).toContain(
+      `<code>ingestron init ${id === "duckdb" ? "shop" : "sales --connector"}`,
+    );
     expect(facts).toContain(row.option);
   }
   expect(existsSync(join(process.cwd(), "content/docs/platforms/index.mdx"))).toBe(false);

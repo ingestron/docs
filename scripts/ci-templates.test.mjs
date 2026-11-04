@@ -7,10 +7,15 @@ import test from "node:test";
 const read = (file) => readFileSync(join(import.meta.dirname, "../ci-templates", file), "utf8");
 const templates = ["github-actions/ingestron-check.yml", "azure-devops/ingestron-check.yml"];
 
-test("each template runs ingestron check from npm", () => {
+test("each template installs ingestron from npm, then runs ingestron check", () => {
   for (const file of templates) {
     const text = read(file);
-    assert.match(text, /npx --yes ingestron@1 check/, file);
+    assert.match(
+      text,
+      /(run|script): npm install -g ingestron@1\n[\s\S]*(run|script): ingestron check\n/,
+      file,
+    );
+    assert.doesNotMatch(text, /npx/, file);
     assert.doesNotMatch(text, /pnpm|node packages\//, file);
   }
 });

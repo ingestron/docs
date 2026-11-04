@@ -16,9 +16,9 @@ import { cli, command, commands, copy, fences, merge, read, section } from "./pa
 /** The first project's `shop`, created with the tutorial's own command and applied. */
 function shop(): string {
   const create = commands(section(read("start/first-project.mdx"), "## 1. Create the project"));
-  const init = create.find((line) => line.startsWith("npx ingestron@1 init "))!;
+  const init = create.find((line) => line.startsWith("ingestron init "))!;
   const parent = mkdtempSync(join(tmpdir(), "docs-build-shop-"));
-  expect(cli(parent, init.split(" ").slice(2)).code).toBe(0);
+  expect(cli(parent, init.split(" ").slice(1)).code).toBe(0);
   const cwd = join(parent, create.find((line) => line.startsWith("cd "))!.slice("cd ".length));
   expect(cli(cwd, ["apply", "--no-diff"]).code).toBe(0);
   return cwd;
