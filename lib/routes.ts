@@ -69,8 +69,8 @@ const written: Record<string, Written> = {
     afterLoad: "Nothing. Synapse serverless SQL reads the files each time a report queries a view.",
     deploy:
       "The factory's Git publishing, and running `views.sql` against the serverless database when the definitions change.",
-    deployAt: "/docs/platforms/synapse#generate-then-run-the-views",
-    deployStep: "Generate, then run the views",
+    deployAt: "/docs/platforms/synapse#deploy",
+    deployStep: "Deploy",
   },
   "adf-duckdb": {
     choose:
