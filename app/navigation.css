@@ -31,11 +31,3 @@
 .doc-links strong span {
   color: var(--color-fd-primary);
 }
-
-/* The Connectors area's sidebar lists its catalogue and categories, not its
-   77 connectors. Each connector page stays in the area's page tree, so it
-   keeps the Connectors tab, sidebar and breadcrumb; Fumadocs has no setting
-   to keep a page in the tree but out of the sidebar, so this hides it there. */
-:is(#nd-sidebar, #nd-sidebar-mobile) a[href^="/docs/connectors/"] {
-  display: none;
-}
