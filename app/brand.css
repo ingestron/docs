@@ -1,8 +1,7 @@
 /* The Ingestron brand on the docs site: self-hosted fonts, the brand colours,
    and those colours mapped onto Fumadocs' theme variables. The light theme sits
-   on paper and the dark theme on ink. Signal orange stays rare: the logo's tile
-   and the one primary button on a page. Links use signal deep on paper and
-   signal on dark on ink. */
+   on paper and the dark theme on ink. Signal orange stays rare: the logo's
+   tile. Links use signal deep on paper and signal on dark on ink. */
 
 /* Manrope and JetBrains Mono, both under the SIL Open Font License 1.1: see
    public/fonts/Manrope-OFL.txt and public/fonts/JetBrainsMono-OFL.txt. */
@@ -20,12 +19,15 @@
   font-style: normal;
   font-display: swap;
 }
-/* The mono files hold Latin text only. DuckDB's result boxes and the plan's
-   arrows come from a local monospace font whose characters are as wide as
-   JetBrains Mono's (0.6 em), so a box's columns stay lined up. */
+/* The main mono file holds Latin text only. The arrows and box-drawing
+   characters, for the plan's arrows and DuckDB's result boxes, come from
+   JetBrains Mono's own release: see public/fonts/jetbrains-mono-box.txt. */
 @font-face {
   font-family: "Ingestron Box";
-  src: local("Courier New"), local("DejaVu Sans Mono"), local("Menlo");
+  src: url("/fonts/jetbrains-mono-box.woff2") format("woff2");
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
   unicode-range: U+2190-2193, U+2500-257F;
 }
 
@@ -160,4 +162,11 @@ body {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-fd-muted-foreground);
+}
+
+/* JetBrains Mono's box-drawing characters fill a 1.32 em line exactly, so a
+   code block that holds them uses that line height and its lines join row to
+   row. Fumadocs puts the marker on the block's frame, around the pre. */
+[data-box-drawing] pre {
+  line-height: 1.32;
 }
