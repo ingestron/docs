@@ -3,6 +3,8 @@
 // and anchor. Every redirect lands on a built page and anchor, and no redirect
 // starts from a page that is still built. Every page URL built before the
 // areas came in is still built, and each area's sidebar lists only its pages.
+// Every page opens with a skip link to an element it has, and every table and
+// code block scrolls in a named frame.
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { docsLinks } from "@ingestron/authoring";
 import { join, relative } from "node:path";
@@ -48,13 +50,14 @@ for (const [, href] of readFileSync(join(out, "docs.html"), "utf8").matchAll(
 ))
   problem(href!, "home page link");
 sidebars();
+const framed = keyboard();
 
 if (broken.size > 0) {
   console.log(`✗ ${broken.size} broken links:\n${[...broken].join("\n")}`);
   process.exit(1);
 }
 console.log(
-  `✓ every internal link resolves, all ${editorLinks.length} editor links land, all ${urls.length} pages built before the areas are built, and each sidebar lists only its area`,
+  `✓ every internal link resolves, all ${editorLinks.length} editor links land, all ${urls.length} pages built before the areas are built, each sidebar lists only its area, and every page has a skip link and ${framed} named frames`,
 );
 
 /**
@@ -112,6 +115,43 @@ function sidebars(): void {
   }
   // out/docs holds every page but the home page, which is out/docs.html.
   if (found !== urls.length - 1) broken.add(`${found} sidebars for ${urls.length - 1} area pages`);
+}
+
+/**
+ * On every page: the first link is "Skip to content", to an id on the page
+ * that takes focus; every table is in a named, focusable frame; and every
+ * code block's scrolling frame is named. Returns how many frames it checked.
+ */
+function keyboard(): number {
+  let frames = 0;
+  for (const file of htmlFiles(join(out, "docs")).concat(join(out, "docs.html"))) {
+    const path = pagePath(file);
+    const html = readFileSync(file, "utf8");
+    const body = html.slice(html.indexOf("<body"));
+    const first = /<a [^>]*>/.exec(body)?.[0] ?? "";
+    const target = /class="skip-link" href="#([^"]+)"/.exec(first)?.[1];
+    if (!target) broken.add(`${path}: the first link is not the skip link (${first})`);
+    else if (!new RegExp(`<[a-z]+ [^>]*id="${target}"[^>]*tabindex="-1"`).test(html))
+      broken.add(`${path}: no focusable #${target} for the skip link`);
+    for (const [, before] of html.matchAll(/(<div [^>]*>)\s*<table/g)) {
+      frames++;
+      if (
+        !/role="region"/.test(before!) ||
+        !/aria-label="[^"]+"/.test(before!) ||
+        !/tabindex="0"/.test(before!)
+      )
+        broken.add(`${path}: a table outside a named frame (${before})`);
+    }
+    const tables = (html.match(/<table/g) ?? []).length;
+    const inFrames = (html.match(/<div [^>]*>\s*<table/g) ?? []).length;
+    if (tables !== inFrames)
+      broken.add(`${path}: ${tables - inFrames} tables not directly in a frame`);
+    for (const [region] of html.matchAll(/<div [^>]*fd-scroll-container[^>]*>/g)) {
+      frames++;
+      if (!/aria-label="[^"]+"/.test(region)) broken.add(`${path}: an unnamed code frame`);
+    }
+  }
+  return frames;
 }
 
 function exists(href: string): boolean {

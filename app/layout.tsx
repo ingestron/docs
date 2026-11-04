@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { preload } from "react-dom";
 import { RootProvider } from "fumadocs-ui/provider/next";
+import { SearchFocusReturn } from "@/components/keyboard";
 
 import "./global.css";
 
@@ -37,6 +38,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     <html lang="en-NZ" suppressHydrationWarning>
       <body>
         <RootProvider theme={{ enabled: true }} search={{ options: { type: "static" } }}>
+          <SearchFocusReturn />
           {children}
         </RootProvider>
       </body>
