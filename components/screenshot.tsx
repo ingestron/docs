@@ -6,7 +6,9 @@
 // the one that matches the site's theme. A platform's own screen, such as
 // Azure Data Factory's, has one capture in its own theme: give it as `src`,
 // with the `label` it needs and the date it was `checked` against the
-// platform, which ends the caption.
+// platform, which ends the caption. A platform shot is cropped to its subject
+// and shown at its own size, never larger, in a frame no wider than the
+// image, and links to the image to open it full size.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ScreenshotScroll } from "@/components/screenshot-scroll";
@@ -70,7 +72,7 @@ export function Screenshot({
   alt?: string;
   /** The window bar's label. */
   label?: string;
-  /** The date the screen was last checked, such as `2026-11-04`; it ends the caption. */
+  /** The date the screen was last checked, such as `2026-11-04`; it ends the caption. A platform's screen (`src`) needs it. */
   checked?: string;
 }) {
   const images: { src: string; className?: string }[] =
@@ -86,14 +88,33 @@ export function Screenshot({
   if (images.some((image) => !image.src)) {
     throw new Error("Screenshot: give src, or both light and dark");
   }
+  const platform = captures.src !== undefined;
+  if (platform && !checked) {
+    throw new Error(
+      `Screenshot: ${captures.src} needs the date it was checked, such as 2026-11-04`,
+    );
+  }
   const sizes = images.map((image) => pngSize(image.src));
   const [size] = sizes;
   if (sizes.some((other) => other.width !== size.width || other.height !== size.height)) {
     throw new Error(`Screenshot: ${captures.light} and ${captures.dark} differ in size`);
   }
   const text = checked ? `${caption} Checked on ${checkedOn(checked)}.` : caption;
+  const name = alt ?? caption;
+  const shown = images.map((image) => (
+    <img
+      key={image.src}
+      className={image.className}
+      src={image.src}
+      alt={name}
+      width={size.width}
+      height={size.height}
+      loading="lazy"
+      decoding="async"
+    />
+  ));
   return (
-    <figure className="screenshot">
+    <figure className={platform ? "screenshot screenshot-platform" : "screenshot"}>
       <div className="screenshot-frame">
         <div className="screenshot-bar" aria-hidden="true">
           <span className="screenshot-dots">
@@ -105,20 +126,19 @@ export function Screenshot({
         </div>
         {/* On a narrow screen the image keeps a readable size and scrolls in a
             frame named after the shot, which takes focus only while it scrolls. */}
-        <ScreenshotScroll label={alt ?? caption}>
+        <ScreenshotScroll label={name}>
           {/* With two captures, the page shows one of them with CSS, as it does the logo. */}
-          {images.map((image) => (
-            <img
-              key={image.src}
-              className={image.className}
-              src={image.src}
-              alt={alt ?? caption}
-              width={size.width}
-              height={size.height}
-              loading="lazy"
-              decoding="async"
-            />
-          ))}
+          {platform ? (
+            <a
+              className="screenshot-open"
+              href={captures.src}
+              aria-label={`Open full size: ${name}`}
+            >
+              {shown}
+            </a>
+          ) : (
+            shown
+          )}
         </ScreenshotScroll>
       </div>
       <figcaption>{text}</figcaption>

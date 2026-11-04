@@ -77,3 +77,25 @@
   line-height: 1.5;
   color: var(--color-fd-muted-foreground);
 }
+/* A platform's own screen (`src`): cropped to its subject and shown at its
+   own size, one image pixel to one CSS pixel, so its text stays as large as
+   the capture's and every shot on a page has the same scale. The frame is
+   no wider than the image, and at most 760 px; a narrower screen scrolls
+   the image sideways rather than shrinking it. */
+.screenshot-platform {
+  width: fit-content;
+  max-width: min(100%, 760px);
+}
+.prose .screenshot-platform img {
+  width: auto;
+  min-width: 0;
+  max-width: none;
+}
+.screenshot-open {
+  display: block;
+  width: fit-content;
+}
+.screenshot-open:focus-visible {
+  outline: 2px solid var(--color-fd-ring, currentColor);
+  outline-offset: -2px;
+}
