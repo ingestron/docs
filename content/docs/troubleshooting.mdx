@@ -73,8 +73,8 @@ half-written.
 - `Nothing was changed.`: fix what the reason names, such as a folder you cannot
   write to or a full disk, and apply again.
 - A stopped process, or `Some files could not be put back.`: delete
-  `.generated.lock` and any `.tmp` file in the output folder, then run
-  `ingestron plan`. A file already written shows as unchanged, so the plan lists
+  `.generated.lock` and any `.tmp` file if present, in the output folder, then
+  run `ingestron plan`. A file already written shows as unchanged, so the plan lists
   only what is left. Run `ingestron apply`, then `ingestron check`. Restoring
   `build/` from version control first works too.
 
@@ -177,9 +177,9 @@ The command line says nothing: it never reads a file that no import matches.
 `.yml` does not match `*.yaml`. The editor reports this as `NOT_IMPORTED`; it is
 not in [Errors](/docs/reference/errors), because only the editor checks for it.
 
-**Fix:** use the warning's quick fix, which adds the file's folder to `imports`
-(`Import "transforms/finance/*.yaml" in project.yaml`), or add a pattern that
-matches the file. Then plan again.
+**Fix:** use the warning's quick fix, which adds a pattern that matches the file to
+`imports` (`Import "transforms/finance/*.yaml" in project.yaml`), or add one
+yourself. Then plan again.
 
 ## Environment variables and `.env`
 
@@ -241,24 +241,29 @@ that is set to nothing counts as unset.
 **Symptom:** after you build and install a newer extension, a command from the
 new version is missing from the Command Palette, or problems are the old ones.
 
-**Cause:** VS Code starts an extension once for each window. Installing
-another version does not replace the one already running.
+**Cause:** a window that was open during the install may still be running the
+earlier version.
 
-**Fix:** run **Developer: Reload Window** from the Command Palette. Do this
-after every [install](/docs/start/install) of a new version.
+**Fix:** after installing a new version, run **Developer: Reload Window** from
+the Command Palette. See [Install a tool](/docs/start/install).
 
 ### Plan in VS Code and in the command differ
 
 **Symptom:** after `ingestron apply` in a terminal, **Ingestron: Plan** lists
 changes, or the other way round.
 
-**Cause:** the extension carries its own copy of the command, the version its
-repository locked when you built it. It need not be the one you run.
+**Cause:** a common cause is a different version. The extension carries its
+own copy of the command, which need not be the one you run. Another is a
+different environment: the editor plans the one in the status bar, such as
+`Ingestron: dev`, while `ingestron plan` without `--env` plans every
+environment.
 
-**Fix:** run the same version in both, as
-[Upgrade Ingestron and its packs](/docs/how-to/upgrade) describes: install the
-command version the extension uses, or build the extension again from a checkout
-whose lock holds the version you run, install it and reload the window.
+**Check:** plan the same environment in both, such as `ingestron plan --env dev`
+and `dev` in the status bar.
+
+**Fix:** if they still differ, run the same version in both, as
+[Upgrade Ingestron and its packs](/docs/how-to/upgrade) describes, and reload
+the window after installing the extension again.
 
 ## Azure Data Factory
 
@@ -276,8 +281,9 @@ connection gives one the connector does not accept
 (`the connection setting "ssl" is not supported for postgresql`).
 
 **Fix:** add the setting to the connection, or remove the one the message says
-is not supported. The [connector page](/docs/connectors) lists the fields each
-authentication mode needs. See [Azure Data Factory](/docs/platforms/adf).
+is not supported. Find your connector in the [catalogue](/docs/connectors); its
+page, such as [PostgreSQL](/docs/connectors/postgresql), lists the connection
+fields. See [Azure Data Factory](/docs/platforms/adf).
 
 ### A pipeline fails when it runs
 
@@ -287,8 +293,9 @@ folder.
 
 **Cause:** Ingestron generates the factory's files. It does not provision the
 runtime, the Key Vault or the storage, and does not test credentials or
-network access. A runtime, a secret, an identity's access or a source driver
-that is missing fails only when the pipeline runs.
+network access. Whatever is missing, such as the runtime, a secret, the
+identity's access to the Key Vault or the landing storage, or the source
+permissions and runtime prerequisites, fails only when the pipeline runs.
 
 **Fix:** run `ingestron request --env dev`, or **Ingestron: Prepare platform
 request** in VS Code. Its **ADF prerequisites** section lists, with this
@@ -397,8 +404,9 @@ key. `sequence_by` has to be a column of the contract too.
 **Symptom:** a DuckDB error is printed, but the run carries on, and some tables
 and Parquet files exist although another table failed.
 
-**Cause:** without `-bail`, DuckDB carries on after an error and commits what
-it built. With `-bail`, a run that fails while building publishes nothing.
+**Cause:** as the generated `README.md` says, without `-bail` DuckDB carries on
+after an error and commits what it built. With `-bail`, a run that fails while
+building publishes nothing.
 
 **Fix:** run it as the generated `README.md` says, from the project folder:
 
@@ -457,8 +465,9 @@ timeout (one hour by default). The pipeline reads the run's status every 30
 seconds. The last message means ADF could not stop the run: the factory's
 identity may lack the **Container Apps Jobs Operator** role on the job.
 
-**Fix:** open the job's run in Azure for the error. The job already retries a
-failed run once, and running again is safe because each run rebuilds everything.
+**Fix:** open the job's run in Azure for the error. The job retries a failed run
+when its retry limit is 1, as `ingestron request` asks, and running again is
+safe because each run rebuilds everything.
 Raise `after_copy.timeout` for a larger load. `ingestron request --env dev`
 lists the job and the access it needs. See
 [Hangs, failures and cost](/docs/platforms/duckdb-in-azure#hangs-failures-and-cost).
@@ -487,11 +496,12 @@ the key columns `primaryKey: true` in the contract. See
 
 **Symptom:** `databricks bundle validate` or `deploy` fails.
 
-**Check:** the message names the resource and field. A missing schema means
-the schemas are not created yet: ask the team that owns them, or see
+**Check:** read Databricks' own message; Ingestron does not produce it. If a
+schema is missing, the schemas are not created yet: ask the team that owns
+them, or see
 [Let the bundle create the schemas](/docs/platforms/databricks#create-the-schemas).
-A missing Unity Catalog connection must be created by an administrator before a
-Lakeflow Connect pipeline can deploy.
+A Lakeflow Connect pipeline refers to a Unity Catalog connection, which
+Ingestron does not create.
 
 **Fix:** when the platform sets `manage.schemas`, an administrator runs the
 generated `prerequisites.sql` once before the first deploy: it grants
