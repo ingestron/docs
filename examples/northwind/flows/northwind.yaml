@@ -1,0 +1,10 @@
+apiVersion: ingestron.io/v1
+kind: Flow
+id: northwind
+description: Orders, order lines, customers and products from Northwind.
+source: northwind
+tables:
+  orders: { object: northwind.dbo.Orders, contract: northwind.orders }
+  order_details: { object: "northwind.dbo.Order Details", contract: northwind.order_details }
+  customers: { object: northwind.dbo.Customers, contract: northwind.customers }
+  products: { object: northwind.dbo.Products, contract: northwind.products }

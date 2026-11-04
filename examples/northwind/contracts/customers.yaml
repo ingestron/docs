@@ -1,0 +1,65 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: northwind.customers
+version: 1.0.0
+status: active
+schema:
+  - name: customers
+    logicalType: object
+    description: The companies that buy from Northwind Traders.
+    properties:
+      - name: customer_id
+        physicalName: CustomerID
+        logicalType: string
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: company_name
+        physicalName: CompanyName
+        logicalType: string
+        required: true
+        classification: internal
+      - name: contact_name
+        physicalName: ContactName
+        logicalType: string
+        classification: confidential
+      - name: contact_title
+        physicalName: ContactTitle
+        logicalType: string
+        classification: confidential
+      - name: address
+        physicalName: Address
+        logicalType: string
+        classification: confidential
+      - name: city
+        physicalName: City
+        logicalType: string
+        classification: internal
+      - name: region
+        physicalName: Region
+        logicalType: string
+        classification: internal
+      - name: postal_code
+        physicalName: PostalCode
+        logicalType: string
+        classification: confidential
+      - name: country
+        physicalName: Country
+        logicalType: string
+        classification: internal
+      - name: phone
+        physicalName: Phone
+        logicalType: string
+        classification: confidential
+      - name: fax
+        physicalName: Fax
+        logicalType: string
+        classification: confidential
+roles:
+  - role: sales-analysts
+    access: read
+    description: Sales reporting by customer and country
+    firstLevelApprovers: customer-data-owner@example.com
+slaProperties:
+  - { property: freshness, value: 24, unit: h }

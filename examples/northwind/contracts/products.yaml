@@ -1,0 +1,56 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: northwind.products
+version: 1.0.0
+status: active
+schema:
+  - name: products
+    logicalType: object
+    description: What Northwind Traders sells.
+    properties:
+      - name: product_id
+        physicalName: ProductID
+        logicalType: integer
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: product_name
+        physicalName: ProductName
+        logicalType: string
+        required: true
+        classification: public
+      - name: supplier_id
+        physicalName: SupplierID
+        logicalType: integer
+        classification: internal
+      - name: category_id
+        physicalName: CategoryID
+        logicalType: integer
+        classification: public
+      - name: quantity_per_unit
+        physicalName: QuantityPerUnit
+        logicalType: string
+        classification: public
+      - name: unit_price
+        physicalName: UnitPrice
+        logicalType: number
+        physicalType: "decimal(19,4)"
+        classification: internal
+      - name: units_in_stock
+        physicalName: UnitsInStock
+        logicalType: integer
+        classification: internal
+      - name: units_on_order
+        physicalName: UnitsOnOrder
+        logicalType: integer
+        classification: internal
+      - name: reorder_level
+        physicalName: ReorderLevel
+        logicalType: integer
+        classification: internal
+      - name: discontinued
+        physicalName: Discontinued
+        logicalType: boolean
+        required: true
+        classification: public
