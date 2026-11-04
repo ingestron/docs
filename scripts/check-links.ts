@@ -3,11 +3,13 @@
 // and anchor. Every redirect lands on a built page and anchor, and no redirect
 // starts from a page that is still built. Every page URL built before the
 // areas came in is still built, and each area's sidebar lists only its pages.
-// Every page opens with a skip link to an element it has, and every table and
-// code block scrolls in a named frame.
+// Every page opens with a skip link to an element it has, every table and
+// code block scrolls in a named frame, and the Fumadocs markup the keyboard
+// fixes rely on is there. Nothing built or downloadable names New Zealand.
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { docsLinks } from "@ingestron/authoring";
 import { join, relative } from "node:path";
+import { unzipSync } from "fflate";
 import { baseOptions } from "../lib/layout.shared";
 import { categoryAnchor, sourceCategories } from "../lib/connector-page";
 import { connectorEntries, connectorIds } from "../lib/reference";
@@ -51,13 +53,15 @@ for (const [, href] of readFileSync(join(out, "docs.html"), "utf8").matchAll(
   problem(href!, "home page link");
 sidebars();
 const framed = keyboard();
+fumadocsMarkup();
+const scanned = noNewZealand();
 
 if (broken.size > 0) {
   console.log(`✗ ${broken.size} broken links:\n${[...broken].join("\n")}`);
   process.exit(1);
 }
 console.log(
-  `✓ every internal link resolves, all ${editorLinks.length} editor links land, all ${urls.length} pages built before the areas are built, each sidebar lists only its area, and every page has a skip link and ${framed} named frames`,
+  `✓ every internal link resolves, all ${editorLinks.length} editor links land, all ${urls.length} pages built before the areas are built, each sidebar lists only its area, every page has a skip link, ${framed} named frames and the markup the keyboard fixes use, and none of ${scanned} built and downloadable files names New Zealand`,
 );
 
 /**
@@ -152,6 +156,74 @@ function keyboard(): number {
     }
   }
   return frames;
+}
+
+/**
+ * The Fumadocs 16.17.8 markup components/keyboard.tsx and app/keyboard.css
+ * work on, on every page with the areas' layout: the header and its menu
+ * button, the tab bar, the "On this page" bar, and each heading's anchor
+ * button as a direct child of the heading, after its link.
+ */
+function fumadocsMarkup(): void {
+  for (const file of htmlFiles(join(out, "docs"))) {
+    const path = pagePath(file);
+    const html = readFileSync(file, "utf8");
+    const header = /<header id="nd-subnav"[\s\S]*?<\/header>/.exec(html)?.[0];
+    if (!header) broken.add(`${path}: no <header id="nd-subnav">`);
+    else {
+      if (!/<button [^>]*aria-controls="nd-sidebar-mobile"/.test(header))
+        broken.add(`${path}: no menu button for #nd-sidebar-mobile in the header`);
+      if (!/data-header-tabs/.test(header))
+        broken.add(`${path}: no [data-header-tabs] in the header`);
+    }
+    // Fumadocs' Heading marks its headings group/heading; headings other
+    // components draw, such as the error codes and the contents' title, have none.
+    const headings = [
+      ...html.matchAll(/<(h[2-6]) id="([^"]+)" class="group\/heading[^"]*"[^>]*>([\s\S]*?)<\/\1>/g),
+    ];
+    const toc = /<button [^>]*data-toc-popover-trigger/.test(html);
+    if (/id="toc-title"/.test(html) && !toc)
+      broken.add(`${path}: no [data-toc-popover-trigger] button`);
+    if (toc && headings.length === 0) broken.add(`${path}: has contents but no Fumadocs heading`);
+    for (const [, , id, inner] of headings)
+      if (
+        !inner!.includes(`<a data-card="" href="#${id}">`) ||
+        !/<\/a><button aria-live="polite"/.test(inner!)
+      )
+        broken.add(`${path}: heading #${id} has no anchor button after its link`);
+  }
+}
+
+/** Nothing in out/ or the downloads names New Zealand or one of its time zones. Returns how many files it read. */
+function noNewZealand(): number {
+  const words = /auckland|new zealand/i;
+  const decode = new TextDecoder();
+  let count = 0;
+  const zips = readdirSync(join(process.cwd(), "public/downloads"))
+    .filter((name) => name.endsWith(".zip"))
+    .map((name) => join(process.cwd(), "public/downloads", name));
+  for (const file of [...allFiles(out), ...zips]) {
+    if (file.endsWith(".zip")) {
+      for (const [entry, bytes] of Object.entries(unzipSync(readFileSync(file)))) {
+        count++;
+        if (words.test(decode.decode(bytes)))
+          broken.add(`${relative(process.cwd(), file)}: ${entry} names New Zealand`);
+      }
+      continue;
+    }
+    if (/\.(png|jpe?g|webp|ico|woff2?|gif)$/.test(file)) continue;
+    count++;
+    if (words.test(readFileSync(file, "utf8")))
+      broken.add(`${relative(process.cwd(), file)} names New Zealand`);
+  }
+  return count;
+}
+
+/** Every file under a folder. */
+function allFiles(folder: string): string[] {
+  return readdirSync(folder, { recursive: true, encoding: "utf8" })
+    .map((name) => join(folder, name))
+    .filter((path) => statSync(path).isFile());
 }
 
 function exists(href: string): boolean {
