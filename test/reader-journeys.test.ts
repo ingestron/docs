@@ -17,28 +17,10 @@ import { RouteTable } from "../components/reference/route-table";
 import { exampleFolder, listExamples } from "../lib/examples";
 import { routeRows } from "../lib/routes";
 import { parse } from "yaml";
-import { cli, copy, fences, merge, read, section } from "./pages.js";
+import { anchors, cli, copy, fences, merge, read, section } from "./pages.js";
 
 // Starters and connections are created and planned; resolving them takes seconds.
 vi.setConfig({ testTimeout: 60_000 });
-
-/** The page's heading anchors: `[#id]` where given, else the heading's slug. */
-function anchors(text: string): Map<string, string> {
-  const found = new Map<string, string>();
-  let fenced = false;
-  for (const line of text.split("\n")) {
-    if (line.trimStart().startsWith("```")) fenced = !fenced;
-    const heading = !fenced && /^#{2,6} (.*?)(?: \[#([^\]]+)\])?$/.exec(line);
-    if (!heading) continue;
-    const slug = heading[1]!
-      .toLowerCase()
-      .replace(/[^a-z0-9 -]/g, "")
-      .trim()
-      .replace(/ +/g, "-");
-    found.set(heading[2] ?? slug, heading[1]!);
-  }
-  return found;
-}
 
 /** The text of every `<code>` element in some HTML. */
 const codes = (html: string) =>
