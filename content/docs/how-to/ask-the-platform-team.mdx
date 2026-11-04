@@ -1,40 +1,71 @@
 ---
-title: Ask the platform team for what the project needs
-description: One request per environment with the grants, switches and shared infrastructure the project expects.
+title: Ask the platform team
+description: Write one request per environment with what the project needs from whoever runs the data platform, including the values still to provide.
 ---
 
 Some features need someone who administers the data platform: grants for the
-identity pipelines run as, tag policies, and shared storage and runtimes.
-Write the request from the definitions, so it matches what will be deployed:
+identity pipelines run as, tag policies, shared storage and runtimes, and the
+values only they know. Write the request from the definitions, so it matches
+what will be deployed:
 
 ```sh
 ingestron request --env prod > platform-request.md
 ```
 
-In VS Code, **Ingestron: Prepare platform request** opens the same text for
-the environment in the status bar, unsaved, to review and send.
+Without `--env`, it writes one request for each environment. In VS Code,
+**Ingestron: Prepare platform request** opens the same text for the
+environment in the status bar, unsaved, to review and send.
 
-The request has:
+## What the request holds
 
-- the identity pipelines and jobs run as, and the workspace;
-- each `manage` switch the platform turns on, what it does and what it needs
-  on the platform, from the pack's
-  [platform prerequisites](/docs/reference/packs/databricks#platform-prerequisites);
-- features the definitions use while their switch is off, such as a
-  contract's `unique: true` without `manage.checks`;
-- the shared infrastructure the methods expect, from the platform's
-  `settings`, with this environment's values; secrets are never shown;
-- what must exist before deploying: the catalogs and schemas the tables go
-  in, the folders the pipeline reads, the compute, and the workspace when
-  none is set. Ingestron lists these from the definitions; it has not
-  checked that they exist;
-- each schedule and whether it is paused: the refresh job and, with Azure
-  Data Factory, each trigger;
-- the generated `prerequisites.sql`, to review and run once.
+Each section appears only when it has something to say, in this order:
 
-Even the smallest project, with no platform document, gets a request:
+- **Values to provide:** each environment variable the definitions read,
+  where it is used, and whether it is set; never its value. See
+  [Values to provide](#values-to-provide).
+- The identity pipelines and jobs run as, and the workspace.
+- **Switched on:** each `manage` switch the platform turns on, what it does
+  and what it needs on the platform, from the pack's
+  [platform prerequisites](/docs/reference/packs/databricks#platform-prerequisites).
+- **Used by the definitions, but switched off:** features the definitions use
+  while their switch is off, such as a contract's `unique: true` without
+  `manage.checks`.
+- **Shared infrastructure:** the platform's settings for the methods the
+  environment uses, with this environment's values. A secret reads "a
+  secret"; its value is never shown.
+- Each pack's own sections, such as what must exist before deploying, the
+  schedules and whether each is paused, and what Azure Data Factory, the
+  Synapse database or the DuckDB job needs. Ingestron lists these from the
+  definitions; it has not checked that they exist.
+- **SQL to run once (review first):** the generated `prerequisites.sql`.
+
+Nothing is sent anywhere: send the request the way your team takes requests.
+
+## What each route asks for
+
+Run the request in each project's folder:
+
+```sh
+ingestron request --env dev
+```
+
+### Databricks
+
+Even the smallest project, with no platform document, gets a request. Create
+one from the `minimal` starter:
+
+```sh
+ingestron init shop --template minimal --yes
+cd shop
+```
+
+Its request for `dev` is:
 
 ```text
+# Platform request: shop (dev)
+
+Pipelines and jobs run as the identity that deploys the bundle.
+
 ## Must exist before deploying
 
 Ingestron has not checked these; the generated files expect them.
@@ -50,4 +81,147 @@ Ingestron has not checked these; the generated files expect them.
 - No schedule: the pipelines run only when someone starts them.
 ```
 
-Nothing is sent anywhere: send the request the way your team takes requests.
+A platform document that names `run_as` and turns on `manage` switches adds
+what each switch needs and the SQL to run once; see
+[Create the schemas](/docs/platforms/databricks#create-the-schemas).
+
+### Azure Data Factory
+
+For the project in [Land files only](/docs/platforms/landing-only), where ADF
+copies the files and nothing reads them yet, the whole request for `dev` is:
+
+```text
+# Platform request: sales (dev)
+
+## Shared infrastructure
+
+- `adf-copy` `landing`: `abfss://landing@saleslakedev.dfs.core.windows.net/erp`
+- `adf-copy` `key_vault`: `https://kv-sales-dev.vault.azure.net`
+- `adf-copy` `integration_runtime`: `shir-erp`
+
+## Schedules
+
+- Data Factory trigger `tr_sales_erp`: every 24 hours, stopped.
+
+## ADF prerequisites
+
+Provision these before running the generated assets. Generation does not inspect Azure or validate source credentials.
+
+- Integration runtime `shir-erp` (self-hosted), with network access and any required source drivers.
+- Key Vault `https://kv-sales-dev.vault.azure.net`, with the named secrets and factory identity access.
+- Landing `abfss://landing@saleslakedev.dfs.core.windows.net/erp`, with write access for the factory identity; Microsoft 365 uses its configured application.
+- Connection `erp`: source permissions and runtime prerequisites from [SQL Server](https://learn.microsoft.com/en-us/azure/data-factory/connector-sql-server).
+```
+
+When another pack reads the landed files, its sections follow these.
+
+### Synapse serverless views
+
+For the project in [Synapse serverless views](/docs/platforms/synapse), the
+request for `dev` adds the database, the external data source and the report
+users' permissions:
+
+```text
+## Synapse serverless database
+
+- Create the serverless SQL database `sales_dev`; the views live in it.
+
+## External data source
+
+- In `sales_dev`, create a master key if the database has none (`CREATE MASTER KEY ENCRYPTION BY PASSWORD = '<a strong password>'`), the database scoped credential `landing_identity` with `IDENTITY = 'Managed Identity'`, and the external data source `landing` at `abfss://landing@saleslakedev.dfs.core.windows.net` using it.
+- Give the Synapse workspace's managed identity Storage Blob Data Reader on the storage behind `abfss://landing@saleslakedev.dfs.core.windows.net`; if the storage account has a firewall, allow the workspace with a resource instance rule.
+
+## Report users
+
+- In `sales_dev`, give each report user SELECT on the schemas `bronze`, `silver`, REFERENCES on the database scoped credential `landing_identity`, and ADMINISTER DATABASE BULK OPERATIONS, which views over files need.
+```
+
+### DuckDB in Azure
+
+For the project in [Run DuckDB in Azure](/docs/platforms/duckdb-in-azure),
+the request for `dev` adds the job, with the role ADF needs to start it under
+**ADF prerequisites**:
+
+```text
+## DuckDB job
+
+- A Container Apps job running `ghcr.io/ingestron/duckdb-runner:1`, a public image, with `INGESTRON_SQL` set to where your deploy step copies `run.sql` for dev; see the docs' template.
+- The job's managed identity needs Storage Blob Data Reader on `abfss://landing@salesdev.dfs.core.windows.net` and the deployed `run.sql`, and Storage Blob Data Contributor on `abfss://published@salesdev.dfs.core.windows.net`.
+- Something that starts the job after each load, such as ADF's after_copy.
+```
+
+## Values to provide [#values-to-provide]
+
+A value only the platform team knows, such as a storage path, can come from
+an environment variable with `${envvar:…}`. A variable that is not set yet
+does not stop the request: the request opens by asking for it.
+
+In the `shop` project above, read the landing folder from a variable in
+`project.yaml`:
+
+```yaml
+values:
+  landing: ${envvar:LANDING_PATH}
+```
+
+With `LANDING_PATH` set nowhere, `ingestron request --env dev` prints:
+
+```text
+# Platform request: shop (dev)
+
+## Values to provide
+
+These values come from environment variables. Set them in the pipeline that runs Ingestron for this environment, or in `.env.dev` on your own computer, kept out of Git.
+
+- `LANDING_PATH`, used for `values.landing` in `project.yaml`: not set yet.
+
+Until a variable is set, this request shows it as `${envvar:NAME}`, and leaves out what cannot be worked out without it.
+
+Until every variable is set, some checks may not have run: each pack's checks of the whole project, and each method's checks of a table that holds a variable not set. Once the values are set, run `ingestron check` to run them.
+
+Pipelines and jobs run as the identity that deploys the bundle.
+
+## Must exist before deploying
+
+Ingestron has not checked these; the generated files expect them.
+
+- Catalog `dev`, which the deploying identity can use.
+- Schema `dev.bronze`, in which it can create tables and views.
+- Files at `${envvar:LANDING_PATH}`, which the pipeline can read.
+- Serverless compute for pipelines and jobs, turned on in the workspace.
+- No workspace host is set, so `databricks bundle deploy` uses the workspace of the Databricks CLI profile that runs it.
+
+## Schedules
+
+- No schedule: the pipelines run only when someone starts them.
+```
+
+- Each variable is listed once, with each field it feeds and its file.
+- Once it is set, the line says where from: the environment Ingestron runs
+  in, `.env.dev` or `.env`. This section never shows a variable's value; the
+  rest of the request shows values as they resolve, as the generated files
+  will.
+- When a flow's `source` holds a variable that is not set, the flow's
+  connection is not known, so the request names the flow and lists nothing
+  its tables need, and leaves out the SQL to run once.
+- A table whose contract or method holds such a variable is left out, and
+  the request names it.
+
+[Environment files](/docs/concepts/yaml-references#use-environment-files)
+says how to set the variables on your computer, and
+[Check generated files in CI](/docs/how-to/check-in-ci#give-the-check-its-variables)
+how to set them in CI.
+
+## When the definitions have problems
+
+Any other error stops the request. The request is then only its title and
+one line, and the command exits with `1`:
+
+```text
+# Platform request (dev)
+
+The definitions have problems; fix them first.
+```
+
+Run `ingestron plan` to see the problems. Unset variables alone never do
+this: with nothing else wrong, the command exits with `0`.

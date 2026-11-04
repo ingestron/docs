@@ -1,0 +1,104 @@
+---
+title: Upgrade Ingestron and its packs
+description: Choose the version every project runs, see what an upgrade changes with plan, and move CI and your team together.
+---
+
+The packs come inside the `ingestron` command: each release of the command
+includes one version of every pack. A newer release can change the files the
+packs generate, so upgrade on purpose, in a pull request, where `plan` shows
+the change and `check` proves it is complete.
+
+## What the standard pins
+
+The standard's `packs` names each pack with its major version:
+
+<Example name="duckdb" file="standard.yaml" />
+
+`duckdb@1` accepts every DuckDB pack whose version starts with 1. A new major
+version is a new name, `duckdb@2`, and the command checks it. When the
+standard names a major the command's pack does not have, nothing is
+generated. In the [first project](/docs/start/first-project), whose command
+has DuckDB pack 1, changing the line to `duckdb@2` makes `ingestron plan`
+stop at:
+
+```text
+dev: the definitions have problems
+standard.yaml:4:9  error  WRONG_PACK
+  This standard is for "duckdb@2", but the pack is duckdb@1.
+```
+
+The same happens the other way: a command whose pack is a newer major stops
+on the old name until you change it. A release in the same major keeps the
+name, so the standard needs no change, but the files it generates can still
+differ, for example by a new cast in a table's SQL.
+
+[Versions](/docs/reference/versions) lists the command and pack versions
+these pages describe.
+
+## Choose the version you run
+
+The [CI templates](/docs/how-to/check-in-ci) run `npx --yes ingestron@1 check`,
+which fetches the newest 1.x release on each run. A new release can then make
+`ingestron check` fail on a pull request that changed nothing, because the
+files it generates are no longer the ones committed.
+
+To upgrade when you choose, name the exact version in CI:
+
+```sh
+npx --yes ingestron@1.10.1 check
+```
+
+Install the same version on your computers:
+
+```sh
+npm install -g ingestron@1.10.1
+```
+
+The VS Code extension carries its own copy of the command, from when it was
+built. After an upgrade, rebuild it as [Install](/docs/start/install) shows.
+Once you have applied with the command, **Ingestron: Plan** should list no
+changes; if it does, the two versions differ.
+
+## Upgrade in a pull request
+
+1. On a new branch, change the version in CI and on your computer.
+2. Plan with the new version:
+
+   ```sh
+   ingestron plan
+   ```
+
+   Each file the new version writes differently is an `update`, with its
+   line differences, and files it adds or no longer writes are a `create` or
+   a `delete`. Review them as you would review a change to the definitions.
+
+3. If the plan reports
+   [`WRONG_PACK`](/docs/reference/errors#WRONG_PACK), change the major
+   version in the standard's `packs`. Fix any other problem the plan
+   reports.
+4. Apply, and commit the generated files with the version change:
+
+   ```sh
+   ingestron apply
+   ```
+
+5. Open the pull request. `ingestron check` in CI runs the new version and
+   passes, because the committed files are what it generates.
+
+Deploy the changed files as you deploy any other change.
+
+## What changed in a release
+
+Each release is a commit in its repository whose message starts with the
+version, such as `1.10.1:`. Read the history of the command and of each pack
+your standard names:
+
+- the command: [ingestron/ingestron](https://github.com/ingestron/ingestron/commits/main)
+- the packs: [pack-duckdb](https://github.com/ingestron/pack-duckdb/commits/main),
+  [pack-databricks](https://github.com/ingestron/pack-databricks/commits/main),
+  [pack-adf](https://github.com/ingestron/pack-adf/commits/main) and
+  [pack-synapse](https://github.com/ingestron/pack-synapse/commits/main)
+- the VS Code extension: [vscode](https://github.com/ingestron/vscode/commits/main)
+
+The plan is still the full answer for your project: it shows every file the
+new version changes.

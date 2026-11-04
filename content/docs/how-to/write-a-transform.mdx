@@ -4,8 +4,8 @@ description: Build a table from other tables with SQL on DuckDB, Synapse or Data
 ---
 
 A transform builds one table from tables your flows or other transforms
-produce. It lands in the second layer, `silver` by default, unless it sets
-`layer`. Its code runs on the engine that keeps the table, so you write that
+produce. It lands in the [second layer](/docs/concepts/layers), `silver` by default,
+unless it sets `layer`. Its code runs on the engine that keeps the table, so you write that
 engine's SQL: DuckDB's with [`duckdb-sql`](/docs/reference/packs/duckdb#duckdb-sql),
 T-SQL with [`synapse-sql`](/docs/reference/packs/synapse#synapse-sql), and
 Databricks SQL with [`sql`](/docs/reference/packs/databricks#sql), or Python

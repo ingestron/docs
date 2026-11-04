@@ -1,22 +1,95 @@
 ---
-title: Name Databricks resources
-description: Set your organisation's catalog, schema, table and pipeline names.
+title: Name tables and resources
+description: Set the catalog, schema, table, pipeline and job names every project gets, and see them before anything is deployed.
 ---
 
-For Databricks, write the patterns in the standard's `naming`. For ADF
-linked services, datasets, pipelines, triggers and activities, follow
-[Name ADF resources](/docs/platforms/adf-pipelines#name-resources). This one uses one catalog,
-a schema per environment and layer, and source-prefixed table names:
+Ingestron names each table, and on Databricks the pipeline and the refresh
+job, from patterns. The packs have default patterns; the standard's `naming`
+replaces them with your organisation's. The names are in the generated
+files, so `plan` shows them for review before anything is deployed.
+
+## Write the patterns
+
+This standard uses one catalog, a schema per environment and layer, and puts
+the source's id in front of each flow table's name:
 
 <Example name="standards-and-conventions" file="standard.yaml" />
 
-Plan to see the names before anything is written:
+In `prod`, the `visits` table of the `web` flow is created as
+`` `acme`.`prod_raw`.`web__visits` ``:
+
+<Example name="standards-and-conventions" file="build/prod/src/marketing_prod/raw/visits.sql" />
+
+Patterns use [Liquid](https://shopify.github.io/liquid/) and these
+variables:
+
+<NamingVariables />
+
+`{% if source %}` works because a variable a table does not have is empty: a
+transform's table has no source, so it keeps its own name. These
+`{{ … }}` patterns are not the `${…}` references used everywhere else in the
+YAML; see [YAML references](/docs/concepts/yaml-references).
+
+## What each pack names
+
+Without `naming`, the standard's first pack gives these patterns. A standard
+that sets only some of them keeps the pack's for the others.
+
+<PackNaming />
+
+- **Databricks** uses all five: `catalog.schema.table` for each table, the
+  pipeline that builds them, and the refresh job.
+- **Synapse serverless** creates each view in the catalog, which is the
+  serverless database, under its schema and table name.
+- **DuckDB** uses the schema and table name for each table, and for the
+  Parquet file it publishes, `<schema>.<table>.parquet`.
+
+Azure Data Factory names its own resources differently; see
+[ADF resource names](#adf-resource-names).
+
+## Keep names valid
+
+Every name must be lowercase letters, digits and underscores, and start with
+a letter or underscore
+([`BAD_NAME`](/docs/reference/errors#BAD_NAME)). Use a filter such as
+`downcase` when a value might not be. A pattern with an unknown variable is
+an error ([`BAD_PATTERN`](/docs/reference/errors#BAD_PATTERN)), so a typo
+cannot quietly give a valid but wrong name. Two tables with the same full
+name are an error too
+([`DUPLICATE_NAME`](/docs/reference/errors#DUPLICATE_NAME)).
+
+## One project's names [#one-project-names]
+
+A project's platform document can have its own `naming`. Each pattern it
+sets replaces the standard's for that project; the others still come from
+the standard. `fixed` holds only method settings, so a standard cannot stop
+this. If every project must keep your names, review changes to
+`platform.yaml` as you review changes to `standard.yaml`.
+
+## ADF resource names
+
+ADF linked services, datasets, pipelines, triggers and activities use the copy
+method's `resource_names` settings. They have their own defaults and validation
+rules. Use `${project.id}`, `${environment.name}` and `${values.…}` for reusable
+values; the table variables above are not available there.
+[Name resources](/docs/platforms/adf-pipelines#name-resources) lists the roles
+and which tables may share a resource.
+
+## Check a change of names
+
+Change a pattern, then plan. For example, add `_ingest` to the pipeline's
+name in the standard:
+
+```yaml
+naming:
+  pipeline: "{{ project }}_{{ environment }}_ingest"
+```
 
 <ToolSteps>
 <Tool name="CLI">
 
 ```sh
-ingestron plan --no-diff
+ingestron plan --env prod --no-diff
 ```
 
 </Tool>
@@ -29,5 +102,20 @@ Run **Ingestron: Plan** from the Command Palette (⇧⌘P on macOS, Ctrl+Shift+P
 </Tool>
 </ToolSteps>
 
-The variables, the rules for valid names and more examples are in
-[Naming](/docs/concepts/naming).
+The pipeline's files are named after it, so they move:
+
+```text
+prod → build/prod
+delete    resources/marketing_prod.pipeline.yml
+create    resources/marketing_prod_ingest.pipeline.yml
+delete    src/marketing_prod/raw/campaigns.sql
+delete    src/marketing_prod/raw/visits.sql
+create    src/marketing_prod_ingest/raw/campaigns.sql
+create    src/marketing_prod_ingest/raw/visits.sql
+
+7 files: 3 create, 3 delete, 1 unchanged. Ready to apply.
+```
+
+Ingestron renames files, not data. When a table's or pipeline's name changes,
+what happens to the old one on the platform depends on how you deploy, so
+review the deletes before you apply.

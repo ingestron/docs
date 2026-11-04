@@ -22,7 +22,7 @@ a flow may still add `properties: { team: { cost_centre: "123" } }`, but not
 change `acme.owner`.
 
 For a step-by-step policy example, follow
-[Configure the project standard](/docs/how-to/configure-a-standard).
+[Set your organisation's standard](/docs/how-to/configure-a-standard).
 
 The following Databricks example gives every streaming table two properties and fixes
 automatic clustering:
@@ -36,3 +36,22 @@ Every result is checked against the method's settings, so a misspelt or
 missing setting is reported with the file and line where it was written
 ([`BAD_SETTING`](/docs/reference/errors#BAD_SETTING)). Each method's
 settings and defaults are in [Reference: packs and methods](/docs/reference/packs).
+
+## Names, layers, types and quality
+
+These are not method settings, and `fixed` does not apply to them. Each is
+set by the last place in this order that sets it:
+
+| Value   | Pack                           | Standard        | Platform | Definitions                     |
+| ------- | ------------------------------ | --------------- | -------- | ------------------------------- |
+| Names   | its default patterns           | `naming`        | `naming` |                                 |
+| Layers  | its default list               | `layers`        |          | a flow's or transform's `layer` |
+| Types   | its type for each logical type | `types`, merged |          | a column's `physicalType`       |
+| Quality | its default actions            | `quality`       |          | an expectation's `action`       |
+
+The pack is the standard's first pack. A name pattern in the platform
+document replaces the standard's pattern for that name, and the standard's
+`types` change only the logical types they list. See
+[Name tables and resources](/docs/how-to/name-things-your-way),
+[Layers](/docs/concepts/layers) and
+[Give each column a type](/docs/how-to/write-a-contract#give-each-column-a-type).

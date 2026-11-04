@@ -55,6 +55,22 @@ Ingestron reads from one. The [document reference](/docs/reference/documents)
 lists supported fields, and pack references explain which contract
 capabilities affect their output.
 
+## IDs and names
+
+A project's IDs link its documents; the names a pack generates identify
+resources on a platform. Each comes from its own place, so changing one does
+not rename the others.
+
+| Identity                   | Where it comes from                                                  |
+| -------------------------- | -------------------------------------------------------------------- |
+| Project and definition IDs | `id` in the project or document                                      |
+| Project table name         | A flow table's key or a transform's `id`                             |
+| Contract link              | The table's `contract`, identifying a data contract                  |
+| Platform resource name     | The pack's default patterns, or `naming` in the standard or platform |
+
+[Name tables and resources](/docs/how-to/name-things-your-way) shows how the
+platform names are made.
+
 ## Keep reusable values out of individual definitions
 
 Read values from `project.yaml` with `${values.…}` and name credentials with

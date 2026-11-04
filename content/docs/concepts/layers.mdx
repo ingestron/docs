@@ -1,0 +1,72 @@
+---
+title: Layers
+description: The stages a project's tables are grouped in, where each table lands, and what its layer changes.
+---
+
+A layer is a named stage that a table belongs to. A project has one ordered
+list of layers. Without `layers` in the standard, the list is <DefaultLayers />,
+the default of every pack.
+
+A layer changes no data by itself. Ingestron uses a table's layer for its
+names, for the standard's rules, and to decide where a table lands when its
+definition does not say. A [transform](/docs/how-to/write-a-transform) is
+what reads tables in one layer and writes a table in the next.
+
+## Where a table lands
+
+- A flow's tables land in the flow's `layer`, or else in the first layer.
+- A transform's table lands in the transform's `layer`, or else in the second
+  layer. When the list has only one layer, it lands in that one.
+- A layer that is not in the list is an error,
+  [`UNKNOWN_LAYER`](/docs/reference/errors#UNKNOWN_LAYER).
+
+This project reads two tables from a point-of-sale system, joins them, then
+adds them up by region:
+
+<Example name="layers-and-transforms" file="flows/pos.yaml" />
+
+<Example name="layers-and-transforms" file="transforms/store_sales.yaml" />
+
+<Example name="layers-and-transforms" file="transforms/region_sales.yaml" />
+
+| Table          | Made by                  | Layer    | Why                        |
+| -------------- | ------------------------ | -------- | -------------------------- |
+| `sales`        | flow `pos`               | `bronze` | None named, so the first.  |
+| `stores`       | flow `pos`               | `bronze` | None named, so the first.  |
+| `store_sales`  | transform `store_sales`  | `silver` | None named, so the second. |
+| `region_sales` | transform `region_sales` | `gold`   | It says `layer: gold`.     |
+
+A transform's `inputs` name tables, not layers, so a transform can read
+tables in any layer. `region_sales` reads `store_sales` in `silver`.
+
+## What a layer changes
+
+**Names.** In every pack that names tables, the schema is `{{ layer }}`
+unless the standard names it another way, so each layer is a schema. On
+Databricks, `store_sales` above is `` `dev`.`silver`.`store_sales` ``, and
+its file is `build/dev/src/sales/silver/store_sales.sql`. A name pattern can
+use `{{ layer }}` anywhere; see
+[Name tables and resources](/docs/how-to/name-things-your-way).
+
+**Rules.** A rule in the standard can match `layer`, to choose a method or
+settings for the tables in that layer. This standard makes every `gold`
+table a materialised view, with no clustering and a longer log retention:
+
+<Example name="layers-and-transforms" file="standard.yaml" />
+
+`region_sales` is the only `gold` table, so only its view has clustering
+off and the longer retention. `store_sales` keeps the pack's settings.
+
+## Name your own layers
+
+List them in order in the standard's `layers`. The list replaces the
+default one, so a layer you leave out does not exist in the project.
+
+[Acme's standard](/docs/how-to/configure-a-standard#what-a-standard-holds)
+sets `layers: [raw, curated, published]`. Its flow tables land in `raw`, the
+first, and a flow that says `layer: bronze` is `UNKNOWN_LAYER`.
+
+The list comes from the standard, or else from the standard's first pack. A
+flow or transform chooses one layer from it, and a project's platform
+document cannot change it. [Settings](/docs/concepts/settings)
+shows the same order for names, types and quality.

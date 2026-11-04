@@ -1,7 +1,13 @@
 ---
-title: Share a template
-description: Turn a project into a template your team can start from.
+title: Share templates and standards
+description: Keep your team's project templates and your organisation's standard in Git, and start projects from them.
 ---
+
+A template is a project folder your team starts from, and a standard is the
+one file that holds your organisation's rules. Both are plain files, so keep
+them in any Git repository the people who start projects can clone.
+
+## Share a template
 
 A template is an ordinary project folder with one extra file,
 `template.yaml`, that says what `ingestron init` asks.
@@ -27,12 +33,38 @@ ingestron init orders --template https://github.com/acme/data-templates.git#file
 
 `init` copies every regular file except `template.yaml`, `README.md`,
 `build/` and `.generated.json`, and refuses a template that holds a
-symbolic link. It never runs anything from a template. Cloning uses your own
-`git`, without the repository's hooks or submodules; filters from your own
-git settings, such as Git LFS, still apply. A user name or token in a URL is
-never printed or written into the project.
+symbolic link. Every field of `template.yaml` is in
+[Reference: templates](/docs/reference/templates).
 
-Put your organisation's standard in the template, or keep it in its own
-repository and let people choose it with `--standard`.
+## Share a standard [#share-a-standard]
 
-Every field of `template.yaml` is in [Reference: templates](/docs/reference/templates).
+Keep your organisation's standard in its own repository, so every template
+and every project takes the same one. Give `--standard` the repository's URL
+and the file's path after `#`. It replaces the template's own standard:
+
+```sh
+ingestron init orders --template https://github.com/acme/data-templates.git#files-to-bronze \
+  --standard https://github.com/acme/data-platform.git#standards/standard.yaml
+```
+
+The new `orders/standard.yaml` starts with a `# From` line naming that URL. It
+is a copy: a later change to the repository does not reach projects already
+created. [Set your organisation's standard](/docs/how-to/configure-a-standard#start-each-project-from-it)
+says how to give a project a newer version, and how to keep projects to it.
+
+In VS Code, **Ingestron: New project** takes the same URL when it asks for
+**Your organisation's standard**.
+
+## What Ingestron does with a Git URL
+
+Fetching a template or standard is the only time Ingestron uses the network.
+
+- Cloning uses your own `git`, so your Git credentials and settings apply. It
+  takes only the latest commit of the default branch, and runs none of the repository's hooks or
+  submodules; filters from your own git settings, such as Git LFS, still
+  apply.
+- The part after `#` must stay inside the repository, and must be a folder
+  for a template or a regular file for a standard.
+- It never runs anything from a template or standard.
+- A user name or token in a URL is never printed or written into the
+  project.

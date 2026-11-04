@@ -1,60 +1,73 @@
 ---
-title: Configure the project standard
-description: Select capabilities, set defaults and protect organisation policy in one standard.
+title: Set your organisation's standard
+description: Write one standard every project follows, start each project from it, and keep projects to it.
 ---
 
-Use one Standard document for a project. It selects packs, chooses or limits
-methods and defines shared defaults and fixed policy. It can cover one platform
-or several compatible packs; you do not merge a separate standard per provider.
+A standard is one file, `standard.yaml`, that says how your organisation
+builds data projects: the packs, names, layers and column types, default
+settings, the settings no project may change, and what every data product
+must declare. Each project holds a copy. VS Code marks a definition that
+breaks it as you type, `ingestron plan` reports it, `ingestron check` fails
+in CI, and nothing is generated until it is fixed.
 
-## 1. Select compatible capabilities
+To make every project follow your rules:
 
-Check the [pack catalogue](/docs/reference/packs) and the connection's supported
-methods. Include the packs required for the actions you need. `allowed` limits
-methods; `settings` supplies defaults; `fixed` protects values against local
-changes. Method settings stay under their method IDs.
+1. Write the standard and try it on a project.
+2. Start each project from it, from a file or a Git repository.
+3. Keep projects to it: `ingestron check` in each project's CI, and a review
+   of changes to the copy.
+4. Answer each project's [platform request](/docs/how-to/ask-the-platform-team),
+   and [upgrade](/docs/how-to/upgrade) on purpose.
 
-During creation you can use the supplied standard, a local file or a Git URL.
-The standard is copied into the project; changes to the original are not
-synchronised automatically. Creation checks every requested environment before
-writing. For an existing project, edit its standard and plan the result.
+## What a standard holds [#what-a-standard-holds]
 
-<ToolSteps>
-<Tool name="CLI">
+This is Acme's standard. Its naming, types and storage choices belong to
+Acme; the way defaults and fixed settings work is the same for every pack.
 
-Pass `--standard ../platform/standard.yaml` when creating the project. Relative
-paths are resolved from your current shell directory. For a concrete ADF route:
+<Example name="standards-and-conventions" file="standard.yaml" />
 
-```sh
-ingestron init sales --connector postgresql --connectivity private --via adf-databricks \
-  --standard ../platform/standard.yaml --yes
-```
+From top to bottom:
 
-</Tool>
-<Tool name="VS Code">
+- **Packs:** the packs every project uses, each with its major version. The
+  first gives the defaults. See
+  [Standards, packs and methods](/docs/concepts/standards-and-packs).
+- **Naming:** one `acme` catalog; a schema per environment and layer, such
+  as `prod_raw`; flow tables prefixed with their source, such as
+  `web__visits`; a pipeline per environment. See
+  [Name tables and resources](/docs/how-to/name-things-your-way).
+- **Layers:** `raw`, `curated` and `published` instead of the default ones.
+  See [Layers](/docs/concepts/layers).
+- **Types:** numbers become `DECIMAL(38,6)` unless a contract says
+  otherwise. See [Give each column a type](/docs/how-to/write-a-contract#give-each-column-a-type).
+- **Ingest settings:** unexpected columns in files are kept aside in a
+  rescue column instead of changing the table.
+- **Store:** only streaming tables are allowed (`allowed`); each one gets two
+  table properties (`settings`); clustering is fixed to automatic (`fixed`).
 
-Enter the path in **Standard for this project**. Relative paths are resolved from
-the destination folder selected later; use an absolute path for a standard
-outside that folder.
+A standard can also choose methods with `when` rules (see
+[How a method is chosen](/docs/concepts/standards-and-packs#how-a-method-is-chosen)),
+set what happens to rows that fail a check (`quality`), and require
+[governance of data products](#require-governance-of-data-products).
+[Settings](/docs/concepts/settings) explains which value wins when a project
+sets one too.
 
-</Tool>
-</ToolSteps>
+## One standard for several packs
 
-## 2. Inspect a complete policy
-
-This example deliberately combines ADF ingestion with Databricks storage. Other
-projects should select their own supported methods, rather than copy every choice.
-
-<ExampleDownload name="connection-first-adf" />
+A project has exactly one standard, even when it uses several packs. Each
+method's settings stay under the method's id, so configuring one method does
+not configure another. This standard copies with Azure Data Factory and
+stores with Databricks:
 
 <Example name="connection-first-adf" file="standard.yaml" />
 
 `ingest.allowed` permits the selected copy method; `ingest.settings.adf-table`
 supplies its schedule. `store.allowed` and `store.fixed.streaming-table` control
 the downstream table. `naming` controls its Databricks names; ADF methods use
-[resource names](/docs/platforms/adf-pipelines#name-resources) instead.
+[resource names](/docs/platforms/adf-pipelines#name-resources) instead. Check
+the [pack catalogue](/docs/reference/packs) for the methods each pack has and
+the combinations that work.
 
-## 3. Put settings with their owner
+## Put settings with their owner
 
 | Responsibility                  | Definition location                            |
 | ------------------------------- | ---------------------------------------------- |
@@ -67,23 +80,116 @@ the downstream table. `naming` controls its Databricks names; ADF methods use
 
 The [YAML reference syntax](/docs/concepts/yaml-references) connects reusable
 values to these settings. The method reference identifies required fields and
-their intended location. Configuring one method does not configure another.
+their intended location.
 
-## 4. Check the resolved result
+## Try it on a project [#try-it-on-a-project]
 
-[Plan the project](/docs/how-to/plan-and-generate) before generating. The
-[settings concept](/docs/concepts/settings) explains the full precedence order.
-A definition that changes a fixed setting reports `FIXED_SETTING`; it cannot
-opt out of policy.
+<ExampleDownload name="standards-and-conventions" /> and unzip it; run the commands from its folder.
 
-In the downloaded example, set `cluster_by` to `none` under the PostgreSQL table's
-`store.with` in `flows/postgresql.yaml`. Plan reports that policy fixes it to
-`auto`. Remove that override and plan again. The valid project produces ADF
-resources under `build/dev/adf/` and a bundle under `build/dev/databricks/`.
+### Generate
 
-## 5. Require governance of data products
+<ToolSteps>
+<Tool name="CLI">
+
+```sh
+ingestron apply --no-diff
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: Apply** from the Command Palette (⇧⌘P on macOS, Ctrl+Shift+P elsewhere). The output is in the Ingestron output panel. Problems show in the Problems panel as you type, before you plan.
+
+</Tool>
+</ToolSteps>
+
+Open a generated table in `build/prod/` and find each rule from the standard
+in it: the names, the types, the properties and the clustering.
+
+### Break a rule
+
+At the end of `flows/web.yaml`, add a store setting the standard fixes, as
+in the download's `exercises/fixed-setting.yaml`:
+
+<Example name="standards-and-conventions" file="exercises/fixed-setting.yaml" />
+
+Plan again:
+
+```text
+dev: the definitions have problems
+flows/web.yaml:10:23  error  FIXED_SETTING
+  The standard fixes "cluster_by" to "auto".
+  Remove this setting, or change the standard.
+  Fix: Remove this setting.
+prod: the definitions have problems
+flows/web.yaml:10:23  error  FIXED_SETTING
+  The standard fixes "cluster_by" to "auto".
+  Remove this setting, or change the standard.
+  Fix: Remove this setting.
+```
+
+Each environment is checked and reported. The line and column point at the
+value you added. Remove it; in VS Code, the quick fix **Remove this setting**
+does it for you. See [`FIXED_SETTING`](/docs/reference/errors#FIXED_SETTING).
+
+## Start each project from it
+
+A new project takes your standard in place of the one its starter or route
+comes with. `init` copies it into the project as `standard.yaml`, with a first
+line saying where it came from, and checks every environment before it writes
+anything.
+
+<ToolSteps>
+<Tool name="CLI">
+
+Pass `--standard` with a path or a Git URL. A relative path is resolved from
+your shell's current folder:
+
+```sh
+ingestron init sales --connector postgresql --connectivity private --via adf-databricks \
+  --standard ../platform/standard.yaml --yes
+```
+
+The new `sales/standard.yaml` starts with `# From ../platform/standard.yaml`.
+To take it from a Git repository instead, see
+[Share templates and standards](/docs/how-to/share-a-template#share-a-standard).
+
+</Tool>
+<Tool name="VS Code">
+
+**Ingestron: New project** asks for **Your organisation's standard** after the
+name and environments. Enter a path or a Git URL, or leave it empty to keep
+the starter's or route's own. A relative path is looked for in the first
+folder open in VS Code; use an absolute path for a standard elsewhere.
+
+</Tool>
+</ToolSteps>
+
+The copy does not follow the original. To give a project a newer version,
+replace its `standard.yaml` in a pull request and plan: the plan shows every
+generated file the change affects.
+
+## Keep projects to it
+
+- **In CI.** A definition that breaks the standard, such as a fixed setting
+  changed or a method it does not allow, stops `ingestron check`, so the pull
+  request fails. Add the check to every project as in
+  [Check generated files in CI](/docs/how-to/check-in-ci).
+- **In review.** The copy is a file in the project's repository, so a project
+  can change it, and its `platform.yaml` can
+  [change its names](/docs/how-to/name-things-your-way#one-project-names).
+  Ask for the platform team's review of changes to both files, for example
+  with your Git host's code owners.
+
+## Require governance of data products
 
 A `governance` section makes every data product state its owner and purpose,
 classify each column it publishes, and say who may use sensitive data. A
 product that breaks a rule stops generation, so the pull request fails. See
 [Define a data product](/docs/how-to/define-a-data-product).
+
+## Next
+
+- What each project needs from you: [Ask the platform team](/docs/how-to/ask-the-platform-team).
+- Keep the standard in Git: [Share templates and standards](/docs/how-to/share-a-template).
+- Move to a newer Ingestron together: [Upgrade Ingestron and its packs](/docs/how-to/upgrade).

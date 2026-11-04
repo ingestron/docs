@@ -74,7 +74,8 @@ and apply it again first.
    5 files: 1 create, 1 update, 3 unchanged. Ready to apply.
    ```
 
-   The new table lands in `bronze`, the first layer, like `orders`. Apply,
+   The new table lands in `bronze`, the [first layer](/docs/concepts/layers),
+   like `orders`. Apply,
    then run `run.sql` again to build it.
 
 Every table in a flow reads the flow's connection with the same ingest method.
@@ -136,7 +137,7 @@ while the rest of your platform stays as it is:
   name a table another team keeps, and Ingestron never creates or changes it.
   See [Read a table another team owns](/docs/how-to/write-a-transform#read-a-table-another-team-owns).
 - **Choose names that do not clash** with what is deployed; see
-  [Name Databricks resources](/docs/how-to/name-things-your-way).
+  [Name tables and resources](/docs/how-to/name-things-your-way).
 - **Keep your own files out of `build/`.** `ingestron check` fails on a file
   there that it did not generate. If you keep files there on purpose, run
   `ingestron check --allow-extra`; see

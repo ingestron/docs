@@ -132,6 +132,21 @@ test("the guide and concept indexes, and the merged and moved guides, land on th
   assert.equal(shipped("/docs/concepts/settings"), undefined);
 });
 
+test("the worked standard and the naming concept land on their guides", () => {
+  const shipped = (path) => redirectFor(new URL(path, "https://docs.ingestron.io"));
+  for (const [from, to] of [
+    ["/docs/examples/organisation-standards", "/docs/how-to/configure-a-standard"],
+    ["/docs/examples/organisation-standards/", "/docs/how-to/configure-a-standard"],
+    ["/docs/concepts/naming", "/docs/how-to/name-things-your-way"],
+    ["/docs/concepts/naming.html", "/docs/how-to/name-things-your-way"],
+  ])
+    assert.equal(shipped(from), to, from);
+  assert.equal(shipped("/docs/concepts/naming?x=1"), "/docs/how-to/name-things-your-way?x=1");
+  // The pages that took them in are not redirected, nor the new concept beside them.
+  assert.equal(shipped("/docs/how-to/configure-a-standard"), undefined);
+  assert.equal(shipped("/docs/concepts/layers"), undefined);
+});
+
 test("the worker answers the root with 307", () => {
   const response = redirectResponseFor(new URL("https://docs.ingestron.io/?q=1"));
   assert.deepEqual(response, { location: "https://docs.ingestron.io/docs?q=1", status: 307 });
