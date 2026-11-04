@@ -1,39 +1,13 @@
 @import "tailwindcss";
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
+@import "./brand.css";
 @import "./content.css";
 @import "./navigation.css";
 /* Fumadocs styles search matches with ::highlight(), which the CSS parser in
    Next.js 16.3 does not know and warns about; leave those two classes out. */
 @source not inline("[&_::highlight(fd-search)]:text-fd-primary");
 @source not inline("[&_::highlight(fd-search)]:underline");
-:root {
-  --color-fd-primary: #096e63;
-  --color-fd-background: #ffffff;
-  --color-fd-foreground: #172b2b;
-  --color-fd-muted: #f3f6f5;
-  --color-fd-muted-foreground: #546663;
-  --color-fd-border: #dce5e2;
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-}
-.docs-brand {
-  font-weight: 750;
-  letter-spacing: -0.035em;
-  font-size: 1.2rem;
-}
-.docs-brand span {
-  font-size: 0.78rem;
-  font-weight: 500;
-  letter-spacing: 0;
-  margin-left: 0.5rem;
-  color: #546663;
-}
 /* Compact: Fumadocs and Tailwind size in rem, so this scales text, sidebar and spacing together. */
 html {
   font-size: 15px;
@@ -66,20 +40,6 @@ html {
 }
 .prose td:last-child {
   min-width: 8rem;
-}
-.dark {
-  --color-fd-primary: #4fc2b3;
-  --color-fd-background: #0f1717;
-  --color-fd-foreground: #e4eeec;
-  --color-fd-muted: #172222;
-  --color-fd-muted-foreground: #9db3af;
-  --color-fd-border: #263535;
-}
-.dark .docs-brand span {
-  color: #9db3af;
-}
-.dark :focus-visible {
-  outline-color: #4fc2b3;
 }
 /* Wide code and tables scroll inside themselves, never the page. */
 .prose pre {

@@ -1,0 +1,163 @@
+/* The Ingestron brand on the docs site: self-hosted fonts, the brand colours,
+   and those colours mapped onto Fumadocs' theme variables. The light theme sits
+   on paper and the dark theme on ink. Signal orange stays rare: the logo's tile
+   and the one primary button on a page. Links use signal deep on paper and
+   signal on dark on ink. */
+
+/* Manrope and JetBrains Mono, both under the SIL Open Font License 1.1: see
+   public/fonts/Manrope-OFL.txt and public/fonts/JetBrainsMono-OFL.txt. */
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/manrope-variable.woff2") format("woff2");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/jetbrains-mono-variable.woff2") format("woff2");
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+}
+/* The mono files hold Latin text only. DuckDB's result boxes and the plan's
+   arrows come from a local monospace font whose characters are as wide as
+   JetBrains Mono's (0.6 em), so a box's columns stay lined up. */
+@font-face {
+  font-family: "Ingestron Box";
+  src: local("Courier New"), local("DejaVu Sans Mono"), local("Menlo");
+  unicode-range: U+2190-2193, U+2500-257F;
+}
+
+@theme {
+  --font-sans: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "Ingestron Box", ui-monospace, Menlo, Consolas, monospace;
+}
+
+:root {
+  --brand-ink: #160b1a;
+  --brand-aubergine: #301336;
+  --brand-plum: #5b2e66;
+  --brand-signal: #ff4b23;
+  --brand-signal-deep: #c83212;
+  --brand-signal-on-dark: #ff7959;
+  --brand-paper: #fbf8f3;
+  --brand-sand: #f2ece3;
+  --brand-lavender: #eae2f0;
+  --brand-line: #e3d9e5;
+  --brand-muted: #62506a;
+  --brand-on-dark: #f5eef6;
+  --brand-on-dark-muted: #bba9c2;
+
+  /* Paper. */
+  --color-fd-background: var(--brand-paper);
+  --color-fd-foreground: var(--brand-ink);
+  --color-fd-muted: var(--brand-sand);
+  --color-fd-muted-foreground: var(--brand-muted);
+  --color-fd-popover: var(--brand-paper);
+  --color-fd-popover-foreground: var(--brand-ink);
+  --color-fd-card: color-mix(in srgb, var(--brand-paper) 50%, var(--brand-sand));
+  --color-fd-card-foreground: var(--brand-ink);
+  --color-fd-border: var(--brand-line);
+  --color-fd-primary: var(--brand-aubergine);
+  --color-fd-primary-foreground: var(--brand-paper);
+  --color-fd-secondary: var(--brand-sand);
+  --color-fd-secondary-foreground: var(--brand-ink);
+  --color-fd-accent: var(--brand-lavender);
+  --color-fd-accent-foreground: var(--brand-aubergine);
+  --color-fd-ring: var(--brand-plum);
+  --docs-heading: var(--brand-aubergine);
+  --docs-link: var(--brand-signal-deep);
+
+  font-family: var(--font-sans);
+}
+
+/* Ink. */
+.dark {
+  --color-fd-background: var(--brand-ink);
+  --color-fd-foreground: var(--brand-on-dark);
+  --color-fd-muted: color-mix(in srgb, var(--brand-ink) 78%, var(--brand-plum));
+  --color-fd-muted-foreground: var(--brand-on-dark-muted);
+  --color-fd-popover: color-mix(in srgb, var(--brand-ink) 88%, var(--brand-plum));
+  --color-fd-popover-foreground: var(--brand-on-dark);
+  --color-fd-card: color-mix(in srgb, var(--brand-ink) 88%, var(--brand-plum));
+  --color-fd-card-foreground: var(--brand-on-dark);
+  --color-fd-border: color-mix(in srgb, var(--brand-ink) 55%, var(--brand-plum));
+  --color-fd-primary: var(--brand-lavender);
+  --color-fd-primary-foreground: var(--brand-ink);
+  --color-fd-secondary: color-mix(in srgb, var(--brand-ink) 78%, var(--brand-plum));
+  --color-fd-secondary-foreground: var(--brand-on-dark);
+  --color-fd-accent: color-mix(in srgb, var(--brand-ink) 60%, var(--brand-plum));
+  --color-fd-accent-foreground: var(--brand-on-dark);
+  --color-fd-ring: var(--brand-lavender);
+  --docs-heading: var(--brand-on-dark);
+  --docs-link: var(--brand-signal-on-dark);
+}
+/* Fumadocs' neutral theme gives the dark sidebar grey surfaces; keep it on ink. */
+.dark #nd-sidebar {
+  --color-fd-muted: color-mix(in srgb, var(--brand-ink) 78%, var(--brand-plum));
+  --color-fd-secondary: color-mix(in srgb, var(--brand-ink) 78%, var(--brand-plum));
+  --color-fd-muted-foreground: var(--brand-on-dark-muted);
+}
+
+body {
+  background: var(--color-fd-background);
+  color: var(--color-fd-foreground);
+}
+:focus-visible {
+  outline-color: var(--color-fd-ring);
+}
+
+/* Headings: Manrope, heavy and tight, in aubergine on paper. */
+.prose {
+  --tw-prose-headings: var(--docs-heading);
+  --tw-prose-links: var(--docs-link);
+}
+#nd-page h1 {
+  color: var(--docs-heading);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.prose :where(h2, h3) {
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+.prose a:not([data-card], .download-button) {
+  color: var(--docs-link);
+  text-decoration-color: color-mix(in srgb, var(--docs-link) 45%, transparent);
+}
+.prose a:not([data-card], .download-button):hover {
+  opacity: 1;
+  text-decoration-color: currentColor;
+}
+
+/* The lockup: primary on paper, reverse on ink. Its own margin keeps the
+   brand's clear space (the width of the signal tile) around it. */
+.docs-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.docs-brand img {
+  display: block;
+  width: 128px;
+  min-width: 96px;
+  height: auto;
+  margin: 4px 5px;
+}
+.docs-brand .docs-brand-dark,
+.dark .docs-brand .docs-brand-light {
+  display: none;
+}
+.dark .docs-brand .docs-brand-dark {
+  display: block;
+}
+.docs-brand-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-fd-muted-foreground);
+}

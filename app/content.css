@@ -92,11 +92,20 @@
   margin-top: 0.45rem;
   padding: 0.45rem 0.75rem;
   border-radius: 0.35rem;
-  background: var(--color-fd-primary);
-  color: var(--color-fd-background);
-  font-weight: 600;
+  /* A secondary button: a page can hold several, and signal is kept for one
+     accent per view, so downloads are aubergine on paper and plum on ink. */
+  background: var(--brand-aubergine);
+  color: var(--brand-paper);
+  font-weight: 700;
   text-decoration: none;
   font-size: 0.9rem;
+}
+.dark .download-button {
+  background: var(--brand-plum);
+  color: var(--brand-on-dark);
+}
+.download-button:hover {
+  text-decoration: underline;
 }
 .download-filename {
   display: inline-block;
