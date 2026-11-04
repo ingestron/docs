@@ -15,17 +15,12 @@ then [deploy the generated bundle](/docs/platforms/databricks#deploy).
 
 ## Platform configuration
 
-The current resolved Platform model supplies these defaults. This pack uses them
-when generating bundles; they are not a promise that other packs interpret every
-field the same way.
+Without a platform document, or where it leaves a setting out, the Databricks
+pack uses these defaults. Without `run_as`, the pipelines and jobs run as the
+identity that deploys the bundle, and without `schedule`, nothing runs on a
+schedule.
 
-| Setting                                                             | Default                                                                             |
-| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `mode`                                                              | `production` for environments named `prod` or `production`, otherwise `development` |
-| Compute                                                             | Serverless                                                                          |
-| `schedule`                                                          | None; when set, UTC and paused outside production unless overridden                 |
-| `manage.schemas`, `manage.tags`, `manage.comments`, `manage.checks` | `false`                                                                             |
-| `run_as`                                                            | The identity that deploys                                                           |
+<PlatformDefaults pack="databricks" />
 
 <Example name="platform-setup" file="platform.yaml" />
 
