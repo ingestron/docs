@@ -42,7 +42,10 @@ const lineStart = (text: string, offset: number) => text.lastIndexOf("\n", offse
  */
 export function pickPath(text: string, path: string): string | undefined {
   const doc = parseDocument(text);
-  if (doc.errors.length > 0) throw new Error(`the file does not parse: ${doc.errors[0]!.message}`);
+  const [error] = doc.errors;
+  // The parser's first line names the problem and where; the lines after it quote the file.
+  if (error)
+    throw new Error(`the file does not parse: ${error.message.split("\n")[0]!.replace(/:$/, "")}`);
   let node: unknown = doc.contents;
   let found: Pair<Node, Node> | Node | undefined;
   for (const part of pathParts(path)) {
@@ -63,9 +66,12 @@ export function pickPath(text: string, path: string): string | undefined {
     : [found?.range?.[0], found?.range?.[1]];
   if (start === undefined || end === undefined) return undefined;
   const from = lineStart(text, start);
-  // A key that opens a list item keeps its indentation, but not the item's dash.
+  // What precedes the node on its line becomes spaces, so the node keeps its
+  // column: a key that opens a list item loses the item's dash, and an item of
+  // a one-line list loses the key and the items before it. A block list item
+  // keeps its own dash.
   const lead = text.slice(from, start);
-  const indent = isPair(found) ? lead.replace(/[^\t ]/g, " ") : lead;
+  const indent = !isPair(found) && /^[\t ]*(- )*$/.test(lead) ? lead : lead.replace(/[^\t ]/g, " ");
   return (indent + text.slice(start, end)).trimEnd();
 }
 
