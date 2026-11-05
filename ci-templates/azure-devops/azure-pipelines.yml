@@ -7,7 +7,9 @@
 # Set up once, as https://docs.ingestron.io/docs/how-to/deploy-through-environments
 # explains:
 # - Azure DevOps environments named dev, test and prod. Add approvals to test
-#   and prod, and a branch control check to prod that allows only main.
+#   and prod, a branch control check to prod that allows only main, and an
+#   exclusive lock check to each, so runs deploy an environment one at a time,
+#   in order (each stage sets lockBehavior: sequential).
 # - For each environment, an Azure Resource Manager service connection that
 #   uses workload identity federation, and a variable group named
 #   ingestron-<environment> with the variables the template reads.
@@ -29,17 +31,18 @@ stages:
           - task: UseNode@1
             inputs:
               version: 22.x
-          - script: npm install -g ingestron@2
+          # An exact version: change it when you upgrade, as
+          # https://docs.ingestron.io/docs/how-to/upgrade#choose-the-version-you-run says.
+          - script: npm install -g ingestron@2.1.0
             displayName: Install Ingestron
           - script: ingestron check
             displayName: ingestron check
-          # Data Factory: Microsoft's build validates the factory, then writes
+          # Data Factory: Microsoft's export validates the factory, then writes
           # the ARM template and the pre- and post-deployment script to arm/.
           # It downloads its build tool from adf.azure.com.
           - script: |
               npm install --prefix "$(Agent.TempDirectory)/adf" @microsoft/azure-data-factory-utilities@1.0.3
               adf="$(Agent.TempDirectory)/adf/node_modules/@microsoft/azure-data-factory-utilities/lib/index"
-              node "$adf" validate build/adf/factory "$(ADF_DEV_FACTORY_ID)"
               node "$adf" export build/adf/factory "$(ADF_DEV_FACTORY_ID)" arm
             displayName: "Data Factory: build the template"
           # Every environment deploys these files, so prod gets the bytes dev
