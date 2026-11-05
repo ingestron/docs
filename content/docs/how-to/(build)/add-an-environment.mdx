@@ -37,10 +37,8 @@ with the values that differ between environments:
 
 <Example name="environments" file="build/databricks/databricks.yml" pick="targets.test" />
 
-On other platforms it is a parameter file, `build/adf/parameters/test.json`, a
-script, `build/synapse/environments/test.sql`, or a folder,
-`build/duckdb/test/`. [Generated files and ownership](/docs/concepts/generated-files#where-the-files-go)
-shows the whole layout.
+Other platforms add their own file or folder for it; see
+[Where the files go](/docs/concepts/generated-files#where-the-files-go).
 
 Only an environment named `dev` is in development mode; every other one,
 `test` included, is in production mode, and schedules run only in `prod` or
