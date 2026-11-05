@@ -1,0 +1,118 @@
+---
+title: Deploy the Databricks bundle
+description: What must exist first, deploying each environment's target by hand or from CI as one identity, and running the refresh.
+---
+
+Ingestron writes the bundle, as
+[Databricks](/docs/platforms/databricks#what-you-get) shows, and creates
+nothing in Databricks. This page deploys it, one environment at a time, and
+runs it.
+
+## Before you deploy [#prerequisites]
+
+You need the [Databricks CLI](https://docs.databricks.com/aws/en/dev-tools/cli/),
+v0.264.0 or later, which applies preset tags to pipelines.
+`ingestron request --env prod` lists what the bundle expects to exist:
+
+<Request name="retail" env="prod" sections={["Must exist before deploying"]} />
+
+With `manage` switches on, the request also says what each needs and gives the
+SQL to run once. See [Ask the platform team](/docs/how-to/ask-the-platform-team)
+for the whole request.
+
+## Deploy [#deploy]
+
+The folder is an ordinary Databricks bundle. Deploy one environment by its
+target, from `build/databricks`, signed in to that environment's workspace:
+
+```sh
+cd build/databricks
+databricks bundle validate -t dev
+databricks bundle deploy -t dev
+```
+
+Every environment deploys the same files, so the commit you tested in `dev` is
+the one `prod` runs. On the `adf-databricks` route, deploy the factory as well,
+as in [Deploy the factory](/docs/platforms/adf-deploy#deploy); the bundle does
+not start the ADF copies.
+
+### Deploy as one identity [#one-identity]
+
+A target's deployment state, which records the pipelines and jobs it created,
+is kept in the target's `root_path`. Without `workspace.root_path` in the
+platform, that is the deploying identity's own folder,
+`/Workspace/Users/<identity>/.bundle/<bundle>/<target>`. Another identity
+deploying the same target finds no state there and creates a second copy of
+every pipeline and job; in `prod`, both copies then run on their schedule.
+
+So deploy each environment as one identity, such as the service principal your
+pipeline uses, and give every target a shared `root_path` in `platform.yaml`
+before a second identity deploys it, as the `environments` example does:
+
+<Example name="environments" file="platform.yaml" pick="workspace" />
+
+A target that is already deployed under another `root_path` has its state
+there. Before the first deployment with the new path, bind each of its
+resources to it, as the identity that will deploy, from `build/databricks`:
+
+```sh
+databricks bundle deployment bind <key> <id> -t prod
+databricks bundle summary -t prod
+```
+
+Replace `<key>` with each key under `resources.jobs`, `resources.pipelines`
+and `resources.schemas` in `resources/`, and `<id>` with that resource's ID
+in the workspace, or `<catalog>.<schema>` for a schema. Binding recreates no
+data. `bundle summary` then shows the target's path and links each resource;
+check that each is the existing one before you deploy. See `deployment bind`
+in [bundle commands](https://docs.databricks.com/aws/en/dev-tools/cli/bundle-commands),
+which also says that `root_path` decides a deployment's identity (checked
+5 November 2026).
+
+### From CI [#deploy-from-ci]
+
+In a pipeline, each environment's stage installs the Databricks CLI at a
+pinned version and deploys that environment's target. From the GitHub Actions
+template:
+
+<Template
+  file="github-actions/deploy-environment.yml"
+  from="- uses: databricks/setup-cli"
+  to='databricks bundle deploy -t "$ENVIRONMENT"'
+/>
+
+The stage needs no Ingestron: it deploys the committed files, which
+`ingestron check` keeps up to date. A deploy that would delete a resource stops
+and asks; the template does not approve it.
+[Deploy through environments](/docs/how-to/deploy-through-environments) gives
+the whole pipeline, for GitHub Actions and Azure DevOps, with how each stage
+signs in.
+
+## Run and operate [#operate]
+
+If a refresh job is generated, run it so its ingestion, refresh and any
+contract tasks run in order. From `build/databricks`:
+
+```sh
+databricks bundle run retail_refresh -t dev
+```
+
+For your project, use the key under `resources.jobs` in its job file. Without
+a job, run the pipeline's key under `resources.pipelines` instead, not its
+display `name` or a file name. Read the run output and inspect the run in
+Databricks to confirm that its tasks succeeded; see the
+[bundle run instructions](https://docs.databricks.com/aws/en/dev-tools/bundles/work-tasks)
+(checked 28 October 2026).
+
+The schedule runs in production only; `ingestron request` lists the state of
+each schedule, so the platform team sees what the files say. When a deploy or
+a run fails, see [Troubleshooting](/docs/troubleshooting#databricks).
+
+## Next
+
+- [Deploy through environments](/docs/how-to/deploy-through-environments):
+  promote one commit from dev to prod, with approvals.
+- [Upgrade from 1.x to 2.0](/docs/how-to/upgrade#upgrade-to-2): the first
+  deployment of a bundle 1.x deployed.
+- [Databricks](/docs/platforms/databricks): what the bundle holds, and the
+  settings that shape it.

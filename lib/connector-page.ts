@@ -130,14 +130,14 @@ function byRoute(id: string, entry: ConnectorEntry, words: Record<string, string
   );
 }
 
-const windows = "[time window](/docs/platforms/adf#define-the-time-windows)";
+const windows = "[time window](/docs/platforms/adf-pipelines#define-the-time-windows)";
 
 /** How the source is reached, before the connection is written. */
 function access({ pack, connector }: ConnectorEntry): string[] {
   const vendor = `[${connector.title} in the ${packName(pack)} documentation](${connector.docs})`;
   if (pack === "adf")
     return [
-      `Prepare [source access, the runtime and credentials](/docs/platforms/adf#platform-prerequisites), then check the vendor's prerequisites for permissions, drivers, versions and authentication in ${vendor}.`,
+      `Prepare [source access, the runtime and credentials](/docs/platforms/adf-deploy#prerequisites), then check the vendor's prerequisites for permissions, drivers, versions and authentication in ${vendor}.`,
       "Name the runtime, Key Vault and landing storage in the platform's method settings; see [Runtime and Key Vault](/docs/platforms/adf#runtime-and-key-vault).",
     ];
   if (connector.method === "lakeflow-connect")

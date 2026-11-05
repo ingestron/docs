@@ -52,7 +52,7 @@ const written: Record<string, Written> = {
     choose: "Databricks can reach the source, and the tables live in Databricks.",
     afterLoad: "Nothing more. The Databricks pipeline that reads the source writes the tables.",
     deploy: "The Databricks CLI: `databricks bundle deploy -t <environment>`.",
-    deployAt: "/docs/platforms/databricks#deploy",
+    deployAt: "/docs/platforms/databricks-deploy#deploy",
     deployStep: "Deploy",
   },
   "adf-databricks": {
@@ -61,7 +61,7 @@ const written: Record<string, Written> = {
     afterLoad: "Databricks pipelines read the landed files into tables, on their own schedule.",
     deploy:
       "An ARM deployment of the factory for each environment, and `databricks bundle deploy -t <environment>`.",
-    deployAt: "/docs/platforms/adf#deploy",
+    deployAt: "/docs/platforms/adf-deploy#deploy",
     deployStep: "Deploy",
   },
   "adf-synapse": {

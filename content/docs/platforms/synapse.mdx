@@ -170,7 +170,7 @@ permissions.
 />
 
 The same request lists what ADF needs first, as in
-[Before you deploy](/docs/platforms/adf#prerequisites). Run the views with
+[Before you deploy](/docs/platforms/adf-deploy#prerequisites). Run the views with
 sqlcmd (Go), which signs in with Microsoft Entra ID; install it with
 `winget install sqlcmd` or `brew install sqlcmd`, or from its
 [releases](https://github.com/microsoft/go-sqlcmd/releases). See
@@ -182,7 +182,7 @@ request.
 <OldAnchor id="generate-then-run-the-views" />
 
 Run `ingestron apply`, then deploy the factory as in
-[Azure Data Factory](/docs/platforms/adf#deploy). Then run the environment's
+[Azure Data Factory](/docs/platforms/adf-deploy#deploy). Then run the environment's
 script with sqlcmd (Go), from `build/synapse`, signed in with `az login`, here
 for `dev`:
 
@@ -202,8 +202,8 @@ for the other ways to sign in (checked 5 November 2026).
 
 GitHub's Ubuntu runners and Azure DevOps' Ubuntu agents have no sqlcmd, so
 each environment's stage installs sqlcmd (Go) at a pinned version, checked by
-its SHA-256, then runs the environment's script, signed in as the
-environment's identity. From the GitHub Actions template:
+its SHA-256, then runs the environment's script. From the GitHub Actions
+template:
 
 <Template
   file="github-actions/deploy-environment.yml"

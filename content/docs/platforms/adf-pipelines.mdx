@@ -1,11 +1,11 @@
 ---
 title: Shape ADF pipelines
-description: Choose how pipelines copy their tables, retry failed copies, add audit columns and file resources in the factory.
+description: Schedule the copies, choose how pipelines copy their tables, retry failed copies, add audit columns and file resources in the factory.
 ---
 
-Your standard decides how the generated pipelines look in ADF Studio. Every
-setting on this page is optional: without them, each pipeline has one Copy
-activity per table. This page applies to every route that starts with ADF; set
+Your standard decides how the generated pipelines look in ADF Studio, and
+when they run. Every setting on this page is optional: without them, each
+pipeline has one Copy activity per table, every 24 hours. This page applies to every route that starts with ADF; set
 up the copies first with [Azure Data Factory](/docs/platforms/adf).
 
 ## What Ingestron writes [#what-you-get]
@@ -64,6 +64,45 @@ Run `ingestron apply` and open the pipeline in ADF Studio, or read the files
 above, to see the result. Every value of these settings is in the
 [ADF pack reference](/docs/reference/packs/adf#adf-copy-pattern).
 
+### Define the time windows [#define-the-time-windows]
+
+Every ADF method's copies run from tumbling window triggers, which divide time into
+consecutive, non-overlapping windows. `start` is the first window's start, in
+UTC, and `every` sets each window's length. A full selection copies again each
+window; an incremental copy filters the watermark column by the window's
+bounds; file copies in `new` mode select the files changed in it.
+
+<SettingsSections pack="adf" method="adf-copy" include={["every", "start"]} level={4} />
+
+### Retry and pause [#retry-and-pause]
+
+A retry repeats a failed window; it does not move that window's bounds.
+Triggers start only in `prod` or `production`; in every other environment
+they stay stopped. `paused` keeps a trigger stopped there too, and
+`paused: false` starts one elsewhere. Without it, the trigger follows the
+platform's `schedule.paused`; see the
+[platform defaults](/docs/reference/packs/adf#platform-configuration).
+
+<SettingsSections pack="adf" method="adf-copy" include={["retries", "paused"]} level={4} />
+
+To stop only the copies, for example while the source database is down for
+maintenance, set `paused: true` under `settings.adf-copy` in the platform,
+beside the method's other settings, or under the method your flows use.
+
+`paused: true` in the platform's `schedule` stops the Databricks refresh job
+and the triggers together; see
+[Refresh on a schedule](/docs/platforms/databricks#schedule). On the
+`adf-databricks` route, ADF and Databricks run on their own schedules. On
+`adf-duckdb`, ADF can start the DuckDB job after the copies; see
+[Run DuckDB in Azure](/docs/platforms/duckdb-in-azure).
+
+### Tables that share a schedule
+
+SQL-family tables in one connection and source database share their runtime,
+encryption, schedule, retries and paused state. File tables in one connection
+share their runtime and schedule. Give tables that need their own settings
+separate connections. Native full-copy sources get a pipeline per table.
+
 ### Copy every table with one ForEach
 
 `pattern: foreach` gives each connection's pipeline one ForEach activity,
@@ -120,7 +159,7 @@ The tables of one pipeline share `pattern`, `parallel`, `activity` and
 No generated file holds a value ADF would refuse: a `timeout` under ADF's own
 minimum is reported as a settings problem. These retries happen inside the
 run; `retries` at the method's top level still retries the whole window from
-the trigger (see [Retry and pause](/docs/platforms/adf#retry-and-pause)). With
+the trigger (see [Retry and pause](/docs/platforms/adf-pipelines#retry-and-pause)). With
 [`after_copy`](/docs/platforms/duckdb-in-azure#start-it-after-the-copies),
 window retries move onto the copies, and your `activity` values
 win.
@@ -214,7 +253,7 @@ Where each name goes, which tables share a resource and safe renames are in
 
 - [ADF resource names](/docs/how-to/name-things-your-way#adf-resource-names):
   name each linked service, dataset, pipeline and trigger.
-- [Deploy the factory](/docs/platforms/adf#deploy): build the ARM template
+- [Deploy the factory](/docs/platforms/adf-deploy#deploy): build the ARM template
   and deploy it to each environment's factory.
 - [Plan, apply and review](/docs/how-to/plan-and-generate): see what a change
   of settings does to each pipeline before you write it.

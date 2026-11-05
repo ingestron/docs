@@ -42,7 +42,7 @@ describe("platforms/adf", () => {
   const page = read("platforms/adf.mdx");
 
   it("lists the ADF prerequisites the platform request prints", () => {
-    const prerequisites = section(page, "## Before you deploy");
+    const prerequisites = section(read("platforms/adf-deploy.mdx"), "## Before you deploy");
     const written = /`(ingestron request [^`]+)`/.exec(prerequisites);
     expect(written, "the request command, in the prose").not.toBeNull();
     // The page shows the request's last section, rendered from the starter.
@@ -74,11 +74,16 @@ describe("platforms/adf", () => {
     expect(cli(cwd, ["check"]).code).toBe(0);
   });
 
-  it("stops only the copies with the pause fragment, in the starter's method", () => {
-    const [fragment] = fences(section(page, "### Retry and pause"), "yaml");
+  it("stops only the copies with paused under the method's settings, as Shape ADF pipelines says", () => {
+    const retry = section(read("platforms/adf-pipelines.mdx"), "### Retry and pause").replace(
+      /\s+/g,
+      " ",
+    );
+    expect(retry).toContain("set `paused: true` under `settings.adf-copy` in the platform");
+    const fragment = "settings:\n  adf-copy:\n    paused: true\n";
     const cwd = copy("private-sql-server");
     const method = Object.keys(parse(readFileSync(join(cwd, "platform.yaml"), "utf8")).settings);
-    expect(Object.keys(parse(fragment!).settings)).toEqual(method);
+    expect(method).toEqual(["adf-copy"]);
     const parameters = () =>
       JSON.parse(readFileSync(join(cwd, "out/adf/parameters/prod.json"), "utf8")).parameters;
     expect(cli(cwd, ["apply", "--no-diff", "--out", join(cwd, "out")]).code).toBe(0);
@@ -95,7 +100,7 @@ describe("platforms/adf", () => {
   });
 
   it("deploys with each environment's parameter file, in the order the CI template uses", () => {
-    const deploy = section(page, "## Deploy");
+    const deploy = section(read("platforms/adf-deploy.mdx"), "## Deploy");
     const [build] = fences(deploy, "sh");
     expect(build).toContain("@microsoft/azure-data-factory-utilities@1.0.3");
     expect(build).toContain("export build/adf/factory <dev factory resource ID> arm");
@@ -205,7 +210,7 @@ describe("how-to/deploy-through-environments", () => {
     ]);
     for (const { file, from, to } of templates)
       expect(readTemplateExtract(file, from, to), `${file} › ${from}`).not.toBe("");
-    for (const platform of ["adf", "databricks", "synapse", "duckdb-in-azure"]) {
+    for (const platform of ["adf-deploy", "databricks-deploy", "synapse", "duckdb-in-azure"]) {
       expect(page).toContain(`(/docs/platforms/${platform}#deploy)`);
       expect(section(read(`platforms/${platform}.mdx`), "### From CI")).toContain(
         "(/docs/how-to/deploy-through-environments)",
@@ -248,11 +253,11 @@ describe("reference/versions", () => {
     const github = template("github-actions/deploy-environment.yml");
     const build = template("github-actions/deploy.yml");
     const adf = /@microsoft\/azure-data-factory-utilities@([\d.]+)/.exec(build)![1]!;
-    const databricks = /databricks\/setup-cli@(v[\d.]+)/.exec(github)![1]!;
+    const databricks = /databricks\/setup-cli@[0-9a-f]{40} # (v[\d.]+)/.exec(github)![1]!;
     const sqlcmd = /go-sqlcmd\/releases\/download\/(v[\d.]+)\//.exec(github)![1]!;
     expect(tools).toContain(`\`@microsoft/azure-data-factory-utilities\` ${adf}`);
     expect(tools).toContain(`Databricks CLI ${databricks}`);
     expect(tools).toContain(`sqlcmd (Go) ${sqlcmd}`);
-    expect(tools).toContain("`ingestron@2`");
+    expect(tools).toContain("`ingestron@2.1.0`");
   });
 });

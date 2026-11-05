@@ -208,7 +208,7 @@ The template outputs the job's resource ID, `jobId`, for `after_copy`.
 <OldAnchor id="deploy-the-sql" />
 
 Run `ingestron apply`, deploy the factory as in
-[Azure Data Factory](/docs/platforms/adf#deploy), then copy the environment's
+[Azure Data Factory](/docs/platforms/adf-deploy#deploy), then copy the environment's
 DuckDB folder to the folder `sqlUrl` names, here for `dev`:
 
 ```sh
@@ -231,8 +231,7 @@ here, is never deployed.
 ### From CI [#deploy-from-ci]
 
 Each environment's stage deploys the factory, then uploads that environment's
-folder, signed in as the environment's identity. From the GitHub Actions
-template:
+folder. From the GitHub Actions template:
 
 <Template
   file="github-actions/deploy-environment.yml"

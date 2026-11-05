@@ -200,82 +200,24 @@ The schedule runs only in `prod` or `production`; set `paused` in the
 `schedule` to change that. On the `adf-databricks` route, `paused: true` in the
 platform's `schedule` stops both the job and the Data Factory triggers; to
 stop only the copies, see
-[Retry and pause](/docs/platforms/adf#retry-and-pause).
+[Retry and pause](/docs/platforms/adf-pipelines#retry-and-pause).
 
 The tables themselves are shaped by the flows and the standard:
 [Keep a table current](/docs/how-to/keep-a-table-current),
 [Write a transform](/docs/how-to/write-a-transform) and
 [Check data quality](/docs/how-to/add-quality-checks).
 
-## Before you deploy [#prerequisites]
+## Deploy and run [#deploy]
 
-You need the [Databricks CLI](https://docs.databricks.com/aws/en/dev-tools/cli/),
-v0.264.0 or later, which applies preset tags to pipelines. Ingestron creates
-nothing in Databricks. `ingestron request --env prod` lists what the bundle
-expects to exist:
+<OldAnchor id="prerequisites" />
+<OldAnchor id="deploy-from-ci" />
+<OldAnchor id="operate" />
 
-<Request name="retail" env="prod" sections={["Must exist before deploying"]} />
-
-With `manage` switches on, the request also says what each needs and gives the
-SQL to run once. See [Ask the platform team](/docs/how-to/ask-the-platform-team)
-for the whole request.
-
-## Deploy [#deploy]
-
-The folder is an ordinary Databricks bundle. Deploy one environment by its
-target, from `build/databricks`, signed in to that environment's workspace:
-
-```sh
-cd build/databricks
-databricks bundle validate -t dev
-databricks bundle deploy -t dev
-```
-
-Every environment deploys the same files, so the commit you tested in `dev` is
-the one `prod` runs. The bundle's name, resource keys and target names are the
-project's and its environments', so each target keeps its own deployment
-state. On the `adf-databricks` route, deploy the factory as well, as in
-[Azure Data Factory](/docs/platforms/adf#deploy); the bundle does not start the
-ADF copies.
-
-### From CI [#deploy-from-ci]
-
-In a pipeline, each environment's stage installs the Databricks CLI at a
-pinned version and deploys that environment's target. From the GitHub Actions
-template:
-
-<Template
-  file="github-actions/deploy-environment.yml"
-  from="- uses: databricks/setup-cli"
-  to='databricks bundle deploy -t "$ENVIRONMENT"'
-/>
-
-`github-oidc` signs in as the environment's service principal, with no
-secret. The stage needs no Ingestron: it deploys the committed files, which
-`ingestron check` keeps up to date.
-[Deploy through environments](/docs/how-to/deploy-through-environments)
-gives the whole pipeline, for GitHub Actions and Azure DevOps, with approvals
-between the stages.
-
-## Run and operate [#operate]
-
-If a refresh job is generated, run it so its ingestion, refresh and any
-contract tasks run in order. From `build/databricks`:
-
-```sh
-databricks bundle run retail_refresh -t dev
-```
-
-For your project, use the key under `resources.jobs` in its job file. Without
-a job, run the pipeline's key under `resources.pipelines` instead, not its
-display `name` or a file name. Read the run output and inspect the run in
-Databricks to confirm that its tasks succeeded; see the
-[bundle run instructions](https://docs.databricks.com/aws/en/dev-tools/bundles/work-tasks)
-(checked 28 October 2026).
-
-The schedule runs in production only; `ingestron request` lists the state of
-each schedule, so the platform team sees what the files say. When a deploy or
-a run fails, see [Troubleshooting](/docs/troubleshooting#databricks).
+Deploy the bundle with the Databricks CLI, one environment's target at a time,
+from `build/databricks`: `databricks bundle deploy -t <environment>`.
+[Deploy the Databricks bundle](/docs/platforms/databricks-deploy) lists what
+must exist first, deploys by hand or [from CI](/docs/platforms/databricks-deploy#deploy-from-ci)
+as one identity, and runs the refresh.
 
 ## Limits [#limits]
 
@@ -294,8 +236,8 @@ a run fails, see [Troubleshooting](/docs/troubleshooting#databricks).
 
 ## Next
 
-- [Deploy through environments](/docs/how-to/deploy-through-environments):
-  promote one commit from dev to prod, with approvals.
+- [Deploy the Databricks bundle](/docs/platforms/databricks-deploy): what
+  must exist first, and each environment's deployment.
 - [Add a source and its tables](/docs/how-to/add-a-source): another table, or
   another source, in the same project.
 - [Databricks pack](/docs/reference/packs/databricks): every setting, the

@@ -6,8 +6,10 @@
     "duckdb",
     "duckdb-in-azure",
     "databricks",
+    "databricks-deploy",
     "synapse",
     "adf",
+    "adf-deploy",
     "adf-pipelines",
     "landing-only"
   ]
