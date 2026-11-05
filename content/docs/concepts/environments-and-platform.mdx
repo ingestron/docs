@@ -5,7 +5,8 @@ description: Reuse one project's definitions with different values and shared in
 
 An environment gives the same project another set of values, such as `dev`,
 `test` and `prod`. It does not change the tools or create anything in the
-cloud. Plan and generate each environment on its own or all together.
+cloud. Every environment is generated together, into one set of files per
+platform that a deployment pipeline promotes from one environment to the next.
 
 ## Values that differ
 
@@ -43,14 +44,28 @@ specific to each platform, and not every platform uses each one. See
 and [ADF runtime and Key Vault](/docs/platforms/adf#runtime-and-key-vault) for
 their effects.
 
-## Separate generated output
+## One set of files for every environment [#one-set-of-files]
 
-The default output is `build/<environment>/`. With several packs, each pack
-gets its own subfolder. Ingestron fills in your values when it generates, but
-some files still hold secret references, expressions or parameters that the
-platform fills in when it runs. Generating never reads a secret or tests the
-deployed infrastructure.
+<OldAnchor id="separate-generated-output" />
 
-Use [Add an environment](/docs/how-to/add-an-environment) to create another environment,
-and compare the resolved choices before deployment. [Generated files and ownership](/docs/concepts/generated-files)
-explains how Ingestron protects each output folder.
+Ingestron fills in each environment's values when it generates, then writes
+each platform's files once for every environment: a value that differs between
+environments becomes a parameter of the bundle, the factory or the Synapse
+script, set for each environment, and everything else is written once. So
+environments may differ only in values; a table or resource present in some
+environments only is
+[`ENVIRONMENTS_DIFFER`](/docs/reference/errors#ENVIRONMENTS_DIFFER).
+[Generated files and ownership](/docs/concepts/generated-files#where-the-files-go)
+shows where each platform's files go.
+
+Some values are not known until deployment, such as a storage account each
+stage of your pipeline supplies. Write them as `${envvar:NAME}`: for
+Databricks, Data Factory and Synapse they become values the deploying pipeline
+supplies, not values read when generating; see
+[Read an environment variable](/docs/concepts/yaml-references#read-an-environment-variable).
+Generating never reads a secret or tests the deployed infrastructure.
+
+Use [Add an environment](/docs/how-to/add-an-environment) to create another
+environment and compare the resolved choices, and
+[Deploy through environments](/docs/how-to/deploy-through-environments) to
+deploy them in turn.

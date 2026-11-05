@@ -1,17 +1,60 @@
 ---
 title: Generated files and ownership
-description: Where Ingestron writes, how it protects your edits, and how to check output in CI.
+description: Where Ingestron writes each platform's files, how it protects your edits, and how to check output in CI.
 ---
 
-Ingestron writes one folder per environment, `build/<environment>/` by
-default. When a standard uses several packs, each pack gets its own folder
-inside it, such as `build/dev/databricks/` and `build/dev/adf/`.
+Ingestron writes to an output folder, `build/` by default, with one folder for
+each platform. Each holds that platform's files for every environment, laid
+out as its own CI/CD tools expect.
+
+## Where the files go [#where-the-files-go]
+
+A project's files are in the same place whether its standard lists one pack or
+several, so adding a second pack never moves the first one's files:
+
+```text kind="plain"
+build/
+  databricks/        one bundle: databricks.yml with a target per environment,
+                     resources/, src/<pipeline>/, tasks/ and prerequisites/<environment>.sql
+  adf/               one factory: factory/ (the folder Microsoft's build reads)
+                     and parameters/<environment>.json
+  synapse/           views.sql and environments/<environment>.sql
+  duckdb/            a folder per environment: <environment>/run.sql and tables/
+  products/          a folder per environment of data product passports
+```
+
+- **Databricks, Azure Data Factory and Synapse** get one set of files for every
+  environment. What is the same in every environment is written once, as it
+  is; a value that differs is a bundle variable, an ARM template parameter or
+  a SQLCMD variable, set in each environment's target, parameter file or
+  script. A reviewer reads the resources once, and the per-environment values
+  in one place.
+- **DuckDB** has no deployment of its own to promote, so each environment it
+  runs gets its own folder, whose SQL differs only in where the files are.
+- **Passports** describe one environment's tables, so each environment has its
+  own.
+
+A platform gets a folder only when some environment uses it. An environment
+that runs on DuckDB alone, such as a laptop environment with
+`runs-on: duckdb`, is not a target of the Databricks bundle or the factory.
+
+Environments may differ only in values, such as names, paths and hosts. A
+table built in some environments only, or a resource name that differs, is
+[`ENVIRONMENTS_DIFFER`](/docs/reference/errors#ENVIRONMENTS_DIFFER). Each
+platform page's [What Ingestron writes](/docs/platforms/databricks#what-you-get)
+section shows its files, and
+[Deploy through environments](/docs/how-to/deploy-through-environments) deploys
+them, one environment after another.
+
+## What protects your edits [#what-protects-your-edits]
 
 Generated SQL, Python and YAML files start with a comment saying where they
 came from and not to edit them. JSON files, such as the Azure Data Factory
-resources, cannot hold comments. Each folder also holds `.generated.json`,
-which records every generated file, whatever its format. With it Ingestron
-knows:
+resources, cannot hold comments. Each platform's folder also holds
+`.generated.json`, which records every generated file, whatever its format.
+For Data Factory it sits beside `factory/`, not in it, because Microsoft warns
+that unrelated files in a factory's folder can stop it loading. With it
+Ingestron knows:
 
 - which files it may update, and which it should delete when a table goes
   away;
@@ -47,9 +90,11 @@ What names Ingestron in the files does nothing when they run:
 If you stop using Ingestron, keep the files and edit them yourself; you can
 delete each folder's `.generated.json`. While a project still generates a
 folder, keep its `.generated.json`: without it, `ingestron plan` reports every
-file that differs from what it would generate as a conflict. When a project stops generating a folder, for
-example after you remove an environment, `ingestron check` says so; delete that
-folder's `.generated.json` to keep its files as your own, as
+file that differs from what it would generate as a conflict. When a project
+stops generating a folder, for example after you remove the last table of a
+platform, or after upgrading from the folder per environment of version 1,
+`ingestron check` says so; delete that folder's `.generated.json` to keep its
+files as your own, as
 [Check generated files in CI](/docs/how-to/check-in-ci) shows.
 
 The one exception is [Run DuckDB in Azure](/docs/platforms/duckdb-in-azure).
@@ -62,7 +107,7 @@ it, as that page shows.
 `ingestron apply` writes one output folder at a time. A folder with a
 conflict is left as it was, while the others are still written, and the
 command ends with a line such as
-`Applied: dev. Not applied: prod.` and exits with `1`.
+`Applied: databricks. Not applied: adf.` and exits with `1`.
 
 If writing a file fails, Ingestron puts back the files it already changed in
 that folder and says `Nothing was changed.` If it cannot put one back, or
