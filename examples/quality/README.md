@@ -1,7 +1,7 @@
 # Quality
 
 The standard sets `quality.required: drop` and `quality.default: warn`.
-In [the generated table](build/dev/src/iot/bronze/readings.sql):
+In [the generated table](build/databricks/src/iot/bronze/readings.sql):
 
 | Check                                    | From                             | Action                                         |
 | ---------------------------------------- | -------------------------------- | ---------------------------------------------- |
