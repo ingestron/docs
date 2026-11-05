@@ -67,28 +67,30 @@ describe("reference/cli", () => {
     expect(apply).toBe("ingestron apply --definitions shop --out shop/build");
     const { parent, shop } = shopIn("duckdb");
     expect(cli(parent, args(apply)).code).toBe(0);
-    expect(existsSync(join(shop, "build", "dev"))).toBe(true);
+    expect(existsSync(join(shop, "build", "duckdb", "dev"))).toBe(true);
     expect(cli(parent, args(check)).code).toBe(0);
     // With --definitions alone, the output goes under the folder you ran it from.
     const alone = shopIn("duckdb");
     expect(cli(alone.parent, ["apply", "--definitions", "shop"]).code).toBe(0);
-    expect(existsSync(join(alone.parent, "build", "dev"))).toBe(true);
+    expect(existsSync(join(alone.parent, "build", "duckdb", "dev"))).toBe(true);
     expect(existsSync(join(alone.shop, "build"))).toBe(false);
   });
 
-  it("limits the work to the named environments, and plans without line differences on request", () => {
+  it("limits compare and request to the named environments, refuses --env elsewhere, and plans without line differences on request", () => {
     const project = copy("environments");
-    const all = cli(project, ["plan"]);
-    const dev = cli(project, ["plan", "--env", "dev"]);
+    const all = cli(project, ["request"]);
+    const dev = cli(project, ["request", "--env", "dev"]);
     expect(all.code).toBe(0);
     expect(dev.code).toBe(0);
-    expect(all.output).toContain("build/test");
-    expect(dev.output).not.toContain("build/test");
+    expect(all.output).toContain("# Platform request: finance (test)");
+    expect(dev.output).not.toContain("# Platform request: finance (test)");
+    for (const command of ["plan", "apply", "check"])
+      expect(cli(project, [command, "--env", "dev"]).code, command).toBe(2);
     // An update has line differences; --no-diff lists the file without them.
-    expect(cli(project, ["apply", "--env", "dev", "--no-diff"]).code).toBe(0);
+    expect(cli(project, ["apply", "--no-diff"]).code).toBe(0);
     merge(join(project, "project.yaml"), "values:\n  landing: /Volumes/other/finance/files");
-    const withDiff = cli(project, ["plan", "--env", "dev"]).output;
-    const withoutDiff = cli(project, ["plan", "--env", "dev", "--no-diff"]).output;
+    const withDiff = cli(project, ["plan"]).output;
+    const withoutDiff = cli(project, ["plan", "--no-diff"]).output;
     expect(withoutDiff.length).toBeLessThan(withDiff.length);
   });
 
@@ -102,13 +104,13 @@ describe("reference/cli", () => {
     expect(cli(project, ["--no-such-option"]).code).toBe(2);
   });
 
-  it("writes each pack of a standard to a folder inside the environment's, as the output section says", () => {
-    expect(section(page, "## Output")).toContain("`build/dev/databricks/`");
+  it("writes each pack of a standard to a folder of its own, as the output section says", () => {
+    expect(section(page, "## Output")).toContain("`build/databricks/`");
     const project = copy("private-sql-server");
-    expect(cli(project, ["apply", "--no-diff"]).code).toBe(0);
-    expect(readdirSync(join(project, "build", "dev"))).toEqual(
-      expect.arrayContaining(["adf", "databricks"]),
-    );
+    const applied = cli(project, ["apply", "--no-diff"]);
+    expect(applied.code).toBe(0);
+    expect(applied.output).toContain("databricks → build/databricks (dev, prod)");
+    expect(readdirSync(join(project, "build")).sort()).toEqual(["adf", "databricks"]);
   });
 
   it("renders every command and option from the CLI", () => {

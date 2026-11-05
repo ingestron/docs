@@ -3,8 +3,8 @@ title: Command line
 description: The ingestron command's commands, options, output and exit codes.
 ---
 
-The `ingestron` command reads a project folder and writes each environment's
-files. [Install it](/docs/start/install) first. `ingestron init` creates a
+The `ingestron` command reads a project folder and writes each platform's
+files, for every environment. [Install it](/docs/start/install) first. `ingestron init` creates a
 project; see [Create a project](/docs/how-to/start-from-a-template). Then
 `ingestron plan` and `ingestron apply` are the everyday loop; see
 [Plan, apply and review](/docs/how-to/plan-and-generate). In CI, run
@@ -17,7 +17,9 @@ project; see [Create a project](/docs/how-to/start-from-a-template). Then
 Run the command from the folder that holds `project.yaml`. It reads the
 project there and writes to `build` there. Four options adjust the run:
 
-- `--env dev` limits the work to one environment; repeat it for more.
+- `--env dev` limits `compare` and `request` to one environment; repeat it
+  for more. `plan`, `apply` and `check` always work on every environment
+  together, and refuse it.
 - `--definitions <folder>` reads a project that is not the current folder.
 - `--out <folder>` writes somewhere other than `build`.
 - `--no-diff` lists changed files without their line differences.
@@ -36,18 +38,18 @@ ran it from, not in `shop`.
 
 ## Output
 
-Each environment is written to its own folder under `--out`, such as
-`build/dev/`. When a standard uses several packs, each pack writes to a
-folder inside it, such as `build/dev/databricks/`. See
-[Generated files and ownership](/docs/concepts/generated-files).
+Each platform is written to its own folder under `--out`, such as
+`build/databricks/`, with every environment's files in it; `plan` and `apply`
+print one block for each, such as `databricks → build/databricks (dev, prod)`.
+See [Where the files go](/docs/concepts/generated-files#where-the-files-go).
 
 ## Exit codes
 
-| Code | Means                                                                         |
-| ---- | ----------------------------------------------------------------------------- |
-| `0`  | Success.                                                                      |
-| `1`  | Problems in the definitions, or output that is not up to date or in conflict. |
-| `2`  | A mistake in the command, such as an unknown option.                          |
+| Code | Means                                                                                                                          |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `0`  | Success. Warnings, such as a pack's notice, do not change it.                                                                  |
+| `1`  | Problems in the definitions, or output that is not up to date or in conflict.                                                  |
+| `2`  | A mistake in the command, such as an unknown option or `--env` given to `plan`, or a pack that cannot be loaded (`PACK_LOAD`). |
 
 ## Editor schemas
 
@@ -58,8 +60,10 @@ folder inside it, such as `build/dev/databricks/`. See
 ## Use the command from code
 
 The CLI package is also a library: `run` takes the same arguments as the
-command, and `projectSources`, `projectRoutes` and `projectRecipe` return the
-sources, routes and questions that `init` and **Ingestron: New project** offer.
+command, `generatedOutputs` gives every output folder's files as `plan` would
+write them, and `projectSources`, `projectRoutes` and `projectRecipe` return
+the sources, routes and questions that `init` and **Ingestron: New project**
+offer.
 The
 [`@ingestron/cli` README](https://github.com/ingestron/ingestron/tree/main/packages/cli#project-builder-api)
 describes them.
