@@ -1,7 +1,7 @@
 apiVersion: ingestron.io/v1
 kind: Standard
 id: northwind
-packs: [databricks@1, adf@1] # Databricks names, types and keeps the tables; ADF copies
+packs: [databricks@2, adf@2] # Databricks names, types and keeps the tables; ADF copies
 ingest:
   default: adf-copy
   settings:

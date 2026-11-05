@@ -2,8 +2,8 @@ apiVersion: ingestron.io/v1
 kind: Standard
 id: native
 packs:
-  - databricks@1
-  - adf@1
+  - databricks@2
+  - adf@2
 ingest:
   settings:
     adf-table:
@@ -16,7 +16,6 @@ ingest:
 naming:
   catalog: sales_{{ environment }}
   schema: "{{ layer }}"
-  pipeline: "{{ project }}_{{ environment }}"
 store:
   allowed:
     - streaming-table
