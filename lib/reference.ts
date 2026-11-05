@@ -132,39 +132,20 @@ export function shown(value: unknown): string {
 }
 
 /**
- * The Platform fields each pack reads, in the order the reference lists
- * them: the Databricks pack builds its bundle from all of them. Of the
- * Platform's fields, the ADF pack reads only `schedule.paused`, after a
- * trigger's own `paused` setting. Without either, pack-adf 1.x falls back to
- * `mode` and 2.0 to the environment's name, so `mode` is not listed.
- */
-const platformFieldsRead: Record<string, string[]> = {
-  databricks: [
-    "mode",
-    "compute.serverless",
-    "schedule.timezone",
-    "schedule.paused",
-    "manage.schemas",
-    "manage.tags",
-    "manage.comments",
-    "manage.checks",
-  ],
-  adf: ["schedule.paused"],
-};
-
-/**
- * A pack's platform defaults: each Platform field it reads, with the default
- * the field's description gives, as the editor shows it. Throws for a pack
- * that reads none, or a field whose description states no default.
+ * A pack's platform defaults: each Platform field the pack declares it reads
+ * (its `platformFields`), in the pack's order, with the default the field's
+ * description states. Fields with no default, such as `run_as`, are left
+ * out. Throws for a pack that reads no Platform field, or for a field the
+ * Platform document does not describe.
  */
 export function platformDefaults(pack: string): { field: FieldInfo; default: string }[] {
-  const read = platformFieldsRead[pack];
-  if (!read) throw new Error(`The ${pack} pack reads no platform defaults.`);
+  const read = packs.find((candidate) => candidate.id === pack)?.platformFields;
+  if (!read?.length) throw new Error(`The ${pack} pack reads no platform defaults.`);
   const fields = documentReference("Platform");
-  return read.map((path) => {
+  return read.flatMap((path) => {
     const field = fields.find((candidate) => fieldPath(candidate) === path);
-    const stated = /Default: (.+?)\.?$/.exec(field?.description ?? "")?.[1];
-    if (!field || !stated) throw new Error(`The Platform field "${path}" states no default.`);
-    return { field, default: stated };
+    if (!field) throw new Error(`The Platform document has no field "${path}".`);
+    const stated = /Default: (.+?)\.?$/.exec(field.description ?? "")?.[1];
+    return stated ? [{ field, default: stated }] : [];
   });
 }
