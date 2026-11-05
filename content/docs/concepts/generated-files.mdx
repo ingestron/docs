@@ -12,16 +12,13 @@ out as its own CI/CD tools expect.
 A project's files are in the same place whether its standard lists one pack or
 several, so adding a second pack never moves the first one's files:
 
-```text kind="plain"
-build/
-  databricks/        one bundle: databricks.yml with a target per environment,
-                     resources/, src/<pipeline>/, tasks/ and prerequisites/<environment>.sql
-  adf/               one factory: factory/ (the folder Microsoft's build reads)
-                     and parameters/<environment>.json
-  synapse/           views.sql and environments/<environment>.sql
-  duckdb/            a folder per environment: <environment>/run.sql and tables/
-  products/          a folder per environment of data product passports
-```
+| Folder              | What it holds                                                                                                                      |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `build/databricks/` | One bundle: `databricks.yml` with a target per environment, `resources/`, `src/<pipeline>/`, and `prerequisites/<environment>.sql` |
+| `build/adf/`        | One factory: `factory/`, the folder Microsoft's build reads, and `parameters/<environment>.json`                                   |
+| `build/synapse/`    | `views.sql`, and `environments/<environment>.sql`                                                                                  |
+| `build/duckdb/`     | A folder per environment, each with `run.sql` and `tables/`                                                                        |
+| `build/products/`   | A folder per environment, with its data product passports                                                                          |
 
 - **Databricks, Azure Data Factory and Synapse** get one set of files for every
   environment. What is the same in every environment is written once, as it

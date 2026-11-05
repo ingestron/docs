@@ -59,12 +59,12 @@ describe("examples", () => {
   });
 
   it("generates a sample's output to show a generated file", () => {
-    expect(readExampleFile("minimal", "build/dev/databricks.yml")).toContain("bundle:");
+    expect(readExampleFile("minimal", "build/databricks/databricks.yml")).toContain("bundle:");
   });
 
   it("names the example and file when a generated file is missing", () => {
-    expect(() => readExampleFile("minimal", "build/dev/nope.yml")).toThrow(
-      'Example "minimal" has no file "build/dev/nope.yml".',
+    expect(() => readExampleFile("minimal", "build/databricks/nope.yml")).toThrow(
+      'Example "minimal" has no file "build/databricks/nope.yml".',
     );
   });
 

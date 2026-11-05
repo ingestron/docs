@@ -226,7 +226,7 @@ it("starts each kind of reader on the home page, before its value story", () => 
 it("runs the first project with no cloud account, source or deployment", () => {
   const first = read("start/first-project.mdx");
   expect(first).toContain("No cloud account");
-  expect(first).toContain('<Example name="duckdb" file="build/dev/run.sql" />');
+  expect(first).toContain('<Example name="duckdb" file="build/duckdb/dev/run.sql" />');
   const commands = [...first.matchAll(/^```sh\n([\s\S]*?)^```$/gm)].flatMap((match) =>
     match[1]!.trimEnd().split("\n"),
   );
@@ -412,19 +412,16 @@ it("gives each route a platform page that opens with what runs, what deploys and
   }
 });
 
-it("keeps the Databricks worked example: dev and prod environments and a deliberate break", () => {
+it("keeps the Databricks worked example: dev and prod, with its break in troubleshooting", () => {
   const page = read("platforms/databricks.mdx");
-  expect(page).toContain("## Work through the retail project");
-  for (const file of [
-    "standard.yaml",
-    "project.yaml",
-    "platform.yaml",
-    "flows/shop.yaml",
-    "transforms/daily_sales.yaml",
-  ])
-    expect(page).toContain(`<Example name="retail" file="${file}" />`);
-  expect(page).toContain("ingestron init retail --template retail");
-  expect(page).toContain("DUPLICATE_TABLE");
+  const create = section(page, "## Create it");
+  for (const file of ["standard.yaml", "project.yaml", "flows/shop.yaml"])
+    expect(create).toContain(`<Example name="retail" file="${file}" />`);
+  expect(create).toContain("ingestron init retail --template retail");
+  expect(page).toContain('<OldAnchor id="work-through-the-retail-project" />');
+  // The deliberate break lives with its symptom, not on the platform page.
+  expect(page).not.toContain("DUPLICATE_TABLE");
+  expect(read("troubleshooting.mdx")).toContain("DUPLICATE_TABLE");
 });
 
 it("compares each source on the route page across every route New project offers", () => {

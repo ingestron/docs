@@ -155,7 +155,7 @@ export function readTemplateExtract(file: string, from: string, to: string): str
 }
 
 /**
- * A generated folder of a sample, such as `build/dev/adf`, as an indented
+ * A generated folder of a sample, such as `build/adf`, as an indented
  * listing: folders first, then files, each sorted by name. Throws when the
  * sample generates no such folder.
  */

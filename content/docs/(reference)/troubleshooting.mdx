@@ -44,6 +44,36 @@ Node.js installed for the whole system. Install Node.js with a version manager
 instead, or set npm's prefix to a folder you own, such as
 `npm config set prefix ~/.npm-global`, and add its `bin` folder to your `PATH`.
 
+### Plan, apply or check refuse `--env` [#plan-refuses-env]
+
+**Symptom:** the command prints its usage and exits with `2`:
+
+```text
+Every environment is generated together, so plan does not take --env. Use compare for two environments, or request for one.
+```
+
+**Cause:** each platform's files hold every environment, so `plan`, `apply`
+and `check` always work on all of them. Scripts and CI written for version 1
+passed `--env`.
+
+**Fix:** remove `--env` from `plan`, `apply` and `check`. To look at one
+environment, use `ingestron compare --env dev --env prod` or
+`ingestron request --env prod`.
+
+### A pack cannot be loaded
+
+**Symptom:** every command prints one
+[`PACK_LOAD`](/docs/reference/errors#PACK_LOAD) error, writes nothing and
+exits with `2`.
+
+**Cause:** a pack that came with the command has a mistake of its own, such as
+a field it reads that the definitions do not have. Nothing in your project
+causes it.
+
+**Fix:** install a version of Ingestron, or of the VS Code extension, that
+fixes the pack, as [Upgrade Ingestron and its packs](/docs/how-to/upgrade)
+describes.
+
 ## Generated files
 
 ### Plan reports a conflict
@@ -52,7 +82,7 @@ instead, or set npm's prefix to a folder you own, such as
 with `1`:
 
 ```text
-conflict  run.sql
+conflict  dev/run.sql
           Changed by hand since it was generated. Move the change into the definitions, or delete the file to generate it again.
 ```
 
@@ -80,23 +110,23 @@ could remove the lock.
 
 **Fix:** wait for a run that is still going. If none is, delete
 `.generated.lock` from the output folder the plan names (the line before the
-changes, such as `dev → build/dev`). Then follow the next entry, because the
-folder may hold a mix of old and new files.
+changes, such as `duckdb → build/duckdb (dev)`). Then follow the next entry,
+because the folder may hold a mix of old and new files.
 
 ### An apply stopped part-way
 
 **Symptom:** one of these:
 
-- With several environments, `apply` ends with a line such as
-  `Applied: dev, test. Not applied: prod.` and exits with `1`.
+- With several platforms, `apply` ends with a line such as
+  `Applied: adf. Not applied: databricks.` and exits with `1`.
 - A write fails, and `apply` ends with
-  `Could not write "tables/silver.customer_totals.sql": <reason>. Nothing was changed.`
+  `Could not write "dev/tables/silver.customer_totals.sql": <reason>. Nothing was changed.`
 - The process was stopped, such as a closed terminal or a cancelled CI job. The
   lock stays, and `ingestron check` may also print a file ending in `.tmp`:
-  `dev: not generated  tables/silver.customer_totals.sql.<id>.tmp`.
+  `duckdb: not generated  dev/tables/silver.customer_totals.sql.<id>.tmp`.
 
-**Cause:** `apply` writes one output folder at a time. An environment whose plan
-has a conflict is left as it was while the others are written. When a write
+**Cause:** `apply` writes one output folder at a time. A folder whose plan has
+a conflict is left as it was while the others are written. When a write
 fails, Ingestron puts back the files it had already changed in that folder. If
 it cannot put one back, it adds `Some files could not be put back.` A process
 that is stopped cannot put anything back: the folder holds a mix of old and new
@@ -105,8 +135,9 @@ half-written.
 
 **Fix:**
 
-- `Not applied: prod`: run `ingestron plan --env prod` and resolve what it
-  reports, such as a [conflict](#plan-reports-a-conflict), then apply again.
+- `Not applied: databricks`: run `ingestron plan` and resolve what it reports
+  for that folder, such as a [conflict](#plan-reports-a-conflict), then apply
+  again.
 - `Nothing was changed.`: fix what the reason names, such as a folder you cannot
   write to or a full disk, and apply again.
 - A stopped process, or `Some files could not be put back.`: delete
@@ -130,8 +161,9 @@ regenerated and committed, or a generated file was edited.
 `<folder>: no longer generated`, and exits with `1`.
 
 **Cause:** someone added a file inside an output folder, or a folder that
-was generated before (for an environment you removed, or before you added a
-second pack) is still in `build/`.
+was generated before is still in `build/`: a platform's folder after its last
+table went, or the folder per environment, such as `build/dev/`, that version
+1 wrote. See [Upgrade from 1.x to 2.0](/docs/how-to/upgrade#upgrade-to-2).
 
 **Fix:** move the extra file out of `build/`. Delete the old folder once
 nothing deploys from it. See [Check generated files in CI](/docs/how-to/check-in-ci).
@@ -198,6 +230,67 @@ patterns give two tables the same full name.
 **Fix:** rename one, or include `{{ flow }}` or `{{ source }}` in the
 table pattern. See [Name tables and resources](/docs/how-to/name-things-your-way).
 
+### The standard names an older pack [#pack-version]
+
+**Symptom:** after upgrading to ingestron 2, plan stops with
+[`PACK_VERSION`](/docs/reference/errors#PACK_VERSION), once for every
+environment:
+
+```text
+standard.yaml:4:9  error  PACK_VERSION
+  This standard is for "duckdb@1", but the pack is duckdb@2.
+  Change it to duckdb@2; the upgrade notes say what changes in the generated files.
+  Fix: Change to "duckdb@2".
+```
+
+**Cause:** every pack in ingestron 2 is version 2, and the standard still
+names version 1.
+
+**Fix:** change each pack in the standard's `packs` to `@2`, or apply the fix
+in VS Code, then follow
+[Upgrade from 1.x to 2.0](/docs/how-to/upgrade#upgrade-to-2).
+
+### Environments differ in more than values [#environments-differ]
+
+**Symptom:** a pack's plan stops with
+[`ENVIRONMENTS_DIFFER`](/docs/reference/errors#ENVIRONMENTS_DIFFER), such as:
+
+```text
+databricks: the definitions have problems
+project.yaml:1:1  error  ENVIRONMENTS_DIFFER
+  The pipeline is named "retail_dev" in dev and "retail_prod" in prod; resource keys and folders are named after it, so it must be the same in every environment.
+  Environments may differ only in values, such as names, paths and hosts; make the rest the same in every environment.
+```
+
+**Cause:** one bundle, factory or Synapse script serves every environment, so
+environments may differ only in values. A pipeline, job or ADF resource name
+that differs, a table built in some environments only, or code that differs in
+more than a value cannot be written once.
+
+**Fix:** make it the same in every environment: here, remove
+`{{ environment }}` from the standard's `naming.pipeline`. Catalogs, schemas,
+paths and hosts may still differ. See
+[Where the files go](/docs/concepts/generated-files#where-the-files-go).
+
+### A value supplied when deploying is refused [#deploy-value]
+
+**Symptom:** plan stops with
+[`DEPLOY_VALUE`](/docs/reference/errors#DEPLOY_VALUE), such as:
+
+```text
+flows/orders.yaml:4:9  error  DEPLOY_VALUE
+  "${envvar:SOURCE}" is supplied only when deploying, so it cannot decide what is generated or what it is called.
+  Write this value in project.yaml, per environment; keep ${envvar:…} for values the deploying pipeline supplies, such as hosts, paths and accounts.
+```
+
+**Cause:** for Databricks, Data Factory and Synapse, `${envvar:…}` is a value
+the deploying pipeline supplies. It cannot be a flow's `source`, a contract,
+a name, or, for Data Factory and Synapse, part of a longer value.
+
+**Fix:** write the value in `project.yaml`, with each environment's value
+under `environments`. See
+[Supplied when deploying](/docs/concepts/yaml-references#supplied-when-deploying).
+
 ### A new file is not generated
 
 **Symptom:** you added a flow, transform or other definition and `plan` lists
@@ -242,9 +335,11 @@ SAMPLES_DIR isn't set; add it to .env.dev or set it before running Ingestron.
 
 **Cause:** the variable is unset or empty in the environment of the process
 that runs Ingestron, in `.env.<environment>` and in `.env`. A document that
-uses it is not loaded, so what links to that document is reported too. The
-editor keeps checking the rest of the project and does not judge a value that
-depends on the missing one.
+uses it is not loaded, so what links to that document is reported too, in
+VS Code as well. This applies where a value is read when generating, as for
+DuckDB; for Databricks, Data Factory and Synapse, the value is supplied when
+deploying, and plan does not need it (see
+[Supplied when deploying](/docs/concepts/yaml-references#supplied-when-deploying)).
 
 **Fix:** add `SAMPLES_DIR=./samples` to `.env`, or to `.env.dev` for `dev`
 alone, or set the variable before you run the command. In CI, set it in the
@@ -289,16 +384,11 @@ the Command Palette. See [Install the command and the extension](/docs/start/ins
 **Symptom:** after `ingestron apply` in a terminal, **Ingestron: Plan** lists
 changes, or the other way round.
 
-**Cause:** a common cause is a different version. The extension carries its
-own copy of the command, which need not be the one you run. Another is a
-different environment: the editor plans the one in the status bar, such as
-`Ingestron: dev`, while `ingestron plan` without `--env` plans every
-environment.
+**Cause:** a different version. The extension carries its own copy of the
+command, which need not be the one you run. Both plan every environment, so
+the environment in the status bar makes no difference.
 
-**Check:** plan the same environment in both, such as `ingestron plan --env dev`
-and `dev` in the status bar.
-
-**Fix:** if they still differ, run the same version in both, as
+**Fix:** run the same version in both, as
 [Upgrade Ingestron and its packs](/docs/how-to/upgrade) describes, and reload
 the window after installing the extension again.
 
@@ -339,21 +429,43 @@ request** in VS Code. Its **ADF prerequisites** section lists, with this
 project's values, the integration runtime, the Key Vault, the landing folder
 and the source's permissions that must exist. Give the list to the team that
 creates them. See
-[Platform prerequisites](/docs/platforms/adf#platform-prerequisites).
+[Before you deploy](/docs/platforms/adf#prerequisites).
+
+### Every plan and check prints a notice about a runtime [#runtime-notice]
+
+**Symptom:** `plan`, `apply` and `check` print a warning before the folders,
+and still succeed:
+
+```text
+adf: warnings
+(project)  warning  PACK_NOTICE
+  Integration runtime `shir-erp` (self-hosted): the deployment writes it by name and type, as Data Factory Studio does; where it creates it, register a node, with network access and any required source drivers, before the copies run.
+```
+
+**Cause:** the factory holds each integration runtime its linked services
+use, and an ARM deployment sets a runtime's whole resource. The
+[`PACK_NOTICE`](/docs/reference/errors#PACK_NOTICE) says what a deployment
+does to it. It is a warning, so it shows on every run, in CI too.
+
+**Fix:** nothing to change in the definitions. Before the first deployment to
+a factory that already has the runtime, run `az deployment group what-if` with
+the template and that environment's parameter file, and describe a linked or
+Azure runtime with the method's `runtime` setting; see
+[Runtime and Key Vault](/docs/platforms/adf#runtime-and-key-vault).
 
 ### Development triggers do not run
 
 **Symptom:** the pipelines are in the factory, but a `dev` copy never starts
 on its schedule.
 
-**Cause:** outside production, a generated trigger is stopped
+**Cause:** triggers start only in `prod` and `production`
 ([platform defaults](/docs/reference/packs/adf#platform-configuration)). The
-trigger file says `"runtimeState": "Stopped"`, and the production one says
-`"Started"`.
+trigger file in `factory/trigger/` says `"runtimeState": "Stopped"`, and
+`parameters/prod.json` sets the trigger's state to `"Started"`.
 
 **Fix:** start the trigger in Data Factory when you want development copies to
 run, or set `paused: false` for the copy method in the platform and generate
-again. Check `start` first: a started trigger runs every window since `start`. See [Retry and pause](/docs/platforms/adf#retry-and-pause).
+again, which starts it in every environment. Check `start` first: a started trigger runs every window since `start`. See [Retry and pause](/docs/platforms/adf#retry-and-pause).
 
 ## Synapse serverless views
 
@@ -390,10 +502,10 @@ platform, so the external data source cannot reach them.
 point the landing folder inside it. See
 [Settings that shape it](/docs/platforms/synapse#settings).
 
-### Running views.sql fails the first time
+### Running the views fails the first time [#running-viewssql-fails-the-first-time]
 
-**Symptom:** `views.sql` fails in Synapse for a new environment, although
-`apply` succeeded.
+**Symptom:** `sqlcmd -i environments/<environment>.sql` fails in Synapse for a
+new environment, although `apply` succeeded.
 
 **Cause:** Ingestron writes the views but creates nothing in Synapse. The
 serverless database, a master key, the credential, the external data source and
@@ -402,7 +514,20 @@ the workspace's read access to the storage must exist first.
 **Fix:** run `ingestron request --env dev`. Its **Synapse serverless database**,
 **External data source** and **Report users** sections list each statement and
 permission, with this project's names. Ask the team that owns the workspace to
-create them, then run `views.sql` again.
+create them, then run the environment's script again.
+
+### sqlcmd cannot find views.sql
+
+**Symptom:** `sqlcmd -i environments/<environment>.sql` stops at once, saying
+it cannot open `views.sql`, or Synapse Studio reports an error at the first
+`$(…)` in `views.sql`.
+
+**Cause:** sqlcmd reads the `:r views.sql` line from the folder it starts in,
+not from the script's folder. `views.sql` holds sqlcmd variables, which only
+sqlcmd replaces, so Synapse Studio cannot run it.
+
+**Fix:** run sqlcmd from `build/synapse`, with the environment's script. See
+[Deploy](/docs/platforms/synapse#deploy).
 
 ## DuckDB
 
@@ -450,7 +575,7 @@ building publishes nothing.
 **Fix:** run it as the generated `README.md` says, from the project folder:
 
 ```sh
-duckdb -bail ingestron.duckdb -c ".read build/dev/run.sql"
+duckdb -bail ingestron.duckdb -c ".read build/duckdb/dev/run.sql"
 ```
 
 ### Publishing fails after the tables are built
@@ -543,7 +668,7 @@ A Lakeflow Connect pipeline refers to a Unity Catalog connection, which
 Ingestron does not create.
 
 **Fix:** when the platform sets `manage.schemas`, an administrator runs the
-generated `prerequisites.sql` once before the first deploy: it grants
+generated `prerequisites/<environment>.sql` once before the first deploy: it grants
 `USE CATALOG` and `CREATE SCHEMA` on each catalog to the identity the pipelines
 run as, and the same must be given to the identity that deploys when it
 differs. Run `ingestron request` for everything else the platform team
@@ -554,12 +679,15 @@ provides.
 **Symptom:** the job and the pipelines are deployed, and nothing refreshes on
 its schedule in `dev`.
 
-**Cause:** outside production, the job is created paused
+**Cause:** schedules run only in `prod` and `production`
 ([platform defaults](/docs/reference/packs/databricks#platform-configuration)).
-Its file says `pause_status: PAUSED`.
+`dev` is in development mode, which pauses every schedule, and another
+environment's target in `databricks.yml` sets
+`presets: { trigger_pause_status: PAUSED }`.
 
 **Fix:** unpause it in Databricks, or set `paused: false` in the platform's
-`schedule` and generate again. See
+`schedule` and generate again: the job then says `pause_status: UNPAUSED` in
+every environment. See
 [Refresh on a schedule](/docs/platforms/databricks#schedule).
 
 Every code is explained in [Errors](/docs/reference/errors).

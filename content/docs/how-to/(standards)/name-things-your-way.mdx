@@ -196,7 +196,7 @@ plan: Plan deletes `factory/pipeline/pl_sales_orders.json` and
 and `tr_sales_v2_orders.json` in their place, and the new trigger runs the new
 pipeline.
 
-Ingestron renames files, not data, so review the deletes before you apply. On
+Ingestron renames files, not data. Review the deletes before you apply. On
 the platform, a deployment creates the renamed resource and removes the old
 one: the bundle's deploy deletes the old pipeline, and Data Factory's
 post-deployment script deletes the old pipeline and trigger. A renamed
