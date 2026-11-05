@@ -17,9 +17,19 @@ the source's id in front of each flow table's name:
 <Example name="standards-and-conventions" file="standard.yaml" />
 
 In `prod`, the `visits` table of the `web` flow is created as
-`` `acme`.`prod_raw`.`web__visits` ``:
+`` `acme`.`prod_raw`.`web__visits` ``. The schema differs between
+environments, so the generated SQL reads it from the pipeline's configuration,
+and each target of the bundle sets it:
 
-<Example name="standards-and-conventions" file="build/prod/src/marketing_prod/raw/visits.sql" />
+<Example name="standards-and-conventions" file="build/databricks/src/marketing/raw/visits.sql" />
+
+<Example name="standards-and-conventions" file="build/databricks/databricks.yml" pick="targets" />
+
+Catalogs, schemas and tables may be named differently in each environment.
+The pipeline and the job may not: the bundle's files and resource keys are
+named after them, so a `pipeline` or `job` pattern that uses
+`{{ environment }}` is
+[`ENVIRONMENTS_DIFFER`](/docs/reference/errors#ENVIRONMENTS_DIFFER).
 
 Patterns use [Liquid](https://shopify.github.io/liquid/) and these
 variables:
@@ -75,10 +85,13 @@ have their own defaults and validation rules. Set `resource_names` under the
 selected method's settings. Leave a role out to keep its default; override only
 the names you need.
 
-ADF resource names use resolved YAML values such as `${project.id}`,
-`${environment.name}` and `${values.resource_prefix}`; the table variables
-above are not available there. Changing `naming.pipeline` does not rename an
-ADF pipeline.
+ADF resource names use resolved YAML values such as `${project.id}` and
+`${values.resource_prefix}`; the table variables above are not available
+there. Changing `naming.pipeline` does not rename an ADF pipeline. Each name
+must be the same in every environment, because one ARM template is deployed
+to each environment's factory: a name holding `${environment.name}`, or a
+value that differs, is
+[`ENVIRONMENTS_DIFFER`](/docs/reference/errors#ENVIRONMENTS_DIFFER).
 
 ### Choose where the name belongs
 
@@ -109,27 +122,27 @@ when settings come from different flows or methods. Source linked services
 and pipelines also have grouping rules: a table-level override cannot split
 a resource that is shared per connection or database.
 
-### Give the pipeline an environment-specific name
+### Name a source's pipeline [#name-a-sources-pipeline]
+
+<OldAnchor id="give-the-pipeline-an-environment-specific-name" />
 
 The project sets `values.resource_prefix` to `sales`. Its PostgreSQL flow
-uses that value and the selected environment:
+uses that value for the pipeline and its trigger:
 
 <Example name="connection-first-adf" file="flows/postgresql.yaml" />
 
-Plan produces `pl_sales_orders_dev` and `pl_sales_orders_prod`, with matching
-trigger references. `copy_orders` names the Copy activity inside the pipeline.
-The flow leaves out the source linked service and dataset roles, so they keep
-their default names.
-
-Separate `build/dev/` and `build/prod/` folders do not by themselves make the
-ADF resource names different. If environments share a factory, use
-`${environment.name}` for resources that must be separate and choose shared
-names deliberately.
+Plan produces `pl_sales_orders`, and a trigger that runs it. `copy_orders`
+names the Copy activity inside the pipeline. The flow leaves out the source
+linked service and dataset roles, so they keep their default names. Each
+environment has a factory of its own, so the names need not differ between
+environments to keep them apart.
 
 Known roles for resources a source does not generate are accepted but unused.
 A Snowflake staging name does not create staging for another source. Unknown
 roles, invalid names, conflicting shared names and case-insensitive collisions
-stop generation. The reference lists the accepted characters and length limit.
+stop generation. A name is at most 140 characters, and a Copy activity's 55,
+as Microsoft's build accepts; a longer default name is refused with the role
+to set. The reference lists the accepted characters.
 
 The integration runtime and credential references come from the method and
 connection settings; `resource_names` names only the resources the ADF pack
@@ -142,20 +155,20 @@ name in the standard:
 
 ```yaml
 naming:
-  pipeline: "{{ project }}_{{ environment }}_ingest"
+  pipeline: "{{ project }}_ingest"
 ```
 
 <ToolSteps>
 <Tool name="CLI">
 
 ```sh
-ingestron plan --env prod --no-diff
+ingestron plan --no-diff
 ```
 
 </Tool>
 <Tool name="VS Code">
 
-Select `prod` in the status bar and run **Ingestron: Plan** from the Command Palette (⇧⌘P on macOS, Ctrl+Shift+P elsewhere). The output is in the Ingestron output panel.
+Run **Ingestron: Plan** from the Command Palette (⇧⌘P on macOS, Ctrl+Shift+P elsewhere). The output is in the Ingestron output panel.
 
 </Tool>
 </ToolSteps>
@@ -163,13 +176,13 @@ Select `prod` in the status bar and run **Ingestron: Plan** from the Command Pal
 The pipeline's files are named after it, so they move:
 
 ```text
-prod → build/prod
-delete    resources/marketing_prod.pipeline.yml
-create    resources/marketing_prod_ingest.pipeline.yml
-delete    src/marketing_prod/raw/campaigns.sql
-delete    src/marketing_prod/raw/visits.sql
-create    src/marketing_prod_ingest/raw/campaigns.sql
-create    src/marketing_prod_ingest/raw/visits.sql
+databricks → build/databricks (dev, prod)
+delete    resources/marketing.pipeline.yml
+create    resources/marketing_ingest.pipeline.yml
+delete    src/marketing/raw/campaigns.sql
+delete    src/marketing/raw/visits.sql
+create    src/marketing_ingest/raw/campaigns.sql
+create    src/marketing_ingest/raw/visits.sql
 
 7 files: 3 create, 3 delete, 1 unchanged. Ready to apply.
 ```
@@ -177,14 +190,16 @@ create    src/marketing_prod_ingest/raw/visits.sql
 <OldAnchor id="review-a-rename-before-applying" />
 
 An ADF name changes the same way. In the finished PostgreSQL project, change
-`values.resource_prefix` in `project.yaml` from `sales` to `sales_v2` and plan
-`dev`: Plan deletes `pipeline/pl_sales_orders_dev.json` and
-`trigger/tr_sales_orders_dev.json` and creates `pl_sales_v2_orders_dev.json`
-and `tr_sales_v2_orders_dev.json` in their place, and the new trigger runs the
-new pipeline.
+`values.resource_prefix` in `project.yaml` from `sales` to `sales_v2` and
+plan: Plan deletes `factory/pipeline/pl_sales_orders.json` and
+`factory/trigger/tr_sales_orders.json` and creates `pl_sales_v2_orders.json`
+and `tr_sales_v2_orders.json` in their place, and the new trigger runs the new
+pipeline.
 
-Ingestron renames files, not data. When a table's or pipeline's name changes,
-what happens to the old one on the platform depends on how you deploy, so
-review the deletes before you apply. A deleted ADF file does not delete the
-resource already in the factory: review that when you
-[publish](/docs/platforms/adf#publish).
+Ingestron renames files, not data, so review the deletes before you apply. On
+the platform, a deployment creates the renamed resource and removes the old
+one: the bundle's deploy deletes the old pipeline, and Data Factory's
+post-deployment script deletes the old pipeline and trigger. A renamed
+tumbling window trigger runs its past windows again from `start`, so move
+`start` to the next window first; see
+[Deploy](/docs/platforms/adf#deploy).
