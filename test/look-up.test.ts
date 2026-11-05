@@ -233,7 +233,7 @@ describe("reference/packs", () => {
     expect(platform).toContain("(/docs/reference/packs/duckdb)");
     // What the reference page keeps: the pack's job, its order in `packs`, and its files.
     for (const text of [
-      "packs: [duckdb@1, adf@1]",
+      "packs: [duckdb@2, adf@2]",
       "`run.sql`",
       "`tables/`",
       '<PackMethods pack="duckdb" />',
