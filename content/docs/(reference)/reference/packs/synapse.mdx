@@ -3,15 +3,18 @@ title: Synapse serverless pack
 description: Views in Azure Synapse serverless SQL, with their settings and defaults.
 ---
 
-`synapse@1` shows tables to reporting tools as views in Azure Synapse serverless
+`synapse@2` shows tables to reporting tools as views in Azure Synapse serverless
 SQL: over the files another pack lands, over a transform's query, or over the
 files a store pack keeps. For views only, list it first:
-`packs: [synapse@1, adf@1]`; see [Combine packs](/docs/concepts/standards-and-packs#combine-packs-when-their-actions-fit). The settings below come from the
+`packs: [synapse@2, adf@2]`; see [Combine packs](/docs/concepts/standards-and-packs#combine-packs-when-their-actions-fit). The settings below come from the
 pack itself.
 
 For a task walkthrough, use [Synapse serverless views](/docs/platforms/synapse).
-The pack writes `views.sql` for each environment; run it against the serverless
-database when the definitions change. Generation itself creates nothing in Azure.
+The pack writes one `views.sql` for every environment, with
+`environments/<environment>.sql` setting each environment's values; run that
+script with sqlcmd when the definitions change. See
+[What Ingestron writes](/docs/platforms/synapse#what-you-get). Generation itself
+creates nothing in Azure.
 
 <PackMethods pack="synapse" />
 
