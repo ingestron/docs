@@ -99,7 +99,7 @@ stages:
                   env:
                     DATABRICKS_AUTH_TYPE: azure-cli
                     # One line for each BUNDLE_VAR_ name that `ingestron request` lists:
-                    # BUNDLE_VAR_landing_account: $(LANDING_ACCOUNT)
+                    # BUNDLE_VAR_landing_path: $(LANDING_PATH)
                   inputs:
                     azureSubscription: ${{ parameters.serviceConnection }}
                     scriptType: bash

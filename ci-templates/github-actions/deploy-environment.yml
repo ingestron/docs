@@ -89,7 +89,7 @@ jobs:
           DATABRICKS_AUTH_TYPE: github-oidc
           DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
           # One line for each BUNDLE_VAR_ name that `ingestron request` lists:
-          # BUNDLE_VAR_landing_account: ${{ vars.LANDING_ACCOUNT }}
+          # BUNDLE_VAR_landing_path: ${{ vars.LANDING_PATH }}
         run: |
           databricks bundle validate -t "$ENVIRONMENT"
           databricks bundle deploy -t "$ENVIRONMENT"
