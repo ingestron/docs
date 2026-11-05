@@ -2,8 +2,8 @@
 
 What `ingestron init sales --connector postgresql --connectivity private --via adf`
 creates: one PostgreSQL connection that ADF copies through a self-hosted
-integration runtime, one standard listing both packs, `packs: [databricks@1,
-adf@1]`, and the ADF resource names set in the platform.
+integration runtime, one standard listing both packs, `packs: [databricks@2,
+adf@2]`, and the ADF resource names set in the platform.
 
 | File                          | What it shows                                                            |
 | ----------------------------- | ------------------------------------------------------------------------ |
