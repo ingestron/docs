@@ -12,17 +12,25 @@ queries a view.
 
 ## What Ingestron writes [#what-you-get]
 
-For each environment, the ADF pack writes the factory's resources and the
-Synapse pack writes one script of views:
+The ADF pack writes the factory, as on
+[Azure Data Factory](/docs/platforms/adf#what-you-get), and the Synapse pack
+writes one script of views for every environment, with a short script for each
+environment that sets its values:
 
-<BuildTree name="synapse-views" folder="build/dev" />
+<BuildTree name="synapse-views" folder="build/synapse" />
+
+`views.sql` starts by switching to the environment's database, a sqlcmd
+variable, because the databases differ between environments; everything the
+same in every environment is written as it is:
+
+<Example name="synapse-views" file="build/synapse/views.sql" from="USE [" to="GO" />
 
 Each copied table becomes a view over the file ADF lands, read through the
 external data source `landing`, with the contract's column types:
 
 <Example
   name="synapse-views"
-  file="build/dev/synapse/views.sql"
+  file="build/synapse/views.sql"
   from="CREATE OR ALTER VIEW [bronze].[customers]"
   to="GO"
 />
@@ -31,10 +39,20 @@ A transform becomes a view over its inputs' views, with its SQL inside:
 
 <Example
   name="synapse-views"
-  file="build/dev/synapse/views.sql"
+  file="build/synapse/views.sql"
   from="CREATE OR ALTER VIEW [silver].[customer_totals]"
   to="GO"
 />
+
+Each environment's script sets the variables and includes `views.sql`. It
+stops at the first error:
+
+<Example name="synapse-views" file="build/synapse/environments/prod.sql" />
+
+A value only the deploying pipeline knows, written as `${envvar:NAME}`, is a
+variable that the script leaves unset, and the pipeline sets as an
+environment variable `NAME`; see
+[Supplied when deploying](/docs/concepts/yaml-references#supplied-when-deploying).
 
 ## What it looks like in Azure Synapse [#on-the-platform]
 
@@ -152,7 +170,10 @@ permissions.
 />
 
 The same request lists what ADF needs first, as in
-[Platform prerequisites](/docs/platforms/adf#platform-prerequisites). See
+[Before you deploy](/docs/platforms/adf#prerequisites). Run the views with
+sqlcmd (Go), which signs in with Microsoft Entra ID; install it with
+`winget install sqlcmd` or `brew install sqlcmd`, or from its
+[releases](https://github.com/microsoft/go-sqlcmd/releases). See
 [Ask the platform team](/docs/how-to/ask-the-platform-team) for the whole
 request.
 
@@ -160,31 +181,48 @@ request.
 
 <OldAnchor id="generate-then-run-the-views" />
 
-Run `ingestron apply`. Each environment's folder holds the ADF resources under
-`adf/` and the views in `synapse/views.sql`. Publish the factory's resources as
-in [Publish the factory](/docs/platforms/adf#publish).
-
-Then run `views.sql` against the environment's serverless database, here
-`sales_dev`, with Synapse Studio, a CI step or the Go version of `sqlcmd`,
-signed in with `az login`:
+Run `ingestron apply`, then deploy the factory as in
+[Azure Data Factory](/docs/platforms/adf#deploy). Then run the environment's
+script with sqlcmd (Go), from `build/synapse`, signed in with `az login`, here
+for `dev`:
 
 ```sh
-sqlcmd -S <workspace>-ondemand.sql.azuresynapse.net -d sales_dev \
-  --authentication-method ActiveDirectoryDefault -b -i build/dev/synapse/views.sql
+cd build/synapse
+sqlcmd -S <workspace>-ondemand.sql.azuresynapse.net --authentication-method ActiveDirectoryDefault -i environments/dev.sql
 ```
 
-Replace `<workspace>` with your Synapse workspace's name. `-b` stops at the
-first error. See
+Replace `<workspace>` with your Synapse workspace's name. Start sqlcmd in
+`build/synapse`: it reads `views.sql` from the folder it starts in, not from
+the script's folder. `views.sql` holds sqlcmd variables, so Synapse Studio,
+which has no SQLCMD mode, cannot run it. See
 [Authenticate with Microsoft Entra ID in sqlcmd](https://learn.microsoft.com/en-us/sql/tools/sqlcmd/sqlcmd-authentication)
 for the other ways to sign in (checked 5 November 2026).
+
+### From CI [#deploy-from-ci]
+
+GitHub's Ubuntu runners and Azure DevOps' Ubuntu agents have no sqlcmd, so
+each environment's stage installs sqlcmd (Go) at a pinned version, checked by
+its SHA-256, then runs the environment's script, signed in as the
+environment's identity. From the GitHub Actions template:
+
+<Template
+  file="github-actions/deploy-environment.yml"
+  from='- name: "Synapse: install sqlcmd"'
+  to='-i "environments/$ENVIRONMENT.sql"'
+/>
+
+Do not pass `-X`, which stops sqlcmd reading environment variables, or `-x`,
+which stops it replacing variables.
+[Deploy through environments](/docs/how-to/deploy-through-environments) gives
+the whole pipeline, for GitHub Actions and Azure DevOps.
 
 ## Run and operate [#operate]
 
 Loads need nothing more: ADF replaces the files on its schedule, and each query
-reads the files as they are then. Run `views.sql` again whenever the
-definitions change, such as a new table or column. It creates or alters every
-view, so running it again is safe; it drops nothing, so a view for a table you
-removed stays until you drop it.
+reads the files as they are then. Run the environment's script again whenever
+the definitions change, such as a new table or column. It creates or alters
+every view, so running it again is safe; it drops nothing, so a view for a
+table you removed stays until you drop it.
 
 When a view fails to create or to read its files, see
 [Synapse serverless views](/docs/troubleshooting#synapse-serverless-views) in
@@ -196,6 +234,14 @@ Troubleshooting.
   [Check data quality](/docs/how-to/add-quality-checks).
 - **No merge or history.** A view shows the files as they are; see
   [Views or tables](#views-or-tables).
+- **Environments may differ only in values.** A table built in some
+  environments only, or a transform whose code differs in more than a value,
+  is [`ENVIRONMENTS_DIFFER`](/docs/reference/errors#ENVIRONMENTS_DIFFER). A
+  value that differs cannot hold `'`, `]` or a line break, and a value
+  supplied when deploying must be a whole value.
+- **What has been tried.** The screenshots show the demo deployed with
+  ingestron 1.8. The 2.0 scripts have been run with sqlcmd (Go) v1.10.0 and the
+  ODBC sqlcmd against a local SQL engine, not yet against a Synapse workspace.
 
 ## Next
 

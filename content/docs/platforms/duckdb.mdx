@@ -13,22 +13,23 @@ load can be tried again there.
 
 ## What Ingestron writes [#what-you-get]
 
-For each environment, the DuckDB pack writes `run.sql`, every table in order,
-`tables/`, each table's SQL alone, and a `README.md` that says how to run them.
-For the **DuckDB on a laptop** starter:
+For each environment it runs, the DuckDB pack writes a folder under
+`build/duckdb/` with `run.sql`, every table in order, `tables/`, each table's
+SQL alone, and a `README.md` that says how to run them. For the **DuckDB on a
+laptop** starter, whose one environment is `dev`:
 
-<BuildTree name="duckdb" folder="build/dev" />
+<BuildTree name="duckdb" folder="build/duckdb" />
 
 Each table's SQL loads its files, casts each column to the contract's type and
 publishes the table as `<schema>.<table>.parquet`:
 
-<Example name="duckdb" file="build/dev/tables/bronze.orders.sql" />
+<Example name="duckdb" file="build/duckdb/dev/tables/bronze.orders.sql" />
 
 When ADF lands the files, a local environment reads a load's files from a
 local folder instead, with the same SQL around it. The folder,
 `./samples/erp.dbo.Invoices/`, is at the end of the line:
 
-<Example name="duckdb-local" file="build/local/duckdb/run.sql" from="read_parquet" to=";" />
+<Example name="duckdb-local" file="build/duckdb/local/run.sql" from="read_parquet" to=";" />
 
 ## What it looks like in DuckDB [#on-the-platform]
 
@@ -104,7 +105,7 @@ Every method and setting is in the
 Run `run.sql` from the project folder, as the generated `README.md` says:
 
 ```sh
-duckdb -bail ingestron.duckdb -c ".read build/dev/run.sql"
+duckdb -bail ingestron.duckdb -c ".read build/duckdb/dev/run.sql"
 ```
 
 `-bail` stops at the first error, so a run that fails while building
@@ -150,7 +151,7 @@ Then generate and run the local environment from the project folder:
 
 ```sh
 ingestron apply
-duckdb -bail ingestron.duckdb -c ".read build/local/duckdb/run.sql"
+duckdb -bail ingestron.duckdb -c ".read build/duckdb/local/run.sql"
 ```
 
 With increments and `upsert` or `append`, keep the loads' file names: they

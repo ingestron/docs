@@ -13,15 +13,14 @@ up the copies first with [Azure Data Factory](/docs/platforms/adf).
 The Northwind example copies four tables with one ForEach, retries each copy,
 adds audit columns and files its resources in one folder. Its ADF files:
 
-<BuildTree name="northwind" folder="build/dev/adf" />
+<BuildTree name="northwind" folder="build/adf" />
 
-With ADF alone, on the `adf-landing` route, these folders are directly in
-`build/<environment>/`. The pipeline's `tables` parameter holds each table's
-query and landing folder, so nothing is read at run time:
+The pipeline's `tables` parameter holds each table's query and landing folder,
+so nothing is read at run time:
 
 <Example
   name="northwind"
-  file="build/dev/adf/pipeline/pl_northwind_northwind.json"
+  file="build/adf/factory/pipeline/pl_northwind_northwind.json"
   pick="properties.parameters.tables.defaultValue[0]"
 />
 
@@ -29,7 +28,7 @@ The Copy inside the ForEach carries the retry policy:
 
 <Example
   name="northwind"
-  file="build/dev/adf/pipeline/pl_northwind_northwind.json"
+  file="build/adf/factory/pipeline/pl_northwind_northwind.json"
   pick="properties.activities[0].typeProperties.activities[0].policy"
 />
 
@@ -37,7 +36,7 @@ And it adds the audit columns to every row it lands:
 
 <Example
   name="northwind"
-  file="build/dev/adf/pipeline/pl_northwind_northwind.json"
+  file="build/adf/factory/pipeline/pl_northwind_northwind.json"
   pick="properties.activities[0].typeProperties.activities[0].typeProperties.source.additionalColumns"
 />
 
@@ -108,11 +107,7 @@ The tables of one pipeline share `pattern`, `parallel`, `activity` and
 
 `activity` is the Copy activity's policy, for every ADF method:
 
-| Setting          | Meaning                                    | Values      |
-| ---------------- | ------------------------------------------ | ----------- |
-| `retries`        | How often a failed copy is tried again     | 0 to 10     |
-| `retry_interval` | Seconds between tries                      | 30 to 86400 |
-| `timeout`        | Minutes a copy may run before ADF stops it | 10 to 10080 |
+<SettingsSections pack="adf" method="adf-copy" include={["activity"]} level={4} />
 
 <Screenshot
   src="/images/platforms/adf-pipelines/adf-05-copy-general.png"
@@ -122,9 +117,8 @@ The tables of one pipeline share `pattern`, `parallel`, `activity` and
   caption="The demo's copy_table in ADF Studio: its description, a one-hour timeout and two retries a minute apart, from activity."
 />
 
-`timeout` must be at least 10 minutes, which is ADF's own minimum; a smaller
-value is reported as a settings problem, so no generated file holds one ADF would
-refuse. Keys you leave out keep ADF's defaults. These retries happen inside the
+No generated file holds a value ADF would refuse: a `timeout` under ADF's own
+minimum is reported as a settings problem. These retries happen inside the
 run; `retries` at the method's top level still retries the whole window from
 the trigger (see [Retry and pause](/docs/platforms/adf#retry-and-pause)). With
 [`after_copy`](/docs/platforms/duckdb-in-azure#start-it-after-the-copies),
@@ -136,16 +130,7 @@ win.
 `audit_columns` adds columns to every landed row, by name. A value is one of the
 run values ADF fills in when it runs, or text:
 
-| Value               | What ADF writes                               | Type      |
-| ------------------- | --------------------------------------------- | --------- |
-| `run.trigger_time`  | The run's trigger time                        | timestamp |
-| `run.window_start`  | The start of the run's window                 | timestamp |
-| `run.window_end`    | The end of the run's window                   | timestamp |
-| `run.id`            | The pipeline run's ID                         | string    |
-| `run.pipeline`      | The pipeline's name                           | string    |
-| `source.object`     | The source object, such as `erp.dbo.Invoices` | string    |
-| `source.connection` | The connection's ID                           | string    |
-| other text          | The text, such as `${environment.name}`       | string    |
+<SettingsSections pack="adf" method="adf-copy" include={["audit_columns"]} level={4} />
 
 <Screenshot
   src="/images/platforms/adf-pipelines/adf-06-copy-audit-columns.png"
@@ -221,15 +206,15 @@ explains itself without opening the definitions.
 <OldAnchor id="review-a-rename-before-applying" />
 
 Each linked service, dataset, pipeline, trigger and activity has a default
-name, which `resource_names` changes. Where each name goes, which tables share
-a resource, per-environment names and safe renames are in
+name, which `resource_names` changes; a name is the same in every environment.
+Where each name goes, which tables share a resource and safe renames are in
 [ADF resource names](/docs/how-to/name-things-your-way#adf-resource-names).
 
 ## Next
 
 - [ADF resource names](/docs/how-to/name-things-your-way#adf-resource-names):
   name each linked service, dataset, pipeline and trigger.
-- [Publish the factory](/docs/platforms/adf#publish): bring the reviewed
-  pipelines into your factory.
+- [Deploy the factory](/docs/platforms/adf#deploy): build the ARM template
+  and deploy it to each environment's factory.
 - [Plan, apply and review](/docs/how-to/plan-and-generate): see what a change
   of settings does to each pipeline before you write it.
