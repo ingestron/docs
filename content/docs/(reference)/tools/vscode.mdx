@@ -5,22 +5,27 @@ description: Write Ingestron projects in VS Code with problems as you type, navi
 
 The Ingestron extension works on any folder with a `project.yaml`. It uses the
 same definition and generation packages as the `ingestron` command. Editor
-analysis uses the open files and selected environment.
+analysis uses the open files and the selected environment; Plan, Apply and
+Check work on every environment together, as the command does.
 
 ## Install
 
 Follow [Install the command and the extension](/docs/start/install) to build the extension from
 [ingestron/vscode](https://github.com/ingestron/vscode) and install it.
 
-Open a folder that holds an Ingestron project. The environment the extension
-uses appears in the status bar, such as `Ingestron: dev`; click it to choose
-another. VS Code remembers the choice for each project in the workspace.
+Open a folder that holds an Ingestron project. The selected environment
+appears in the status bar, such as `Ingestron: dev`; click it to choose
+another. It decides what the editor shows: the problems, the previews of
+generated files, what each line becomes, and the platform request. Plan,
+Apply and Check do not use it: every environment is generated together, into
+one set of files per platform. VS Code remembers the choice for each project
+in the workspace.
 
 <Screenshot
   light="/images/vscode/environment-light.png"
   dark="/images/vscode/environment-dark.png"
-  alt="The environment picker lists dev and prod, over the first lines of project.yaml."
-  caption="Ingestron: Select environment lists the project's environments, dev and prod, over its project.yaml."
+  alt="The environment picker, titled Environment for problems, previews and the platform request, lists dev and prod over the first lines of retail's project.yaml."
+  caption="Ingestron: Select environment lists the project's environments, dev and prod: the one you choose is the one for problems, previews and the platform request."
 />
 
 ## Get started
@@ -36,13 +41,18 @@ Definition problems appear in the Problems panel at their file and line,
 while you type and before you save: a broken link, a setting
 the standard fixes, a method that cannot read a source, a name that is not
 valid. Problems are for the environment in the status bar; click it, or run
-**Ingestron: Select environment**, to choose another.
+**Ingestron: Select environment**, to choose another. Problems that generating
+finds, such as a value supplied when deploying that cannot be a name
+(`DEPLOY_VALUE`), show too, and a pack's notice (`PACK_NOTICE`) is a warning
+on the first line of `project.yaml` in every environment.
 
 A definition that uses `${envvar:NAME}` reads the variable from `.env.<environment>`
 and `.env` in the project folder, and from the environment VS Code was started
 with. A variable exported later in a terminal is not seen here; put it in
 `.env`. When the variable is set nowhere, the editor shows a blue information
-mark, not an error, that names the file to add it to, such as
+mark, not an error. For Databricks, Data Factory and Synapse, which take the
+value when deploying, it names what the deploying pipeline sets, such as
+`BUNDLE_VAR_landing_path`; for DuckDB it names the file to add it to, such as
 `.env.dev`. The rest of the project is still checked, and a value that depends
 on the missing one is not judged until it is set. A line in an `.env` file that
 Ingestron cannot read is a warning (`ENV_FILE_LINE`) at that line. See
@@ -51,8 +61,8 @@ Ingestron cannot read is a warning (`ENV_FILE_LINE`) at that line. See
 <Screenshot
   light="/images/vscode/envvar-info-light.png"
   dark="/images/vscode/envvar-info-dark.png"
-  alt="In project.yaml, landing: ${envvar:LANDING_PATH} has a blue wavy underline. Its hover says LANDING_PATH isn't set, to add it to .env.dev or set it before running Ingestron, with the code ENVVAR_MISSING."
-  caption="A variable that is set nowhere is marked as information, ENVVAR_MISSING, and its hover names .env.dev, the file to add it to."
+  alt="In project.yaml, landing: ${envvar:LANDING_PATH} has a blue wavy underline. Its hover says LANDING_PATH is supplied when deploying, as BUNDLE_VAR_landing_path (databricks); plan does not read it, so it needs no .env.dev entry; code ENVVAR_MISSING."
+  caption="A variable that is set nowhere is marked as information, ENVVAR_MISSING: in this Databricks project, its hover names BUNDLE_VAR_landing_path, which the deploying pipeline sets."
 />
 
 A definitions file that no import in `project.yaml` matches, such as a new
@@ -233,9 +243,13 @@ The **Ingestron** tab in the secondary side bar, on the right, opens with a
 **Project** section. For a workspace with one project it lists:
 
 - **Environments**, each with a circle, or a check and **selected** on the one
-  commands use now. Click an environment to select it, as in the status bar.
+  problems, previews and the platform request show. Click an environment to
+  select it, as in the status bar.
 - **Check**, **Plan**, **Apply**, **Compare environments**, **Prepare platform
   request** and **Show generated files**. Click one to run it for the project.
+  Check, Plan and Apply work on every environment together; Prepare platform
+  request and Show generated files use the selected one. Each item's tooltip
+  says which.
 
 With several projects, each has a row, named by its `id` and showing its folder
 in the workspace, that holds the same lists. Every row starts folded except
@@ -278,15 +292,24 @@ Explorer.
 ## See what will be generated
 
 - **Ingestron: Show generated files** opens what would be generated for the
-  table at the cursor, in a read-only preview, without writing anything. It
-  updates as you edit the definitions.
+  table at the cursor, in the selected environment, in a read-only preview,
+  without writing anything. It updates as you edit the definitions. Its paths
+  are those `ingestron apply` writes, such as
+  `build/adf/factory/pipeline/…`; a folder shared by every environment, such
+  as a Databricks bundle or a factory with each environment's parameter file,
+  shows in each environment that uses it.
 - **Ingestron: Compare with build** shows the difference between that and the
   file in `build/`: what the next apply changes.
 
-Plan, Apply, Check and the other commands work from a preview too. They act
-on the preview's project and on the environment it shows, even when another
-environment is selected for the project: Apply from a `dev` preview applies
-`dev`. While a preview is active, the status bar shows its environment.
+While plan would stop, nothing is generated, and the preview says why, such
+as `Nothing is generated while plan would stop: prod has problems. Run Plan
+to see them.`: problems in any environment stop every one, because every
+environment is generated together.
+
+Plan, Apply, Check and the other commands work from a preview too, on the
+preview's project; Apply from a `dev` preview writes every environment.
+Prepare platform request uses the environment the preview shows, and while a
+preview is active, the status bar shows that environment.
 
 <Screenshot
   light="/images/vscode/preview-light.png"
@@ -304,19 +327,20 @@ status bar, one Markdown document to review and send: the environment
 variables still to provide, the identity, what each switched-on `manage`
 capability needs, the features the definitions use while their switch is off,
 the shared infrastructure the methods expect (secrets never shown), what each
-pack needs on the platform and the generated `prerequisites.sql`. Nothing is
-sent or saved until you do so. See
+pack needs on the platform and the SQL to run once, such as Databricks'
+`prerequisites/<environment>.sql`. Nothing is sent or saved until you do so. See
 [Ask the platform team](/docs/how-to/ask-the-platform-team).
 
 ## Plan, apply and check
 
 **Ingestron: Plan**, **Ingestron: Apply** and **Ingestron: Check** run the
-command for the project and environment, after saving open files. The output
-is in the Ingestron output panel.
+command for the project, after saving open files, for every environment
+together: one block for each output folder, such as
+`databricks → build/databricks (dev, prod)`. The output is in the Ingestron
+output panel.
 
 You can start them from where you are working, as well as from the Command
-Palette. Each acts on the project you started it from, for the environment
-chosen for that project:
+Palette. Each acts on the project you started it from:
 
 - **Right-click** a project folder, or a YAML file in a project, in the
   Explorer for **Ingestron: Check**, **Plan**, **Apply**, **Compare
@@ -331,7 +355,7 @@ chosen for that project:
 <Screenshot
   light="/images/vscode/context-menu-light.png"
   dark="/images/vscode/context-menu-dark.png"
-  alt="In the Explorer, the shop project folder's menu ends with Check, Plan, Apply, Compare environments and Prepare platform request, after VS Code's own items."
+  alt="In the Explorer, the projects folder holds erp, retail and shop, folded. The shop folder's menu ends with Check, Plan, Apply, Compare environments and Prepare platform request, after VS Code's own items."
   caption="Right-click a project folder in the Explorer: Ingestron's commands come last."
 />
 
@@ -345,28 +369,33 @@ chosen for that project:
 <Screenshot
   light="/images/vscode/plan-light.png"
   dark="/images/vscode/plan-dark.png"
-  alt="The Output panel, Ingestron channel, after Ingestron: Plan: dev → build/dev, create databricks.yml, resources/shop.pipeline.yml and src/shop/bronze/orders.sql, then 3 files: 3 create. Ready to apply."
-  caption="The Ingestron output panel after Ingestron: Plan: three files to create in build/dev."
+  alt="The Output panel, Ingestron channel, after Ingestron: Plan: databricks → build/databricks (dev), create databricks.yml, resources/shop.pipeline.yml and src/shop/bronze/orders.sql, then 3 files: 3 create. Ready to apply."
+  caption="The Ingestron output panel after Ingestron: Plan: three files to create in the bundle's folder, build/databricks."
 />
 
 ## Generate on save
 
 To see the generated files change as you edit, click **Auto-apply: off** in
 the status bar, or run **Ingestron: Turn auto-apply on or off**. Turning it on
-applies the selected environment straight away. While it is on, the switch
-names that environment, such as **Auto-apply: on (dev)**, and saving a YAML,
-SQL or Python file in the project applies it again. The Ingestron output panel
-logs each run with the files it changed.
+applies every environment straight away, and the switch reads
+**Auto-apply: on**. While it is on, saving a YAML, SQL or Python file in the
+project applies again. The Ingestron output panel logs each run with a line
+for each output folder, such as `databricks (dev, prod): up to date`, with the
+files it changed below it, and a line for each folder that is no longer
+generated.
 
-It applies nothing while the definitions have problems, and nothing when a
-generated file was changed by hand: the log says so, as `apply` would. It starts
-off, and VS Code remembers the choice for each workspace.
+It applies nothing while the definitions have problems in any environment,
+and says where to see them: for another environment, such as
+`not applied: prod has problems (select prod to see them in the Problems panel)`.
+A folder with a file changed by hand is not applied either, and its line says
+so, as `apply` would. It starts off, and VS Code remembers the choice for each
+workspace.
 
 <Screenshot
   light="/images/vscode/auto-apply-light.png"
   dark="/images/vscode/auto-apply-dark.png"
-  alt="The Ingestron output panel logs auto-apply on: applying dev now, then after each save; dev: up to date; and, after a save, dev: applied: 1 update, 2 unchanged, with update src/shop/bronze/orders.sql. The status bar below shows Auto-apply: on (dev) and Ingestron: dev."
-  caption="Auto-apply on for dev: each save applies the environment again, and the output panel logs the files it changed."
+  alt="The Ingestron output panel logs auto-apply on: applying every environment now, then after each save; databricks (dev): up to date; and, after a save, databricks (dev): applied: 1 update, 2 unchanged, with update src/shop/bronze/orders.sql. The status bar below shows Auto-apply: on and Ingestron: dev."
+  caption="Auto-apply on: each save applies every environment again, and the output panel logs each output folder and the files it changed."
 />
 
 ## Start a project
