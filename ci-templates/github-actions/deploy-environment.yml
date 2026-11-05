@@ -7,10 +7,10 @@
 # - AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID: the identity this
 #   environment deploys as, with a federated credential for the job's subject:
 #   repo:<owner>/<repository>:environment:<environment> for a repository
-#   created before 15 July 2026, and
+#   created, renamed or transferred before 15 July 2026, and
 #   repo:<owner>@<owner id>/<repository>@<repository id>:environment:<environment>
-#   for one created since (gh api repos/<owner>/<repository> gives .owner.id
-#   and .id).
+#   for one created, renamed or transferred since, or opted in
+#   (gh api repos/<owner>/<repository> gives .owner.id and .id).
 # - ADF_RESOURCE_GROUP, ADF_FACTORY_NAME: the environment's data factory.
 # - DATABRICKS_CLIENT_ID: the service principal the bundle deploys as, with a
 #   federation policy for the same subject.
