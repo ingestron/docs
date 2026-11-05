@@ -1,18 +1,53 @@
 ---
 title: Databricks
-description: Read sources into Databricks tables with a generated bundle, work through a project with dev and prod environments, create the schemas, refresh on a schedule and deploy.
+description: Read sources into Databricks tables with one generated bundle for every environment, then deploy it target by target.
 ---
 
 When Databricks can reach the source, Databricks reads it and writes the
 tables. The Databricks pack writes one
-[Databricks bundle](https://docs.databricks.com/aws/en/dev-tools/bundles/) per
-environment: Lakeflow pipelines with their SQL and Python files, Lakeflow
-Connect ingestion for databases, and a refresh job when the platform has a
-schedule or a contract task (tags, column comments or table checks) runs after
-the refresh. The same bundle reads the files ADF lands on the `adf-databricks`
-route; [Azure Data Factory](/docs/platforms/adf) covers the copies.
+[Databricks bundle](https://docs.databricks.com/aws/en/dev-tools/bundles/) for
+every environment, with a target per environment: Lakeflow pipelines with
+their SQL and Python files, Lakeflow Connect ingestion for databases, and a
+refresh job when the platform has a schedule or a contract task (tags, column
+comments or table checks) runs after the refresh. The same bundle reads the
+files ADF lands on the `adf-databricks` route;
+[Azure Data Factory](/docs/platforms/adf) covers the copies.
 
 <RouteFacts id="databricks" />
+
+## What Ingestron writes [#what-you-get]
+
+For the `retail` starter, with `dev` and `prod` environments:
+
+<BuildTree name="retail" folder="build/databricks" />
+
+What differs between the environments is in one place, the targets of
+`databricks.yml`. Each target sets the workspace, the mode, the identity and
+permissions, and its value for each variable:
+
+<Example name="retail" file="build/databricks/databricks.yml" pick="targets" />
+
+Each variable is declared once, with a description and no default, so a
+target cannot take another environment's value by mistake:
+
+<Example name="retail" file="build/databricks/databricks.yml" pick="variables" />
+
+The pipeline reads the catalog from `${var.catalog}`, and passes the landing
+folder to its code as the configuration value `ingestron.shop_path`.
+Everything the same in every environment, such as the schema and the tags, is
+written as it is:
+
+<Example name="retail" file="build/databricks/resources/retail.pipeline.yml" />
+
+The table's SQL names tables with two parts, in the pipeline's catalog, and
+reads its files from `${ingestron.shop_path}`. Its expectations come from the
+contract, and `CLUSTER BY AUTO` from the standard's fixed setting:
+
+<Example name="retail" file="build/databricks/src/retail/bronze/customers.sql" />
+
+A value only the deploying pipeline knows, written as `${envvar:NAME}`, is a
+variable that the targets leave unset; see
+[Supplied when deploying](/docs/concepts/yaml-references#supplied-when-deploying).
 
 ## What it looks like in Databricks [#on-the-platform]
 
@@ -42,71 +77,60 @@ On the `adf-databricks` route, the pipeline reads the files ADF lands:
   caption="The demo's Northwind pipeline: a streaming table for each table ADF landed, and daily_sales built from orders and order_details."
 />
 
-## Work through the retail project
+## Create it [#create-it]
 
-In this example you read a complete Databricks project, generate it for its `dev`
-and `prod` environments, and break it once on purpose to see how Ingestron reports a
-problem. It builds on
-[Run your first project on your laptop](/docs/start/first-project).
+<OldAnchor id="work-through-the-retail-project" />
 
-Create it from the `retail` starter, from a parent folder:
+<ToolSteps>
+<Tool name="CLI">
+
+From a parent folder:
 
 ```sh
 ingestron init retail --template retail --yes
 cd retail
 ```
 
-`--yes` keeps the example's workspace and storage; leave it out to answer
-those questions. You can also <ExampleDownload name="retail" /> and unzip it.
-Either way the project holds the definitions only: you generate `build/`
-yourself in the fifth step.
+</Tool>
+<Tool name="VS Code">
 
-### 1. The organisation's standard
+Run **Ingestron: New project**, choose **From a starter**, then the retail
+starter. See [Create a project](/docs/how-to/start-from-a-template) for the
+remaining questions.
+
+</Tool>
+</ToolSteps>
+
+To start from your own source instead, choose it from the
+[connector catalogue](/docs/connectors); its page lists the routes it
+supports. The files on this page come from the starter:
+
+<ExampleDownload name="retail" />
+
+The standard names every catalog `<environment>_sales`, drops rows missing a
+required value, and clusters every streaming table automatically, which no
+project can change because it is `fixed`:
 
 <Example name="retail" file="standard.yaml" />
 
-Every catalog is named `<environment>_sales`, rows missing a required value
-are dropped, and every streaming table is clustered automatically, which no
-project can change because it is `fixed`.
-
-### 2. Dev and prod environments
+`dev` and `prod` use different workspaces and storage accounts. The rest of
+the definitions read these values, so nothing else changes between them:
 
 <Example name="retail" file="project.yaml" />
 
-`dev` and `prod` use different workspaces and storage accounts. The rest of
-the definitions read these values, so nothing else changes between them.
-
-### 3. Where things go
-
-<Example name="retail" file="platform.yaml" />
-
-The pipelines run as a service principal, engineers can manage them and
-analysts can view them. The refresh job runs daily at 5 am London time
-(`Europe/London`), paused in `dev`, and failures are emailed.
-
-### 4. The tables
+The flow reads `orders` as change records, kept current by key, and
+`customers` as CSV with a header:
 
 <Example name="retail" file="flows/shop.yaml" />
 
-`orders` arrives as change records, so it is kept current by key
-([Keep a table current](/docs/how-to/keep-a-table-current)) and checked for
-negative totals. `customers` arrives as CSV with a header.
-
-<Example name="retail" file="transforms/daily_sales.yaml" />
-
-`daily_sales` reads both tables and lands in `silver`.
-
-### 5. Generate
-
-<ToolSteps>
-<Tool name="CLI">
+Then generate both environments:
 
 ```sh
-ingestron plan --env dev --no-diff
+ingestron plan --no-diff
 ```
 
 ```text
-dev → build/dev
+databricks → build/databricks (dev, prod)
 create    databricks.yml
 create    resources/retail.pipeline.yml
 create    resources/retail_refresh.job.yml
@@ -117,178 +141,162 @@ create    src/retail/silver/daily_sales.sql
 6 files: 6 create. Ready to apply.
 ```
 
-</Tool>
-<Tool name="VS Code">
+Run `ingestron apply` to write them. If plan reports a problem instead, each
+one names its file, line and fix; see
+[Troubleshooting](/docs/troubleshooting#databricks).
 
-Run **Ingestron: Plan** from the Command Palette (⇧⌘P on macOS, Ctrl+Shift+P elsewhere). The output is in the Ingestron output panel. Problems show in the Problems panel as you type, before you plan.
+## Settings that shape it [#settings]
 
-</Tool>
-</ToolSteps>
+The platform document decides the targets: `workspace`, `run_as`,
+`permissions` and `mode` go into each target, and `tags` that differ become
+the target's preset tags. The defaults:
 
-Run `ingestron apply` to write both environments. Compare
-`build/dev/databricks.yml` with `build/prod/databricks.yml`: the workspace
-and the mode differ. In each folder's `resources/retail_refresh.job.yml`, the
-`dev` schedule is paused and the `prod` one is not.
+<PlatformDefaults pack="databricks" />
 
-### 6. Break it on purpose
+Only an environment named `dev` is in development mode, which prefixes
+resource names with the deploying user and pauses schedules; every other
+environment is in production mode. Each setting is explained in the
+[Databricks pack reference](/docs/reference/packs/databricks#platform-configuration).
 
-Change the transform's `id` to `orders` in `transforms/daily_sales.yaml` and
-plan again:
-
-```text
-dev: the definitions have problems
-transforms/daily_sales.yaml:3:5  error  DUPLICATE_TABLE
-  Another flow or transform already produces a table named "orders".
-```
-
-Transforms refer to tables by name, so each name has one producer. Change
-the `id` back to `daily_sales`; nothing was written while the problem
-existed.
-
-## Let the bundle create the schemas [#create-the-schemas]
+### Let the bundle create the schemas [#create-the-schemas]
 
 By default Ingestron assumes the schemas already exist, created by your
 platform team. When this project owns its schemas, say so in the platform and
-give grants per layer:
+give grants per layer, as the `platform-setup` example does:
 
 <Example name="platform-setup" file="platform.yaml" />
 
 The bundle then creates each schema the tables use, with the layer's grants,
-and the pipelines refer to them so Databricks creates the schemas first:
+in each target's catalog:
 
-<Example name="platform-setup" file="build/prod/resources/schemas.yml" />
+<Example name="platform-setup" file="build/databricks/resources/schemas.yml" />
 
-The bundle also gets a `prerequisites.sql`, with the catalog grants to run once
-as an administrator before the first deploy; see
-[platform prerequisites](/docs/reference/packs/databricks#platform-prerequisites).
+Each environment also gets the catalog grants an administrator runs once
+before the first deploy. They are not deployed:
+
+<Example name="platform-setup" file="build/databricks/prerequisites/prod.sql" />
 
 Only set `manage.schemas` when no other project uses the schemas: deploying
 the bundle can change them, and `databricks bundle destroy` deletes them.
 
-## Refresh on a schedule [#schedule]
+### Refresh on a schedule [#schedule]
 
-Add a `schedule` to the platform, with a
+A `schedule` in the platform, with a
 [Quartz cron expression](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)
-and, if not UTC, a time zone, as the retail platform above does. Ingestron
-generates a job that refreshes the pipelines in order: Lakeflow Connect
-ingestion first, then your own pipeline. The job, and its file under
-`resources/`, are named `<project>_refresh` by default, after the project's
-`id`; `naming.job` in the standard changes that (see
+and a time zone, adds a job that refreshes the pipelines in order: Lakeflow
+Connect ingestion first, then your own pipeline. It is named
+`<project>_refresh` by default; `naming.job` in the standard changes that (see
 [Name tables and resources](/docs/how-to/name-things-your-way)). The
 `sql-server` starter reads its database through Lakeflow Connect, so its job
-has both tasks. The starter's own files use the id `erp`:
+has both tasks:
 
-<Example name="sql-server" file="build/dev/resources/erp_refresh.job.yml" />
+<Example
+  name="sql-server"
+  file="build/databricks/resources/erp_refresh.job.yml"
+  pick="resources.jobs.erp_refresh.tasks"
+/>
 
-A project you create from it takes its folder's name as its id, so
-`ingestron init sql-server --template sql-server` writes
-`resources/sql_server_refresh.job.yml`.
-
-Outside production the job is created paused, as the
-[platform defaults](/docs/reference/packs/databricks#platform-configuration)
-say; set `paused: false` in the `schedule` to change that.
-`ingestron request` lists the state of each schedule, so the platform team
-sees the same thing the files say.
-
-On the `adf-databricks` route, the ADF copies have their own windows, but the
-same switch stops them: `paused: true` in the platform's `schedule` stops both
-the job and the Data Factory triggers. To stop only the copies, see
+The schedule runs only in `prod` or `production`; set `paused` in the
+`schedule` to change that. On the `adf-databricks` route, `paused: true` in the
+platform's `schedule` stops both the job and the Data Factory triggers; to
+stop only the copies, see
 [Retry and pause](/docs/platforms/adf#retry-and-pause).
 
-## Deploy the bundle [#deploy]
+The tables themselves are shaped by the flows and the standard:
+[Keep a table current](/docs/how-to/keep-a-table-current),
+[Write a transform](/docs/how-to/write-a-transform) and
+[Check data quality](/docs/how-to/add-quality-checks).
 
-The generated folder is an ordinary Databricks bundle. You need the
-[Databricks CLI](https://docs.databricks.com/aws/en/dev-tools/cli/) and to be
-signed in to the workspace. Generate and review the files first, and arrange
-the permissions and source access listed in the
-[platform request](/docs/how-to/ask-the-platform-team).
+## Before you deploy [#prerequisites]
 
-### Deploy an environment
+You need the [Databricks CLI](https://docs.databricks.com/aws/en/dev-tools/cli/),
+v0.264.0 or later, which applies preset tags to pipelines. Ingestron creates
+nothing in Databricks. `ingestron request --env prod` lists what the bundle
+expects to exist:
 
-From the project folder, open the output folder containing `databricks.yml`:
+<Request name="retail" env="prod" sections={["Must exist before deploying"]} />
 
-- With only the Databricks pack: `build/dev/`.
-- With ADF as well (the `adf-databricks` route): `build/dev/databricks/`.
+With `manage` switches on, the request also says what each needs and gives the
+SQL to run once. See [Ask the platform team](/docs/how-to/ask-the-platform-team)
+for the whole request.
 
-Use the environment you intend to deploy in place of `dev`. Run these commands
-from that bundle folder:
+## Deploy [#deploy]
 
-```sh
-databricks bundle validate
-databricks bundle deploy
-```
-
-On the `adf-databricks` route, publish the ADF resources separately, as in
-[Publish the factory](/docs/platforms/adf#publish). The bundle does not start
-the ADF copies; the landed files must be there before the pipelines read them.
-
-### Deploy from a CI/CD pipeline [#deploy-from-ci]
-
-Each environment's bundle is its own folder, `build/<environment>/`
-(`build/<environment>/databricks/` on the `adf-databricks` route). Its
-`databricks.yml` has one target, named after the environment and set as the
-default: `build/prod/databricks.yml` holds the target `prod`. The target's
-`mode` is `production` for an environment named `prod` or `production`, and
-`development` otherwise, unless the platform sets `mode` itself.
-
-Commit `build/` with the definitions, so one commit holds every environment's
-bundle. A pipeline that already deploys Databricks bundles promotes that commit
-stage by stage: each stage signs in to its environment's workspace, as it does
-for any bundle, and runs this from that environment's folder, here for `prod`:
+The folder is an ordinary Databricks bundle. Deploy one environment by its
+target, from `build/databricks`, signed in to that environment's workspace:
 
 ```sh
-databricks bundle deploy -t prod
+cd build/databricks
+databricks bundle validate -t dev
+databricks bundle deploy -t dev
 ```
 
-The deploy stages need the Databricks CLI only, not Ingestron: they deploy the
-committed files. Keep `ingestron check` on pull requests, so the committed
-bundles are what the definitions generate; the GitHub Actions and Azure DevOps
-templates are in [Check generated files in CI](/docs/how-to/check-in-ci).
+Every environment deploys the same files, so the commit you tested in `dev` is
+the one `prod` runs. The bundle's name, resource keys and target names are the
+project's and its environments', so each target keeps its own deployment
+state. On the `adf-databricks` route, deploy the factory as well, as in
+[Azure Data Factory](/docs/platforms/adf#deploy); the bundle does not start the
+ADF copies.
 
-### Run the complete refresh
+### From CI [#deploy-from-ci]
 
-Inspect the generated files under `resources/`. If a refresh job is generated,
-run that job so its ingestion, refresh and any contract tasks run in the
-declared order. From the retail project's `build/dev/` folder:
+In a pipeline, each environment's stage installs the Databricks CLI at a
+pinned version and deploys that environment's target. From the GitHub Actions
+template:
+
+<Template
+  file="github-actions/deploy-environment.yml"
+  from="- uses: databricks/setup-cli"
+  to='databricks bundle deploy -t "$ENVIRONMENT"'
+/>
+
+`github-oidc` signs in as the environment's service principal, with no
+secret. The stage needs no Ingestron: it deploys the committed files, which
+`ingestron check` keeps up to date.
+[Deploy through environments](/docs/how-to/deploy-through-environments)
+gives the whole pipeline, for GitHub Actions and Azure DevOps, with approvals
+between the stages.
+
+## Run and operate [#operate]
+
+If a refresh job is generated, run it so its ingestion, refresh and any
+contract tasks run in order. From `build/databricks`:
 
 ```sh
-databricks bundle run retail_refresh
+databricks bundle run retail_refresh -t dev
 ```
 
-For your project, use the key under `resources.jobs` in its generated job
-file. If no job is generated, run the pipeline key under `resources.pipelines`
-instead:
-
-```sh
-databricks bundle run <pipeline-key>
-```
-
-Replace `<pipeline-key>` with that YAML key, not the display `name` or a
-filename. Read the run output and inspect the run in Databricks to confirm
-that its tasks succeeded. See the
+For your project, use the key under `resources.jobs` in its job file. Without
+a job, run the pipeline's key under `resources.pipelines` instead, not its
+display `name` or a file name. Read the run output and inspect the run in
+Databricks to confirm that its tasks succeeded; see the
 [bundle run instructions](https://docs.databricks.com/aws/en/dev-tools/bundles/work-tasks)
-for the platform command (checked 28 October 2026).
+(checked 28 October 2026).
 
-## More for Databricks projects
+The schedule runs in production only; `ingestron request` lists the state of
+each schedule, so the platform team sees what the files say. When a deploy or
+a run fails, see [Troubleshooting](/docs/troubleshooting#databricks).
 
-- [Keep a table current](/docs/how-to/keep-a-table-current): append changes,
-  keep current rows or retain history.
-- [Write a transform](/docs/how-to/write-a-transform): build tables from
-  declared inputs with SQL or PySpark.
-- [Check data quality](/docs/how-to/add-quality-checks): choose what happens
-  when data breaks a rule.
-- [Name tables and resources](/docs/how-to/name-things-your-way): naming
-  patterns for catalogs, schemas, tables and jobs.
-- [Set your organisation's standard](/docs/how-to/configure-a-standard): make
-  the standard your organisation's.
-- [Databricks pack](/docs/reference/packs/databricks): every setting, the
-  platform defaults and the `manage` switches.
+## Limits [#limits]
+
+- **Environments may differ only in values.** A table built in some
+  environments only, or code that differs in more than a value, is
+  [`ENVIRONMENTS_DIFFER`](/docs/reference/errors#ENVIRONMENTS_DIFFER). A
+  PySpark transform's own code cannot hold a value that differs yet, and a
+  Kafka connection's `continuous` must be the same in every environment.
+- **Values supplied when deploying** must be values, not names: a flow's
+  `source` read from `${envvar:…}` is
+  [`DEPLOY_VALUE`](/docs/reference/errors#DEPLOY_VALUE).
+- **What has been tried.** The screenshots show the demo deployed with
+  ingestron 1.8, which wrote a bundle per environment. The 2.0 bundle, one for
+  every environment, validates against the Databricks CLI's bundle schema
+  (v1.23.0), but has not yet been deployed to a live workspace.
 
 ## Next
 
+- [Deploy through environments](/docs/how-to/deploy-through-environments):
+  promote one commit from dev to prod, with approvals.
 - [Add a source and its tables](/docs/how-to/add-a-source): another table, or
   another source, in the same project.
-- [Keep a table current](/docs/how-to/keep-a-table-current): keep the current
-  row per key, or every version, from loads of changed rows.
-- [Check generated files in CI](/docs/how-to/check-in-ci): fail a pull request
-  whose bundles are out of date.
+- [Databricks pack](/docs/reference/packs/databricks): every setting, the
+  platform defaults and the `manage` switches.

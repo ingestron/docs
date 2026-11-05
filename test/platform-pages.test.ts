@@ -25,29 +25,16 @@ import {
 describe("platforms/databricks", () => {
   const page = read("platforms/databricks.mdx");
 
-  it("prints the retail project's plan and its deliberate break as the page shows", () => {
-    const example = section(page, "## Work through the retail project");
-    const create = commands(example);
-    expect(create[1], "the page changes into the project").toMatch(/^cd /);
+  it("creates the retail project and plans the bundle the page shows", () => {
+    const create = section(page, "## Create it");
+    const lines = commands(create);
+    expect(lines[1], "the page changes into the project").toMatch(/^cd /);
     const parent = mkdtempSync(join(tmpdir(), "docs-databricks-retail-"));
-    expect(cli(parent, command(create, "init")).code).toBe(0);
-    const cwd = join(parent, create[1]!.slice("cd ".length));
-
-    const generate = section(page, "### 5. Generate");
-    const plan = command(commands(generate), "plan");
-    const planned = cli(cwd, plan);
+    expect(cli(parent, command(lines, "init")).code).toBe(0);
+    const cwd = join(parent, lines[1]!.slice("cd ".length));
+    const planned = cli(cwd, command(lines, "plan"));
     expect(planned.code).toBe(0);
-    expect(planned.output.trim()).toBe(fences(generate, "text")[0]!.trim());
-
-    // "plan again": the same command, after the change the page names.
-    const transform = join(cwd, "transforms/daily_sales.yaml");
-    const original = readFileSync(transform, "utf8");
-    writeFileSync(transform, original.replace(/^id: daily_sales$/m, "id: orders"));
-    const broken = cli(cwd, plan);
-    expect(broken.code).toBe(1);
-    expect(broken.output.trim()).toBe(
-      fences(section(page, "### 6. Break it on purpose"), "text")[0]!.trim(),
-    );
+    expect(planned.output.trim()).toBe(fences(create, "text")[0]!.trim());
   });
 });
 
@@ -55,56 +42,71 @@ describe("platforms/adf", () => {
   const page = read("platforms/adf.mdx");
 
   it("lists the ADF prerequisites the platform request prints", () => {
-    const prerequisites = section(page, "## Platform prerequisites");
+    const prerequisites = section(page, "## Before you deploy");
     const written = /`(ingestron request [^`]+)`/.exec(prerequisites);
     expect(written, "the request command, in the prose").not.toBeNull();
-    // The page shows the request's last section, rendered from the finished project.
+    // The page shows the request's last section, rendered from the starter.
     expect(requestUses(prerequisites)).toEqual([
-      { name: "connection-first-adf", env: "dev", sections: ["ADF prerequisites"] },
+      { name: "private-sql-server", env: "prod", sections: ["ADF prerequisites"] },
     ]);
-    const request = cli(copy("connection-first-adf"), written![1]!.split(" ").slice(1));
+    const request = cli(copy("private-sql-server"), written![1]!.split(" ").slice(1));
     expect(request.code).toBe(0);
     expect(
       request.output
         .trimEnd()
-        .endsWith(requestSections("connection-first-adf", "dev", ["ADF prerequisites"])),
+        .endsWith(requestSections("private-sql-server", "prod", ["ADF prerequisites"])),
       "the request ends with the section the page shows",
     ).toBe(true);
   });
 
-  it("prints the factory's files after the Databricks ones, and the missing-server problem", () => {
-    const cwd = copy("connection-first-adf");
-    const generate = section(page, "## Generate and inspect");
-    const plan = command(commands(generate), "plan");
-    const [files, problem] = fences(generate, "text");
-    const planned = cli(cwd, plan);
+  it("creates the starter and plans the factory the page shows, after its notice", () => {
+    const create = section(page, "## Create it");
+    const lines = commands(create);
+    expect(lines[1], "the page changes into the project").toMatch(/^cd /);
+    const parent = mkdtempSync(join(tmpdir(), "docs-adf-erp-"));
+    expect(cli(parent, command(lines, "init")).code).toBe(0);
+    const cwd = join(parent, lines[1]!.slice("cd ".length));
+    const planned = cli(cwd, command(lines, "plan"));
     expect(planned.code).toBe(0);
-    const databricks = planned.output.indexOf("dev/databricks → build/dev/databricks");
-    const adf = planned.output.indexOf(files!.trim());
-    expect(databricks, "the Databricks files").toBeGreaterThan(-1);
-    expect(adf, "the page's ADF files").toBeGreaterThan(databricks);
-
-    // "plan again", without the field the page removes.
-    const connection = join(cwd, "connections/postgresql.yaml");
-    writeFileSync(connection, readFileSync(connection, "utf8").replace(/^ {2}server: .*\n/m, ""));
-    const broken = cli(cwd, plan);
-    expect(broken.code).toBe(1);
-    expect(broken.output.trim()).toBe(problem!.trim());
+    expect(planned.output.trim()).toBe(fences(create, "text")[0]!.trim());
+    // The notice is a warning: check still passes once applied.
+    expect(cli(cwd, ["apply", "--no-diff"]).code).toBe(0);
+    expect(cli(cwd, ["check"]).code).toBe(0);
   });
 
-  it("stops only the copies with the pause fragment, in the finished project's method", () => {
+  it("stops only the copies with the pause fragment, in the starter's method", () => {
     const [fragment] = fences(section(page, "### Retry and pause"), "yaml");
-    const cwd = copy("connection-first-adf");
+    const cwd = copy("private-sql-server");
     const method = Object.keys(parse(readFileSync(join(cwd, "platform.yaml"), "utf8")).settings);
     expect(Object.keys(parse(fragment!).settings)).toEqual(method);
-    merge(join(cwd, "platform.yaml"), fragment!);
-    const out = join(cwd, "out");
-    expect(cli(cwd, ["apply", "--env", "prod", "--no-diff", "--out", out]).code).toBe(0);
-    const trigger = JSON.parse(
-      readFileSync(join(out, "prod/adf/trigger/tr_sales_orders_prod.json"), "utf8"),
-    );
+    const parameters = () =>
+      JSON.parse(readFileSync(join(cwd, "out/adf/parameters/prod.json"), "utf8")).parameters;
+    expect(cli(cwd, ["apply", "--no-diff", "--out", join(cwd, "out")]).code).toBe(0);
     // Production triggers start by default; the fragment stops this one.
+    expect(parameters().tr_erp_erp_properties_runtimeState.value).toBe("Started");
+    merge(join(cwd, "platform.yaml"), fragment!);
+    expect(cli(cwd, ["apply", "--no-diff", "--out", join(cwd, "out")]).code).toBe(0);
+    const trigger = JSON.parse(
+      readFileSync(join(cwd, "out/adf/factory/trigger/tr_erp_erp.json"), "utf8"),
+    );
     expect(trigger.properties.runtimeState).toBe("Stopped");
+    // Stopped everywhere, so the state no longer differs and is not a parameter.
+    expect(parameters().tr_erp_erp_properties_runtimeState).toBeUndefined();
+  });
+
+  it("deploys with each environment's parameter file, in the order the CI template uses", () => {
+    const deploy = section(page, "## Deploy");
+    const [build] = fences(deploy, "sh");
+    expect(build).toContain("@microsoft/azure-data-factory-utilities@1.0.3");
+    expect(build).toContain("export build/adf/factory <dev factory resource ID> arm");
+    const [steps] = fences(deploy, "powershell");
+    const lines = steps!.trimEnd().split("\n");
+    expect(lines).toHaveLength(3);
+    expect(lines[0]).toContain("-ArmTemplateParameters build/adf/parameters/prod.json");
+    expect(lines[0]).toContain("-PreDeployment $true -DeleteDeployment $false");
+    expect(lines[1]).toContain("--mode Incremental");
+    expect(lines[1]).toContain('--parameters "@build/adf/parameters/prod.json" factoryName=');
+    expect(lines[2]).toContain("-PreDeployment $false -DeleteDeployment $true");
   });
 });
 
@@ -115,10 +117,10 @@ describe("platforms/adf-pipelines", () => {
     expect(fences(page, "yaml"), "no hand-written YAML").toEqual([]);
     const cwd = copy("northwind");
     const out = join(cwd, "out");
-    const applied = cli(cwd, ["apply", "--env", "dev", "--no-diff", "--out", out]);
+    const applied = cli(cwd, ["apply", "--no-diff", "--out", out]);
     expect(applied.code, applied.output).toBe(0);
     const pipeline = JSON.parse(
-      readFileSync(join(out, "dev/adf/pipeline", pipelineFile(applied.output)), "utf8"),
+      readFileSync(join(out, "adf/factory/pipeline", pipelineFile(applied.output)), "utf8"),
     );
     const [forEach] = pipeline.properties.activities;
     expect(forEach.name).toBe("for_each_table");
@@ -148,7 +150,9 @@ describe("platforms/duckdb", () => {
     expect(cli(cwd, ["apply", "--no-diff"]).code).toBe(0);
     const run = (args: string[]) =>
       spawnSync("duckdb", ["-cmd", ".mode duckbox", ...args], { cwd, encoding: "utf8" });
-    expect(run(["-bail", "ingestron.duckdb", "-c", ".read build/dev/run.sql"]).status).toBe(0);
+    expect(run(["-bail", "ingestron.duckdb", "-c", ".read build/duckdb/dev/run.sql"]).status).toBe(
+      0,
+    );
     const [query] = commands(shown);
     const words = [...query!.matchAll(/"([^"]*)"|(\S+)/g)].map((match) => match[1] ?? match[2]!);
     expect(words.slice(0, 3)).toEqual(["duckdb", "ingestron.duckdb", "-c"]);
@@ -176,7 +180,9 @@ describe("each restructured platform page's Create it", () => {
 
 /** The one pipeline file a plan or apply lists. */
 function pipelineFile(output: string): string {
-  const found = [...output.matchAll(/create {4}pipeline\/(\S+\.json)/g)].map((match) => match[1]!);
+  const found = [...output.matchAll(/create {4}factory\/pipeline\/(\S+\.json)/g)].map(
+    (match) => match[1]!,
+  );
   expect(found, "one generated pipeline").toHaveLength(1);
   return found[0]!;
 }
