@@ -10,20 +10,20 @@ Quotation marks do not disable references: a quoted YAML string is still resolve
 
 ## Choose the right syntax
 
-| Write                                | Meaning                                              | Where to use it                                                |
-| ------------------------------------ | ---------------------------------------------------- | -------------------------------------------------------------- |
-| `${values.landing}`                  | A project value after environment overrides          | Definition values                                              |
-| `${values.cluster.workers}`          | A nested value                                       | Definition values                                              |
-| `${values.hosts.0}`                  | The first item in a value list                       | Definition values                                              |
-| `${environment.name}`                | The selected environment, such as `dev`              | Values and definitions                                         |
-| `${project.id}` or `${project.name}` | The project ID or optional display name              | Values and definitions                                         |
-| `${file:query.sql}`                  | Contents of a project file                           | Whole value, or embedded when the result is scalar             |
-| `${file:shared.yaml#/columns/0}`     | A value within a YAML file                           | Whole value or embedded scalar; the fragment is a JSON Pointer |
-| `${secret:source-password}`          | A reference to a secret, never the secret's contents | A whole value accepted by a connector or method                |
-| `${envvar:SOURCE_HOST}`              | Text from an environment variable or an `.env` file  | Non-secret values for one person or machine; see below         |
-| `{{ environment }}` or `{{ table }}` | A naming pattern evaluated with naming context       | Standard or platform `naming` only                             |
-| `{{ tables.orders }}`                | A declared input's generated name                    | SQL transform code supported by the selected method            |
-| `$${bundle.target}`                  | Literal `${bundle.target}` text after YAML loading   | Text intended for another tool; see transform exceptions below |
+| Write                                | Meaning                                                                                         | Where to use it                                                |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `${values.landing}`                  | A project value after environment overrides                                                     | Definition values                                              |
+| `${values.cluster.workers}`          | A nested value                                                                                  | Definition values                                              |
+| `${values.hosts.0}`                  | The first item in a value list                                                                  | Definition values                                              |
+| `${environment.name}`                | The selected environment, such as `dev`                                                         | Values and definitions                                         |
+| `${project.id}` or `${project.name}` | The project ID or optional display name                                                         | Values and definitions                                         |
+| `${file:query.sql}`                  | Contents of a project file                                                                      | Whole value, or embedded when the result is scalar             |
+| `${file:shared.yaml#/columns/0}`     | A value within a YAML file                                                                      | Whole value or embedded scalar; the fragment is a JSON Pointer |
+| `${secret:source-password}`          | A reference to a secret, never the secret's contents                                            | A whole value accepted by a connector or method                |
+| `${envvar:SOURCE_HOST}`              | A value the deploying pipeline supplies, or text from an environment variable or an `.env` file | Non-secret values each stage or machine sets; see below        |
+| `{{ environment }}` or `{{ table }}` | A naming pattern evaluated with naming context                                                  | Standard or platform `naming` only                             |
+| `{{ tables.orders }}`                | A declared input's generated name                                                               | SQL transform code supported by the selected method            |
+| `$${bundle.target}`                  | Literal `${bundle.target}` text after YAML loading                                              | Text intended for another tool; see transform exceptions below |
 
 Project `id`, `name` and `imports` are read literally. YAML mapping keys are not
 interpolated. Write references in values, not in field names or import patterns.
@@ -91,25 +91,57 @@ Do not embed a secret reference in a URL or connection string.
 
 ## Read an environment variable
 
-`${envvar:SOURCE_HOST}` reads text from an environment variable. Names use
-letters, digits and underscores and cannot start with a digit. Ingestron uses
+`${envvar:NAME}` names a value that is not written in the definitions. Names
+use letters, digits and underscores and cannot start with a digit. What
+happens to it depends on the platform's pack.
+
+### Supplied when deploying [#supplied-when-deploying]
+
+Databricks, Azure Data Factory and Synapse get one set of files for every
+environment, so a value from a variable is not read when generating. It
+becomes a parameter of the generated files, and the pipeline that deploys
+each environment supplies it:
+
+| Platform           | The value becomes                                                | The deploying pipeline sets                                      |
+| ------------------ | ---------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Databricks         | a bundle variable that the environment's target leaves unset     | `BUNDLE_VAR_<name>`, where `<name>` is `NAME` in lower case      |
+| Azure Data Factory | an ARM template parameter that the environment's file leaves out | that parameter, after `factoryName`, when deploying the template |
+| Synapse            | a sqlcmd variable that the environment's script does not set     | an environment variable `NAME`, in the same case                 |
+
+So the files are the same on every machine and in CI, and a laptop needs no
+CI values to plan. `ingestron request` lists each such value with the name to
+set; see [Values to provide](/docs/how-to/ask-the-platform-team#values-to-provide).
+A workspace host supplied this way is `DATABRICKS_HOST`.
+
+Only a value can wait until deploying. A variable in a flow's `source`, a
+contract id, a resource name or anything else that decides what is generated
+or what it is called is
+[`DEPLOY_VALUE`](/docs/reference/errors#DEPLOY_VALUE): write it in
+`project.yaml` for each environment. Data Factory and Synapse take only a whole
+value from a variable: `${envvar:…}` inside a longer value, such as a path, is
+`DEPLOY_VALUE` there too, while Databricks puts the variable into the text.
+
+### Read when generating [#read-when-generating]
+
+DuckDB, passports and the editor read the value when generating. Ingestron uses
 the first non-empty value from the environment of the process that runs it,
 then `.env.<environment>`, then `.env`. An empty value counts as unset.
 
 A variable that is unset everywhere reports
 [`ENVVAR_MISSING`](/docs/reference/errors#ENVVAR_MISSING). The CLI reports it
-as an error. The editor reports it as information that names the file to add it
-to, so the rest of the project is still checked.
+as an error. The editor reports it as information, so the rest of the project
+is still checked: for DuckDB it names the file to add it to, and for a value
+supplied when deploying it names what the deploying pipeline sets instead.
 
 <Screenshot
   light="/images/vscode/envvar-info-light.png"
   dark="/images/vscode/envvar-info-dark.png"
   alt="In project.yaml, landing: ${envvar:LANDING_PATH} has a blue wavy underline. Its hover says LANDING_PATH isn't set, to add it to .env.dev or set it before running Ingestron, with the code ENVVAR_MISSING."
-  caption="In VS Code, a variable that is set nowhere is information, not an error: the hover names .env.dev, the file to add it to."
+  caption="In VS Code, a variable that is set nowhere is information, not an error: for DuckDB, the hover names .env.dev, the file to add it to."
 />
 
-An environment variable's value becomes ordinary resolved text and may reach
-generated files. Use `${secret:…}` for credentials instead.
+A value read when generating becomes ordinary text and may reach generated
+files. Use `${secret:…}` for credentials instead.
 
 ## Choose where a value lives
 
@@ -120,13 +152,14 @@ Start with the first place and move down only when the value does not fit:
    reviewer sees every change. The `prod` entry in
    [the example above](#project-values-and-environments) replaces `landing`
    and `host` this way.
-2. **`.env` files**, for a value that differs for each person or machine, such
-   as a folder on your laptop or a sandbox workspace, or that your
-   infrastructure code produces, such as the name of a storage account it
-   creates. Do not commit them.
-3. **Pipeline variables in CI.** Set the variable in the pipeline and pass it to
-   the step that runs Ingestron. The process environment wins over the files, so
-   CI needs no `.env`.
+2. **`.env` files**, for a value read when generating that differs for each
+   person or machine, such as a folder on your laptop for DuckDB. Do not commit
+   them.
+3. **Pipeline variables in CI.** For Databricks, Data Factory and Synapse, set
+   the variable for each environment in the pipeline that deploys, as
+   [Deploy through environments](/docs/how-to/deploy-through-environments#values-supplied-when-deploying)
+   shows. For DuckDB, pass it to the step that runs Ingestron: the process
+   environment wins over the files, so CI needs no `.env`.
 4. **`${secret:…}`**, for every credential. A `.env` file holds values that are
    not secret: a line that Ingestron cannot read is reported without quoting it,
    but a problem with the value itself may show it.

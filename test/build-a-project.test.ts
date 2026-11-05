@@ -107,11 +107,11 @@ describe("how-to/keep-a-table-current", () => {
 
   it("upserts the starter's orders with the page's fragment", () => {
     const cwd = shop();
-    const before = readFileSync(join(cwd, "build/dev/tables/bronze.orders.sql"), "utf8");
+    const before = readFileSync(join(cwd, "build/duckdb/dev/tables/bronze.orders.sql"), "utf8");
     expect(before).toContain('CREATE OR REPLACE TABLE "bronze"."orders" AS');
     merge(join(cwd, "flows/orders.yaml"), fences(section(page, "## On DuckDB"), "yaml")[0]!);
     expect(cli(cwd, ["apply", "--no-diff"]).code).toBe(0);
-    const after = readFileSync(join(cwd, "build/dev/tables/bronze.orders.sql"), "utf8");
+    const after = readFileSync(join(cwd, "build/duckdb/dev/tables/bronze.orders.sql"), "utf8");
     expect(after).toContain('INSERT OR REPLACE INTO "bronze"."orders"');
     expect(after).toContain('ORDER BY "ordered_at" DESC, "_ingestron_file" DESC');
   });
@@ -203,7 +203,7 @@ describe("how-to/write-a-contract", () => {
     const out = join(databricks, "out");
     expect(cli(databricks, ["apply", "--no-diff", "--out", out]).code).toBe(0);
     const bronze = readFileSync(
-      join(out, "dev/src", projectId(databricks), "bronze/orders.sql"),
+      join(out, "databricks/src", projectId(databricks), "bronze/orders.sql"),
       "utf8",
     );
     expect(bronze).toContain(
@@ -213,7 +213,7 @@ describe("how-to/write-a-contract", () => {
     const duckdb = copy("duckdb");
     retype(join(duckdb, "contracts/orders.yaml"), "customer", "string", "object");
     expect(cli(duckdb, ["apply", "--no-diff", "--out", join(duckdb, "out")]).code).toBe(0);
-    expect(readFileSync(join(duckdb, "out/dev/tables/bronze.orders.sql"), "utf8")).toContain(
+    expect(readFileSync(join(duckdb, "out/duckdb/dev/tables/bronze.orders.sql"), "utf8")).toContain(
       'CAST("customer" AS VARCHAR)',
     );
   });
@@ -234,7 +234,7 @@ describe("how-to/write-a-contract", () => {
     const out = join(cwd, "out");
     const id = projectId(cwd);
     expect(cli(cwd, ["apply", "--no-diff", "--out", out]).code).toBe(0);
-    const bronze = readFileSync(join(out, "dev/src", id, "bronze/orders.sql"), "utf8");
+    const bronze = readFileSync(join(out, "databricks/src", id, "bronze/orders.sql"), "utf8");
     expect(bronze).toContain(
       "CONSTRAINT `customer_id_minimum` EXPECT (`customer_id` IS NULL OR `customer_id` >= 1)",
     );
@@ -250,7 +250,7 @@ describe("how-to/write-a-contract", () => {
       stringify({ ...project, imports: [...project.imports, "platform.yaml"] }),
     );
     expect(cli(cwd, ["apply", "--no-diff", "--out", out]).code).toBe(0);
-    expect(readFileSync(join(out, "dev/src", id, "apply_contract.py"), "utf8")).toContain(
+    expect(readFileSync(join(out, "databricks/tasks", id, "apply_contract.py"), "utf8")).toContain(
       '"name": "customer_id_unique"',
     );
   });

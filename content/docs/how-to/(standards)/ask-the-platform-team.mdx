@@ -21,8 +21,8 @@ environment in the status bar, unsaved, to review and send.
 Each section appears only when it has something to say, in this order:
 
 - **Values to provide:** each environment variable the definitions read,
-  where it is used, and whether it is set; never its value. See
-  [Values to provide](#values-to-provide).
+  where it is used, whether it is set, and the name the deploying pipeline
+  supplies it as; never its value. See [Values to provide](#values-to-provide).
 - The identity pipelines and jobs run as, and the workspace.
 - **Switched on:** each `manage` switch the platform turns on, what it does
   and what it needs on the platform, from the pack's
@@ -37,7 +37,8 @@ Each section appears only when it has something to say, in this order:
   schedules and whether each is paused, and what Azure Data Factory, the
   Synapse database or the DuckDB job needs. Ingestron lists these from the
   definitions; it has not checked that they exist.
-- **SQL to run once (review first):** the generated `prerequisites.sql`.
+- **SQL to run once (review first):** the generated
+  `prerequisites/<environment>.sql`.
 
 Nothing is sent anywhere: send the request the way your team takes requests.
 
@@ -65,7 +66,7 @@ Its request for `dev` is:
 
 A platform document that names `run_as` and turns on `manage` switches adds
 what each switch needs and the SQL to run once; see
-[Create the schemas](/docs/platforms/databricks#create-the-schemas).
+[Before you deploy](/docs/platforms/databricks#prerequisites) on the Databricks page.
 
 ### Azure Data Factory
 
@@ -97,9 +98,10 @@ the request for `dev` adds the job, with the role ADF needs to start it under
 
 ## Values to provide [#values-to-provide]
 
-A value only the platform team knows, such as a storage path, can come from
-an environment variable with `${envvar:…}`. A variable that is not set yet
-does not stop the request: the request opens by asking for it.
+A value only the platform team knows, or one each stage of a deployment
+supplies, such as a storage path, can come from an environment variable with
+`${envvar:…}`. A variable that is not set yet does not stop the request: the
+request opens by asking for it.
 
 In the `shop` project above, read the landing folder from a variable in
 `project.yaml`:
@@ -118,7 +120,9 @@ With `LANDING_PATH` set nowhere, `ingestron request --env dev` prints:
 
 These values come from environment variables. Set them in the pipeline that runs Ingestron for this environment, or in `.env.dev` on your own computer, kept out of Git.
 
-- `LANDING_PATH`, used for `values.landing` in `project.yaml`: not set yet.
+The files of the packs that build every environment together take these values when deploying: the pipeline that deploys them supplies each value for each environment, under the names given.
+
+- `LANDING_PATH`, used for `values.landing` in `project.yaml`: not set yet. The deploying pipeline supplies it as `BUNDLE_VAR_landing_path` (databricks).
 
 Until a variable is set, this request shows it as `${envvar:NAME}`, and leaves out what cannot be worked out without it.
 
@@ -141,6 +145,13 @@ Ingestron has not checked these; the generated files expect them.
 - No schedule: the pipelines run only when someone starts them.
 ```
 
+For Databricks, Azure Data Factory and Synapse, the generated files take such
+a value when deploying, not when generating: the line names what the
+deploying pipeline sets, here the bundle variable `BUNDLE_VAR_landing_path`.
+For Data Factory it is the ARM template parameter to pass, and for Synapse the
+sqlcmd variable. [Deploy through environments](/docs/how-to/deploy-through-environments#values-supplied-when-deploying)
+shows where each goes in the pipeline.
+
 In VS Code, **Ingestron: Prepare platform request** opens the same request,
 unsaved:
 
@@ -161,11 +172,17 @@ unsaved:
   its tables need, and leaves out the SQL to run once.
 - A table whose contract or method holds such a variable is left out, and
   the request names it.
+- Only values can wait until deploying. A variable that decides what is
+  generated or what it is called, such as a flow's `source`, is refused by
+  `ingestron plan` as [`DEPLOY_VALUE`](/docs/reference/errors#DEPLOY_VALUE)
+  for Databricks, Data Factory and Synapse; write it in `project.yaml` for
+  each environment. The request then leaves out the deploy names and says to
+  run `ingestron plan`.
 
 [Environment files](/docs/concepts/yaml-references#use-environment-files)
 says how to set the variables on your computer, and
-[Check generated files in CI](/docs/how-to/check-in-ci#give-the-check-its-variables)
-how to set them in CI.
+[Deploy through environments](/docs/how-to/deploy-through-environments#values-supplied-when-deploying)
+how to supply them in CI.
 
 ## When the definitions have problems
 
