@@ -1,73 +1,55 @@
 ---
 title: Check generated files in CI
-description: Fail a build when someone changed the definitions without generating.
+description: Fail a pull request when someone changed the definitions without generating, with GitHub Actions or Azure DevOps.
 ---
 
 Commit the `build/` folder with your definitions. In CI, run `ingestron check`
-from the definitions project folder. It needs only Node.js 22.13 or later: each
-template installs the command from npm with `npm install -g ingestron@1`, the
-newest 1.x release, then runs it. To choose when a new release changes your
-generated files, install the exact version, as [Upgrade Ingestron and its packs](/docs/how-to/upgrade#choose-the-version-you-run)
+from the definitions project folder on every pull request: it fails when
+someone changed the definitions without generating, so the files you deploy
+are always what the definitions say. It needs only Node.js 22.13 or later:
+each template installs the command from npm with `npm install -g ingestron@2`,
+the newest 2.x release, then runs it. To choose when a new release changes
+your generated files, install the exact version, as
+[Upgrade Ingestron and its packs](/docs/how-to/upgrade#choose-the-version-you-run)
 shows.
+
+To deploy what the check passed, one environment after another, see
+[Deploy through environments](/docs/how-to/deploy-through-environments): its
+pipelines run this check first.
 
 ## GitHub Actions
 
 Save as `.github/workflows/ingestron-check.yml`:
 
-```yaml
-name: ingestron check
-on:
-  pull_request:
-  push:
-    branches: [main]
-permissions:
-  contents: read
-jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install -g ingestron@1
-      - run: ingestron check
-```
+<Template
+  file="github-actions/ingestron-check.yml"
+  from="# Fails the build"
+  to="- run: ingestron check"
+/>
 
 ## Azure DevOps
 
 Save as `ingestron-check.yml` and add it as a pipeline:
 
-```yaml
-trigger:
-  branches:
-    include: [main]
-pr:
-  branches:
-    include: ["*"]
-pool:
-  vmImage: ubuntu-latest
-steps:
-  - checkout: self
-  - task: NodeTool@0
-    inputs:
-      versionSpec: 22.x
-  - script: npm install -g ingestron@1
-    displayName: Install Ingestron
-  - script: ingestron check
-    displayName: ingestron check
-```
+<Template
+  file="azure-devops/ingestron-check.yml"
+  from="# Fails the build"
+  to="displayName: ingestron check"
+/>
 
 ## Give the check its variables
 
-If a definition uses `${envvar:NAME}`, set `NAME` in the pipeline's variables and
-pass it to the step that runs `ingestron check`. A value in the process
-environment wins over `.env` files, and `.env` files are not committed, so CI
-has none. See [Environment files](/docs/concepts/yaml-references#use-environment-files).
+The check needs no deployment values: for Databricks, Data Factory and
+Synapse, a value written as `${envvar:NAME}` is supplied when deploying, not
+read when generating. Only DuckDB and data product passports read such values
+when generating. If they do, set `NAME` in the pipeline's variables and pass
+it to the step that runs `ingestron check`. A value in the process environment
+wins over `.env` files, and `.env` files are not committed, so CI has none.
+See [Environment files](/docs/concepts/yaml-references#use-environment-files).
 
 ## Run it locally
 
-Both files are also in the
+Both files, and the deploy pipelines, are in the
 [`ci-templates/`](https://github.com/ingestron/docs/tree/main/ci-templates)
 folder of this site's repository. Locally, after
 [installation](/docs/start/install), use the equivalent command:
@@ -87,15 +69,15 @@ Run **Ingestron: Check** from the Command Palette (⇧⌘P on macOS, Ctrl+Shift+
 <Screenshot
   light="/images/vscode/check-light.png"
   dark="/images/vscode/check-dark.png"
-  alt="The Output panel, Ingestron channel, after Ingestron: Check: dev: up to date."
-  caption="The Ingestron output panel after Ingestron: Check: the generated files for dev match the definitions."
+  alt="The Output panel, Ingestron channel, after Ingestron: Check: databricks: up to date."
+  caption="The Ingestron output panel after Ingestron: Check: the bundle in build/databricks matches the definitions."
 />
 
 </Tool>
 </ToolSteps>
 
-It writes nothing. It prints `up to date` for each environment and exits
-with `0`. It exits with `1` when:
+It writes nothing. It prints `up to date` for each output folder, such as
+`databricks: up to date`, and exits with `0`. It exits with `1` when:
 
 - the output differs from what the definitions generate today. It lists
   what differs; run `ingestron apply` locally and commit the result.
@@ -104,7 +86,7 @@ with `0`. It exits with `1` when:
   would deploy it too:
 
   ```text
-  prod: not generated  src/retail/bronze/extra.sql
+  databricks: not generated  src/retail/bronze/extra.sql
   ```
 
   Move the file out of `build/`, or put what it does into the definitions.
@@ -112,7 +94,8 @@ with `0`. It exits with `1` when:
   on purpose.
 
 - a folder under `build/` was generated before but is not any more, for
-  example after you remove an environment or add a second pack:
+  example after you remove a platform's last table, or after upgrading from
+  the folder per environment of version 1:
 
   ```text
   build/prod: no longer generated. Delete the folder, or delete its .generated.json to keep it as your own.
@@ -120,6 +103,10 @@ with `0`. It exits with `1` when:
 
   Ingestron never deletes it for you. Stop anything that deploys from it,
   then delete it.
+
+A project with a self-hosted integration runtime also prints its
+[`PACK_NOTICE`](/docs/reference/errors#PACK_NOTICE) warning on every check,
+under `adf: warnings`; it does not fail the check.
 
 `check` compares files. It does not say that the platform accepts them or
 that anyone approved them; keep code review for that.

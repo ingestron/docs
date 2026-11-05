@@ -13,31 +13,35 @@ packs determine which files appear; the workflow is the same across routes.
 <Tool name="CLI">
 
 ```sh
-ingestron plan --env dev
+ingestron plan
 ```
 
-Omit `--env` to plan every declared environment. Add `--no-diff` for the file list
-without line-by-line differences.
+Every environment is planned together, into one output folder per platform.
+Add `--no-diff` for the file list without line-by-line differences.
 
 </Tool>
 <Tool name="VS Code">
 
-Select the environment in the status bar, save the definitions and run
-**Ingestron: Plan**. Inspect the output panel and resolve any Problems entries.
+Save the definitions and run **Ingestron: Plan**. Inspect the output panel and
+resolve any Problems entries; the Problems panel shows the environment selected
+in the status bar.
 
 <Screenshot
   light="/images/vscode/plan-light.png"
   dark="/images/vscode/plan-dark.png"
-  alt="The Output panel, Ingestron channel, after Ingestron: Plan: dev → build/dev, create databricks.yml, resources/shop.pipeline.yml and src/shop/bronze/orders.sql, then 3 files: 3 create. Ready to apply."
-  caption="The plan in the Ingestron output panel: the output folder, each file to create, and the count."
+  alt="The Output panel, Ingestron channel, after Ingestron: Plan: databricks → build/databricks (dev), create databricks.yml, resources/shop.pipeline.yml and src/shop/bronze/orders.sql, then 3 files: 3 create. Ready to apply."
+  caption="The plan in the Ingestron output panel: the output folder and the environments it holds, each file to create, and the count."
 />
 
 </Tool>
 </ToolSteps>
 
-The plan lists the output folder and proposed creates, updates and deletions.
-It validates definition links, method compatibility, required settings and
-standard policy before writing anything. A diagnostic includes the file and
+The plan lists each output folder, such as `databricks → build/databricks
+(dev, prod)`, with the environments it holds, and its proposed creates, updates
+and deletions. It resolves every environment and validates definition links,
+method compatibility, required settings and standard policy before writing
+anything: a problem in any environment stops the plan, so a bundle or factory is
+never written with an environment missing. A diagnostic includes the file and
 location to fix. A conflict means a generated file was changed by hand.
 
 Review unexpected deletions and names as well as new files. Generation checks
@@ -49,14 +53,14 @@ configuration; it does not test source credentials, networks or cloud permission
 <Tool name="CLI">
 
 ```sh
-ingestron apply --env dev
+ingestron apply
 ```
 
 </Tool>
 <Tool name="VS Code">
 
-Run **Ingestron: Apply** for the selected environment, and read the result in
-the output panel. If it reports a problem, some folders may not have been
+Run **Ingestron: Apply**, which writes every environment, and read the result
+in the output panel. If it reports a problem, some folders may not have been
 written.
 
 </Tool>
@@ -76,7 +80,9 @@ the platform effect.
 
 Use [CI checking](/docs/how-to/check-in-ci) to detect drift without rewriting files.
 Applying writes files; deploying them is a separate step, with your platform's
-own tools. Each route's guide says how:
+own tools, one environment after another; see
+[Deploy through environments](/docs/how-to/deploy-through-environments). Each
+route's guide says how:
 
 <RouteList deploy />
 

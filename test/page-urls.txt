@@ -91,6 +91,7 @@
 /docs/how-to/check-in-ci
 /docs/how-to/configure-a-standard
 /docs/how-to/define-a-data-product
+/docs/how-to/deploy-through-environments
 /docs/how-to/keep-a-table-current
 /docs/how-to/name-things-your-way
 /docs/how-to/plan-and-generate

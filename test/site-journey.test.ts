@@ -50,6 +50,7 @@ it("opens with one learning path, then areas by the reader's job, with no index 
     "add-an-environment",
     "plan-and-generate",
     "check-in-ci",
+    "deploy-through-environments",
   ]);
   expect(JSON.parse(read("how-to/(standards)/meta.json")).pages).toEqual([
     "configure-a-standard",
