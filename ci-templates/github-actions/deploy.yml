@@ -8,7 +8,7 @@
 # explains:
 # - GitHub environments named dev, test and prod. Give test and prod required
 #   reviewers, and let only the main branch deploy to prod. Required reviewers
-#   on a private repository need GitHub Enterprise Cloud; without them, the
+#   on a private repository need GitHub Enterprise; without them, the
 #   page above says how to gate test and prod.
 # - In each environment, the variables deploy-environment.yml reads.
 # - The repository variable ADF_DEV_FACTORY_ID: the dev factory's resource ID,
