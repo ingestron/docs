@@ -9,7 +9,10 @@
 # - SYNAPSE_SERVER: <workspace>-ondemand.sql.azuresynapse.net.
 # - DUCKDB_ACCOUNT, DUCKDB_FILE_SYSTEM, DUCKDB_PATH: where the DuckDB job reads
 #   run.sql, as the job's sqlUrl names it.
-# Every step signs in as the environment's service connection.
+# Every step signs in as the environment's service connection. The Azure CLI
+# steps set useGlobalConfig, so that what they start, such as databricks bundle,
+# uses the signed-in session: see Microsoft Learn, "Authenticate with Azure
+# DevOps on Azure Databricks".
 parameters:
   - name: environment
     type: string
@@ -22,6 +25,9 @@ stages:
   - stage: Deploy_${{ parameters.environment }}
     displayName: Deploy ${{ parameters.environment }}
     dependsOn: ${{ parameters.dependsOn }}
+    # With the environment's exclusive lock check, runs deploy it one at a time,
+    # in the order they started.
+    lockBehavior: sequential
     variables:
       - group: ingestron-${{ parameters.environment }}
       - name: files
@@ -104,6 +110,7 @@ stages:
                     azureSubscription: ${{ parameters.serviceConnection }}
                     scriptType: bash
                     scriptLocation: inlineScript
+                    useGlobalConfig: true
                     workingDirectory: $(files)/build/databricks
                     inlineScript: |
                       databricks bundle validate -t ${{ parameters.environment }}
@@ -126,6 +133,7 @@ stages:
                     azureSubscription: ${{ parameters.serviceConnection }}
                     scriptType: bash
                     scriptLocation: inlineScript
+                    useGlobalConfig: true
                     workingDirectory: $(files)/build/synapse
                     inlineScript: >-
                       sqlcmd -S "$(SYNAPSE_SERVER)" --authentication-method ActiveDirectoryDefault
@@ -139,6 +147,7 @@ stages:
                     azureSubscription: ${{ parameters.serviceConnection }}
                     scriptType: bash
                     scriptLocation: inlineScript
+                    useGlobalConfig: true
                     workingDirectory: $(files)
                     inlineScript: >-
                       az storage fs directory upload --account-name "$(DUCKDB_ACCOUNT)"
