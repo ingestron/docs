@@ -11,24 +11,29 @@ ADF lands, and nothing loads them into tables.
 
 ## What Ingestron writes [#what-you-get]
 
-For each environment, the ADF pack writes the factory's resources: linked
-services for the source, the Key Vault and the landing storage, a dataset for
-each side of the copy, a pipeline and its trigger.
+The ADF pack writes one factory for every environment, as on
+[Azure Data Factory](/docs/platforms/adf#what-you-get): linked services for the
+source, the Key Vault and the landing storage, a dataset for each side of the
+copy, a pipeline, its trigger and the integration runtime, with a parameter
+file for each environment.
 
-<BuildTree name="landing-only" folder="build/dev" />
+<BuildTree name="landing-only" folder="build/adf" />
 
 Each Copy activity writes its table to a fixed folder and file, so a report
 can read the same path after every load:
 
 <Example
   name="landing-only"
-  file="build/dev/pipeline/pl_sales_erp.json"
+  file="build/adf/factory/pipeline/pl_sales_erp.json"
   pick="properties.activities[0].outputs"
 />
 
-The trigger runs the pipeline once a day, and is stopped in `dev`:
+The trigger runs the pipeline once a day. It is stopped outside production, so
+`prod`'s parameter file starts it:
 
-<Example name="landing-only" file="build/dev/trigger/tr_sales_erp.json" />
+<Example name="landing-only" file="build/adf/factory/trigger/tr_sales_erp.json" />
+
+<Example name="landing-only" file="build/adf/parameters/prod.json" />
 
 ## What it looks like in the Azure portal [#on-the-platform]
 
@@ -85,13 +90,10 @@ runtime, Key Vault, landing storage and schedule are set as on
 
 ### Choose how the files are laid out
 
-Set the layout in the standard, under the method's settings:
+Set the layout in the standard, under the method's settings, with `layout` or
+a `path` of your own:
 
-| Setting                                                    | Files                                                                       |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `layout: snapshot`                                         | One file per table, `<object>/<object>.parquet`, replaced by each load      |
-| `layout: increments`                                       | A new file per load in `<object>/`, named by the window's start and the run |
-| `path: "{object}/{yyyy}/{MM}/{dd}/{object}_{run}.parquet"` | A path of your own under the landing folder                                 |
+<SettingsSections pack="adf" method="adf-copy" include={["layout", "path"]} level={4} />
 
 Reports that read the current data need `snapshot`: the file's path never
 changes, so a report keeps working after each load.
@@ -104,25 +106,14 @@ changes, so a report keeps working after each load.
   caption="With layout: snapshot, the demo's landing/northwind/northwind.dbo.Customers folder holds one file, which each load replaces."
 />
 
-A path must include `{object}`, so each table keeps its own files. Its other
-tokens are `{connection}`, the window's start `{yyyy}`, `{MM}`, `{dd}` and
-`{HH}`, and `{run}`. A path adds a file per load when it has `{run}` or the date
-tokens down to the window's unit, such as `{HH}` for hourly loads; otherwise
-each load replaces the file.
-
-Without a setting, a flow that ends at the landed files gets `snapshot`. When
-each load holds only its window's rows (`mode: incremental`, or a Microsoft 365
-dataset's date filter), it gets `increments` instead, so no rows are lost.
 Ingestron refuses a layout that would lose rows: loads holding only their
-window, written to a file the next load replaces. Every value is in the
-[`layout`](/docs/reference/packs/adf#adf-copy-layout) and
-[`path`](/docs/reference/packs/adf#adf-copy-path) reference.
+window, written to a file the next load replaces.
 
 ## Before you deploy [#prerequisites]
 
 The runtime, the Key Vault and the landing storage must exist before the
 pipeline can run. `ingestron request --env dev` lists them with this project's
-values:
+values, and what a deployment does to the runtime:
 
 <Request name="landing-only" sections={["ADF prerequisites"]} />
 
@@ -133,18 +124,18 @@ request.
 
 <OldAnchor id="generate-and-publish" />
 
-Run `ingestron apply`. With only the ADF pack, each environment's folder under
-`build/` holds the `linkedService`, `dataset`, `pipeline` and `trigger` folders
-directly. Bring them into your factory as described in
-[Publish the factory](/docs/platforms/adf#publish).
+Run `ingestron apply`, then build the ARM template from `build/adf/factory` and
+deploy it with each environment's parameter file, as
+[Azure Data Factory](/docs/platforms/adf#deploy) shows, by hand or
+[from CI](/docs/platforms/adf#deploy-from-ci).
 
 ## Run and operate [#operate]
 
-Once published, the trigger copies every table each window, and each load
+Once deployed, the trigger copies every table each window, and each load
 replaces its file. Outside production the trigger is stopped, as the
 [platform defaults](/docs/reference/packs/adf#platform-configuration) say:
 start it in Data Factory, or set `paused: false` for the copy method in the
-platform, when you want the copies to run. Point reports at the snapshot paths, such as
+platform, when you want the copies to run there. Point reports at the snapshot paths, such as
 `<landing>/erp.dbo.Customers/erp.dbo.Customers.parquet`.
 
 When a copy fails or a trigger does not run, see

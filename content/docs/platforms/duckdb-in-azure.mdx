@@ -29,17 +29,21 @@ between runs, so running again is always safe.
 
 ## What Ingestron writes [#what-you-get]
 
-For each environment, the ADF pack writes the factory's resources, with one
-parent pipeline per schedule, and the DuckDB pack writes the SQL the job runs:
+The ADF pack writes one factory for every environment it copies in, with one
+parent pipeline per schedule, and the DuckDB pack writes the SQL the job runs,
+in a folder for each environment. In the example, `dev` runs in Azure and
+`local` on a laptop, so the factory has only `dev`'s parameter file:
 
-<BuildTree name="duckdb-local" folder="build/dev" />
+<BuildTree name="duckdb-local" folder="build/adf" />
+
+<BuildTree name="duckdb-local" folder="build/duckdb" />
 
 The parent pipeline runs the schedule's copies, then starts the job with the
 factory's managed identity:
 
 <Example
   name="duckdb-local"
-  file="build/dev/adf/pipeline/pl_sales_every_24_hour.json"
+  file="build/adf/factory/pipeline/pl_sales_every_24_hour.json"
   pick="properties.activities[1]"
 />
 
@@ -50,7 +54,7 @@ of the last ones:
 
 <Example
   name="duckdb-local"
-  file="build/dev/duckdb/run.sql"
+  file="build/duckdb/dev/run.sql"
   from="read_parquet"
   to="TO 'abfss://published@salesdev.dfs.core.windows.net/silver"
 />
@@ -135,6 +139,9 @@ When you turn `after_copy` on in an environment that already runs:
 The tables' modes are as on [DuckDB](/docs/platforms/duckdb#settings), and the
 copies' schedule and runtime as on
 [Azure Data Factory](/docs/platforms/adf#runtime-and-key-vault).
+`after_copy.job` names a resource in one environment, so give each environment
+its job's ID in `project.yaml`: where the IDs differ, the factory takes the
+job as a template parameter.
 
 ## Before you deploy [#prerequisites]
 
@@ -200,19 +207,18 @@ The template outputs the job's resource ID, `jobId`, for `after_copy`.
 
 <OldAnchor id="deploy-the-sql" />
 
-Run `ingestron apply` as usual, publish the factory's resources as in
-[Publish the factory](/docs/platforms/adf#publish), then copy each
-environment's DuckDB folder to the folder `sqlUrl` names, in your deploy
-pipeline:
+Run `ingestron apply`, deploy the factory as in
+[Azure Data Factory](/docs/platforms/adf#deploy), then copy the environment's
+DuckDB folder to the folder `sqlUrl` names, here for `dev`:
 
 ```sh
 az storage fs directory upload --account-name salesdev --file-system deploy \
-  --source "build/dev/duckdb/*" --destination-path sales/dev --recursive --auth-mode login
+  --source "build/duckdb/dev/*" --destination-path sales/dev --recursive --auth-mode login
 ```
 
-When DuckDB is the only pack, the folder is `build/<environment>/` instead.
 The cloud environment's `run.sql` must read and write `abfss://` paths: the job
-refuses one that names local folders.
+refuses one that names local folders. A local environment, such as `local`
+here, is never deployed.
 
 <Screenshot
   src="/images/platforms/duckdb-in-azure/duckdb-05-deploy-sql.png"
@@ -221,6 +227,23 @@ refuses one that names local folders.
   alt="The deploy container's northwind/dev folder: a tables folder, README.md and run.sql."
   caption="The demo's deployed SQL: deploy/northwind/dev holds run.sql, its README.md and each table's SQL in tables."
 />
+
+### From CI [#deploy-from-ci]
+
+Each environment's stage deploys the factory, then uploads that environment's
+folder, signed in as the environment's identity. From the GitHub Actions
+template:
+
+<Template
+  file="github-actions/deploy-environment.yml"
+  from='- name: "DuckDB: upload the SQL"'
+  to="--recursive --auth-mode login"
+/>
+
+The job itself, from `duckdb-job.bicep`, is created once per environment and
+is not part of each deployment.
+[Deploy through environments](/docs/how-to/deploy-through-environments) gives
+the whole pipeline, for GitHub Actions and Azure DevOps.
 
 ## Run and operate [#operate]
 
@@ -272,7 +295,8 @@ DuckDB tables check no rows yet, so a flow's `expectations` are an error; see
 <OldAnchor id="checked-against-live-azure-not-yet" />
 
 This route ran end to end with ingestron 1.8 on 2 November 2026, in one demo
-subscription, on Microsoft's Northwind sample: ADF copied four tables, started
+subscription, on Microsoft's Northwind sample, before ingestron 2.0 put every
+environment's factory into one ARM template: ADF copied four tables, started
 the job and waited for it, and DuckDB built five tables, twice in a row. The
 runs confirmed what the pipeline and the job rely on:
 

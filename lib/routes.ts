@@ -51,24 +51,25 @@ const written: Record<string, Written> = {
   databricks: {
     choose: "Databricks can reach the source, and the tables live in Databricks.",
     afterLoad: "Nothing more. The Databricks pipeline that reads the source writes the tables.",
-    deploy: "The Databricks CLI: `databricks bundle deploy`.",
+    deploy: "The Databricks CLI: `databricks bundle deploy -t <environment>`.",
     deployAt: "/docs/platforms/databricks#deploy",
-    deployStep: "Deploy the bundle",
+    deployStep: "Deploy",
   },
   "adf-databricks": {
     choose:
       "ADF copies the source, for example through a self-hosted integration runtime on a private network, and the tables live in Databricks.",
     afterLoad: "Databricks pipelines read the landed files into tables, on their own schedule.",
-    deploy: "The factory's Git publishing for ADF, and `databricks bundle deploy`.",
-    deployAt: "/docs/platforms/adf#publish",
-    deployStep: "Publish the factory",
+    deploy:
+      "An ARM deployment of the factory for each environment, and `databricks bundle deploy -t <environment>`.",
+    deployAt: "/docs/platforms/adf#deploy",
+    deployStep: "Deploy",
   },
   "adf-synapse": {
     choose:
       "Reports need SQL over the copied tables, with nothing to run or store after each load.",
     afterLoad: "Nothing. Synapse serverless SQL reads the files each time a report queries a view.",
     deploy:
-      "The factory's Git publishing, and running `views.sql` against the serverless database when the definitions change.",
+      "An ARM deployment of the factory for each environment, and `sqlcmd` running the environment's script when the definitions change.",
     deployAt: "/docs/platforms/synapse#deploy",
     deployStep: "Deploy",
   },
@@ -77,14 +78,15 @@ const written: Record<string, Written> = {
       "You want DuckDB tables, published as Parquet, rebuilt in Azure from the copied tables, and the same tables on a laptop.",
     afterLoad:
       "A Container Apps job you create runs the DuckDB SQL in Ingestron's public runner image; ADF can start it after the copies.",
-    deploy: "The factory's Git publishing, and copying the DuckDB folder to storage.",
+    deploy:
+      "An ARM deployment of the factory for each environment, and copying the environment's DuckDB folder to storage.",
     deployAt: "/docs/platforms/duckdb-in-azure#deploy",
     deployStep: "Deploy",
   },
   "adf-landing": {
     choose: "Reports read the landed files themselves, such as Power BI reading Parquet.",
     afterLoad: "Nothing. The copied files are the result.",
-    deploy: "The factory's Git publishing.",
+    deploy: "An ARM deployment of the factory for each environment.",
     deployAt: "/docs/platforms/landing-only#deploy",
     deployStep: "Deploy",
   },

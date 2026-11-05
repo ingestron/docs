@@ -2,7 +2,15 @@
 // lands on the section that deploys, a connector's page creates a project on
 // each of its routes, and what the pages say about checks and run time is what
 // the CLI does. Each command a page or component shows is run.
-import { appendFileSync, cpSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import {
+  appendFileSync,
+  cpSync,
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { projectRoutes } from "@ingestron/cli";
@@ -280,33 +288,43 @@ describe("small promises", () => {
 describe("platforms/databricks", () => {
   const page = read("platforms/databricks.mdx");
 
-  it("deploys each environment's bundle by its own target, from its own folder", () => {
+  it("deploys one bundle, target by target, from build/databricks", () => {
     const cwd = copy("retail");
     expect(cli(cwd, ["apply", "--no-diff"]).code).toBe(0);
     const environments = Object.keys(
       parse(readFileSync(join(cwd, "project.yaml"), "utf8")).environments,
     );
     expect(environments).toEqual(["dev", "prod"]);
-    for (const environment of environments) {
-      const bundle = parse(readFileSync(join(cwd, "build", environment, "databricks.yml"), "utf8"));
-      expect(Object.keys(bundle.targets), environment).toEqual([environment]);
-      expect(bundle.targets[environment].default, environment).toBe(true);
-      expect(bundle.targets[environment].mode, environment).toBe(
-        environment === "prod" ? "production" : "development",
-      );
-    }
-    const ci = section(page, "### Deploy from a CI/CD pipeline");
-    expect(fences(ci, "sh")).toEqual(["databricks bundle deploy -t prod\n"]);
-    expect(ci).toContain("`build/prod/databricks.yml` holds the target `prod`");
-    expect(ci).toContain("(/docs/how-to/check-in-ci)");
+    const bundle = parse(readFileSync(join(cwd, "build/databricks/databricks.yml"), "utf8"));
+    expect(Object.keys(bundle.targets)).toEqual(environments);
+    expect(bundle.targets.dev.default).toBe(true);
+    expect(bundle.targets.dev.mode).toBe("development");
+    expect(bundle.targets.prod.mode).toBe("production");
+    expect(existsSync(join(cwd, "build/dev"))).toBe(false);
+
+    const deploy = section(page, "## Deploy");
+    expect(fences(deploy, "sh")).toEqual([
+      "cd build/databricks\ndatabricks bundle validate -t dev\ndatabricks bundle deploy -t dev\n",
+    ]);
+    const ci = section(page, "### From CI");
+    expect(ci).toContain('file="github-actions/deploy-environment.yml"');
+    expect(ci).toContain("(/docs/how-to/deploy-through-environments)");
   });
 
-  it("gives the refresh time and zone the retail platform schedules", () => {
-    const platform = parse(readFileSync(join(exampleFolder("retail"), "platform.yaml"), "utf8"));
-    const [, minute, hour] = String(platform.schedule.cron).split(" ");
-    expect([hour, minute]).toEqual(["5", "0"]);
-    expect(platform.schedule.timezone).toBe("Europe/London");
-    const where = section(page, "### 3. Where things go").replace(/\s+/g, " ");
-    expect(where).toContain(`runs daily at 5 am London time (\`${platform.schedule.timezone}\`)`);
+  it("says only dev is in development mode, and the schedule runs only in prod", () => {
+    const cwd = copy("environments");
+    expect(cli(cwd, ["apply", "--no-diff"]).code).toBe(0);
+    const { targets } = parse(readFileSync(join(cwd, "build/databricks/databricks.yml"), "utf8"));
+    expect([targets.dev.mode, targets.test.mode, targets.prod.mode]).toEqual([
+      "development",
+      "production",
+      "production",
+    ]);
+    // test is in production mode, so its schedule is paused by a preset; prod's runs.
+    expect(targets.test.presets.trigger_pause_status).toBe("PAUSED");
+    expect(targets.prod.presets.trigger_pause_status).toBeUndefined();
+    const settings = section(page, "## Settings that shape it").replace(/\s+/g, " ");
+    expect(settings).toContain("Only an environment named `dev` is in development mode");
+    expect(settings).toContain("The schedule runs only in `prod` or `production`");
   });
 });

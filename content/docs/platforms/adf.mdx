@@ -1,23 +1,21 @@
 ---
 title: Azure Data Factory
-description: Copy a source into landing storage with ADF, prepare the runtime and Key Vault, schedule the copies, and publish the factory.
+description: Copy a source into landing storage with ADF, from one factory for every environment, and deploy it as an ARM template with a parameter file per environment.
 ---
 
 When Databricks cannot reach the source, for example a database on a private
 network, Azure Data Factory copies it. ADF reaches the source through an
 integration runtime and copies each table into ADLS Gen2 landing storage on a
-schedule. Ingestron writes the factory's linked services, datasets, Copy
-pipelines and triggers from your definitions; on this route, the Databricks
-pack writes the pipelines that read the landed files into tables.
+schedule. Ingestron writes one factory for every environment, its linked
+services, datasets, Copy pipelines, triggers and integration runtimes, and a
+parameter file for each environment; on this route, the Databricks pack writes
+the pipelines that read the landed files into tables.
 
 <RouteFacts id="adf-databricks" />
 
 ADF feeds the other routes too. Everything on this page, from the runtime and
-Key Vault to the schedules and publishing, applies to them as well; their own
-pages cover what reads the files. To follow this page on one of them, use that
-route's `--via` when you create the project, and expect its plan to list that
-route's own files beside the factory's, in place of the Databricks ones shown
-here:
+Key Vault to the schedules and deployment, applies to them as well; their own
+pages cover what reads the files:
 
 - [Synapse serverless views](/docs/platforms/synapse) (`adf-synapse`): views
   over the landed files.
@@ -25,6 +23,48 @@ here:
   tables rebuilt after each load.
 - [Land files only](/docs/platforms/landing-only) (`adf-landing`): the landed
   files are the result.
+
+## What Ingestron writes [#what-you-get]
+
+For the `private-sql-server` starter, which copies an ERP's changed rows
+through a self-hosted runtime, with `dev` and `prod` environments:
+
+<BuildTree name="private-sql-server" folder="build/adf" />
+
+`factory/` is the factory's folder, as Data Factory Studio would keep it in
+Git, and what Microsoft's build reads. Its JSON holds the first environment's
+values, so it reads as a working factory. Each table gets a Copy activity that
+reads the rows changed in the trigger's window and lands them as Parquet:
+
+<Example
+  name="private-sql-server"
+  file="build/adf/factory/pipeline/pl_erp_erp.json"
+  pick="properties.activities[0]"
+/>
+
+The SQL Server linked service reads its password from Key Vault and connects
+through the runtime:
+
+<Example name="private-sql-server" file="build/adf/factory/linkedService/ls_erp_erp_erp.json" />
+
+`arm-template-parameters-definition.json` replaces Microsoft's default
+parameterisation: it lists only the properties that differ between
+environments, here the Key Vault, the landing storage and the trigger's state,
+so the template gets a parameter for each and nothing else:
+
+<Example
+  name="private-sql-server"
+  file="build/adf/factory/arm-template-parameters-definition.json"
+/>
+
+Each environment's file sets every one of them, under the name Microsoft's
+build gives it. In `prod` the trigger starts:
+
+<Example name="private-sql-server" file="build/adf/parameters/prod.json" />
+
+A value only the deploying pipeline knows, written as `${envvar:NAME}`, is a
+parameter that the environment's file leaves out; see
+[Supplied when deploying](/docs/concepts/yaml-references#supplied-when-deploying).
 
 ## What it looks like in Azure Data Factory [#on-the-platform]
 
@@ -36,102 +76,107 @@ here:
   caption="The demo's Northwind pipeline in ADF Studio: one ForEach copies every table in its tables parameter, and the trigger fills windowStart and windowEnd."
 />
 
-## Create the project
+## Create it [#create-it]
 
-[Install the command and the extension](/docs/start/install) first. Then, from a parent folder:
+<OldAnchor id="create-the-project" />
+
+<ToolSteps>
+<Tool name="CLI">
+
+From a parent folder:
 
 ```sh
-ingestron init sales --connector postgresql --connectivity private --via adf-databricks --yes
-cd sales
+ingestron init erp --template private-sql-server --yes
+cd erp
 ```
 
-In VS Code, run **Ingestron: New project** and choose **PostgreSQL**,
+For your own source, name its connector and the route instead, such as
+`ingestron init sales --connector postgresql --connectivity private --via adf-databricks`.
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: New project** and choose the starter, or your source,
 **private** and the ADF route into Databricks. When a source supports only one
 route, it is selected for you. See
 [Create a project](/docs/how-to/start-from-a-template) for the remaining
-questions. For another source, choose it from the
-[connector catalogue](/docs/connectors); its page lists the routes it supports.
+questions.
 
-The files on this page come from the finished PostgreSQL project, which also
-sets the ADF resource names; a new project uses the default names. To follow
-its exact settings and filenames, <ExampleDownload name="connection-first-adf" />
-and extract it into an empty folder. Open the folder containing `project.yaml`
-in VS Code, or change into it in your terminal. You can generate it with the
-synthetic values before arranging live source access. The source hosts,
-accounts, tables and contract are synthetic: replace them and adapt the
-contract before you deploy.
+</Tool>
+</ToolSteps>
 
-To compare sources, <ExampleDownload name="adf-native-connectors" /> holds a
-connection for every native connector in one project. You don't need to copy
-them into yours.
+The [connector catalogue](/docs/connectors) lists every source and the routes
+it supports. The files on this page come from the starter:
 
-### Change the project values
+<ExampleDownload name="private-sql-server" />
+To compare sources, <ExampleDownload name="adf-native-connectors" /> holds a connection for every
+native connector in one project.
 
-The connection and platform files read these values. Change the server,
-database, object, landing path, Key Vault and runtime to match your setup.
-`source_password` holds a Key Vault secret reference. `resource_prefix`
-supplies the prefix the example's ADF names use.
+The environments differ in their landing storage and Key Vault:
 
-<Example name="connection-first-adf" file="project.yaml" />
+<Example name="private-sql-server" file="project.yaml" />
 
-### Where each setting goes
+The platform names the shared infrastructure the copies use:
 
-<FlowDiagram
-  title="Where a setting belongs"
-  steps={[
-    { title: "Connection", detail: "Source endpoint and authentication" },
-    { title: "Platform", detail: "Runtime, landing storage and Key Vault" },
-    { title: "Standard and flow", detail: "Shared schedule and table-specific reading choices" },
-  ]}
-/>
+<Example name="private-sql-server" file="platform.yaml" />
 
-The connection holds the source's credentials, the platform the shared
-infrastructure, and the standard the shared ingestion defaults. Choices for one
-table belong in the flow. Ingestron resolves these files together before it
-generates anything.
+The connection reaches the ERP privately, with its password in Key Vault, and
+the flow names the tables to copy:
 
-## Platform prerequisites
+<Example name="private-sql-server" file="connections/erp.yaml" />
 
-These must exist before the generated pipelines can run. Ingestron generates
-files; it does not provision accounts, drivers, runtime machines, network
-access or consent, and generation does not inspect Azure.
+<Example name="private-sql-server" file="flows/erp.yaml" />
 
-- **An integration runtime that reaches the source.** A self-hosted runtime
-  runs on infrastructure you manage and needs the source's drivers and network
-  access. An Azure runtime uses Azure's managed integration runtime.
-- **Key Vault**, holding the source's secrets, with access for the factory's
-  identity.
-- **ADLS Gen2 landing storage**, with write access for the factory's identity.
-  Microsoft 365 uses its configured application for landing storage instead.
-- **Source access:** the permissions, drivers, versions and authentication
-  setup in the source's vendor prerequisites, linked from its connector page.
+Then generate both environments:
 
-`ingestron request`, or **Ingestron: Prepare platform request** in VS Code,
-lists them with this project's values for the team that creates them. For the
-finished PostgreSQL project, `ingestron request --env dev` ends with:
+```sh
+ingestron plan --no-diff
+```
 
-<Request name="connection-first-adf" sections={["ADF prerequisites"]} />
+```text
+adf: warnings
+(project)  warning  PACK_NOTICE
+  Integration runtime `shir-erp` (self-hosted): the deployment writes it by name and type, as Data Factory Studio does; where it creates it, register a node, with network access and any required source drivers, before the copies run.
+  Before the first deployment to a factory that already has these integration runtimes, run `az deployment group what-if` with the template and that environment's parameter file, and check that it changes no runtime in a way you did not describe.
+databricks → build/databricks (dev, prod)
+create    databricks.yml
+create    resources/erp.pipeline.yml
+create    resources/erp_refresh.job.yml
+create    src/erp/bronze/customers.sql
+create    src/erp/bronze/invoices.sql
 
-See [Ask the platform team](/docs/how-to/ask-the-platform-team) for the rest of
-the request.
+5 files: 5 create. Ready to apply.
+adf → build/adf (dev, prod)
+create    factory/arm-template-parameters-definition.json
+create    factory/dataset/ds_erp_erp_erp.json
+create    factory/dataset/ds_erp_landing.json
+create    factory/integrationRuntime/shir-erp.json
+create    factory/linkedService/ls_erp_erp_erp.json
+create    factory/linkedService/ls_erp_keyvault.json
+create    factory/linkedService/ls_erp_landing.json
+create    factory/pipeline/pl_erp_erp.json
+create    factory/trigger/tr_erp_erp.json
+create    parameters/dev.json
+create    parameters/prod.json
 
-## Runtime and Key Vault
+11 files: 11 create. Ready to apply.
+```
 
-Name the runtime, Key Vault and landing storage in the platform, under the
-method your flows select:
+The warning is a notice, not a problem: the files are still written. It
+appears on every plan, apply and check while the factory uses a runtime, as
+[Runtime and Key Vault](#runtime-and-key-vault) explains. Run
+`ingestron apply` to write the files.
 
-<Example name="connection-first-adf" file="platform.yaml" />
+## Settings that shape it [#settings]
 
-The example configures `adf-table`, for native full selections. Use `adf-copy`
-for SQL-family tables or `adf-files` for file copies; these settings mean the
-same for all three methods.
+Each setting has an owner: the connection holds the source's address and
+credentials, the platform the shared infrastructure, the standard the shared
+schedule, and the flow each table's choices; see
+[Keep settings with their owner](/docs/concepts/standards-and-packs#keep-settings-with-their-owner).
+The examples use `adf-copy`, for SQL-family tables; `adf-table` (native full
+selections) and `adf-files` (file copies) take the same settings.
 
-`integration_runtime` names an existing ADF runtime; naming it does not create
-or rename it. `runtime_kind` says which kind it is, and must match the runtime
-deployed in ADF. The default is `self-hosted`, as in this example. Set
-`runtime_kind: azure` in the method settings when the source needs Azure's
-runtime. Windows SQL authentication, File System and HDFS need a self-hosted
-runtime; other sources' needs are in their connector pages.
+### Runtime and Key Vault [#runtime-and-key-vault]
 
 <SettingsSections
   pack="adf"
@@ -139,215 +184,191 @@ runtime; other sources' needs are in their connector pages.
   include={["integration_runtime", "runtime_kind", "landing", "key_vault"]}
 />
 
-## Choose the source and its tables
+The factory gets each runtime its linked services use, as
+`factory/integrationRuntime/<name>.json`, so a deployment never drops a
+linked service's runtime. An ARM deployment sets a runtime's whole resource,
+so describe a runtime linked to a shared one, or an Azure runtime's region
+and compute, with the method's `runtime` setting; see the
+[ADF pack reference](/docs/reference/packs/adf). Before the first deployment to
+a factory that already has its runtimes, run `az deployment group what-if`
+with the template and that environment's parameter file, as the notice says.
+Windows SQL authentication, File System and HDFS need a self-hosted runtime;
+other sources' needs are on their connector pages.
 
-Open the [connector reference](/docs/connectors/postgresql) for your source.
-Its connection table lists the required fields and the fields each
-authentication mode needs. Secrets use `${secret:name}`: put the value in Key
-Vault under that name.
+### Choose the source and its tables [#choose-the-source-and-its-tables]
 
-<Example name="connection-first-adf" file="connections/postgresql.yaml" />
+The [connector page](/docs/connectors) for your source lists the connection's
+fields, each authentication mode's, and the settings it takes in
+`ingest.with.source_options`, such as
+[REST's pagination](/docs/connectors/rest#adf-settings). Secrets use
+`${secret:name}`: put the value in Key Vault under that name. The `object`
+selects the native table, collection, dataset or relative path; give each
+source its own landing folder.
 
-<Example name="connection-first-adf" file="flows/postgresql.yaml" />
-
-Each flow selects its ADF method, so you can also use ADF for a public or
-workspace source that another pack can read. The `object` selects the native
-table, collection, dataset or relative path. Give each source its own landing
-folder.
-
-For native table copies, ADF writes a full selection each window. On the
+Native table copies write a full selection each window. On the
 `adf-databricks` route, repeated snapshots append repeated rows with the
 default store; choose [upsert or history](/docs/how-to/keep-a-table-current)
-when you need current rows or change history. These store modes need a
-reliable ordering column, and a row missing from a later snapshot does not mean
-it was deleted. SQL-family copies also support watermark mode. Native table
-sources refuse incremental mode rather than invent a watermark.
+for current rows or change history. SQL-family copies, as in this starter,
+can copy only the rows changed in each window (`mode: incremental`). An
+unknown setting stops generation with a diagnostic, and the standard's fixed
+settings still win.
 
-Some connectors take settings of their own in `ingest.with.source_options`,
-such as REST pagination or a Snowflake staging path. Each connector's page in
-the [catalogue](/docs/connectors) lists the ones it accepts, such as
-[REST's](/docs/connectors/rest#adf-settings).
+### Define the time windows [#define-the-time-windows]
 
-Only the options the selected connector supports are accepted. An unknown
-connection or extraction setting stops generation with a diagnostic, and fixed
-settings in your standard still take precedence.
-
-## Schedule the copies
-
-### Define the time windows
-
-The generated pipelines run from tumbling window triggers, which divide time
-into consecutive, non-overlapping windows. `start` is the first window's
-start, in UTC, and `every` sets each window's length. For full selections,
-every window copies the selection again. For SQL incremental copies, the
-window's bounds filter the watermark column. File copies in `new` mode use the
-window to select changed files.
-
-<Example name="connection-first-adf" file="standard.yaml" />
+The pipelines run from tumbling window triggers, which divide time into
+consecutive, non-overlapping windows. `start` is the first window's start, in
+UTC, and `every` sets each window's length. A full selection copies again each
+window; an incremental copy filters the watermark column by the window's
+bounds; file copies in `new` mode select the files changed in it.
 
 <SettingsSections pack="adf" method="adf-copy" include={["every", "start"]} />
 
-### Retry and pause
+### Retry and pause [#retry-and-pause]
 
 A retry repeats a failed window; it does not move that window's bounds.
-`paused` keeps the generated trigger stopped. Without it, the trigger follows
-the platform's `schedule.paused`, and otherwise the
-[platform default](/docs/reference/packs/adf#platform-configuration). Check the
-generated trigger before deploying, especially when `start` is in the past.
+Triggers start only in `prod` or `production`; in every other environment
+they stay stopped. `paused` keeps a trigger stopped there too, and
+`paused: false` starts one elsewhere. Without it, the trigger follows the
+platform's `schedule.paused`; see the
+[platform defaults](/docs/reference/packs/adf#platform-configuration).
 
 <SettingsSections pack="adf" method="adf-copy" include={["retries", "paused"]} />
 
 To stop only the copies, for example while the source database is down for
-maintenance, set `paused` for the copy method in the platform. For the
-finished PostgreSQL project, add it beside the other `adf-table` settings in
-`platform.yaml`; for your project, use the method your flows select:
+maintenance, set `paused` for the copy method in the platform, beside the
+other `adf-copy` settings:
 
 ```yaml
 settings:
-  adf-table:
+  adf-copy:
     paused: true
 ```
 
 `paused: true` in the platform's `schedule` stops the Databricks refresh job
 and the triggers together; see
-[Refresh on a schedule](/docs/platforms/databricks#schedule).
-
-On the `adf-databricks` route, ADF and Databricks run on their own schedules:
-deploying their files does not combine them into one run. On `adf-duckdb`,
-ADF can start the DuckDB job after the copies; see
+[Refresh on a schedule](/docs/platforms/databricks#schedule). On the
+`adf-databricks` route, ADF and Databricks run on their own schedules. On
+`adf-duckdb`, ADF can start the DuckDB job after the copies; see
 [Run DuckDB in Azure](/docs/platforms/duckdb-in-azure).
 
 ### Tables that share a schedule
 
 SQL-family tables in one connection and source database share their runtime,
 encryption, schedule, retries and paused state. File tables in one connection
-share their runtime and schedule. Give tables that need their own shared
-settings separate connections; a watermark per table does not make a separate
-trigger.
+share their runtime and schedule. Give tables that need their own settings
+separate connections. Native full-copy sources get a pipeline per table.
 
-Native full-copy sources generate a pipeline per table. Their shared linked
-service and dataset names still need compatible definitions; generation
-refuses conflicting shared resources.
+### Names and pipeline shape [#set-policy-and-names]
 
-## Set policy and names
+Resource names are the same in every environment, because one template is
+deployed to each factory. [ADF resource names](/docs/how-to/name-things-your-way#adf-resource-names)
+covers where each name goes, sharing rules and safe renames, and
+[Shape ADF pipelines](/docs/platforms/adf-pipelines) covers ForEach, retries
+inside a run, audit columns and factory folders.
 
-The finished example names its shared resources in `platform.yaml`, and its
-pipeline, trigger and Copy activity in the PostgreSQL flow. Leave those roles
-out to keep the default names.
-[ADF resource names](/docs/how-to/name-things-your-way#adf-resource-names)
-covers where each name goes, per-environment names, sharing rules and safe
-renames, and [Shape ADF pipelines](/docs/platforms/adf-pipelines) covers
-ForEach, retries inside a run, audit columns and factory folders.
+## Before you deploy [#prerequisites]
 
-For the allowed methods and the fixed settings across both packs, follow
-[Set your organisation's standard](/docs/how-to/configure-a-standard). A flow
-cannot override a fixed setting.
+<OldAnchor id="platform-prerequisites" />
 
-## Generate and inspect
+Ingestron creates nothing in Azure and does not test credentials, run queries
+or inspect the factory. These must exist before the pipelines can run:
 
-<ToolSteps>
-<Tool name="CLI">
+- **An integration runtime that reaches the source.** A self-hosted runtime
+  runs on infrastructure you manage, with the source's drivers and network
+  access; register a node on it where the deployment creates it.
+- **Key Vault**, holding the source's secrets, with access for the factory's
+  identity.
+- **ADLS Gen2 landing storage**, with write access for the factory's identity.
+  Microsoft 365 uses its configured application instead.
+- **Source access:** the permissions, drivers, versions and authentication in
+  the source's vendor prerequisites, linked from its connector page.
+
+`ingestron request --env prod`, or **Ingestron: Prepare platform request** in
+VS Code, lists them with this project's values:
+
+<Request name="private-sql-server" env="prod" sections={["ADF prerequisites"]} />
+
+See [Ask the platform team](/docs/how-to/ask-the-platform-team) for the whole
+request.
+
+## Deploy [#deploy]
+
+<OldAnchor id="publish" />
+
+One factory serves one project. Microsoft's post-deployment script deletes
+every pipeline, dataset, linked service, trigger and integration runtime in
+the factory that the template does not hold, so give each project, and each
+environment, a factory of its own. Leave the test and production factories
+unconnected to Git, as Microsoft recommends.
+
+Build the ARM template once with Microsoft's
+[`@microsoft/azure-data-factory-utilities`](https://www.npmjs.com/package/@microsoft/azure-data-factory-utilities),
+on Node.js 20 or 22, from the project folder. It validates every resource and
+writes `arm/ARMTemplateForFactory.json` and `arm/PrePostDeploymentScript.ps1`.
+The factory ID only names the template's resources; the build downloads its
+tool from `adf.azure.com` and changes nothing in Azure:
 
 ```sh
-ingestron plan --env dev --no-diff
-ingestron apply --env dev
+npm install --prefix .adf @microsoft/azure-data-factory-utilities@1.0.3
+node .adf/node_modules/@microsoft/azure-data-factory-utilities/lib/index export build/adf/factory <dev factory resource ID> arm
 ```
 
-</Tool>
-<Tool name="VS Code">
+Replace `<dev factory resource ID>` with the development factory's resource ID,
+`/subscriptions/<id>/resourceGroups/<group>/providers/Microsoft.DataFactory/factories/<factory>`.
+Keep `.adf/` and `arm/` out of Git: they are rebuilt for each deployment.
 
-Select **dev** with **Ingestron: Select environment**, then run
-**Ingestron: Plan** and **Ingestron: Apply**.
+Then, for each environment in turn, signed in to its subscription, stop the
+triggers, deploy the template with the environment's parameter file, and run
+the script again to delete what the template no longer holds and start the
+triggers whose state is `Started`. Here for `prod`:
 
-</Tool>
-</ToolSteps>
-
-For the finished PostgreSQL project, the plan lists the ADF files after the
-Databricks ones:
-
-```text
-dev/adf → build/dev/adf
-create    dataset/ds_sales_parquet.json
-create    dataset/ds_sales_postgresql_postgresql_records.json
-create    linkedService/ls_sales_lake.json
-create    linkedService/ls_sales_postgresql.json
-create    linkedService/ls_sales_secrets.json
-create    pipeline/pl_sales_orders_dev.json
-create    trigger/tr_sales_orders_dev.json
-
-7 files: 7 create. Ready to apply.
+```powershell
+./arm/PrePostDeploymentScript.ps1 -ArmTemplate arm/ARMTemplateForFactory.json -ArmTemplateParameters build/adf/parameters/prod.json -ResourceGroupName <group> -DataFactoryName <factory> -PreDeployment $true -DeleteDeployment $false
+az deployment group create --resource-group <group> --mode Incremental --template-file arm/ARMTemplateForFactory.json --parameters "@build/adf/parameters/prod.json" factoryName=<factory>
+./arm/PrePostDeploymentScript.ps1 -ArmTemplate arm/ARMTemplateForFactory.json -ArmTemplateParameters build/adf/parameters/prod.json -ResourceGroupName <group> -DataFactoryName <factory> -PreDeployment $false -DeleteDeployment $true
 ```
 
-Inspect `build/dev/adf/linkedService`, `dataset`, `pipeline` and `trigger`.
-With ADF alone, on the `adf-landing` route, these folders are directly in
-`build/dev/`. The pipeline's Copy source and linked service use PostgreSQL's
-native types, and the Databricks files under `build/dev/databricks` read the
-matching landing folder. If you kept a new project's default names, use the
-filenames your plan shows.
+Replace `<group>` and `<factory>` with the environment's resource group and
+factory. The script needs PowerShell 7 and the Az modules. Always give it
+`-ArmTemplateParameters`: without the environment's file it cannot tell that
+`prod`'s triggers start. Keep `--mode Incremental`; Microsoft warns that
+`Complete` deletes the resource group's other resources. When
+`ingestron request` lists values to provide, add `<name>=<value>` after
+`factoryName` for each.
 
-Development triggers are stopped by default
-([platform defaults](/docs/reference/packs/adf#platform-configuration)).
-Generation checks the definitions
-and builds the factory's files; it does not test credentials, run queries or
-deploy the factory.
+What reads the files is deployed beside the factory, from its own folder:
+[Databricks](/docs/platforms/databricks#deploy),
+[Synapse](/docs/platforms/synapse#deploy) or
+[DuckDB in Azure](/docs/platforms/duckdb-in-azure#deploy).
 
-To see a failure safely, remove `server` from `connections/postgresql.yaml`
-and plan again:
+### From CI [#deploy-from-ci]
 
-```text
-dev: the definitions have problems
-flows/postgresql.yaml:14:5  error  METHOD_CHECK
-  "adf-table" for table "postgresql_records": the connection needs "settings.server" as non-empty text.
-```
+In a pipeline, the build runs once and each environment's stage deploys the
+same template. From the GitHub Actions template, the build:
 
-The diagnostic names the missing setting, and no generated files change.
-Restore the field before you apply.
+<Template
+  file="github-actions/deploy.yml"
+  from='- name: "Data Factory: build the template"'
+  to='node "$adf" export'
+/>
 
-## Publish the factory [#publish]
+and each environment's deployment, between the two runs of the script:
 
-With ADF alone (the `adf-landing` route), the factory's files are in
-`build/<environment>/`; when the standard lists another pack too, they are in
-`build/<environment>/adf/`. Ingestron does not publish the factory.
+<Template
+  file="github-actions/deploy-environment.yml"
+  from='- name: "Data Factory: deploy the template"'
+  to='--parameters "@build/adf/parameters/$ENVIRONMENT.json"'
+/>
 
-### Review the generated resources
-
-Inspect the `linkedService`, `dataset`, `pipeline` and `trigger` folders.
-Confirm the names, credential references, landing paths, schedules and paused
-state for the environment you are publishing. Prepare the
-[platform prerequisites](#platform-prerequisites) and the connector's access
-requirements before running the pipelines.
-
-Keep Ingestron's ownership files in its output folder; the ADF resource JSON
-is what you bring into the factory's configured Git root.
-
-### Use the factory's publishing workflow
-
-Bring the reviewed resources into a feature branch of the factory repository,
-then review and merge them into its collaboration branch. In ADF, publish from
-that collaboration branch. Committing to Git alone does not update the live
-factory. Publishing includes all the factory's pending changes, so review the
-complete set with the factory owner.
-
-Follow Microsoft's
-[source-control and publishing instructions](https://learn.microsoft.com/en-us/azure/data-factory/source-control#publish-code-changes)
-for the factory's Git integration and permissions. For an automated release
-pipeline, use your organisation's established ADF deployment process.
-
-### Deploy what reads the files
-
-When the standard lists another pack, its files are a separate folder beside
-`adf/`. Publishing the factory does not deploy or schedule them:
-
-- `build/<environment>/databricks/`: follow
-  [Deploy the bundle](/docs/platforms/databricks#deploy).
-- `build/<environment>/synapse/`: run its `views.sql`, as in
-  [Synapse serverless views](/docs/platforms/synapse#deploy).
-- `build/<environment>/duckdb/`: copy it to storage, as in
-  [Run DuckDB in Azure](/docs/platforms/duckdb-in-azure#deploy).
+Microsoft's three Data Factory GitHub Actions are archived, so the template
+calls the npm package and the script directly. In Azure DevOps it uses
+`AzurePowerShell@5` and `AzureResourceManagerTemplateDeployment@3`.
+[Deploy through environments](/docs/how-to/deploy-through-environments) gives
+the whole pipeline for both, with approvals between the stages.
 
 ## Run and operate [#operate]
 
-Once published, each trigger runs its pipeline every window; outside
+Once deployed, each trigger runs its pipeline every window; outside
 production it is stopped until you start it. Each run shows in ADF's
 monitoring view:
 
@@ -383,11 +404,34 @@ When a pipeline fails or a trigger does not run, see
 [Azure Data Factory](/docs/troubleshooting#azure-data-factory) in
 Troubleshooting.
 
+## Limits [#limits]
+
+- **Environments may differ only in values.** Resource names, integration
+  runtime names and kinds, and resources built in some environments only are
+  [`ENVIRONMENTS_DIFFER`](/docs/reference/errors#ENVIRONMENTS_DIFFER), and more
+  than 256 template parameters is
+  [`ARM_PARAMETERS`](/docs/reference/errors#ARM_PARAMETERS).
+- **A value supplied when deploying is a whole value.** `${envvar:…}` inside a
+  longer value, in the landing folder or in a name is
+  [`DEPLOY_VALUE`](/docs/reference/errors#DEPLOY_VALUE): write it in
+  `project.yaml` for each environment.
+- **One project per factory.** A factory shared by several projects, or by
+  resources you make in Studio, loses them on the next deployment.
+- **Only the ARM template.** Deploying the factory's JSON directly, through the
+  REST API or `az datafactory`, is not supported: the JSON holds the first
+  environment's values.
+- **A Git-connected development factory** writes files of its own into the
+  folder, which `ingestron check` reports; leave it unconnected, or run
+  `ingestron check --allow-extra`.
+- **What has been tried.** The screenshots show the demo deployed with
+  ingestron 1.8, which wrote a factory per environment. The 2.0 factory passes
+  Microsoft's build for every connector, but has not yet been deployed as an
+  ARM template to a live factory.
+
 ## Next
 
+- [Deploy through environments](/docs/how-to/deploy-through-environments):
+  promote one commit from dev to prod, with approvals.
 - [Shape ADF pipelines](/docs/platforms/adf-pipelines): copy every table with
   one ForEach, retry a copy and add audit columns.
-- [Add a source and its tables](/docs/how-to/add-a-source): another table, or
-  another source, in the same project.
-- [Check generated files in CI](/docs/how-to/check-in-ci): fail a pull request
-  whose factory files are out of date.
+- [ADF pack](/docs/reference/packs/adf): every setting and its default.
