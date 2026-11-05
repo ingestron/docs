@@ -13,7 +13,7 @@ steps:
   - task: NodeTool@0
     inputs:
       versionSpec: 22.x
-  - script: npm install -g ingestron@1
+  - script: npm install -g ingestron@2
     displayName: Install Ingestron
   - script: ingestron check
     displayName: ingestron check
