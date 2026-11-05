@@ -311,17 +311,25 @@ describe("how-to/upgrade", () => {
     expect(cli(cwd, ["plan", "--env", "dev"]).code).toBe(2);
   });
 
-  it("pins the exact version these pages describe, after the templates' newest 2.x", () => {
+  it("pins the exact bundle these pages describe, as the templates install it", () => {
+    // The first ingestron 2.x bundle published. When the docs move to @ingestron/cli
+    // 2.1 (Task 6b), this becomes the installed cli's version.
+    const bundle = "2.1.0";
     const choose = section(page, "## Choose the version you run");
     const version = JSON.parse(
       readFileSync(join(process.cwd(), "node_modules/@ingestron/cli/package.json"), "utf8"),
     ).version as string;
-    expect(commands(choose)).toEqual([`npm install -g ingestron@${version}`]);
-    const templates = /run `(npm install -g ingestron@\d+)`/.exec(choose)![1]!;
-    expect(templates).toBe(`npm install -g ingestron@${version.split(".")[0]}`);
-    for (const file of ["github-actions/ingestron-check.yml", "azure-devops/ingestron-check.yml"])
-      expect(readFileSync(join(process.cwd(), "ci-templates", file), "utf8")).toContain(
-        `: ${templates}\n`,
+    expect(bundle.split(".")[0]).toBe(version.split(".")[0]);
+    expect(commands(choose)).toEqual([`npm install -g ingestron@${bundle}`]);
+    for (const file of [
+      "github-actions/ingestron-check.yml",
+      "azure-devops/ingestron-check.yml",
+      "github-actions/deploy.yml",
+      "azure-devops/azure-pipelines.yml",
+    ])
+      expect(readFileSync(join(process.cwd(), "ci-templates", file), "utf8"), file).toContain(
+        `: npm install -g ingestron@${bundle}\n`,
       );
+    expect(read("how-to/check-in-ci.mdx")).toContain(`\`npm install -g ingestron@${bundle}\``);
   });
 });

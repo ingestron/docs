@@ -3,10 +3,9 @@ title: Deploy through environments
 description: Promote one commit's generated files from dev to test to prod, each stage after approval, with the GitHub Actions or Azure DevOps templates.
 ---
 
-Ingestron writes one set of files per platform for every environment: a
-Databricks bundle with a target per environment, a Data Factory factory with a
-parameter file per environment, and a Synapse script per environment. A
-deployment pipeline deploys the same commit to each environment in turn, so
+Ingestron writes one set of files per platform for every environment, as
+[Where the files go](/docs/concepts/generated-files#where-the-files-go) shows.
+A deployment pipeline deploys the same commit to each environment in turn, so
 prod runs the files that test ran. The templates on this page do that: they
 check the generated files, build what needs building once, then deploy to
 `dev`, `test` and `prod`, each stage waiting for the one before and for
@@ -33,12 +32,12 @@ Each environment's stage signs in as that environment's identity, then runs a
 block for each platform. Delete the blocks of the platforms your project does
 not use:
 
-| Platform           | What the stage runs                                                                                                                 | Details                                          |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| Azure Data Factory | The pre-deployment script, an incremental ARM deployment with `build/adf/parameters/<environment>.json`, the post-deployment script | [Deploy](/docs/platforms/adf#deploy)             |
-| Databricks         | `databricks bundle validate` and `deploy -t <environment>`, in `build/databricks`                                                   | [Deploy](/docs/platforms/databricks#deploy)      |
-| Synapse            | `sqlcmd -i environments/<environment>.sql`, in `build/synapse`                                                                      | [Deploy](/docs/platforms/synapse#deploy)         |
-| DuckDB in Azure    | `az storage fs directory upload` of `build/duckdb/<environment>`                                                                    | [Deploy](/docs/platforms/duckdb-in-azure#deploy) |
+| Platform           | What the stage runs                                                                                                                 | Details                                            |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Azure Data Factory | The pre-deployment script, an incremental ARM deployment with `build/adf/parameters/<environment>.json`, the post-deployment script | [Deploy](/docs/platforms/adf-deploy#deploy)        |
+| Databricks         | `databricks bundle validate` and `deploy -t <environment>`, in `build/databricks`                                                   | [Deploy](/docs/platforms/databricks-deploy#deploy) |
+| Synapse            | `sqlcmd -i environments/<environment>.sql`, in `build/synapse`                                                                      | [Deploy](/docs/platforms/synapse#deploy)           |
+| DuckDB in Azure    | `az storage fs directory upload` of `build/duckdb/<environment>`                                                                    | [Deploy](/docs/platforms/duckdb-in-azure#deploy)   |
 
 The tools are pinned: Microsoft's `@microsoft/azure-data-factory-utilities`
 1.0.3, the Databricks CLI v1.23.0 and sqlcmd (Go) v1.10.0, each download
@@ -72,12 +71,22 @@ Set up once, in the repository's settings:
 
 1. **Environments** named `dev`, `test` and `prod`. Give `test` and `prod`
    required reviewers, and let only the `main` branch deploy to `prod`. A
-   stage waits until a reviewer approves it.
+   stage waits until a reviewer approves it. On GitHub Free, Pro and Team,
+   required reviewers work only in public repositories; a private repository
+   needs GitHub Enterprise for them, see
+   [deployments and environments](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)
+   (checked 5 November 2026). Without them the stages do not wait: deploy
+   `prod` from a protected branch instead, such as `release`, whose merges
+   need an approving review, and let only that branch deploy to `prod`.
 2. **An Azure identity for each environment,** with a federated credential
-   for `repo:<owner>/<repository>:environment:<environment>` and the roles its
-   steps need on that environment's resources. GitHub's
+   for the job's subject and the roles its steps need on that environment's
+   resources. A repository created before 15 July 2026 has the subject
+   `repo:<owner>/<repository>:environment:<environment>`; one created since
+   has `repo:<owner>@<owner id>/<repository>@<repository id>:environment:<environment>`,
+   with the IDs that `gh api repos/<owner>/<repository>` gives as `owner.id`
+   and `id`. GitHub's
    [OpenID Connect guide](https://docs.github.com/en/actions/concepts/security/openid-connect)
-   gives your repository's exact subject.
+   says which your repository uses.
 3. **A Databricks service principal for each environment,** with a
    federation policy for the same subject; see
    [GitHub Actions workload identity federation](https://docs.databricks.com/aws/en/dev-tools/auth/provider-github)
@@ -121,20 +130,26 @@ name, so that environment's approvals and checks gate it:
 Set up once, in the project's settings:
 
 1. **Environments** named `dev`, `test` and `prod`. Add approvals to `test`
-   and `prod`, and a branch control check to `prod` that allows only `main`.
+   and `prod`, a branch control check to `prod` that allows only `main`, and an
+   exclusive lock check to each. With the lock, and the stage's
+   `lockBehavior: sequential`, runs deploy an environment one at a time, in the
+   order they started; see
+   [exclusive lock](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/approvals#exclusive-lock)
+   (checked 5 November 2026).
 2. **An Azure Resource Manager service connection for each environment,**
    named `ingestron-dev`, `ingestron-test` and `ingestron-prod`, using workload
    identity federation, with the roles its steps need on that environment's
    resources. The Databricks and Synapse steps sign in as the same identity,
-   through the Azure CLI, so add it to each workspace too.
+   through the Azure CLI with `useGlobalConfig`, which `databricks bundle`
+   needs, so add it to each workspace too.
 3. **A variable group for each environment,** named `ingestron-<environment>`,
    with the variables the template lists at its top.
 4. **The pipeline variable `ADF_DEV_FACTORY_ID`,** the development factory's
    resource ID.
 
 The template deploys Data Factory with `AzurePowerShell@5`, in PowerShell 7,
-and `AzureResourceManagerTemplateDeployment@3` in incremental mode: Microsoft
-warns that complete mode deletes the resource group's other resources.
+and `AzureResourceManagerTemplateDeployment@3` in incremental mode, as
+[Deploy the factory](/docs/platforms/adf-deploy#build-and-deploy) explains.
 
 ## Values supplied when deploying [#values-supplied-when-deploying]
 
@@ -177,14 +192,18 @@ needs.
 
 ## Limits [#limits]
 
-- **One factory per project and environment.** The post-deployment script
-  deletes every resource in the factory that the template does not hold.
+- **One factory per project and environment;** see
+  [One factory per project](/docs/platforms/adf-deploy#one-factory-per-project).
+- **One Databricks identity per environment.** A target deployed by another
+  identity, without a shared `root_path`, gets a second copy of every
+  pipeline and job; see
+  [Deploy as one identity](/docs/platforms/databricks-deploy#one-identity).
 - **A Databricks deploy that would delete a resource stops**, such as a
   managed schema; the templates do not approve it. Review it, then deploy from
   your computer, or add `--auto-approve` to that one run.
 - **To roll back,** deploy an earlier commit through the same stages.
-- **What has been tried.** Tests check that each template parses, deploys to
-  dev, then test, then prod, and names the pinned versions above. The
+- **What has been tried.** Tests check that each template parses, orders its
+  stages dev, test, prod, and names the pinned versions above. The
   templates have not yet run against live Azure or Databricks.
 
 ## Next

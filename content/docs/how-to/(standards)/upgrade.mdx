@@ -39,16 +39,14 @@ these pages describe.
 
 ## Choose the version you run
 
-The [CI templates](/docs/how-to/check-in-ci) run `npm install -g ingestron@2`,
-which installs the newest 2.x release on each run. A new release can then make
-`ingestron check` fail on a pull request that changed nothing, because the
-files it generates are no longer the ones committed.
-
-To upgrade when you choose, install the exact version, in CI in place of
-`ingestron@2` and on each of your computers:
+A new release can change the files the packs generate, and then
+`ingestron check` fails on a pull request that changed nothing. So install an
+exact version, in CI and on each of your computers, and change it when you
+choose to upgrade. The [CI templates](/docs/how-to/check-in-ci) and the
+[deployment templates](/docs/how-to/deploy-through-environments) do:
 
 ```sh
-npm install -g ingestron@2.0.0
+npm install -g ingestron@2.1.0
 ```
 
 `npm ls -g ingestron` shows the version a computer has installed.
@@ -91,15 +89,13 @@ Deploy the changed files as you deploy any other change.
 Version 1 wrote a complete copy of each platform's files for each environment,
 in `build/<environment>/`. Version 2 writes one set of files per platform for
 every environment, in `build/<pack>/`, laid out as each platform's CI/CD tools
-expect: a Databricks bundle with a target per environment, a Data Factory
-factory with an ARM parameter file per environment, and one Synapse script
-with a script per environment. A deployment pipeline promotes the same files
-from one environment to the next; see
-[Deploy through environments](/docs/how-to/deploy-through-environments).
+expect; see [Where the files go](/docs/concepts/generated-files#where-the-files-go).
+A deployment pipeline promotes the same files from one environment to the
+next; see [Deploy through environments](/docs/how-to/deploy-through-environments).
 
 ### The standard and the folders
 
-1. Install `ingestron@2` and plan. Every pack is version 2, so a standard that
+1. Install `ingestron@2.1.0` and plan. Every pack is version 2, so a standard that
    names `databricks@1`, `adf@1`, `synapse@1` or `duckdb@1` stops with
    `PACK_VERSION`, once for all the environments that have it:
 
@@ -122,7 +118,9 @@ from one environment to the next; see
 
    `ingestron check` fails until those folders are gone, so CI cannot keep
    deploying them. Change your deployment to the new folders first, then
-   delete the old ones in the same pull request.
+   delete the old ones in the same pull request. A Databricks project with
+   managed schemas needs its 1.x folders for one more step first; see
+   [Databricks](#databricks) below.
 
 3. Environments may now differ only in values, such as names, paths and
    hosts. A table built in some environments only, or a resource name that
@@ -137,7 +135,7 @@ from one environment to the next; see
    [`DEPLOY_VALUE`](/docs/reference/errors#DEPLOY_VALUE): write it in
    `project.yaml` for each environment. See
    [Supplied when deploying](/docs/concepts/yaml-references#supplied-when-deploying).
-5. Change CI: the check templates install `ingestron@2`, and the deploy
+5. Change CI: the check templates install `ingestron@2.1.0`, and the deploy
    pipelines deploy `build/<pack>/` by target, parameter file or script, as
    [Deploy through environments](/docs/how-to/deploy-through-environments)
    shows.
@@ -150,8 +148,21 @@ given `--env`, they exit with `2`. `compare` and `request` still take `--env`.
 - One bundle in `build/databricks/`. The bundle's name, its pipeline and job
   keys, the target names and `root_path` are as in 1.x, so the first
   `databricks bundle deploy -t <environment>` updates that environment's
-  resources in place. Run `databricks bundle validate` and
-  `databricks bundle summary` first.
+  resources in place, if the same identity deploys it. Run
+  `databricks bundle validate` and `databricks bundle summary` first.
+- **Deploy as the identity that deployed 1.x.** Without
+  `workspace.root_path` in the platform, a target's deployment state is in the
+  deploying identity's own folder, `/Workspace/Users/<identity>/.bundle/…`.
+  Another identity, such as the service principal of the new CI templates,
+  finds no state there and creates a second copy of every pipeline and job; in
+  `prod`, both copies run on schedule. `databricks bundle summary` shows the
+  folder a target uses. So run the first 2.0 deploy, and the schema steps
+  below, as the identity that deployed 1.x. Before deploys move to CI, set a
+  shared `workspace.root_path` in `platform.yaml`, such as
+  `/Workspace/Shared/.bundle/<project>/${environment.name}`, and bind each
+  existing resource to it as the CI identity, as
+  [Deploy as one identity](/docs/platforms/databricks-deploy#one-identity)
+  shows.
 - Only an environment named `dev` is in development mode; `test`, `uat`,
   `staging` and every other environment are in production mode, unless the
   platform sets `mode`. On such an environment's first 2.0 deploy, jobs and
@@ -164,8 +175,12 @@ given `--env`, they exit with `2`. `compare` and `request` still take `--env`.
 - With `manage.schemas`, managed schemas are keyed by layer, such as `bronze`,
   or by schema name when a layer has several, not `<catalog>_<schema>`. Each
   environment's deployment state still holds the old key, so before the first
-  2.0 deploy, for each environment and managed schema:
-  1. in the 1.x folder `build/<environment>/`, run
+  2.0 deploy, for each environment and managed schema, as the identity that
+  deployed 1.x, and before the 1.x folders are deleted (or from the last 1.x
+  commit):
+  1. in the 1.x bundle's folder, `build/<environment>/`, or
+     `build/<environment>/databricks/` when the standard listed several packs,
+     run
      `databricks bundle deployment unbind <catalog>_<schema> -t <environment>`;
   2. in `build/databricks/`, run
      `databricks bundle deployment bind <key> <catalog>.<schema> -t <environment>`,
@@ -191,11 +206,12 @@ given `--env`, they exit with `2`. `compare` and `request` still take `--env`.
 - One factory in `build/adf/`: the factory's files in `factory/`, and
   `parameters/<environment>.json`. Deploy it as an ARM template built with
   Microsoft's npm package, with the pre- and post-deployment script; see
-  [Deploy](/docs/platforms/adf#deploy). Deploying the JSON directly, through
+  [Deploy](/docs/platforms/adf-deploy#deploy). Deploying the JSON directly, through
   the REST API, `az datafactory` or a factory's Git publishing of
   `build/<environment>/adf/`, is no longer supported.
-- One factory per project: the post-deployment script deletes every resource
-  in the factory that the template does not hold.
+- [One factory per project](/docs/platforms/adf-deploy#one-factory-per-project):
+  the post-deployment script deletes every resource in the factory that the
+  template does not hold.
 - Resource names are as in 1.x, so the first deployment updates each
   factory's resources in place.
 - The factory now holds each integration runtime its linked services use.
@@ -257,9 +273,10 @@ The package READMEs describe each interface; these are the changes:
   - `generatedOutputs(files, { envvars?, packs? })` replaces
     `generatedOutputs(model, environment)`. It resolves every environment and
     builds every output folder as `ingestron plan` does, and writes nothing.
-    It returns `{ ok, outputs, environmentReports, packReports, deployed,
-refused?, text }`; each output is `{ name, folder, targets,
-byEnvironment, files, deployValues? }`, with files at the paths
+    It returns `ok`, `outputs`, `environmentReports`, `packReports`,
+    `deployed`, `refused` and `text`; each output has `name`, `folder`,
+    `targets`, `byEnvironment`, `files` and, for a pack that builds every
+    environment together, `deployValues`, with files at the paths
     `ingestron apply` writes. A pack that cannot be loaded gives `refused`,
     not an exception. The new types are `GeneratedOutput`,
     `GeneratedOutputs`, `GeneratedOutputsOptions` and `Report`.
