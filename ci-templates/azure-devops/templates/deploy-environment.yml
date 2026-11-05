@@ -1,0 +1,146 @@
+# Deploys the files the Build stage published to one environment. Its
+# deployment job targets the Azure DevOps environment of the same name, so that
+# environment's approvals and checks gate it.
+#
+# Variables to set in the variable group ingestron-<environment>:
+# - AZURE_SUBSCRIPTION_ID, AZURE_LOCATION: the subscription and region of the
+#   environment's resource group.
+# - ADF_RESOURCE_GROUP, ADF_FACTORY_NAME: the environment's data factory.
+# - SYNAPSE_SERVER: <workspace>-ondemand.sql.azuresynapse.net.
+# - DUCKDB_ACCOUNT, DUCKDB_FILE_SYSTEM, DUCKDB_PATH: where the DuckDB job reads
+#   run.sql, as the job's sqlUrl names it.
+# Every step signs in as the environment's service connection.
+parameters:
+  - name: environment
+    type: string
+  - name: serviceConnection
+    type: string
+  - name: dependsOn
+    type: string
+
+stages:
+  - stage: Deploy_${{ parameters.environment }}
+    displayName: Deploy ${{ parameters.environment }}
+    dependsOn: ${{ parameters.dependsOn }}
+    variables:
+      - group: ingestron-${{ parameters.environment }}
+      - name: files
+        value: $(Pipeline.Workspace)/deploy
+    jobs:
+      - deployment: deploy
+        displayName: Deploy ${{ parameters.environment }}
+        pool:
+          vmImage: ubuntu-latest
+        environment: ${{ parameters.environment }}
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: deploy
+
+                # Data Factory. One factory per project: the post-deployment
+                # script deletes every resource in the factory that the
+                # template does not hold.
+                - task: AzurePowerShell@5
+                  displayName: "Data Factory: stop the triggers"
+                  inputs:
+                    azureSubscription: ${{ parameters.serviceConnection }}
+                    azurePowerShellVersion: LatestVersion
+                    pwsh: true
+                    ScriptType: FilePath
+                    ScriptPath: $(files)/arm/PrePostDeploymentScript.ps1
+                    ScriptArguments: >-
+                      -ArmTemplate $(files)/arm/ARMTemplateForFactory.json
+                      -ArmTemplateParameters $(files)/build/adf/parameters/${{ parameters.environment }}.json
+                      -ResourceGroupName $(ADF_RESOURCE_GROUP) -DataFactoryName $(ADF_FACTORY_NAME)
+                      -PreDeployment $true -DeleteDeployment $false
+                - task: AzureResourceManagerTemplateDeployment@3
+                  displayName: "Data Factory: deploy the template"
+                  inputs:
+                    deploymentScope: Resource Group
+                    azureResourceManagerConnection: ${{ parameters.serviceConnection }}
+                    subscriptionId: $(AZURE_SUBSCRIPTION_ID)
+                    action: Create Or Update Resource Group
+                    resourceGroupName: $(ADF_RESOURCE_GROUP)
+                    location: $(AZURE_LOCATION)
+                    templateLocation: Linked artifact
+                    csmFile: $(files)/arm/ARMTemplateForFactory.json
+                    csmParametersFile: $(files)/build/adf/parameters/${{ parameters.environment }}.json
+                    # Add -<name> <value> for each ARM parameter that
+                    # `ingestron request` lists under "Values to provide".
+                    overrideParameters: -factoryName $(ADF_FACTORY_NAME)
+                    deploymentMode: Incremental
+                - task: AzurePowerShell@5
+                  displayName: "Data Factory: clean up and start the triggers"
+                  inputs:
+                    azureSubscription: ${{ parameters.serviceConnection }}
+                    azurePowerShellVersion: LatestVersion
+                    pwsh: true
+                    ScriptType: FilePath
+                    ScriptPath: $(files)/arm/PrePostDeploymentScript.ps1
+                    ScriptArguments: >-
+                      -ArmTemplate $(files)/arm/ARMTemplateForFactory.json
+                      -ArmTemplateParameters $(files)/build/adf/parameters/${{ parameters.environment }}.json
+                      -ResourceGroupName $(ADF_RESOURCE_GROUP) -DataFactoryName $(ADF_FACTORY_NAME)
+                      -PreDeployment $false -DeleteDeployment $true
+
+                # Databricks: the bundle's target for this environment. A
+                # deploy that would delete a resource stops and asks; it is
+                # not approved here.
+                - bash: |
+                    curl -fsSL -o "$(Agent.TempDirectory)/databricks.tar.gz" https://github.com/databricks/cli/releases/download/v1.23.0/databricks_cli_1.23.0_linux_amd64.tar.gz
+                    echo "a5ec088f7f6cc5974327a42df99261e22fbc6f7ca9cddb945333c238dd9e2289  $(Agent.TempDirectory)/databricks.tar.gz" | sha256sum -c -
+                    mkdir -p "$(Agent.TempDirectory)/databricks" && tar -xzf "$(Agent.TempDirectory)/databricks.tar.gz" -C "$(Agent.TempDirectory)/databricks" databricks
+                    echo "##vso[task.prependpath]$(Agent.TempDirectory)/databricks"
+                  displayName: "Databricks: install the CLI"
+                - task: AzureCLI@2
+                  displayName: "Databricks: deploy the bundle"
+                  env:
+                    DATABRICKS_AUTH_TYPE: azure-cli
+                    # One line for each BUNDLE_VAR_ name that `ingestron request` lists:
+                    # BUNDLE_VAR_landing_account: $(LANDING_ACCOUNT)
+                  inputs:
+                    azureSubscription: ${{ parameters.serviceConnection }}
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    workingDirectory: $(files)/build/databricks
+                    inlineScript: |
+                      databricks bundle validate -t ${{ parameters.environment }}
+                      databricks bundle deploy -t ${{ parameters.environment }}
+
+                # Synapse serverless: sqlcmd (Go), checked by its SHA-256,
+                # signed in as the service connection.
+                - bash: |
+                    curl -fsSL -o "$(Agent.TempDirectory)/sqlcmd.tar.bz2" https://github.com/microsoft/go-sqlcmd/releases/download/v1.10.0/sqlcmd-linux-amd64.tar.bz2
+                    echo "92516d98c63d99b0994de5b61350c91f6915f9b76f139a59039fbcb225c2e987  $(Agent.TempDirectory)/sqlcmd.tar.bz2" | sha256sum -c -
+                    mkdir -p "$(Agent.TempDirectory)/sqlcmd" && tar -xjf "$(Agent.TempDirectory)/sqlcmd.tar.bz2" -C "$(Agent.TempDirectory)/sqlcmd" sqlcmd
+                    echo "##vso[task.prependpath]$(Agent.TempDirectory)/sqlcmd"
+                  displayName: "Synapse: install sqlcmd"
+                - task: AzureCLI@2
+                  displayName: "Synapse: create or alter the views"
+                  # One line for each sqlcmd variable that `ingestron request` lists:
+                  # env:
+                  #   SYNAPSE_SOURCE: $(SYNAPSE_SOURCE)
+                  inputs:
+                    azureSubscription: ${{ parameters.serviceConnection }}
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    workingDirectory: $(files)/build/synapse
+                    inlineScript: >-
+                      sqlcmd -S "$(SYNAPSE_SERVER)" --authentication-method ActiveDirectoryDefault
+                      -i environments/${{ parameters.environment }}.sql
+
+                # DuckDB in Azure: copy the environment's SQL to where the job
+                # reads it.
+                - task: AzureCLI@2
+                  displayName: "DuckDB: upload the SQL"
+                  inputs:
+                    azureSubscription: ${{ parameters.serviceConnection }}
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    workingDirectory: $(files)
+                    inlineScript: >-
+                      az storage fs directory upload --account-name "$(DUCKDB_ACCOUNT)"
+                      --file-system "$(DUCKDB_FILE_SYSTEM)" --source "build/duckdb/${{ parameters.environment }}/*"
+                      --destination-path "$(DUCKDB_PATH)" --recursive --auth-mode login

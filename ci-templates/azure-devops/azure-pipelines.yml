@@ -1,0 +1,68 @@
+# Deploys the committed build/ folder: checks it, builds the Data Factory
+# template once, then deploys the same files to dev, test and prod in turn.
+# Copy this file and templates/deploy-environment.yml to your definitions
+# repository, add this file as a pipeline, and delete the steps of each
+# platform your project does not use.
+#
+# Set up once, as https://docs.ingestron.io/docs/how-to/deploy-through-environments
+# explains:
+# - Azure DevOps environments named dev, test and prod. Add approvals to test
+#   and prod, and a branch control check to prod that allows only main.
+# - For each environment, an Azure Resource Manager service connection that
+#   uses workload identity federation, and a variable group named
+#   ingestron-<environment> with the variables the template reads.
+# - The pipeline variable ADF_DEV_FACTORY_ID: the dev factory's resource ID,
+#   which names the template's resources. Nothing is deployed with it.
+trigger:
+  branches:
+    include: [main]
+pr: none
+
+stages:
+  - stage: Build
+    jobs:
+      - job: build
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+          - task: UseNode@1
+            inputs:
+              version: 22.x
+          - script: npm install -g ingestron@2
+            displayName: Install Ingestron
+          - script: ingestron check
+            displayName: ingestron check
+          # Data Factory: Microsoft's build validates the factory, then writes
+          # the ARM template and the pre- and post-deployment script to arm/.
+          # It downloads its build tool from adf.azure.com.
+          - script: |
+              npm install --prefix "$(Agent.TempDirectory)/adf" @microsoft/azure-data-factory-utilities@1.0.3
+              adf="$(Agent.TempDirectory)/adf/node_modules/@microsoft/azure-data-factory-utilities/lib/index"
+              node "$adf" validate build/adf/factory "$(ADF_DEV_FACTORY_ID)"
+              node "$adf" export build/adf/factory "$(ADF_DEV_FACTORY_ID)" arm
+            displayName: "Data Factory: build the template"
+          # Every environment deploys these files, so prod gets the bytes dev
+          # got. Without Data Factory, copy build alone.
+          - script: cp -R arm build "$(Build.ArtifactStagingDirectory)/"
+            displayName: Collect the generated files
+          - task: PublishPipelineArtifact@1
+            inputs:
+              targetPath: $(Build.ArtifactStagingDirectory)
+              artifact: deploy
+
+  - template: templates/deploy-environment.yml
+    parameters:
+      environment: dev
+      serviceConnection: ingestron-dev
+      dependsOn: Build
+  - template: templates/deploy-environment.yml
+    parameters:
+      environment: test
+      serviceConnection: ingestron-test
+      dependsOn: Deploy_dev
+  - template: templates/deploy-environment.yml
+    parameters:
+      environment: prod
+      serviceConnection: ingestron-prod
+      dependsOn: Deploy_test
