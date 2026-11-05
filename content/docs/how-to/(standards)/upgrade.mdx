@@ -152,7 +152,7 @@ given `--env`, they exit with `2`. `compare` and `request` still take `--env`.
   `databricks bundle validate` and `databricks bundle summary` first.
 - **Deploy as the identity that deployed 1.x.** Without
   `workspace.root_path` in the platform, a target's deployment state is in the
-  deploying identity's own folder, `/Workspace/Users/<identity>/.bundle/…`.
+  deploying identity's own folder, `~/.bundle/…` in the workspace.
   Another identity, such as the service principal of the new CI templates,
   finds no state there and creates a second copy of every pipeline and job; in
   `prod`, both copies run on schedule. `databricks bundle summary` shows the
