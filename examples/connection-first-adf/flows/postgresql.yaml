@@ -6,8 +6,8 @@ ingest:
   uses: adf-table
   with:
     resource_names:
-      pipeline: pl_${values.resource_prefix}_orders_${environment.name}
-      trigger: tr_${values.resource_prefix}_orders_${environment.name}
+      pipeline: pl_${values.resource_prefix}_orders
+      trigger: tr_${values.resource_prefix}_orders
       copy_activity: copy_orders
 tables:
   postgresql_records:
