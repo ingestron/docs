@@ -1,11 +1,16 @@
 # Deploys the files deploy.yml built to one environment. It runs in the GitHub
 # environment of the same name, so that environment's reviewers and branch rule
-# gate it, and its variables and secrets are the ones used.
+# gate it, and its variables and secrets are the ones used. Required reviewers
+# on a private repository need GitHub Enterprise Cloud.
 #
 # Variables to set in each GitHub environment:
 # - AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID: the identity this
-#   environment deploys as, with a federated credential for
-#   repo:<owner>/<repository>:environment:<environment>.
+#   environment deploys as, with a federated credential for the job's subject:
+#   repo:<owner>/<repository>:environment:<environment> for a repository
+#   created before 15 July 2026, and
+#   repo:<owner>@<owner id>/<repository>@<repository id>:environment:<environment>
+#   for one created since (gh api repos/<owner>/<repository> gives .owner.id
+#   and .id).
 # - ADF_RESOURCE_GROUP, ADF_FACTORY_NAME: the environment's data factory.
 # - DATABRICKS_CLIENT_ID: the service principal the bundle deploys as, with a
 #   federation policy for the same subject.
@@ -33,10 +38,10 @@ jobs:
     env:
       ENVIRONMENT: ${{ inputs.environment }}
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: deploy
-      - uses: azure/login@v2
+      - uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
@@ -46,7 +51,7 @@ jobs:
       # Data Factory. One factory per project: the post-deployment script
       # deletes every resource in the factory that the template does not hold.
       - name: "Data Factory: stop the triggers"
-        uses: azure/powershell@v2
+        uses: azure/powershell@f5b8adcfff1904872c7b98d4012d4914d74b1a82 # v3.0.0
         env:
           ADF_RESOURCE_GROUP: ${{ vars.ADF_RESOURCE_GROUP }}
           ADF_FACTORY_NAME: ${{ vars.ADF_FACTORY_NAME }}
@@ -68,7 +73,7 @@ jobs:
             --template-file arm/ARMTemplateForFactory.json \
             --parameters "@build/adf/parameters/$ENVIRONMENT.json" factoryName="$ADF_FACTORY_NAME"
       - name: "Data Factory: clean up and start the triggers"
-        uses: azure/powershell@v2
+        uses: azure/powershell@f5b8adcfff1904872c7b98d4012d4914d74b1a82 # v3.0.0
         env:
           ADF_RESOURCE_GROUP: ${{ vars.ADF_RESOURCE_GROUP }}
           ADF_FACTORY_NAME: ${{ vars.ADF_FACTORY_NAME }}
@@ -82,7 +87,7 @@ jobs:
 
       # Databricks: the bundle's target for this environment. A deploy that
       # would delete a resource stops and asks; it is not approved here.
-      - uses: databricks/setup-cli@v1.23.0
+      - uses: databricks/setup-cli@9625fdde9ba2607df0087e0d3ec7449198bf2180 # v1.23.0
       - name: "Databricks: deploy the bundle"
         working-directory: build/databricks
         env:

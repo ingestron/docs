@@ -54,27 +54,41 @@ test("every YAML template parses, and the folder holds no other kind of file", (
   for (const file of [...checks, ...deploys]) assert.equal(typeof yaml(file), "object", file);
 });
 
-test("each check template installs ingestron 2 from npm, then runs ingestron check", () => {
+/**
+ * The ingestron bundle the templates install: an exact version. It is the
+ * first 2.x bundle published; when the docs move to @ingestron/cli 2.1, the
+ * docs test that binds the upgrade page ties the two together.
+ */
+const bundle = "2.1.0";
+
+test("each check installs an exact ingestron from npm, then runs ingestron check", () => {
   for (const file of [...checks, "github-actions/deploy.yml", "azure-devops/azure-pipelines.yml"]) {
     const text = read(file);
     assert.match(
       text,
-      /(run|script): npm install -g ingestron@2\n[\s\S]*(run|script): ingestron check\n/,
+      new RegExp(
+        `(run|script): npm install -g ingestron@${bundle.replaceAll(".", "\\.")}\\n[\\s\\S]*(run|script): ingestron check\\n`,
+      ),
       file,
     );
+    assert.doesNotMatch(text, /ingestron@\d+\n/, file);
     assert.doesNotMatch(text, /npx|pnpm|node packages\//, file);
   }
 });
 
 test("each check template installs Node 22", () => {
-  assert.match(read(checks[0]), /actions\/setup-node@v4[\s\S]*node-version: 22/);
-  assert.match(read(checks[1]), /NodeTool@0[\s\S]*versionSpec: 22\.x/);
+  assert.match(
+    read(checks[0]),
+    /actions\/setup-node@[0-9a-f]{40} # v7\.1\.0\n\s+with:\n\s+node-version: 22/,
+  );
+  assert.match(read(checks[1]), /UseNode@1\n\s+inputs:\n\s+version: 22\.x/);
 });
 
 test("GitHub Actions: one build, deployed to dev, then test, then prod, each in its environment", () => {
   const deploy = yaml("github-actions/deploy.yml");
   assert.deepEqual(deploy.on, { push: { branches: ["main"] } });
-  assert.deepEqual(deploy.permissions, { contents: "read", "id-token": "write" });
+  // Only the deploy jobs get an OIDC token.
+  assert.deepEqual(deploy.permissions, { contents: "read" });
   assert.equal(deploy.jobs.build.needs, "check");
   const order = [
     ["dev", "build"],
@@ -86,6 +100,7 @@ test("GitHub Actions: one build, deployed to dev, then test, then prod, each in 
     assert.equal(job.needs, after, environment);
     assert.equal(job.uses, "./.github/workflows/deploy-environment.yml", environment);
     assert.deepEqual(job.with, { environment }, environment);
+    assert.deepEqual(job.permissions, { contents: "read", "id-token": "write" }, environment);
   }
   const upload = steps(deploy).find((step) => step.uses?.startsWith("actions/upload-artifact@"));
   assert.match(upload.with.path, /arm\/\nbuild\//);
@@ -96,9 +111,9 @@ test("GitHub Actions: one build, deployed to dev, then test, then prod, each in 
   assert.equal(job.environment, "${{ inputs.environment }}");
   assert.equal(job.concurrency.group, "deploy-${{ inputs.environment }}");
   assert.equal(job.concurrency["cancel-in-progress"], false);
-  const uses = steps(environment).map((step) => step.uses);
-  assert.ok(uses.includes("actions/download-artifact@v4"));
-  assert.ok(uses.includes("azure/login@v2"));
+  const uses = steps(environment).map((step) => step.uses?.split("@")[0]);
+  assert.ok(uses.includes("actions/download-artifact"));
+  assert.ok(uses.includes("azure/login"));
   assert.ok(!steps(environment).some((step) => step.uses?.startsWith("actions/checkout")));
 });
 
@@ -122,6 +137,9 @@ test("Azure DevOps: one Build stage, deployed to dev, then test, then prod, each
   const template = yaml("azure-devops/templates/deploy-environment.yml");
   const [stage] = template.stages;
   assert.equal(stage.stage, "Deploy_${{ parameters.environment }}");
+  // With the environment's exclusive lock check, runs deploy one at a time, in order.
+  assert.equal(stage.lockBehavior, "sequential");
+  assert.match(read("azure-devops/azure-pipelines.yml"), /exclusive lock check/);
   const [deployment] = stage.jobs;
   assert.equal(deployment.environment, "${{ parameters.environment }}");
   const tasks = steps(template).map((step) => step.task);
@@ -146,7 +164,8 @@ test("Data Factory: built once with Microsoft's package 1.0.3, deployed incremen
       text,
       /npm install --prefix \S+ @microsoft\/azure-data-factory-utilities@1\.0\.3\n/,
     );
-    assert.match(text, /node "\$adf" validate build\/adf\/factory /, file);
+    // The export validates too, so there is no separate validate run.
+    assert.doesNotMatch(text, /node "\$adf" validate/, file);
     assert.match(text, /node "\$adf" export build\/adf\/factory \S+ arm\n/, file);
   }
   const github = scripts("github-actions/deploy-environment.yml");
@@ -170,7 +189,15 @@ test("Data Factory: built once with Microsoft's package 1.0.3, deployed incremen
 
 test("Databricks: CLI v1.23.0, checked by its SHA-256 where it is downloaded, deploying each environment's target", () => {
   const github = yaml("github-actions/deploy-environment.yml");
-  assert.ok(steps(github).some((step) => step.uses === "databricks/setup-cli@v1.23.0"));
+  assert.ok(
+    steps(github).some((step) =>
+      step.uses?.startsWith("databricks/setup-cli@9625fdde9ba2607df0087e0d3ec7449198bf2180"),
+    ),
+  );
+  assert.match(
+    read("github-actions/deploy-environment.yml"),
+    /databricks\/setup-cli@[0-9a-f]{40} # v1\.23\.0\n/,
+  );
   const deploy = steps(github).find((step) => step.name === "Databricks: deploy the bundle");
   assert.equal(deploy["working-directory"], "build/databricks");
   assert.equal(deploy.env.DATABRICKS_AUTH_TYPE, "github-oidc");
@@ -189,6 +216,11 @@ test("Databricks: CLI v1.23.0, checked by its SHA-256 where it is downloaded, de
     (step) => step.displayName === "Databricks: deploy the bundle",
   );
   assert.equal(cli.env.DATABRICKS_AUTH_TYPE, "azure-cli");
+  // Microsoft Learn: required, so databricks bundle's subprocesses see the session.
+  for (const step of steps(yaml("azure-devops/templates/deploy-environment.yml")).filter(
+    (found) => found.task === "AzureCLI@2",
+  ))
+    assert.equal(step.inputs.useGlobalConfig, true, step.displayName);
 });
 
 test("Synapse: sqlcmd (Go) v1.10.0, checked by its SHA-256, run from build/synapse", () => {
@@ -217,6 +249,30 @@ test("Synapse: sqlcmd (Go) v1.10.0, checked by its SHA-256, run from build/synap
     (found) => found.displayName === "Synapse: create or alter the views",
   );
   assert.equal(task.inputs.workingDirectory, "$(files)/build/synapse");
+});
+
+test("every GitHub action is pinned to a full commit SHA, with the version it is", () => {
+  // The majors these templates were checked against, so a bump is deliberate.
+  const expected = {
+    "actions/checkout": "v7.0.1",
+    "actions/setup-node": "v7.1.0",
+    "actions/upload-artifact": "v7.0.2",
+    "actions/download-artifact": "v8.0.2",
+    "azure/login": "v3.1.0",
+    "azure/powershell": "v3.0.0",
+    "databricks/setup-cli": "v1.23.0",
+  };
+  const seen = new Set();
+  for (const file of [checks[0], deploys[0], deploys[1]])
+    for (const line of read(file).split("\n")) {
+      const found = /^\s*-?\s*uses: (\S+)(.*)$/.exec(line);
+      if (!found || found[1].startsWith("./")) continue;
+      const [name, ref] = found[1].split("@");
+      assert.match(ref, /^[0-9a-f]{40}$/, `${file}: ${line.trim()}`);
+      assert.equal(found[2], ` # ${expected[name]}`, `${file}: ${name}`);
+      seen.add(name);
+    }
+  assert.deepEqual([...seen].sort(), Object.keys(expected).sort());
 });
 
 test("no deploy step installs or runs Ingestron", () => {

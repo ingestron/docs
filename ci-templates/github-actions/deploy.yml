@@ -7,37 +7,40 @@
 # Set up once, as https://docs.ingestron.io/docs/how-to/deploy-through-environments
 # explains:
 # - GitHub environments named dev, test and prod. Give test and prod required
-#   reviewers, and let only the main branch deploy to prod.
+#   reviewers, and let only the main branch deploy to prod. Required reviewers
+#   on a private repository need GitHub Enterprise Cloud; without them, the
+#   page above says how to gate test and prod.
 # - In each environment, the variables deploy-environment.yml reads.
 # - The repository variable ADF_DEV_FACTORY_ID: the dev factory's resource ID,
 #   which names the template's resources. Nothing is deployed with it.
+# Each action is pinned to a commit, with its version beside it, and Ingestron
+# to an exact version: change them when you upgrade.
 name: deploy
 on:
   push:
     branches: [main]
 permissions:
   contents: read
-  id-token: write
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
-      - run: npm install -g ingestron@2
+      - run: npm install -g ingestron@2.1.0
       - run: ingestron check
 
   build:
     needs: check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
-      # Data Factory: Microsoft's build validates the factory, then writes the
+      # Data Factory: Microsoft's export validates the factory, then writes the
       # ARM template and the pre- and post-deployment script to arm/. It
       # downloads its build tool from adf.azure.com.
       - name: "Data Factory: build the template"
@@ -46,10 +49,9 @@ jobs:
         run: |
           npm install --prefix "$RUNNER_TEMP/adf" @microsoft/azure-data-factory-utilities@1.0.3
           adf="$RUNNER_TEMP/adf/node_modules/@microsoft/azure-data-factory-utilities/lib/index"
-          node "$adf" validate build/adf/factory "$ADF_DEV_FACTORY_ID"
           node "$adf" export build/adf/factory "$ADF_DEV_FACTORY_ID" arm
       # Every environment deploys these files, so prod gets the bytes dev got.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: deploy
           path: |
@@ -58,6 +60,9 @@ jobs:
           if-no-files-found: error
 
   dev:
+    permissions:
+      contents: read
+      id-token: write
     needs: build
     uses: ./.github/workflows/deploy-environment.yml
     with:
@@ -65,6 +70,9 @@ jobs:
     secrets: inherit
 
   test:
+    permissions:
+      contents: read
+      id-token: write
     needs: dev
     uses: ./.github/workflows/deploy-environment.yml
     with:
@@ -72,6 +80,9 @@ jobs:
     secrets: inherit
 
   prod:
+    permissions:
+      contents: read
+      id-token: write
     needs: test
     uses: ./.github/workflows/deploy-environment.yml
     with:
