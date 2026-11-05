@@ -41,7 +41,7 @@ not start the ADF copies.
 A target's deployment state, which records the pipelines and jobs it created,
 is kept in the target's `root_path`. Without `workspace.root_path` in the
 platform, that is the deploying identity's own folder,
-`/Workspace/Users/<identity>/.bundle/<bundle>/<target>`. Another identity
+`~/.bundle/<bundle>/<target>` in the workspace. Another identity
 deploying the same target finds no state there and creates a second copy of
 every pipeline and job; in `prod`, both copies then run on their schedule.
 
