@@ -1,6 +1,6 @@
 ---
 title: Add an environment
-description: Generate another environment, such as test, from the same definitions.
+description: Add another environment, such as test, to the files every environment shares, and see what it changes.
 ---
 
 1. Add it to `environments` in `project.yaml`, with the values that differ:
@@ -12,28 +12,48 @@ description: Generate another environment, such as test, from the same definitio
 
 <Example name="environments" file="platform.yaml" />
 
-3. Generate it:
+3. Generate it. Every environment is generated together, so plan and apply
+   take no environment:
 
 <ToolSteps>
 <Tool name="CLI">
 
 ```sh
-ingestron plan --env test
-ingestron apply --env test
+ingestron plan
+ingestron apply
 ```
 
 </Tool>
 <Tool name="VS Code">
 
-Click the environment in the status bar, or run **Ingestron: Select environment**, and choose `test`. Then run **Ingestron: Plan** then **Ingestron: Apply** from the Command Palette (⇧⌘P on macOS, Ctrl+Shift+P elsewhere). The output is in the Ingestron output panel. Problems show in the Problems panel as you type, before you plan.
+Run **Ingestron: Plan**, then **Ingestron: Apply**, from the Command Palette (⇧⌘P on macOS, Ctrl+Shift+P elsewhere). The output is in the Ingestron output panel. To see the new environment's problems and previews, click the environment in the status bar, or run **Ingestron: Select environment**, and choose `test`.
 
 </Tool>
 </ToolSteps>
 
-The new environment gets its own folder, `build/test/`. An environment named
-`prod` or `production` resolves to production mode in the current Platform model; every other one in
-development mode. These modes affect the generated resources, not deployment by
-Ingestron. See [Environments and platform](/docs/concepts/environments-and-platform).
+The new environment gets no folder of its own. It joins the files each
+platform already has: here, a `test` target in the bundle's `databricks.yml`,
+with the values that differ between environments:
+
+<Example name="environments" file="build/databricks/databricks.yml" pick="targets.test" />
+
+On other platforms it is a parameter file, `build/adf/parameters/test.json`, a
+script, `build/synapse/environments/test.sql`, or a folder,
+`build/duckdb/test/`. [Generated files and ownership](/docs/concepts/generated-files#where-the-files-go)
+shows the whole layout.
+
+Only an environment named `dev` is in development mode; every other one,
+`test` included, is in production mode, and schedules run only in `prod` or
+`production`, so `test`'s refresh job is paused. A platform can set `mode` and
+`schedule.paused` itself; see the
+[platform defaults](/docs/reference/packs/databricks#platform-configuration).
+Environments may differ only in values, such as names, paths and hosts: a table
+built in one environment only is refused as
+[`ENVIRONMENTS_DIFFER`](/docs/reference/errors#ENVIRONMENTS_DIFFER).
+
+To deploy the new environment, add it to your deployment pipeline as
+[Deploy through environments](/docs/how-to/deploy-through-environments#add-an-environment)
+shows.
 
 ## Check what differs
 
@@ -51,6 +71,7 @@ For the example above, it prints:
 
 ## Platform
 
+- `mode`: `development` → `production`
 - `workspace.root_path`: `/Workspace/Shared/.bundle/finance/dev` → `/Workspace/Shared/.bundle/finance/test`
 - `tags.environment`: `dev` → `test`
 
@@ -64,8 +85,8 @@ For the example above, it prints:
 place, and lists only what differs:
 
 - **Platform:** the platform document's values, and the defaults that follow
-  from the environment. Compared with `prod`, it also shows `mode` and
-  `schedule.paused`, which production changes.
+  from the environment, such as `mode`. Compared with `prod`, it also shows
+  `schedule.paused`, because only `prod` runs its schedule.
 - **Names:** the pipeline and job names, which are not per table.
 - **Table:** one section for each table that differs: its full name, each
   step's method and settings, the connection's settings and the table's

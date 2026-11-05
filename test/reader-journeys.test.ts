@@ -205,18 +205,19 @@ describe("concepts/generated-files", () => {
 
   it("quotes the header line the Databricks pack writes", () => {
     const cwd = copy("retail");
-    expect(cli(cwd, ["apply", "--no-diff", "--env", "dev"]).code).toBe(0);
-    const first = readFileSync(join(cwd, "build/dev/src/retail/bronze/orders.sql"), "utf8").split(
-      "\n",
-    )[0]!;
+    expect(cli(cwd, ["apply", "--no-diff"]).code).toBe(0);
+    const first = readFileSync(
+      join(cwd, "build/databricks/src/retail/bronze/orders.sql"),
+      "utf8",
+    ).split("\n")[0]!;
     expect(runTime.replace(/\n\s*/g, " ")).toContain(`\`${first}\``);
   });
 
   it("says which ADF pipelines carry the annotation, as the pack writes them", () => {
     const annotations = (name: string) => {
       const cwd = copy(name);
-      expect(cli(cwd, ["apply", "--no-diff", "--env", "dev"]).code).toBe(0);
-      const folder = join(cwd, "build/dev/adf/pipeline");
+      expect(cli(cwd, ["apply", "--no-diff"]).code).toBe(0);
+      const folder = join(cwd, "build/adf/factory/pipeline");
       return readdirSync(folder).map(
         (file) => JSON.parse(readFileSync(join(folder, file), "utf8")).properties.annotations,
       );
@@ -234,12 +235,12 @@ describe("concepts/generated-files", () => {
   it("says plan reports a differing file as a conflict when .generated.json is gone", () => {
     const cwd = copy("duckdb");
     expect(cli(cwd, ["apply", "--no-diff"]).code).toBe(0);
-    rmSync(join(cwd, "build/dev/.generated.json"));
-    appendFileSync(join(cwd, "build/dev/run.sql"), "-- mine\n");
+    rmSync(join(cwd, "build/duckdb/.generated.json"));
+    appendFileSync(join(cwd, "build/duckdb/dev/run.sql"), "-- mine\n");
     const planned = cli(cwd, ["plan", "--no-diff"]);
     expect(planned.code).toBe(1);
-    expect(planned.output).toMatch(/^conflict +run\.sql$/m);
-    expect(planned.output).toMatch(/^adopt +README\.md$/m);
+    expect(planned.output).toMatch(/^conflict +dev\/run\.sql$/m);
+    expect(planned.output).toMatch(/^adopt +dev\/README\.md$/m);
     expect(runTime.replace(/\s+/g, " ")).toContain(
       "reports every file that differs from what it would generate as a conflict",
     );
