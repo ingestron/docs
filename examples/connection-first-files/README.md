@@ -7,7 +7,7 @@ only the Databricks pack, so every other choice is a pack default.
 | File                    | What it shows                                           |
 | ----------------------- | ------------------------------------------------------- |
 | `project.yaml`          | The landing folder as a value                           |
-| `standard.yaml`         | `packs: [databricks@1]`                                 |
+| `standard.yaml`         | `packs: [databricks@2]`                                 |
 | `connections/shop.yaml` | The files source and its folder                         |
 | `flows/*.yaml`          | The tables read from the folder, each with its contract |
 | `contracts/*.yaml`      | ODCS contracts: the columns and their types             |
