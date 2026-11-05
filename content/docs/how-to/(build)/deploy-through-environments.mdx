@@ -77,14 +77,15 @@ Set up once, in the repository's settings:
    required reviewers work only in public repositories; a private repository
    needs GitHub Enterprise for them, see
    [deployments and environments](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)
-   (checked 5 November 2026). Without them the stages do not wait: deploy
-   `prod` from a protected branch instead, such as `release`, whose merges
-   need an approving review, and let only that branch deploy to `prod`.
+   (checked 5 November 2026). Without them, the stages are not gated: every
+   push to `main` deploys to `test` and `prod` once `dev` succeeds. The branch
+   rule still keeps every other branch out of `prod`.
 2. **An Azure identity for each environment,** with a federated credential
    for the job's subject and the roles its steps need on that environment's
-   resources. A repository created before 15 July 2026 has the subject
-   `repo:<owner>/<repository>:environment:<environment>`; one created since
-   has `repo:<owner>@<owner id>/<repository>@<repository id>:environment:<environment>`,
+   resources. A repository created, renamed or transferred before 15 July 2026
+   has the subject `repo:<owner>/<repository>:environment:<environment>`; one
+   created, renamed or transferred since, or opted in, has
+   `repo:<owner>@<owner id>/<repository>@<repository id>:environment:<environment>`,
    with the IDs that `gh api repos/<owner>/<repository>` gives as `owner.id`
    and `id`. GitHub's
    [OpenID Connect guide](https://docs.github.com/en/actions/concepts/security/openid-connect)
