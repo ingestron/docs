@@ -26,7 +26,7 @@ and apply it again first.
 
    ```csv
    customer_id,name,region
-   1,Aroha,North
+   1,Ana,North
    2,Ben,South
    3,Chen,North
    ```
@@ -67,9 +67,9 @@ and apply it again first.
    ```
 
    ```text
-   dev → build/dev
-   update    run.sql
-   create    tables/bronze.customers.sql
+   duckdb → build/duckdb (dev)
+   update    dev/run.sql
+   create    dev/tables/bronze.customers.sql
 
    5 files: 1 create, 1 update, 3 unchanged. Ready to apply.
    ```
@@ -128,7 +128,9 @@ from its `project.yaml`, renaming any value your project already has.
 ## Start beside what you already run
 
 `plan` and `apply` write only to the output folder, `build/` by default, so a
-project owns only the files it generated. A first project can hold one source
+project owns only the files it generated. Each platform's files are in a
+folder of their own, such as `build/databricks/`; see
+[Generated files and ownership](/docs/concepts/generated-files). A first project can hold one source
 while the rest of your platform stays as it is:
 
 - **Keep the project in a folder of its own,** in your repository or in a new
