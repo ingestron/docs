@@ -43,8 +43,10 @@ const areas: Record<string, string[]> = {
     "/docs/platforms/duckdb",
     "/docs/platforms/duckdb-in-azure",
     "/docs/platforms/databricks",
+    "/docs/platforms/databricks-deploy",
     "/docs/platforms/synapse",
     "/docs/platforms/adf",
+    "/docs/platforms/adf-deploy",
     "/docs/platforms/adf-pipelines",
     "/docs/platforms/landing-only",
   ],
@@ -186,7 +188,7 @@ describe("page URLs", () => {
     const built = readFileSync(join(process.cwd(), "test/page-urls.txt"), "utf8")
       .trim()
       .split("\n");
-    expect(built).toHaveLength(125);
+    expect(built).toHaveLength(127);
     expect(
       source
         .getPages()

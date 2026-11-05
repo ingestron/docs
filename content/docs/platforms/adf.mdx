@@ -13,16 +13,11 @@ the pipelines that read the landed files into tables.
 
 <RouteFacts id="adf-databricks" />
 
-ADF feeds the other routes too. Everything on this page, from the runtime and
-Key Vault to the schedules and deployment, applies to them as well; their own
-pages cover what reads the files:
-
-- [Synapse serverless views](/docs/platforms/synapse) (`adf-synapse`): views
-  over the landed files.
-- [Run DuckDB in Azure](/docs/platforms/duckdb-in-azure) (`adf-duckdb`): DuckDB
-  tables rebuilt after each load.
-- [Land files only](/docs/platforms/landing-only) (`adf-landing`): the landed
-  files are the result.
+ADF feeds the other routes too: [Synapse serverless views](/docs/platforms/synapse)
+(`adf-synapse`), [Run DuckDB in Azure](/docs/platforms/duckdb-in-azure)
+(`adf-duckdb`) and [Land files only](/docs/platforms/landing-only)
+(`adf-landing`). Everything on this page applies to them as well; their own
+pages cover what reads the files.
 
 ## What Ingestron writes [#what-you-get]
 
@@ -116,14 +111,11 @@ The environments differ in their landing storage and Key Vault:
 
 <Example name="private-sql-server" file="project.yaml" />
 
-The platform names the shared infrastructure the copies use:
+The platform names the shared infrastructure the copies use, and the flow
+names the tables to copy from the `erp` connection, which reaches the ERP
+privately with its password in Key Vault:
 
 <Example name="private-sql-server" file="platform.yaml" />
-
-The connection reaches the ERP privately, with its password in Key Vault, and
-the flow names the tables to copy:
-
-<Example name="private-sql-server" file="connections/erp.yaml" />
 
 <Example name="private-sql-server" file="flows/erp.yaml" />
 
@@ -213,196 +205,33 @@ can copy only the rows changed in each window (`mode: incremental`). An
 unknown setting stops generation with a diagnostic, and the standard's fixed
 settings still win.
 
-### Define the time windows [#define-the-time-windows]
+### Schedules, names and pipeline shape [#schedule]
 
-The pipelines run from tumbling window triggers, which divide time into
-consecutive, non-overlapping windows. `start` is the first window's start, in
-UTC, and `every` sets each window's length. A full selection copies again each
-window; an incremental copy filters the watermark column by the window's
-bounds; file copies in `new` mode select the files changed in it.
+<OldAnchor id="define-the-time-windows" />
+<OldAnchor id="retry-and-pause" />
+<OldAnchor id="set-policy-and-names" />
 
-<SettingsSections pack="adf" method="adf-copy" include={["every", "start"]} />
+The copies run from tumbling window triggers, which start only in `prod` or
+`production`. [Shape ADF pipelines](/docs/platforms/adf-pipelines#define-the-time-windows)
+covers the windows, retries, pausing, ForEach, audit columns and factory
+folders, and [ADF resource names](/docs/how-to/name-things-your-way#adf-resource-names)
+where each name goes. Names are the same in every environment, because one
+template is deployed to each factory.
 
-### Retry and pause [#retry-and-pause]
+## Deploy and run [#deploy]
 
-A retry repeats a failed window; it does not move that window's bounds.
-Triggers start only in `prod` or `production`; in every other environment
-they stay stopped. `paused` keeps a trigger stopped there too, and
-`paused: false` starts one elsewhere. Without it, the trigger follows the
-platform's `schedule.paused`; see the
-[platform defaults](/docs/reference/packs/adf#platform-configuration).
-
-<SettingsSections pack="adf" method="adf-copy" include={["retries", "paused"]} />
-
-To stop only the copies, for example while the source database is down for
-maintenance, set `paused` for the copy method in the platform, beside the
-other `adf-copy` settings:
-
-```yaml
-settings:
-  adf-copy:
-    paused: true
-```
-
-`paused: true` in the platform's `schedule` stops the Databricks refresh job
-and the triggers together; see
-[Refresh on a schedule](/docs/platforms/databricks#schedule). On the
-`adf-databricks` route, ADF and Databricks run on their own schedules. On
-`adf-duckdb`, ADF can start the DuckDB job after the copies; see
-[Run DuckDB in Azure](/docs/platforms/duckdb-in-azure).
-
-### Tables that share a schedule
-
-SQL-family tables in one connection and source database share their runtime,
-encryption, schedule, retries and paused state. File tables in one connection
-share their runtime and schedule. Give tables that need their own settings
-separate connections. Native full-copy sources get a pipeline per table.
-
-### Names and pipeline shape [#set-policy-and-names]
-
-Resource names are the same in every environment, because one template is
-deployed to each factory. [ADF resource names](/docs/how-to/name-things-your-way#adf-resource-names)
-covers where each name goes, sharing rules and safe renames, and
-[Shape ADF pipelines](/docs/platforms/adf-pipelines) covers ForEach, retries
-inside a run, audit columns and factory folders.
-
-## Before you deploy [#prerequisites]
-
+<OldAnchor id="prerequisites" />
 <OldAnchor id="platform-prerequisites" />
-
-Ingestron creates nothing in Azure and does not test credentials, run queries
-or inspect the factory. These must exist before the pipelines can run:
-
-- **An integration runtime that reaches the source.** A self-hosted runtime
-  runs on infrastructure you manage, with the source's drivers and network
-  access; register a node on it where the deployment creates it.
-- **Key Vault**, holding the source's secrets, with access for the factory's
-  identity.
-- **ADLS Gen2 landing storage**, with write access for the factory's identity.
-  Microsoft 365 uses its configured application instead.
-- **Source access:** the permissions, drivers, versions and authentication in
-  the source's vendor prerequisites, linked from its connector page.
-
-`ingestron request --env prod`, or **Ingestron: Prepare platform request** in
-VS Code, lists them with this project's values:
-
-<Request name="private-sql-server" env="prod" sections={["ADF prerequisites"]} />
-
-See [Ask the platform team](/docs/how-to/ask-the-platform-team) for the whole
-request.
-
-## Deploy [#deploy]
-
 <OldAnchor id="publish" />
+<OldAnchor id="deploy-from-ci" />
+<OldAnchor id="operate" />
 
-One factory serves one project. Microsoft's post-deployment script deletes
-every pipeline, dataset, linked service, trigger and integration runtime in
-the factory that the template does not hold, so give each project, and each
-environment, a factory of its own. Leave the test and production factories
-unconnected to Git, as Microsoft recommends.
-
-Build the ARM template once with Microsoft's
-[`@microsoft/azure-data-factory-utilities`](https://www.npmjs.com/package/@microsoft/azure-data-factory-utilities),
-on Node.js 20 or 22, from the project folder. It validates every resource and
-writes `arm/ARMTemplateForFactory.json` and `arm/PrePostDeploymentScript.ps1`.
-The factory ID only names the template's resources; the build downloads its
-tool from `adf.azure.com` and changes nothing in Azure:
-
-```sh
-npm install --prefix .adf @microsoft/azure-data-factory-utilities@1.0.3
-node .adf/node_modules/@microsoft/azure-data-factory-utilities/lib/index export build/adf/factory <dev factory resource ID> arm
-```
-
-Replace `<dev factory resource ID>` with the development factory's resource ID,
-`/subscriptions/<id>/resourceGroups/<group>/providers/Microsoft.DataFactory/factories/<factory>`.
-Keep `.adf/` and `arm/` out of Git: they are rebuilt for each deployment.
-
-Then, for each environment in turn, signed in to its subscription, stop the
-triggers, deploy the template with the environment's parameter file, and run
-the script again to delete what the template no longer holds and start the
-triggers whose state is `Started`. Here for `prod`:
-
-```powershell
-./arm/PrePostDeploymentScript.ps1 -ArmTemplate arm/ARMTemplateForFactory.json -ArmTemplateParameters build/adf/parameters/prod.json -ResourceGroupName <group> -DataFactoryName <factory> -PreDeployment $true -DeleteDeployment $false
-az deployment group create --resource-group <group> --mode Incremental --template-file arm/ARMTemplateForFactory.json --parameters "@build/adf/parameters/prod.json" factoryName=<factory>
-./arm/PrePostDeploymentScript.ps1 -ArmTemplate arm/ARMTemplateForFactory.json -ArmTemplateParameters build/adf/parameters/prod.json -ResourceGroupName <group> -DataFactoryName <factory> -PreDeployment $false -DeleteDeployment $true
-```
-
-Replace `<group>` and `<factory>` with the environment's resource group and
-factory. The script needs PowerShell 7 and the Az modules. Always give it
-`-ArmTemplateParameters`: without the environment's file it cannot tell that
-`prod`'s triggers start. Keep `--mode Incremental`; Microsoft warns that
-`Complete` deletes the resource group's other resources. When
-`ingestron request` lists values to provide, add `<name>=<value>` after
-`factoryName` for each.
-
-What reads the files is deployed beside the factory, from its own folder:
-[Databricks](/docs/platforms/databricks#deploy),
-[Synapse](/docs/platforms/synapse#deploy) or
-[DuckDB in Azure](/docs/platforms/duckdb-in-azure#deploy).
-
-### From CI [#deploy-from-ci]
-
-In a pipeline, the build runs once and each environment's stage deploys the
-same template. From the GitHub Actions template, the build:
-
-<Template
-  file="github-actions/deploy.yml"
-  from='- name: "Data Factory: build the template"'
-  to='node "$adf" export'
-/>
-
-and each environment's deployment, between the two runs of the script:
-
-<Template
-  file="github-actions/deploy-environment.yml"
-  from='- name: "Data Factory: deploy the template"'
-  to='--parameters "@build/adf/parameters/$ENVIRONMENT.json"'
-/>
-
-Microsoft's three Data Factory GitHub Actions are archived, so the template
-calls the npm package and the script directly. In Azure DevOps it uses
-`AzurePowerShell@5` and `AzureResourceManagerTemplateDeployment@3`.
-[Deploy through environments](/docs/how-to/deploy-through-environments) gives
-the whole pipeline for both, with approvals between the stages.
-
-## Run and operate [#operate]
-
-Once deployed, each trigger runs its pipeline every window; outside
-production it is stopped until you start it. Each run shows in ADF's
-monitoring view:
-
-<Screenshot
-  src="/images/platforms/adf/adf-09-pipeline-runs.png"
-  label="Azure Data Factory"
-  checked="2026-11-02"
-  alt="Four pipeline runs: durations of 32 to 46 seconds, each triggered manually, each Succeeded."
-  caption="Four runs of the demo's pl_northwind_northwind, each started by hand and succeeded in under a minute."
-/>
-
-A copy's details say what it wrote:
-
-<Screenshot
-  src="/images/platforms/adf/adf-11-copy-details.png"
-  label="Azure Data Factory"
-  checked="2026-11-02"
-  alt="One copy's sink: Azure Data Lake Storage Gen2, 32.778 KB in 1 file, 2,155 rows written."
-  caption="One of the demo's copies, which succeeded: 2,155 rows written to one file in the landing storage."
-/>
-
-In a development factory the trigger stays stopped:
-
-<Screenshot
-  src="/images/platforms/adf/adf-12-trigger-stopped.png"
-  label="Azure Data Factory"
-  checked="2026-11-02"
-  alt="The trigger's row in ADF Studio: type Tumbling window, status Stopped."
-  caption="The demo's tr_northwind_northwind in dev: a tumbling window trigger, stopped."
-/>
-
-When a pipeline fails or a trigger does not run, see
-[Azure Data Factory](/docs/troubleshooting#azure-data-factory) in
-Troubleshooting.
+Build the factory's ARM template once with Microsoft's npm package, then
+deploy it to each environment's factory with that environment's parameter
+file, between the two runs of Microsoft's pre- and post-deployment script.
+[Deploy the factory](/docs/platforms/adf-deploy) lists what must exist first,
+deploys by hand or [from CI](/docs/platforms/adf-deploy#deploy-from-ci), and
+shows the runs.
 
 ## Limits [#limits]
 
@@ -415,14 +244,8 @@ Troubleshooting.
   longer value, in the landing folder or in a name is
   [`DEPLOY_VALUE`](/docs/reference/errors#DEPLOY_VALUE): write it in
   `project.yaml` for each environment.
-- **One project per factory.** A factory shared by several projects, or by
-  resources you make in Studio, loses them on the next deployment.
-- **Only the ARM template.** Deploying the factory's JSON directly, through the
-  REST API or `az datafactory`, is not supported: the JSON holds the first
-  environment's values.
-- **A Git-connected development factory** writes files of its own into the
-  folder, which `ingestron check` reports; leave it unconnected, or run
-  `ingestron check --allow-extra`.
+- **One project per factory, deployed only as an ARM template;** see
+  [One factory per project](/docs/platforms/adf-deploy#one-factory-per-project).
 - **What has been tried.** The screenshots show the demo deployed with
   ingestron 1.8, which wrote a factory per environment. The 2.0 factory passes
   Microsoft's build for every connector, but has not yet been deployed as an
@@ -430,8 +253,8 @@ Troubleshooting.
 
 ## Next
 
-- [Deploy through environments](/docs/how-to/deploy-through-environments):
-  promote one commit from dev to prod, with approvals.
+- [Deploy the factory](/docs/platforms/adf-deploy): what must exist first,
+  and each environment's deployment.
 - [Shape ADF pipelines](/docs/platforms/adf-pipelines): copy every table with
   one ForEach, retry a copy and add audit columns.
 - [ADF pack](/docs/reference/packs/adf): every setting and its default.

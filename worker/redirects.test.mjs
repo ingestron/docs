@@ -91,13 +91,13 @@ test("the merged Databricks and ADF guides land on their sections, with the quer
   for (const [from, to] of [
     ["/docs/examples/retail", "/docs/platforms/databricks"],
     ["/docs/how-to/databricks/", "/docs/platforms/databricks"],
-    ["/docs/how-to/deploy-the-bundle", "/docs/platforms/databricks#deploy"],
+    ["/docs/how-to/deploy-the-bundle", "/docs/platforms/databricks-deploy#deploy"],
     ["/docs/how-to/manage-schemas.html", "/docs/platforms/databricks#create-the-schemas"],
     ["/docs/how-to/refresh-on-a-schedule", "/docs/platforms/databricks#schedule"],
     ["/docs/how-to/adf", "/docs/platforms/adf"],
     ["/docs/how-to/adf-native-connectors", "/docs/platforms/adf"],
     ["/docs/how-to/adf-runtime", "/docs/platforms/adf#runtime-and-key-vault"],
-    ["/docs/how-to/publish-adf/", "/docs/platforms/adf#publish"],
+    ["/docs/how-to/publish-adf/", "/docs/platforms/adf-deploy#deploy"],
     ["/docs/how-to/design-adf-pipelines", "/docs/platforms/adf-pipelines"],
     ["/docs/how-to/name-adf-resources", "/docs/platforms/adf-pipelines#name-resources"],
   ])
