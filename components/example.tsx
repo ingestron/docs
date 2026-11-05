@@ -76,8 +76,8 @@ function extractPart({
  * Ingestron generates for it. With `pick` (a YAML or JSON path), or `from`
  * and `to` (text on the first and last lines), only that part, as it is in
  * the file.
- * @example <Example name="retail" file="build/dev/databricks.yml" pick="targets" />
- * @example <Example name="synapse-views" file="build/dev/synapse/views.sql" from="CREATE OR ALTER VIEW [bronze].[customers]" to="GO" />
+ * @example <Example name="retail" file="build/databricks/databricks.yml" pick="targets" />
+ * @example <Example name="synapse-views" file="build/synapse/views.sql" from="CREATE OR ALTER VIEW [bronze].[customers]" to="GO" />
  */
 export function Example({
   name,
@@ -106,8 +106,8 @@ export function Example({
 
 /**
  * The listing of a folder Ingestron generates for an example, such as
- * `build/dev/adf`: folders first, then files.
- * @example <BuildTree name="northwind" folder="build/dev/adf" />
+ * `build/adf`: folders first, then files.
+ * @example <BuildTree name="northwind" folder="build/adf" />
  */
 export function BuildTree({ name, folder }: { name: string; folder: string }) {
   return (

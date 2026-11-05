@@ -83,10 +83,10 @@ describe("concepts/layers", () => {
     const table = (name: string) => model.tables.find((item) => item.name === name)!;
     const { catalog, schema, table: name } = table("store_sales").fullName;
     expect(changes).toContain(`\`\` \`${catalog}\`.\`${schema}\`.\`${name}\` \`\``);
-    expect(changes).toContain("`build/dev/src/sales/silver/store_sales.sql`");
+    expect(changes).toContain("`build/databricks/src/sales/silver/store_sales.sql`");
     expect(
       readFileSync(join(exampleFolder("layers-and-transforms"), "README.md"), "utf8"),
-    ).toContain("build/dev/src/sales/silver/store_sales.sql");
+    ).toContain("build/databricks/src/sales/silver/store_sales.sql");
     expect(changes).toContain('<Example name="layers-and-transforms" file="standard.yaml" />');
     // Only the gold table is chosen by the standard's rule, with its settings.
     const gold = model.tables.filter((item) => item.layer === "gold");

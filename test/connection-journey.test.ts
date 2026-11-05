@@ -65,21 +65,25 @@ it("uses one compatible standard for ADF ingestion and Databricks storage", () =
     output,
   ).toBe(0);
 });
-it("names the ADF pipeline and its trigger reference consistently in both environments", () => {
-  for (const environment of ["dev", "prod"]) {
-    const pipeline = `pl_sales_orders_${environment}`;
-    const root = `build/${environment}/adf`;
+it("names the ADF pipeline and its trigger reference the same in every environment", () => {
+  const root = "build/adf/factory";
+  const pipeline = "pl_sales_orders";
+  expect(
+    JSON.parse(readExampleFile("connection-first-adf", `${root}/pipeline/${pipeline}.json`)).name,
+  ).toBe(pipeline);
+  const trigger = JSON.parse(
+    readExampleFile("connection-first-adf", `${root}/trigger/tr_sales_orders.json`),
+  );
+  expect(trigger.properties.pipeline.pipelineReference.referenceName).toBe(pipeline);
+  // Each environment has a parameter file, and neither renames a resource.
+  for (const environment of ["dev", "prod"])
     expect(
-      JSON.parse(readExampleFile("connection-first-adf", `${root}/pipeline/${pipeline}.json`)).name,
-    ).toBe(pipeline);
-    const trigger = JSON.parse(
-      readExampleFile(
-        "connection-first-adf",
-        `${root}/trigger/tr_sales_orders_${environment}.json`,
-      ),
-    );
-    expect(trigger.properties.pipeline.pipelineReference.referenceName).toBe(pipeline);
-  }
+      Object.keys(
+        JSON.parse(
+          readExampleFile("connection-first-adf", `build/adf/parameters/${environment}.json`),
+        ).parameters,
+      ).some((name) => name.endsWith("_name")),
+    ).toBe(false);
 });
 
 it("shows the documented policy failure, and the rename plan after the documented apply", () => {
@@ -97,16 +101,17 @@ it("shows the documented policy failure, and the rename plan after the documente
       output += text;
     },
   };
-  expect(run(["plan", "--env", "dev", "--no-diff"], io)).toBe(1);
+  expect(run(["plan", "--no-diff"], io)).toBe(1);
   expect(output).toContain("FIXED_SETTING");
   writeFileSync(flowPath, original);
-  expect(run(["apply", "--env", "dev", "--no-diff"], io)).toBe(0);
+  expect(run(["apply", "--no-diff"], io)).toBe(0);
   const projectPath = join(cwd, "project.yaml");
   const project = parse(readFileSync(projectPath, "utf8"));
   project.values.resource_prefix = "sales_v2";
   writeFileSync(projectPath, stringify(project));
   output = "";
-  expect(run(["plan", "--env", "dev", "--no-diff"], io)).toBe(0);
-  expect(output).toContain("create    pipeline/pl_sales_v2_orders_dev.json");
-  expect(output).toContain("delete    pipeline/pl_sales_orders_dev.json");
+  expect(run(["plan", "--no-diff"], io)).toBe(0);
+  expect(output).toContain("create    factory/pipeline/pl_sales_v2_orders.json");
+  expect(output).toContain("delete    factory/pipeline/pl_sales_orders.json");
+  expect(output).toContain("create    factory/trigger/tr_sales_v2_orders.json");
 });

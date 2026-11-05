@@ -107,7 +107,7 @@ describe("the lines between two markers", () => {
 });
 
 describe("an extract of a sample's file", () => {
-  const file = "build/dev/adf/pipeline/pl_northwind_northwind.json";
+  const file = "build/adf/factory/pipeline/pl_northwind_northwind.json";
 
   it("shows part of a generated file as Ingestron wrote it", () => {
     const whole = readExampleFile("northwind", file);
@@ -118,7 +118,7 @@ describe("an extract of a sample's file", () => {
     expect(whole).toContain(part);
     const sql = readExampleExtract(
       "northwind",
-      "build/dev/databricks/src/northwind/silver/daily_sales.sql",
+      "build/databricks/src/northwind/silver/daily_sales.sql",
       {
         from: "SELECT",
         to: "GROUP BY",
@@ -138,14 +138,14 @@ describe("an extract of a sample's file", () => {
       readExampleExtract("northwind", file, { from: '"name": "pl_northwind', to: "NOPE" }),
     ).toThrow(`Example "northwind": "${file}" has no line containing "NOPE" after`);
     expect(() =>
-      readExampleExtract("northwind", "build/dev/databricks/src/northwind/silver/daily_sales.sql", {
+      readExampleExtract("northwind", "build/databricks/src/northwind/silver/daily_sales.sql", {
         pick: "a",
       }),
     ).toThrow(
-      'Example "northwind": "build/dev/databricks/src/northwind/silver/daily_sales.sql" cannot be read for pick "a": the file does not parse: Implicit keys need to be on a single line at line 2, column 1.',
+      'Example "northwind": "build/databricks/src/northwind/silver/daily_sales.sql" cannot be read for pick "a": the file does not parse: Implicit keys need to be on a single line at line 2, column 1.',
     );
-    expect(() => readExampleExtract("northwind", "build/dev/nope.json", { pick: "a" })).toThrow(
-      'Example "northwind" has no file "build/dev/nope.json".',
+    expect(() => readExampleExtract("northwind", "build/adf/nope.json", { pick: "a" })).toThrow(
+      'Example "northwind" has no file "build/adf/nope.json".',
     );
   });
 
@@ -161,12 +161,12 @@ describe("an extract of a sample's file", () => {
     const lines = block(
       Example({
         name: "northwind",
-        file: "build/dev/databricks/src/northwind/silver/daily_sales.sql",
+        file: "build/databricks/src/northwind/silver/daily_sales.sql",
         from: "SELECT",
         to: "GROUP BY",
       }),
     );
-    expect(lines.title).toBe("build/dev/databricks/src/northwind/silver/daily_sales.sql › SELECT");
+    expect(lines.title).toBe("build/databricks/src/northwind/silver/daily_sales.sql › SELECT");
     // A whole file keeps its plain title.
     expect(block(Example({ name: "northwind", file: "project.yaml" }))).toMatchObject({
       title: "project.yaml",
@@ -186,31 +186,37 @@ describe("an extract of a sample's file", () => {
 
 describe("a generated folder's listing", () => {
   it("lists folders first, then files, as Ingestron prints them", () => {
-    expect(exampleTree("northwind", "build/dev/adf")).toBe(
+    expect(exampleTree("northwind", "build/adf")).toBe(
       [
-        "build/dev/adf/",
-        "  dataset/",
-        "    ds_northwind_landing.json",
-        "    ds_northwind_northwind_northwind.json",
-        "  linkedService/",
-        "    ls_northwind_keyvault.json",
-        "    ls_northwind_landing.json",
-        "    ls_northwind_northwind_northwind.json",
-        "  pipeline/",
-        "    pl_northwind_northwind.json",
-        "  trigger/",
-        "    tr_northwind_northwind.json",
+        "build/adf/",
+        "  factory/",
+        "    dataset/",
+        "      ds_northwind_landing.json",
+        "      ds_northwind_northwind_northwind.json",
+        "    integrationRuntime/",
+        "      ir-northwind.json",
+        "    linkedService/",
+        "      ls_northwind_keyvault.json",
+        "      ls_northwind_landing.json",
+        "      ls_northwind_northwind_northwind.json",
+        "    pipeline/",
+        "      pl_northwind_northwind.json",
+        "    trigger/",
+        "      tr_northwind_northwind.json",
+        "    arm-template-parameters-definition.json",
+        "  parameters/",
+        "    dev.json",
       ].join("\n"),
     );
-    const tree = block(BuildTree({ name: "northwind", folder: "build/dev/databricks" }));
+    const tree = block(BuildTree({ name: "northwind", folder: "build/databricks" }));
     expect(tree.kind).toBe("prints");
     expect(tree.code).toContain("\n  resources/\n    northwind.pipeline.yml\n");
     expect(tree.code).not.toContain(".generated.json");
   });
 
   it("fails for a folder the sample does not generate", () => {
-    expect(() => exampleTree("northwind", "build/dev/synapse")).toThrow(
-      'Example "northwind" generates no folder "build/dev/synapse".',
+    expect(() => exampleTree("northwind", "build/synapse")).toThrow(
+      'Example "northwind" generates no folder "build/synapse".',
     );
     expect(() => exampleTree("northwind", "contracts")).toThrow(/not a generated folder/);
     expect(() => exampleTree("northwind", "build/../..")).toThrow(/generates no folder/);
