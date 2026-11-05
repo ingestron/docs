@@ -43,16 +43,26 @@ describes each document.
 
 ## What Ingestron writes
 
-For each environment, Ingestron writes a folder, `build/<environment>/` by
-default, with a folder per pack when the standard lists several:
+Ingestron writes a folder for each platform under `build/`, with every
+environment's files in it, laid out as that platform's CI/CD tools expect:
 
-- **Databricks:** an asset bundle, with `databricks.yml`, pipeline and job
-  YAML, and SQL or Python for each table.
-- **Azure Data Factory:** linked service, dataset, pipeline and trigger JSON.
-- **Synapse serverless:** `views.sql`.
-- **DuckDB:** `run.sql`, and each table's SQL on its own.
-- **Data products:** a passport for each product, in Markdown: who owns it,
-  its columns and its lineage.
+- **[Databricks](/docs/platforms/databricks#what-you-get):** one bundle, with
+  a target per environment in `databricks.yml`, pipeline and job YAML, and SQL
+  or Python for each table.
+- **[Azure Data Factory](/docs/platforms/adf#what-you-get):** one factory's
+  linked service, dataset, pipeline and trigger JSON, and a parameter file per
+  environment.
+- **[Synapse serverless](/docs/platforms/synapse#what-you-get):** `views.sql`,
+  and a script per environment that sets its values.
+- **[DuckDB](/docs/platforms/duckdb#what-you-get):** for each environment,
+  `run.sql`, and each table's SQL on its own.
+- **Data products:** for each environment, a passport for each product, in
+  Markdown: who owns it, its columns and its lineage.
+
+Only what differs between environments varies, so a reviewer sees the
+difference between dev and prod in one place, and a deployment pipeline
+promotes the same files from one environment to the next; see
+[Deploy through environments](/docs/how-to/deploy-through-environments).
 
 Each folder also holds `.generated.json`, which records every file as it was
 generated. That is what lets Ingestron generate again without losing your
@@ -62,8 +72,10 @@ See [Generated files and ownership](/docs/concepts/generated-files).
 ## Files you can read, review and keep
 
 - **Every value is resolved when Ingestron generates.** The files hold the
-  final names, paths and types. Nothing in them is filled in by Ingestron
-  later.
+  final names, paths and types, with each environment's values in its target,
+  parameter file or script. A value you choose to supply when deploying is
+  named there, for your pipeline to set. Nothing in them is filled in by
+  Ingestron later.
 - **The files are readable, and reviewed.** They are committed with the YAML
   that produced them, so a pull request shows both. The first project's
   [`run.sql`](/docs/start/first-project#5-read-what-you-wrote) is one example.

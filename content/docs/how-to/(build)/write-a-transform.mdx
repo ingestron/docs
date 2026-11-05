@@ -38,7 +38,7 @@ which reads the file next to the definition:
 On DuckDB, the transform is a table, built again each run from its query,
 with each column cast to the contract's type, and published as Parquet:
 
-<Example name="duckdb" file="build/dev/tables/silver.customer_totals.sql" />
+<Example name="duckdb" file="build/duckdb/dev/tables/silver.customer_totals.sql" />
 
 A cast can change a value: a timestamp with a time zone loses its offset when
 the contract says `timestamp`, and a `timestamptz` shows the time in the
@@ -47,7 +47,7 @@ the contract the type you want to keep.
 
 On Databricks, it is a materialised view:
 
-<Example name="layers-and-transforms" file="build/dev/src/sales/silver/store_sales.sql" />
+<Example name="layers-and-transforms" file="build/databricks/src/sales/silver/store_sales.sql" />
 
 On Synapse, it is a view over its inputs' views, in `synapse/views.sql`. A view
 keeps no rows and reads its inputs each time a report queries it. Its SQL sits
@@ -67,10 +67,13 @@ where it differs:
 
 <Example name="existing-tables" file="transforms/store_sales.sql" />
 
-Ingestron puts each environment's name in place and never creates or changes
-that table:
+Ingestron never creates or changes that table. On Databricks, the part of the
+name that differs between environments is read from the pipeline's
+configuration, and each target of the bundle sets it:
 
-<Example name="existing-tables" file="build/prod/src/sales/silver/store_sales.sql" />
+<Example name="existing-tables" file="build/databricks/src/sales/silver/store_sales.sql" />
+
+<Example name="existing-tables" file="build/databricks/databricks.yml" pick="targets" />
 
 A value that `project.yaml` does not have is an error
 ([`UNKNOWN_CODE_VALUE`](/docs/reference/errors#UNKNOWN_CODE_VALUE)), so a
@@ -89,9 +92,13 @@ name, such as `tables["invoices"]`; the function returns one DataFrame:
 
 Ingestron resolves `${values.…}` references in the code, then wraps it as a
 materialised view with
-the table's name, comment, clustering and checks:
+the table's name, comment, clustering and checks. A name the wrapper writes
+that differs between environments, such as a schema, is read from the
+pipeline's configuration with `spark.conf.get`; a value in the transform's own
+code must be the same in every environment for now
+([`ENVIRONMENTS_DIFFER`](/docs/reference/errors#ENVIRONMENTS_DIFFER)):
 
-<Example name="pyspark" file="build/dev/src/subscriptions/silver/monthly_revenue.py" />
+<Example name="pyspark" file="build/databricks/src/subscriptions/silver/monthly_revenue.py" />
 
 ## Plan
 
