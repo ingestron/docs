@@ -1,0 +1,121 @@
+# Deploys the files deploy.yml built to one environment. It runs in the GitHub
+# environment of the same name, so that environment's reviewers and branch rule
+# gate it, and its variables and secrets are the ones used.
+#
+# Variables to set in each GitHub environment:
+# - AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID: the identity this
+#   environment deploys as, with a federated credential for
+#   repo:<owner>/<repository>:environment:<environment>.
+# - ADF_RESOURCE_GROUP, ADF_FACTORY_NAME: the environment's data factory.
+# - DATABRICKS_CLIENT_ID: the service principal the bundle deploys as, with a
+#   federation policy for the same subject.
+# - SYNAPSE_SERVER: <workspace>-ondemand.sql.azuresynapse.net.
+# - DUCKDB_ACCOUNT, DUCKDB_FILE_SYSTEM, DUCKDB_PATH: where the DuckDB job reads
+#   run.sql, as the job's sqlUrl names it.
+name: deploy environment
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: The environment to deploy, as project.yaml names it.
+        required: true
+        type: string
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    env:
+      ENVIRONMENT: ${{ inputs.environment }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: deploy
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          enable-AzPSSession: true
+
+      # Data Factory. One factory per project: the post-deployment script
+      # deletes every resource in the factory that the template does not hold.
+      - name: "Data Factory: stop the triggers"
+        uses: azure/powershell@v2
+        env:
+          ADF_RESOURCE_GROUP: ${{ vars.ADF_RESOURCE_GROUP }}
+          ADF_FACTORY_NAME: ${{ vars.ADF_FACTORY_NAME }}
+        with:
+          azPSVersion: latest
+          inlineScript: |
+            ./arm/PrePostDeploymentScript.ps1 -ArmTemplate arm/ARMTemplateForFactory.json `
+              -ArmTemplateParameters "build/adf/parameters/$env:ENVIRONMENT.json" `
+              -ResourceGroupName $env:ADF_RESOURCE_GROUP -DataFactoryName $env:ADF_FACTORY_NAME `
+              -PreDeployment $true -DeleteDeployment $false
+      - name: "Data Factory: deploy the template"
+        env:
+          ADF_RESOURCE_GROUP: ${{ vars.ADF_RESOURCE_GROUP }}
+          ADF_FACTORY_NAME: ${{ vars.ADF_FACTORY_NAME }}
+        # Add name=value after factoryName for each ARM parameter that
+        # `ingestron request` lists under "Values to provide".
+        run: |
+          az deployment group create --resource-group "$ADF_RESOURCE_GROUP" --mode Incremental \
+            --template-file arm/ARMTemplateForFactory.json \
+            --parameters "@build/adf/parameters/$ENVIRONMENT.json" factoryName="$ADF_FACTORY_NAME"
+      - name: "Data Factory: clean up and start the triggers"
+        uses: azure/powershell@v2
+        env:
+          ADF_RESOURCE_GROUP: ${{ vars.ADF_RESOURCE_GROUP }}
+          ADF_FACTORY_NAME: ${{ vars.ADF_FACTORY_NAME }}
+        with:
+          azPSVersion: latest
+          inlineScript: |
+            ./arm/PrePostDeploymentScript.ps1 -ArmTemplate arm/ARMTemplateForFactory.json `
+              -ArmTemplateParameters "build/adf/parameters/$env:ENVIRONMENT.json" `
+              -ResourceGroupName $env:ADF_RESOURCE_GROUP -DataFactoryName $env:ADF_FACTORY_NAME `
+              -PreDeployment $false -DeleteDeployment $true
+
+      # Databricks: the bundle's target for this environment. A deploy that
+      # would delete a resource stops and asks; it is not approved here.
+      - uses: databricks/setup-cli@v1.23.0
+      - name: "Databricks: deploy the bundle"
+        working-directory: build/databricks
+        env:
+          DATABRICKS_AUTH_TYPE: github-oidc
+          DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+          # One line for each BUNDLE_VAR_ name that `ingestron request` lists:
+          # BUNDLE_VAR_landing_account: ${{ vars.LANDING_ACCOUNT }}
+        run: |
+          databricks bundle validate -t "$ENVIRONMENT"
+          databricks bundle deploy -t "$ENVIRONMENT"
+
+      # Synapse serverless: sqlcmd (Go), checked by its SHA-256, signed in as
+      # the identity azure/login used.
+      - name: "Synapse: install sqlcmd"
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/sqlcmd.tar.bz2" https://github.com/microsoft/go-sqlcmd/releases/download/v1.10.0/sqlcmd-linux-amd64.tar.bz2
+          echo "92516d98c63d99b0994de5b61350c91f6915f9b76f139a59039fbcb225c2e987  $RUNNER_TEMP/sqlcmd.tar.bz2" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/sqlcmd" && tar -xjf "$RUNNER_TEMP/sqlcmd.tar.bz2" -C "$RUNNER_TEMP/sqlcmd" sqlcmd
+          echo "$RUNNER_TEMP/sqlcmd" >> "$GITHUB_PATH"
+      - name: "Synapse: create or alter the views"
+        working-directory: build/synapse
+        env:
+          SYNAPSE_SERVER: ${{ vars.SYNAPSE_SERVER }}
+          # One line for each sqlcmd variable that `ingestron request` lists:
+          # SYNAPSE_SOURCE: ${{ vars.SYNAPSE_SOURCE }}
+        run: sqlcmd -S "$SYNAPSE_SERVER" --authentication-method ActiveDirectoryDefault -i "environments/$ENVIRONMENT.sql"
+
+      # DuckDB in Azure: copy the environment's SQL to where the job reads it.
+      - name: "DuckDB: upload the SQL"
+        env:
+          DUCKDB_ACCOUNT: ${{ vars.DUCKDB_ACCOUNT }}
+          DUCKDB_FILE_SYSTEM: ${{ vars.DUCKDB_FILE_SYSTEM }}
+          DUCKDB_PATH: ${{ vars.DUCKDB_PATH }}
+        run: |
+          az storage fs directory upload --account-name "$DUCKDB_ACCOUNT" --file-system "$DUCKDB_FILE_SYSTEM" \
+            --source "build/duckdb/$ENVIRONMENT/*" --destination-path "$DUCKDB_PATH" --recursive --auth-mode login

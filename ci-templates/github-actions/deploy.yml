@@ -1,0 +1,79 @@
+# Deploys the committed build/ folder: checks it, builds the Data Factory
+# template once, then deploys the same files to dev, test and prod in turn.
+# Copy this file and deploy-environment.yml to .github/workflows/ in your
+# definitions repository, and delete the steps of each platform your project
+# does not use.
+#
+# Set up once, as https://docs.ingestron.io/docs/how-to/deploy-through-environments
+# explains:
+# - GitHub environments named dev, test and prod. Give test and prod required
+#   reviewers, and let only the main branch deploy to prod.
+# - In each environment, the variables deploy-environment.yml reads.
+# - The repository variable ADF_DEV_FACTORY_ID: the dev factory's resource ID,
+#   which names the template's resources. Nothing is deployed with it.
+name: deploy
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install -g ingestron@2
+      - run: ingestron check
+
+  build:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Data Factory: Microsoft's build validates the factory, then writes the
+      # ARM template and the pre- and post-deployment script to arm/. It
+      # downloads its build tool from adf.azure.com.
+      - name: "Data Factory: build the template"
+        env:
+          ADF_DEV_FACTORY_ID: ${{ vars.ADF_DEV_FACTORY_ID }}
+        run: |
+          npm install --prefix "$RUNNER_TEMP/adf" @microsoft/azure-data-factory-utilities@1.0.3
+          adf="$RUNNER_TEMP/adf/node_modules/@microsoft/azure-data-factory-utilities/lib/index"
+          node "$adf" validate build/adf/factory "$ADF_DEV_FACTORY_ID"
+          node "$adf" export build/adf/factory "$ADF_DEV_FACTORY_ID" arm
+      # Every environment deploys these files, so prod gets the bytes dev got.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deploy
+          path: |
+            arm/
+            build/
+          if-no-files-found: error
+
+  dev:
+    needs: build
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      environment: dev
+    secrets: inherit
+
+  test:
+    needs: dev
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      environment: test
+    secrets: inherit
+
+  prod:
+    needs: test
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      environment: prod
+    secrets: inherit
