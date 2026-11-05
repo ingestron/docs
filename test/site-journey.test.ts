@@ -358,8 +358,10 @@ it("gives each route a platform page that opens with what runs, what deploys and
     "duckdb",
     "duckdb-in-azure",
     "databricks",
+    "databricks-deploy",
     "synapse",
     "adf",
+    "adf-deploy",
     "adf-pipelines",
     "landing-only",
   ]);

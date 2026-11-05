@@ -1,0 +1,166 @@
+---
+title: Deploy the factory
+description: What must exist first, building the ARM template once, and deploying it to each environment's factory by hand or from CI.
+---
+
+Ingestron writes one factory for every environment, as
+[Azure Data Factory](/docs/platforms/adf#what-you-get) shows, and creates
+nothing in Azure. This page builds the factory's ARM template and deploys it to
+each environment's factory, then runs it.
+
+## Before you deploy [#prerequisites]
+
+Ingestron creates nothing in Azure and does not test credentials, run queries
+or inspect the factory. These must exist before the pipelines can run:
+
+- **An integration runtime that reaches the source.** A self-hosted runtime
+  runs on infrastructure you manage, with the source's drivers and network
+  access; register a node on it where the deployment creates it.
+- **Key Vault**, holding the source's secrets, with access for the factory's
+  identity.
+- **ADLS Gen2 landing storage**, with write access for the factory's identity.
+  Microsoft 365 uses its configured application instead.
+- **Source access:** the permissions, drivers, versions and authentication in
+  the source's vendor prerequisites, linked from its connector page.
+
+`ingestron request --env prod`, or **Ingestron: Prepare platform request** in
+VS Code, lists them with this project's values:
+
+<Request name="private-sql-server" env="prod" sections={["ADF prerequisites"]} />
+
+See [Ask the platform team](/docs/how-to/ask-the-platform-team) for the whole
+request.
+
+## Deploy [#deploy]
+
+### One factory per project [#one-factory-per-project]
+
+One factory serves one project. Microsoft's post-deployment script deletes
+every pipeline, dataset, linked service, trigger and integration runtime in
+the factory that the template does not hold, so give each project, and each
+environment, a factory of its own: a factory shared with another project, or
+with resources you make in Studio, loses them on the next deployment. Leave
+the test and production factories unconnected to Git, as Microsoft
+recommends. A Git-connected development factory writes files of its own into
+the folder, which `ingestron check` reports; leave it unconnected too, or run
+`ingestron check --allow-extra`.
+
+Only the ARM template deploys the factory. Deploying its JSON directly,
+through the REST API or `az datafactory`, is not supported: the JSON holds the
+first environment's values.
+
+### Build the template and deploy it [#build-and-deploy]
+
+Build the ARM template once with Microsoft's
+[`@microsoft/azure-data-factory-utilities`](https://www.npmjs.com/package/@microsoft/azure-data-factory-utilities),
+on Node.js 20 or 22, from the project folder. Its export validates every
+resource and writes `arm/ARMTemplateForFactory.json` and `arm/PrePostDeploymentScript.ps1`.
+The factory ID only names the template's resources; the build downloads its
+tool from `adf.azure.com` and changes nothing in Azure:
+
+```sh
+npm install --prefix .adf @microsoft/azure-data-factory-utilities@1.0.3
+node .adf/node_modules/@microsoft/azure-data-factory-utilities/lib/index export build/adf/factory <dev factory resource ID> arm
+```
+
+Replace `<dev factory resource ID>` with the development factory's resource ID,
+`/subscriptions/<id>/resourceGroups/<group>/providers/Microsoft.DataFactory/factories/<factory>`.
+Keep `.adf/` and `arm/` out of Git: they are rebuilt for each deployment.
+
+Then, for each environment in turn, stop the triggers, deploy the template
+with the environment's parameter file, and run the script again to delete what
+the template no longer holds and start the triggers whose state is `Started`.
+The script uses Azure PowerShell and the deployment the Azure CLI, so sign in
+to the environment's subscription with both, `Connect-AzAccount` and
+`az login`. Here for `prod`, in PowerShell 7:
+
+```powershell
+./arm/PrePostDeploymentScript.ps1 -ArmTemplate arm/ARMTemplateForFactory.json -ArmTemplateParameters build/adf/parameters/prod.json -ResourceGroupName <group> -DataFactoryName <factory> -PreDeployment $true -DeleteDeployment $false
+az deployment group create --resource-group <group> --mode Incremental --template-file arm/ARMTemplateForFactory.json --parameters "@build/adf/parameters/prod.json" factoryName=<factory>
+./arm/PrePostDeploymentScript.ps1 -ArmTemplate arm/ARMTemplateForFactory.json -ArmTemplateParameters build/adf/parameters/prod.json -ResourceGroupName <group> -DataFactoryName <factory> -PreDeployment $false -DeleteDeployment $true
+```
+
+Replace `<group>` and `<factory>` with the environment's resource group and
+factory. The script needs the Az modules. Always give it
+`-ArmTemplateParameters`: without the environment's file it cannot tell that
+`prod`'s triggers start. Keep `--mode Incremental`; Microsoft warns that
+`Complete` deletes the resource group's other resources. When
+`ingestron request` lists values to provide, add `<name>=<value>` after
+`factoryName` for each.
+
+What reads the files is deployed beside the factory, from its own folder:
+[Databricks](/docs/platforms/databricks-deploy#deploy),
+[Synapse](/docs/platforms/synapse#deploy) or
+[DuckDB in Azure](/docs/platforms/duckdb-in-azure#deploy).
+
+### From CI [#deploy-from-ci]
+
+In a pipeline, the build runs once and each environment's stage deploys the
+same template. From the GitHub Actions template, the build:
+
+<Template
+  file="github-actions/deploy.yml"
+  from='- name: "Data Factory: build the template"'
+  to='node "$adf" export'
+/>
+
+and each environment's deployment, between the two runs of the script:
+
+<Template
+  file="github-actions/deploy-environment.yml"
+  from='- name: "Data Factory: deploy the template"'
+  to='--parameters "@build/adf/parameters/$ENVIRONMENT.json"'
+/>
+
+Microsoft's three Data Factory GitHub Actions are archived, so the template
+calls the npm package and the script directly. In Azure DevOps it uses
+`AzurePowerShell@5` and `AzureResourceManagerTemplateDeployment@3`.
+[Deploy through environments](/docs/how-to/deploy-through-environments) gives
+the whole pipeline for both, with how each stage signs in.
+
+## Run and operate [#operate]
+
+Once deployed, each trigger runs its pipeline every window; outside
+production it is stopped until you start it. Each run shows in ADF's
+monitoring view:
+
+<Screenshot
+  src="/images/platforms/adf/adf-09-pipeline-runs.png"
+  label="Azure Data Factory"
+  checked="2026-11-02"
+  alt="Four pipeline runs: durations of 32 to 46 seconds, each triggered manually, each Succeeded."
+  caption="Four runs of the demo's pl_northwind_northwind, each started by hand and succeeded in under a minute."
+/>
+
+A copy's details say what it wrote:
+
+<Screenshot
+  src="/images/platforms/adf/adf-11-copy-details.png"
+  label="Azure Data Factory"
+  checked="2026-11-02"
+  alt="One copy's sink: Azure Data Lake Storage Gen2, 32.778 KB in 1 file, 2,155 rows written."
+  caption="One of the demo's copies, which succeeded: 2,155 rows written to one file in the landing storage."
+/>
+
+In a development factory the trigger stays stopped:
+
+<Screenshot
+  src="/images/platforms/adf/adf-12-trigger-stopped.png"
+  label="Azure Data Factory"
+  checked="2026-11-02"
+  alt="The trigger's row in ADF Studio: type Tumbling window, status Stopped."
+  caption="The demo's tr_northwind_northwind in dev: a tumbling window trigger, stopped."
+/>
+
+When a pipeline fails or a trigger does not run, see
+[Azure Data Factory](/docs/troubleshooting#azure-data-factory) in
+Troubleshooting.
+
+## Next
+
+- [Deploy through environments](/docs/how-to/deploy-through-environments):
+  promote one commit from dev to prod, with approvals.
+- [Upgrade from 1.x to 2.0](/docs/how-to/upgrade#upgrade-to-2): the first
+  deployment of a factory 1.x wrote.
+- [Azure Data Factory](/docs/platforms/adf): what the factory holds, and the
+  settings that shape it.

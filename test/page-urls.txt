@@ -101,8 +101,10 @@
 /docs/how-to/write-a-contract
 /docs/how-to/write-a-transform
 /docs/platforms/adf
+/docs/platforms/adf-deploy
 /docs/platforms/adf-pipelines
 /docs/platforms/databricks
+/docs/platforms/databricks-deploy
 /docs/platforms/duckdb
 /docs/platforms/duckdb-in-azure
 /docs/platforms/landing-only
