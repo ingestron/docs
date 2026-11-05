@@ -10,6 +10,8 @@ import { describe, expect, it } from "vitest";
 import { loadDefinitions } from "@ingestron/definitions";
 import { PlatformDefaults } from "../components/reference/platform-defaults";
 import { exampleFolder } from "../lib/examples";
+import { adf } from "@ingestron/pack-adf";
+import { databricks } from "@ingestron/pack-databricks";
 import { packs, platformDefaults } from "../lib/reference";
 
 /** The platform a sample resolves to in an environment. */
@@ -36,13 +38,16 @@ describe("platform defaults", () => {
     expect(html).toContain(
       '<a href="/docs/reference/documents#platform-mode"><code>mode</code></a>',
     );
+    expect(html).toContain("production for every environment except dev");
     expect(html).toContain(
-      "production for environments named prod or production, otherwise development",
+      "<td>running in prod or production, or where mode is set to production; otherwise paused</td>",
     );
-    expect(html).toContain("<td>paused outside production</td>");
+    // Only fields whose description states a default: the pack also reads run_as, which has none.
+    expect(databricks.platformFields).toContain("run_as");
   });
 
-  it("lists only what the ADF pack reads, and nothing for a pack that reads none", () => {
+  it("lists only what the ADF pack reads, from its platformFields, and nothing for a pack that reads none", () => {
+    expect(adf.platformFields).toEqual(["schedule.paused"]);
     // The ADF pack reads the platform's schedule.paused, never its mode.
     expect(platformDefaults("adf").map((row) => row.field.path.join("."))).toEqual([
       "schedule.paused",
@@ -68,6 +73,15 @@ describe("platform defaults", () => {
     });
     expect(platform(bare, "prod").mode).toBe("production");
     expect(platform(bare, "production").mode).toBe("production");
+    // Generated together, as the CLI does, every environment but dev is in production mode.
+    const together = (environment: string) =>
+      loadDefinitions(bare, { packs, environment, environmentsTogether: true }).model!.platform;
+    writeFileSync(
+      project,
+      readFileSync(project, "utf8").replace("  dev: {}", "  dev: {}\n  test: {}"),
+    );
+    expect(together("dev").mode).toBe("development");
+    expect(together("test").mode).toBe("production");
     // A schedule with only its cron runs in UTC, paused outside production.
     const scheduled = exampleFolder("platform-setup");
     expect(platform(scheduled, "dev").schedule).toMatchObject({ timezone: "UTC", paused: true });
@@ -78,7 +92,8 @@ describe("platform defaults", () => {
     expect(stated).toMatchObject({
       "compute.serverless": "true",
       "schedule.timezone": "UTC",
-      "schedule.paused": "paused outside production",
+      "schedule.paused":
+        "running in prod or production, or where mode is set to production; otherwise paused",
       "manage.tags": "false",
     });
   });
