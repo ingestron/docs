@@ -105,7 +105,7 @@ describe("reference/cli", () => {
   });
 
   it("writes each pack of a standard to a folder of its own, as the output section says", () => {
-    expect(section(page, "## Output")).toContain("`build/databricks/`");
+    expect(section(page, "## Output")).toContain("`databricks → build/databricks (dev, prod)`");
     const project = copy("private-sql-server");
     const applied = cli(project, ["apply", "--no-diff"]);
     expect(applied.code).toBe(0);
