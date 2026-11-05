@@ -12,6 +12,7 @@
     "define-a-data-product",
     "add-an-environment",
     "plan-and-generate",
-    "check-in-ci"
+    "check-in-ci",
+    "deploy-through-environments"
   ]
 }

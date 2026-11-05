@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
-import { requestSections } from "../lib/examples.js";
+import { readTemplateExtract, requestSections } from "../lib/examples.js";
 import {
   cli,
   command,
@@ -186,3 +186,56 @@ function pipelineFile(output: string): string {
   expect(found, "one generated pipeline").toHaveLength(1);
   return found[0]!;
 }
+
+describe("how-to/deploy-through-environments", () => {
+  const page = read("how-to/deploy-through-environments.mdx");
+
+  it("renders each part of a template it names, and links each platform's deploy section", () => {
+    const templates = [...page.matchAll(/<Template\s([\s\S]*?)\/>/g)].map(([, props]) => ({
+      file: /file="([^"]+)"/.exec(props!)![1]!,
+      from: /from="([^"]+)"/.exec(props!)![1]!,
+      to: /to="([^"]+)"/.exec(props!)![1]!,
+    }));
+    expect(templates.map((template) => template.file)).toEqual([
+      "github-actions/deploy.yml",
+      "github-actions/deploy-environment.yml",
+      "github-actions/deploy-environment.yml",
+      "azure-devops/azure-pipelines.yml",
+      "azure-devops/templates/deploy-environment.yml",
+    ]);
+    for (const { file, from, to } of templates)
+      expect(readTemplateExtract(file, from, to), `${file} › ${from}`).not.toBe("");
+    for (const platform of ["adf", "databricks", "synapse", "duckdb-in-azure"]) {
+      expect(page).toContain(`(/docs/platforms/${platform}#deploy)`);
+      expect(section(read(`platforms/${platform}.mdx`), "### From CI")).toContain(
+        "(/docs/how-to/deploy-through-environments)",
+      );
+    }
+  });
+
+  it("lists every variable the templates read, in their headers", () => {
+    const github = readFileSync(
+      join(process.cwd(), "ci-templates/github-actions/deploy-environment.yml"),
+      "utf8",
+    );
+    const listed = section(page, "## GitHub Actions");
+    // Every variable a step reads, leaving out the comments' examples.
+    const code = (text: string) =>
+      text
+        .split("\n")
+        .filter((line) => !line.trim().startsWith("#"))
+        .join("\n");
+    for (const [, name] of code(github).matchAll(/\$\{\{ vars\.([A-Z_]+) \}\}/g)) {
+      expect(github.split("\njobs:")[0], name).toContain(name!);
+    }
+    expect(listed).toContain('from="# Variables to set in each GitHub environment:"');
+    const devops = readFileSync(
+      join(process.cwd(), "ci-templates/azure-devops/templates/deploy-environment.yml"),
+      "utf8",
+    );
+    const header = devops.split("\nparameters:")[0]!;
+    const builtIn = new Set(["Pipeline.Workspace", "Agent.TempDirectory", "files"]);
+    for (const [, name] of code(devops).matchAll(/\$\(([A-Za-z_.]+)\)/g))
+      if (!builtIn.has(name!)) expect(header, name).toContain(name!);
+  });
+});

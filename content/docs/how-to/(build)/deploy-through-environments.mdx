@@ -1,0 +1,197 @@
+---
+title: Deploy through environments
+description: Promote one commit's generated files from dev to test to prod, each stage after approval, with the GitHub Actions or Azure DevOps templates.
+---
+
+Ingestron writes one set of files per platform for every environment: a
+Databricks bundle with a target per environment, a Data Factory factory with a
+parameter file per environment, and a Synapse script per environment. A
+deployment pipeline deploys the same commit to each environment in turn, so
+prod runs the files that test ran. The templates on this page do that: they
+check the generated files, build what needs building once, then deploy to
+`dev`, `test` and `prod`, each stage waiting for the one before and for
+approval.
+
+<FlowDiagram
+  title="One commit, promoted"
+  steps={[
+    { title: "Check", detail: "ingestron check: the committed files are current" },
+    { title: "Build", detail: "The factory's ARM template, once" },
+    { title: "dev", detail: "Deployed straight away" },
+    { title: "test", detail: "After approval" },
+    { title: "prod", detail: "After approval, from main only" },
+  ]}
+/>
+
+The deploy stages never install Ingestron: they run each platform's own
+tools on the committed files. Ingestron runs only in the check, and on the
+computers where you change the definitions.
+
+## What each stage runs [#what-each-stage-runs]
+
+Each environment's stage signs in as that environment's identity, then runs a
+block for each platform. Delete the blocks of the platforms your project does
+not use:
+
+| Platform           | What the stage runs                                                                                                                 | Details                                          |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Azure Data Factory | The pre-deployment script, an incremental ARM deployment with `build/adf/parameters/<environment>.json`, the post-deployment script | [Deploy](/docs/platforms/adf#deploy)             |
+| Databricks         | `databricks bundle validate` and `deploy -t <environment>`, in `build/databricks`                                                   | [Deploy](/docs/platforms/databricks#deploy)      |
+| Synapse            | `sqlcmd -i environments/<environment>.sql`, in `build/synapse`                                                                      | [Deploy](/docs/platforms/synapse#deploy)         |
+| DuckDB in Azure    | `az storage fs directory upload` of `build/duckdb/<environment>`                                                                    | [Deploy](/docs/platforms/duckdb-in-azure#deploy) |
+
+The tools are pinned: Microsoft's `@microsoft/azure-data-factory-utilities`
+1.0.3, the Databricks CLI v1.23.0 and sqlcmd (Go) v1.10.0, each download
+checked by its SHA-256 where the template downloads it. The ADF build fetches
+its build tool from `adf.azure.com`, so the build stage needs network access
+there.
+
+## GitHub Actions [#github-actions]
+
+Copy
+[`deploy.yml`](https://github.com/ingestron/docs/blob/main/ci-templates/github-actions/deploy.yml)
+and
+[`deploy-environment.yml`](https://github.com/ingestron/docs/blob/main/ci-templates/github-actions/deploy-environment.yml)
+to `.github/workflows/` in your definitions repository. `deploy.yml` runs on
+each push to `main`: it checks, builds once, and calls
+`deploy-environment.yml` for each environment in turn:
+
+<Template file="github-actions/deploy.yml" from="  dev:" to="      environment: prod" />
+
+`deploy-environment.yml` runs in the GitHub environment of the same name, one
+deployment at a time, signed in with OpenID Connect, so no secret holds a
+password:
+
+<Template
+  file="github-actions/deploy-environment.yml"
+  from="  deploy:"
+  to="          enable-AzPSSession: true"
+/>
+
+Set up once, in the repository's settings:
+
+1. **Environments** named `dev`, `test` and `prod`. Give `test` and `prod`
+   required reviewers, and let only the `main` branch deploy to `prod`. A
+   stage waits until a reviewer approves it.
+2. **An Azure identity for each environment,** with a federated credential
+   for `repo:<owner>/<repository>:environment:<environment>` and the roles its
+   steps need on that environment's resources. GitHub's
+   [OpenID Connect guide](https://docs.github.com/en/actions/concepts/security/openid-connect)
+   gives your repository's exact subject.
+3. **A Databricks service principal for each environment,** with a
+   federation policy for the same subject; see
+   [GitHub Actions workload identity federation](https://docs.databricks.com/aws/en/dev-tools/auth/provider-github)
+   (checked 5 November 2026).
+4. **Each environment's variables,** which the file lists at its top:
+
+   <Template
+     file="github-actions/deploy-environment.yml"
+     from="# Variables to set in each GitHub environment:"
+     to="#   run.sql, as the job's sqlUrl names it."
+   />
+
+5. **The repository variable `ADF_DEV_FACTORY_ID`,** the development factory's
+   resource ID, which names the template's resources.
+
+## Azure DevOps [#azure-devops]
+
+Copy
+[`azure-pipelines.yml`](https://github.com/ingestron/docs/blob/main/ci-templates/azure-devops/azure-pipelines.yml)
+and
+[`templates/deploy-environment.yml`](https://github.com/ingestron/docs/blob/main/ci-templates/azure-devops/templates/deploy-environment.yml)
+to your definitions repository, and add `azure-pipelines.yml` as a pipeline.
+Its `Build` stage checks and builds once, then a stage for each environment
+deploys, each after the one before:
+
+<Template
+  file="azure-devops/azure-pipelines.yml"
+  from="  - template:"
+  to="dependsOn: Deploy_test"
+/>
+
+Each stage's deployment job targets the Azure DevOps environment of the same
+name, so that environment's approvals and checks gate it:
+
+<Template
+  file="azure-devops/templates/deploy-environment.yml"
+  from="  - stage: Deploy_"
+  to="                  artifact: deploy"
+/>
+
+Set up once, in the project's settings:
+
+1. **Environments** named `dev`, `test` and `prod`. Add approvals to `test`
+   and `prod`, and a branch control check to `prod` that allows only `main`.
+2. **An Azure Resource Manager service connection for each environment,**
+   named `ingestron-dev`, `ingestron-test` and `ingestron-prod`, using workload
+   identity federation, with the roles its steps need on that environment's
+   resources. The Databricks and Synapse steps sign in as the same identity,
+   through the Azure CLI, so add it to each workspace too.
+3. **A variable group for each environment,** named `ingestron-<environment>`,
+   with the variables the template lists at its top.
+4. **The pipeline variable `ADF_DEV_FACTORY_ID`,** the development factory's
+   resource ID.
+
+The template deploys Data Factory with `AzurePowerShell@5`, in PowerShell 7,
+and `AzureResourceManagerTemplateDeployment@3` in incremental mode: Microsoft
+warns that complete mode deletes the resource group's other resources.
+
+## Values supplied when deploying [#values-supplied-when-deploying]
+
+A value written as `${envvar:NAME}` in a Databricks, Data Factory or Synapse
+project is supplied by the deploying stage, not read when generating; see
+[Supplied when deploying](/docs/concepts/yaml-references#supplied-when-deploying).
+`ingestron request --env <environment>` lists each one under **Values to
+provide**, with the name to set; see
+[Ask the platform team](/docs/how-to/ask-the-platform-team#values-to-provide).
+Set each name in each environment's variables, or as a secret, and pass it
+where the template's comments say:
+
+- **Databricks:** a line under the bundle step's `env`, such as
+  `BUNDLE_VAR_landing_path`. A host supplied this way is `DATABRICKS_HOST`.
+- **Data Factory:** `name=value` after `factoryName` in the deployment
+  (GitHub Actions), or `-name value` in `overrideParameters` (Azure DevOps),
+  for each ARM parameter the request names.
+- **Synapse:** a line under the sqlcmd step's `env`, named exactly as the
+  request gives it, in the same case. Azure DevOps passes a secret to a step
+  only through its `env`.
+
+A stage that leaves one out fails: the bundle has no value for the variable,
+ARM refuses a parameter with no value, and the Synapse script stops before any
+view.
+
+## Add an environment [#add-an-environment]
+
+1. Add it to `project.yaml`, apply and commit, as in
+   [Add an environment](/docs/how-to/add-an-environment).
+2. Create its GitHub or Azure DevOps environment, its identity, its variables
+   and, in Azure DevOps, its service connection and variable group.
+3. Add a stage for it, after the stage it follows: in `deploy.yml`, a job that
+   calls `deploy-environment.yml` with its name and `needs` the job before; in
+   `azure-pipelines.yml`, a `template` entry with its name, its service
+   connection and `dependsOn` the stage before.
+
+Each environment's factory, workspace and Synapse database must exist before
+its first deployment; `ingestron request --env <environment>` lists what each
+needs.
+
+## Limits [#limits]
+
+- **One factory per project and environment.** The post-deployment script
+  deletes every resource in the factory that the template does not hold.
+- **A Databricks deploy that would delete a resource stops**, such as a
+  managed schema; the templates do not approve it. Review it, then deploy from
+  your computer, or add `--auto-approve` to that one run.
+- **To roll back,** deploy an earlier commit through the same stages.
+- **What has been tried.** Tests check that each template parses, deploys to
+  dev, then test, then prod, and names the pinned versions above. The
+  templates have not yet run against live Azure or Databricks.
+
+## Next
+
+- [Check generated files in CI](/docs/how-to/check-in-ci): the check on every
+  pull request, before anything deploys.
+- [Ask the platform team](/docs/how-to/ask-the-platform-team): what each
+  environment needs before its first deployment.
+- [Upgrade from 1.x to 2.0](/docs/how-to/upgrade#upgrade-to-2): the first
+  deployment of the new folders.

@@ -37,6 +37,7 @@ const areas: Record<string, string[]> = {
     "/docs/how-to/add-an-environment",
     "/docs/how-to/plan-and-generate",
     "/docs/how-to/check-in-ci",
+    "/docs/how-to/deploy-through-environments",
   ],
   Platforms: [
     "/docs/platforms/duckdb",
