@@ -3,9 +3,11 @@ title: Databricks pack
 description: Every method of the databricks pack, with its settings and defaults.
 ---
 
-`databricks@1` writes one Databricks bundle per environment: Lakeflow
-pipelines with SQL and Python files, Lakeflow Connect ingestion, and a
-refresh job when the platform has a schedule or a task runs after the refresh.
+`databricks@2` writes one Databricks bundle for every environment, with a
+target per environment: Lakeflow pipelines with SQL and Python files,
+Lakeflow Connect ingestion, and a refresh job when the platform has a schedule
+or a task runs after the refresh. See
+[What Ingestron writes](/docs/platforms/databricks#what-you-get).
 The settings below come from the pack itself.
 
 Before deployment, [plan and review](/docs/how-to/plan-and-generate) the files,
@@ -16,7 +18,8 @@ then [deploy the generated bundle](/docs/platforms/databricks#deploy).
 ## Platform configuration
 
 Without a platform document, or where it leaves a setting out, the Databricks
-pack uses these defaults. Without `run_as`, the pipelines and jobs run as the
+pack uses these defaults. Each target of the bundle gets its environment's
+`mode`, workspace, `run_as` and `permissions`. Without `run_as`, the pipelines and jobs run as the
 identity that deploys the bundle, and without `schedule`, nothing runs on a
 schedule.
 
@@ -32,8 +35,9 @@ following capability reference describes each switch and its prerequisites.
 Some features change shared Unity Catalog objects, so the platform turns each
 on with a `manage` switch. While a switch is off, a definition or contract that
 uses the feature gets a `CAPABILITY_OFF` warning with a quick fix that turns it
-on. When a switch is on, the bundle has a `prerequisites.sql` that lists the
-grants to run once as an administrator.
+on. When a switch is on, the bundle has a `prerequisites/<environment>.sql` for
+each environment, which lists the grants to run once there as an
+administrator; it is not deployed.
 
 Tags, column comments and table checks run in an `apply_contract` task after
 the refresh, on serverless jobs compute: Lakeflow pipelines cannot set tags or

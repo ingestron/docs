@@ -56,7 +56,7 @@ An unknown classification offers each allowed value as a quick fix.
 
 ## Read the passport
 
-`ingestron apply` writes `build/<environment>/products/` beside the pipelines:
+`ingestron apply` writes `build/products/<environment>/` beside the pipelines:
 a `README.md` listing every product, and a page per product. It says who owns
 the product and what it is for, which table it is in this environment and
 where it lives, its columns, with the contract's type for each (such as
@@ -65,7 +65,7 @@ marked, its quality checks,
 how fresh it is, who may use it, its lineage as a diagram, and the governance
 rules it meets:
 
-<Example name="data-products" file="build/dev/products/customers.md" />
+<Example name="data-products" file="build/products/dev/customers.md" />
 
 Passports are Markdown with Mermaid diagrams, so GitHub and Azure DevOps show
 them as pages. They are generated with the pipelines, so they are always up to
