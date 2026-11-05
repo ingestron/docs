@@ -1,12 +1,13 @@
 ---
 title: Upgrade Ingestron and its packs
-description: Choose the version every project runs, see what an upgrade changes with plan, and move CI and your team together.
+description: Choose the version every project runs, see what an upgrade changes with plan, move CI and your team together, and upgrade from 1.x to 2.0.
 ---
 
 The packs come inside the `ingestron` command: each release of the command
 includes one version of every pack. A newer release can change the files the
 packs generate, so upgrade on purpose, in a pull request, where `plan` shows
-the change and `check` proves it is complete.
+the change and `check` proves it is complete. Coming from 1.x, read
+[Upgrade from 1.x to 2.0](#upgrade-to-2) first.
 
 ## What the standard pins
 
@@ -14,39 +15,40 @@ The standard's `packs` names each pack with its major version:
 
 <Example name="duckdb" file="standard.yaml" />
 
-`duckdb@1` accepts every DuckDB pack whose major version is 1. A new major
-version is a new name, `duckdb@2`, and the command checks it. When the
-standard names a major the command's pack does not have, nothing is
-generated. In the [first project](/docs/start/first-project), whose command
-has DuckDB pack 1, changing the line to `duckdb@2` makes `ingestron plan`
-stop at:
+`duckdb@2` accepts every DuckDB pack whose major version is 2. A new major
+version is a new name, and the command checks it. When the standard names a
+major the command's pack does not have, nothing is generated. In the
+[first project](/docs/start/first-project), whose command has DuckDB pack 2,
+changing the line to `duckdb@3` makes `ingestron plan` stop at:
 
 ```text
 dev: the definitions have problems
 standard.yaml:4:9  error  WRONG_PACK
-  This standard is for "duckdb@2", but the pack is duckdb@1.
+  This standard is for "duckdb@3", but the pack is duckdb@2.
 ```
 
-The same happens the other way: a command whose pack is a newer major stops
-on the old name until you change it. A release in the same major keeps the
-name, so the standard needs no change, but the files it generates can still
-differ, for example by a new cast in a table's SQL.
+A standard that names the major before the command's, such as `duckdb@1`,
+stops with [`PACK_VERSION`](/docs/reference/errors#PACK_VERSION) instead, with
+a fix that changes it; see [Upgrade from 1.x to 2.0](#upgrade-to-2). A release
+in the same major keeps the name, so the standard needs no change, but the
+files it generates can still differ, for example by a new cast in a table's
+SQL.
 
 [Versions](/docs/reference/versions) lists the command and pack versions
 these pages describe.
 
 ## Choose the version you run
 
-The [CI templates](/docs/how-to/check-in-ci) run `npm install -g ingestron@1`,
-which installs the newest 1.x release on each run. A new release can then make
+The [CI templates](/docs/how-to/check-in-ci) run `npm install -g ingestron@2`,
+which installs the newest 2.x release on each run. A new release can then make
 `ingestron check` fail on a pull request that changed nothing, because the
 files it generates are no longer the ones committed.
 
 To upgrade when you choose, install the exact version, in CI in place of
-`ingestron@1` and on each of your computers:
+`ingestron@2` and on each of your computers:
 
 ```sh
-npm install -g ingestron@1.10.2
+npm install -g ingestron@2.0.0
 ```
 
 `npm ls -g ingestron` shows the version a computer has installed.
@@ -70,9 +72,9 @@ list no changes; if it does, the two versions differ.
    a `delete`. Review them as you would review a change to the definitions.
 
 3. If the plan reports
-   [`WRONG_PACK`](/docs/reference/errors#WRONG_PACK), change the major
-   version in the standard's `packs`. Fix any other problem the plan
-   reports.
+   [`PACK_VERSION`](/docs/reference/errors#PACK_VERSION), apply its fix, which
+   changes the major version in the standard's `packs`. Fix any other problem
+   the plan reports.
 4. Apply, and commit the generated files with the version change:
 
    ```sh
@@ -84,10 +86,202 @@ list no changes; if it does, the two versions differ.
 
 Deploy the changed files as you deploy any other change.
 
+## Upgrade from 1.x to 2.0 [#upgrade-to-2]
+
+Version 1 wrote a complete copy of each platform's files for each environment,
+in `build/<environment>/`. Version 2 writes one set of files per platform for
+every environment, in `build/<pack>/`, laid out as each platform's CI/CD tools
+expect: a Databricks bundle with a target per environment, a Data Factory
+factory with an ARM parameter file per environment, and one Synapse script
+with a script per environment. A deployment pipeline promotes the same files
+from one environment to the next; see
+[Deploy through environments](/docs/how-to/deploy-through-environments).
+
+### The standard and the folders
+
+1. Install `ingestron@2` and plan. Every pack is version 2, so a standard that
+   names `databricks@1`, `adf@1`, `synapse@1` or `duckdb@1` stops with
+   `PACK_VERSION`, once for all the environments that have it:
+
+   ```text
+   dev: the definitions have problems
+   standard.yaml:4:9  error  PACK_VERSION
+     This standard is for "duckdb@1", but the pack is duckdb@2.
+     Change it to duckdb@2; the upgrade notes say what changes in the generated files.
+     Fix: Change to "duckdb@2".
+   ```
+
+   Change each to `@2`, or apply the fix in VS Code.
+
+2. Apply. Ingestron writes `build/<pack>/`, and names each 1.x folder it no
+   longer generates:
+
+   ```text
+   build/dev: no longer generated. Delete the folder, or delete its .generated.json to keep it as your own.
+   ```
+
+   `ingestron check` fails until those folders are gone, so CI cannot keep
+   deploying them. Change your deployment to the new folders first, then
+   delete the old ones in the same pull request.
+
+3. Environments may now differ only in values, such as names, paths and
+   hosts. A table built in some environments only, or a resource name that
+   differs, is [`ENVIRONMENTS_DIFFER`](/docs/reference/errors#ENVIRONMENTS_DIFFER),
+   and every environment must resolve before anything is written. A naming
+   pattern that put `{{ environment }}` in a pipeline's or job's name, or an
+   ADF `resource_names` value with `${environment.name}`, needs changing.
+4. `${envvar:…}` values in a Databricks, Data Factory or Synapse project are
+   no longer read when generating: the deploying pipeline supplies them,
+   under the names `ingestron request` lists. A variable that decides a name,
+   such as a flow's `source`, is
+   [`DEPLOY_VALUE`](/docs/reference/errors#DEPLOY_VALUE): write it in
+   `project.yaml` for each environment. See
+   [Supplied when deploying](/docs/concepts/yaml-references#supplied-when-deploying).
+5. Change CI: the check templates install `ingestron@2`, and the deploy
+   pipelines deploy `build/<pack>/` by target, parameter file or script, as
+   [Deploy through environments](/docs/how-to/deploy-through-environments)
+   shows.
+
+`plan`, `apply` and `check` now always work on every environment together:
+given `--env`, they exit with `2`. `compare` and `request` still take `--env`.
+
+### Databricks
+
+- One bundle in `build/databricks/`. The bundle's name, its pipeline and job
+  keys, the target names and `root_path` are as in 1.x, so the first
+  `databricks bundle deploy -t <environment>` updates that environment's
+  resources in place. Run `databricks bundle validate` and
+  `databricks bundle summary` first.
+- Only an environment named `dev` is in development mode; `test`, `uat`,
+  `staging` and every other environment are in production mode, unless the
+  platform sets `mode`. On such an environment's first 2.0 deploy, jobs and
+  pipelines lose the `[dev <identity>]` prefix from their names, pipelines
+  leave development, the deployment lock comes on, and production mode checks
+  the deploying identity's `run_as`, `permissions` and `root_path`. To keep
+  development mode there, write `mode: ${values.mode}` in the platform,
+  `mode: production` in `project.yaml`'s `values`, and `mode: development` in
+  that environment's `values`.
+- With `manage.schemas`, managed schemas are keyed by layer, such as `bronze`,
+  or by schema name when a layer has several, not `<catalog>_<schema>`. Each
+  environment's deployment state still holds the old key, so before the first
+  2.0 deploy, for each environment and managed schema:
+  1. in the 1.x folder `build/<environment>/`, run
+     `databricks bundle deployment unbind <catalog>_<schema> -t <environment>`;
+  2. in `build/databricks/`, run
+     `databricks bundle deployment bind <key> <catalog>.<schema> -t <environment>`,
+     with the key from `resources/schemas.yml`;
+  3. run `databricks bundle validate` and `databricks bundle summary`, and
+     check that the deploy deletes no schema.
+
+  Without this, the deploy plans to delete each schema under its old key.
+- `prerequisites.sql` is `prerequisites/<environment>.sql`. The after-refresh
+  script moved from `src/<pipeline>/apply_contract.py`, where the pipeline
+  also loaded it as its own code, to `tasks/<pipeline>/apply_contract.py`; the
+  first deploy removes the old file.
+- Pipeline code names tables in the pipeline's catalog with two parts, such as
+  `` `bronze`.`orders` ``, and reads values that differ through the pipeline's
+  configuration. A PySpark transform's own code cannot hold a value that
+  differs yet, and a Kafka connection's `continuous` must be the same in every
+  environment.
+- Deploy with the Databricks CLI v0.264.0 or later.
+
+### Azure Data Factory
+
+- One factory in `build/adf/`: the factory's files in `factory/`, and
+  `parameters/<environment>.json`. Deploy it as an ARM template built with
+  Microsoft's npm package, with the pre- and post-deployment script; see
+  [Deploy](/docs/platforms/adf#deploy). Deploying the JSON directly, through
+  the REST API, `az datafactory` or a factory's Git publishing of
+  `build/<environment>/adf/`, is no longer supported.
+- One factory per project: the post-deployment script deletes every resource
+  in the factory that the template does not hold.
+- Resource names are as in 1.x, so the first deployment updates each
+  factory's resources in place.
+- The factory now holds each integration runtime its linked services use.
+  Describe a runtime linked to a shared one, or an Azure runtime's region and
+  compute, with the method's `runtime` setting, and run
+  `az deployment group what-if` before the first deployment. Each plan, apply
+  and check prints this as a `PACK_NOTICE` warning.
+- Triggers start only in `prod` and `production`, decided by the environment's
+  name. A platform that set `mode: production` to start another environment's
+  triggers sets `paused: false` in the copy method's settings instead.
+- The PostgreSQL recipe no longer adds `_<environment>` to its names, so a
+  project started from it renames its resources: the deployment creates the
+  new ones and the post-deployment script deletes the old ones. A renamed
+  tumbling window trigger runs its past windows again from `start`.
+- Output that Microsoft's build refused is fixed, so every connector builds:
+  - MongoDB, MongoDB Atlas and Azure Cosmos DB for MongoDB datasets write
+    `collection`.
+  - Microsoft 365 lands through a binary copy into `<object>/`, so its tables
+    use `layout: increments`. Before the first 2.0 run, delete or move the
+    1.x file, `<object>/<object>.json`, which matches the new location,
+    `<object>/*.json`, and point its readers at that location.
+  - A connection with a user-assigned managed identity needs `identity`, the
+    identity's resource ID; the factory gets a credential of its own, which
+    replaces one of the same name made in Data Factory Studio.
+  - A resource name is at most 140 characters, and a Copy activity's 55; a
+    longer default name is refused with the `resource_names` role to set.
+  - `runtime.location` takes the region's display name, such as `UK South`,
+    not `uksouth`.
+
+### Synapse serverless
+
+- One `views.sql` in `build/synapse/`, with `environments/<environment>.sql`
+  for each environment. Run `sqlcmd -i environments/<environment>.sql` from
+  `build/synapse/`; see [Deploy](/docs/platforms/synapse#deploy).
+  `views.sql` holds sqlcmd variables, so Synapse Studio cannot run it.
+- `views.sql` starts with `USE [<database>]`, also when the views are in one
+  database. If you ran a 1.x `views.sql` connected to a database with another
+  name than the naming gives, change the naming to that name first.
+  Otherwise, view names are as in 1.x, so the first run alters each view in
+  place.
+
+### DuckDB
+
+`duckdb@2` writes the same SQL, in `build/duckdb/<environment>/`. Run it with
+`.read build/duckdb/<environment>/run.sql`, as its `README.md` now says.
+
+### VS Code
+
+Use version 2 of the extension with 2.0. **Ingestron: Apply** and auto-apply
+write every environment, and auto-apply logs a line for each output folder.
+The environment in the status bar chooses the problems, the previews and the
+platform request; see [VS Code](/docs/tools/vscode).
+
+### If you call the packages from code
+
+The package READMEs describe each interface; these are the changes:
+
+- **`@ingestron/cli` 2.0.0:**
+  - `generatedOutputs(files, { envvars?, packs? })` replaces
+    `generatedOutputs(model, environment)`. It resolves every environment and
+    builds every output folder as `ingestron plan` does, and writes nothing.
+    It returns `{ ok, outputs, environmentReports, packReports, deployed,
+    refused?, text }`; each output is `{ name, folder, targets,
+    byEnvironment, files, deployValues? }`, with files at the paths
+    `ingestron apply` writes. A pack that cannot be loaded gives `refused`,
+    not an exception. The new types are `GeneratedOutput`,
+    `GeneratedOutputs`, `GeneratedOutputsOptions` and `Report`.
+  - `run(args, io)` returns `2` for a pack that cannot be loaded, and for
+    `--env` given to `plan`, `apply` or `check`.
+  - `platformRequest` and `compareEnvironments` resolve every environment
+    together, and still throw for a pack that cannot be loaded: check
+    `packLoadProblem(packs)` first.
+  - `packs` are `databricks@2`, `adf@2`, `synapse@2` and `duckdb@2`.
+- **`@ingestron/definitions` 1.10.0** adds `packLoadProblem(packs)` and the
+  codes [`PACK_LOAD`](/docs/reference/errors#PACK_LOAD) and
+  [`PACK_NOTICE`](/docs/reference/errors#PACK_NOTICE). `PACK_VERSION` now
+  covers version 1 of every version 2 pack, which 1.9 reported as
+  `WRONG_PACK`.
+- **`@ingestron/authoring` 2.0.0:** `generatedFiles(project, environment)`
+  gives the 2.0 paths, for the output folders that target the environment;
+  `problems` adds pack notices and what generating finds, such as
+  `DEPLOY_VALUE`.
+
 ## What changed in a release
 
 Recent releases are commits whose message starts with the version, such as
-`1.10.2:`. Read the history of the command and of each pack
+`2.0.0:`. Read the history of the command and of each pack
 your standard names:
 
 - the command: [ingestron/ingestron](https://github.com/ingestron/ingestron/commits/main)

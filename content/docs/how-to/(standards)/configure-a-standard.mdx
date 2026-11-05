@@ -33,7 +33,7 @@ From top to bottom:
   [Standards, packs and methods](/docs/concepts/standards-and-packs).
 - **Naming:** one `acme` catalog; a schema per environment and layer, such
   as `prod_raw`; flow tables prefixed with their source, such as
-  `web__visits`; a pipeline per environment. See
+  `web__visits`; the pipeline keeps the pack's name, the project's id. See
   [Name tables and resources](/docs/how-to/name-things-your-way).
 - **Layers:** `raw`, `curated` and `published` instead of the default ones.
   See [Layers](/docs/concepts/layers).
@@ -106,8 +106,10 @@ Run **Ingestron: Apply** from the Command Palette (⇧⌘P on macOS, Ctrl+Shift+
 </Tool>
 </ToolSteps>
 
-Open a generated table in `build/prod/` and find each rule from the standard
-in it: the names, the types, the properties and the clustering.
+Open a generated table in `build/databricks/src/` and find each rule from the
+standard in it: the names, the types, the properties and the clustering. The
+schema differs between environments, so the table names it as a value each
+target of `build/databricks/databricks.yml` sets.
 
 ### Break a rule
 
