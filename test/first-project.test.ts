@@ -178,7 +178,7 @@ describe("Run your first project on your laptop", () => {
     const { code, output } = shell.run(fence(apply(), "sh"));
     expect(code, output).toBe(0);
     expect(trimmed(output)).toBe(trimmed(fence(apply(), "text")));
-    expect(existsSync(shell.file("build/dev/run.sql"))).toBe(true);
+    expect(existsSync(shell.file("build/duckdb/dev/run.sql"))).toBe(true);
   });
 
   it(`builds the tables and shows the box the page shows${withDuckdb}`, ({ skip }) => {
@@ -224,11 +224,11 @@ describe("Run your first project on your laptop", () => {
   });
 
   it("reports a hand-edited file as a conflict, overwrites nothing, and writes it again once deleted", () => {
-    const line = /[Aa]dd the line `([^`]+)` at the end of `build\/dev\/run\.sql`/.exec(
+    const line = /[Aa]dd the line `([^`]+)` at the end of `build\/duckdb\/dev\/run\.sql`/.exec(
       prose(conflict()),
     )?.[1];
     expect(line, "the line the page adds").toBeDefined();
-    appendFileSync(shell.file("build/dev/run.sql"), `${line}\n`);
+    appendFileSync(shell.file("build/duckdb/dev/run.sql"), `${line}\n`);
     const [planned, undo] = fences(conflict(), "sh");
     const [conflicted, rewritten] = fences(conflict(), "text");
     let result = shell.run(planned!);
@@ -236,11 +236,11 @@ describe("Run your first project on your laptop", () => {
     expect(trimmed(result.output)).toBe(trimmed(conflicted!));
     result = shell.run("ingestron apply");
     expect(result.code).toBe(1);
-    expect(readFileSync(shell.file("build/dev/run.sql"), "utf8")).toContain(line);
+    expect(readFileSync(shell.file("build/duckdb/dev/run.sql"), "utf8")).toContain(line);
     result = shell.run(undo!);
     expect(result.code, result.output).toBe(0);
     expect(trimmed(result.output)).toBe(trimmed(rewritten!));
-    expect(readFileSync(shell.file("build/dev/run.sql"), "utf8")).not.toContain(line);
+    expect(readFileSync(shell.file("build/duckdb/dev/run.sql"), "utf8")).not.toContain(line);
   });
 
   it("reports BROKEN_LINK with its fix for the page's broken flow, and plans nothing once undone", () => {

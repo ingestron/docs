@@ -52,7 +52,7 @@ ingestron init shop --template duckdb --yes
 cd shop
 ingestron plan
 ingestron apply
-duckdb -bail ingestron.duckdb -c ".read build/dev/run.sql"
+duckdb -bail ingestron.duckdb -c ".read build/duckdb/dev/run.sql"
 duckdb ingestron.duckdb -c "SELECT * FROM silver.customer_totals ORDER BY customer"
 ```
 
@@ -64,7 +64,7 @@ that Ingestron generated:
 │ customer │ orders │ total  │
 │ varchar  │ int64  │ double │
 ├──────────┼────────┼────────┤
-│ Aroha    │      2 │  65.75 │
+│ Ana      │      2 │  65.75 │
 │ Ben      │      2 │   42.0 │
 │ Chen     │      1 │   8.75 │
 └──────────┴────────┴────────┘
@@ -80,16 +80,27 @@ each step and each file, then changes the project and breaks it on purpose.
 This is the starter's transform as Ingestron writes it for DuckDB: your SQL,
 with each column cast to the type its contract gives.
 
-<Example name="duckdb" file="build/dev/tables/silver.customer_totals.sql" />
+<Example name="duckdb" file="build/duckdb/dev/tables/silver.customer_totals.sql" />
 
 The Databricks pack writes the `minimal` example project's orders table as a streaming
 table in a Databricks pipeline, typed and checked from its contract:
 
-<Example name="minimal" file="build/dev/src/shop/bronze/orders.sql" />
+<Example name="minimal" file="build/databricks/src/shop/bronze/orders.sql" />
 
 The bundle around it is YAML, Azure Data Factory gets pipeline JSON, and
 Synapse gets view SQL. [How Ingestron works](/docs/start/how-it-works) follows
 a project from the YAML to the platform.
+
+### One build for every environment
+
+Each platform gets one set of files for every environment, laid out the way
+your platform's CI/CD expects: a Databricks bundle with a target per
+environment, a Data Factory factory with a parameter file per environment, and
+one Synapse script with each environment's values. Only what differs between
+environments varies, so a reviewer sees exactly what changes between dev and
+prod, and prod deploys the files that test ran.
+[Deploy through environments](/docs/how-to/deploy-through-environments) gives
+the GitHub Actions and Azure DevOps pipelines.
 
 ### No dependency once it's deployed
 
@@ -131,7 +142,8 @@ each one and what runs after each load.
 
 - It doesn't connect to your sources or your cloud. Its only network call is
   to fetch a template or standard from a Git URL you give it.
-- It doesn't deploy anything. Your platform's tools do.
+- It doesn't deploy anything. Your platform's tools do, from your CI/CD
+  pipeline.
 - It doesn't read secret values. A `${secret:…}` reference carries only the
   secret's name.
 - It doesn't send telemetry, from the command line or from VS Code.
