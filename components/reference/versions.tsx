@@ -89,7 +89,7 @@ export function PlatformChecks() {
   const rows: [string, string][] = [
     [
       "databricks",
-      `The bundle schema of Databricks CLI ${found(databricks, /Bundle fields from Databricks CLI (v[\d.]+)/, "the Databricks CLI version")} (\`databricks bundle schema\`) and the Databricks documentation, accessed ${found(databricks, /## Sources \(accessed ([\d-]+)\)/, "the Databricks access date")}`,
+      `The bundle schema of Databricks CLI ${found(databricks, /Bundle fields\s+from Databricks CLI (v[\d.]+)/, "the Databricks CLI version")} (\`databricks bundle schema\`) and the Databricks documentation, accessed ${found(databricks, /## Sources\n[\s\S]*?\(accessed ([\d-]+)\)/, "the Databricks access date")}`,
     ],
     [
       "adf",

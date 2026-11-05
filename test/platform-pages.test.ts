@@ -239,3 +239,20 @@ describe("how-to/deploy-through-environments", () => {
       if (!builtIn.has(name!)) expect(header, name).toContain(name!);
   });
 });
+
+describe("reference/versions", () => {
+  it("names the tool versions the deploy templates pin", () => {
+    const tools = section(read("reference/versions.mdx"), "## Deploy tools");
+    const template = (file: string) =>
+      readFileSync(join(process.cwd(), "ci-templates", file), "utf8");
+    const github = template("github-actions/deploy-environment.yml");
+    const build = template("github-actions/deploy.yml");
+    const adf = /@microsoft\/azure-data-factory-utilities@([\d.]+)/.exec(build)![1]!;
+    const databricks = /databricks\/setup-cli@(v[\d.]+)/.exec(github)![1]!;
+    const sqlcmd = /go-sqlcmd\/releases\/download\/(v[\d.]+)\//.exec(github)![1]!;
+    expect(tools).toContain(`\`@microsoft/azure-data-factory-utilities\` ${adf}`);
+    expect(tools).toContain(`Databricks CLI ${databricks}`);
+    expect(tools).toContain(`sqlcmd (Go) ${sqlcmd}`);
+    expect(tools).toContain("`ingestron@2`");
+  });
+});
