@@ -1,7 +1,7 @@
 # Deploys the files deploy.yml built to one environment. It runs in the GitHub
 # environment of the same name, so that environment's reviewers and branch rule
 # gate it, and its variables and secrets are the ones used. Required reviewers
-# on a private repository need GitHub Enterprise Cloud.
+# on a private repository need GitHub Enterprise.
 #
 # Variables to set in each GitHub environment:
 # - AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID: the identity this
