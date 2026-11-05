@@ -3,13 +3,14 @@
 // output block is compared with what the command prints, and each hand-written
 // YAML fragment is merged into a sample and planned.
 import { execFileSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { run } from "@ingestron/cli";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { parse } from "yaml";
 import { PackNaming } from "../components/reference/pack-defaults";
 import { exampleFolder, exampleRequest, requestSections } from "../lib/examples";
 import { packName, packs } from "../lib/reference";
@@ -201,7 +202,7 @@ describe("how-to/share-a-template", () => {
       readFileSync(join(exampleFolder("standards-and-conventions"), "standard.yaml"), "utf8"),
     );
     // The template came along: its flow, under the standard's names.
-    expect(created.output).toContain(`src/${name}_dev/raw/orders.sql`);
+    expect(created.output).toContain(`src/${name}/raw/orders.sql`);
   });
 });
 
@@ -230,14 +231,22 @@ describe("how-to/name-things-your-way", () => {
 
   it("creates the table under the full name the page gives, in the generated file it embeds", () => {
     const patterns = section(page, "## Write the patterns");
-    const name = /created as\n`` (`[a-z_]+`\.`[a-z_]+`\.`[a-z_]+`) ``/.exec(patterns)![1]!;
-    const file = /file="(build\/prod\/[^"]+)"/.exec(patterns)![1]!;
+    const [catalog, schema, table] = /created as\n`` `([a-z_]+)`\.`([a-z_]+)`\.`([a-z_]+)` ``/
+      .exec(patterns)!
+      .slice(1);
+    const file = /file="(build\/databricks\/src\/[^"]+)"/.exec(patterns)![1]!;
     const cwd = copy("standards-and-conventions");
     const out = join(cwd, "out");
     expect(cli(cwd, ["apply", "--no-diff", "--out", out]).code).toBe(0);
     expect(readFileSync(join(out, file.slice("build/".length)), "utf8")).toContain(
-      `CREATE OR REFRESH STREAMING TABLE ${name}`,
+      `CREATE OR REFRESH STREAMING TABLE \`\${ingestron.schema_raw}\`.\`${table}\``,
     );
+    const bundle = parse(readFileSync(join(out, "databricks/databricks.yml"), "utf8"));
+    expect(bundle.targets.prod.variables.schema_raw).toBe(schema);
+    const pipeline = parse(
+      readFileSync(join(out, "databricks/resources/marketing.pipeline.yml"), "utf8"),
+    );
+    expect(pipeline.resources.pipelines.marketing.catalog).toBe(catalog);
   });
 
   it("plans the rename the page's fragment makes, moving the pipeline's files", () => {
@@ -254,18 +263,23 @@ describe("how-to/name-things-your-way", () => {
 describe("how-to/upgrade", () => {
   const page = read("how-to/upgrade.mdx");
 
-  it("stops the first project's plan when its standard names a major the command's pack lacks", () => {
-    const pins = section(page, "## What the standard pins");
-    expect(pins).toContain('<Example name="duckdb" file="standard.yaml" />');
+  /** The first project, created with its page's own command. */
+  function shop(): string {
     const create = commands(section(read("start/first-project.mdx"), "## 1. Create the project"));
     const init = create.find((line) => line.startsWith("ingestron init "))!;
     const parent = mkdtempSync(join(tmpdir(), "docs-upgrade-shop-"));
     expect(cli(parent, init.split(" ").slice(1)).code).toBe(0);
-    const cwd = join(parent, create.find((line) => line.startsWith("cd "))!.slice("cd ".length));
+    return join(parent, create.find((line) => line.startsWith("cd "))!.slice("cd ".length));
+  }
+
+  it("stops the first project's plan when its standard names a major the command's pack lacks", () => {
+    const pins = section(page, "## What the standard pins");
+    expect(pins).toContain('<Example name="duckdb" file="standard.yaml" />');
+    const cwd = shop();
     const standard = join(cwd, "standard.yaml");
     const text = readFileSync(standard, "utf8");
-    expect(text).toContain("packs: [duckdb@1]");
-    writeFileSync(standard, text.replace("duckdb@1", "duckdb@2"));
+    expect(text).toContain("packs: [duckdb@2]");
+    writeFileSync(standard, text.replace("duckdb@2", "duckdb@3"));
     const planned = cli(cwd, ["plan"]);
     expect(planned.code).toBe(1);
     expect(planned.output.trim()).toBe(fences(pins, "text")[0]!.trim());
@@ -274,16 +288,40 @@ describe("how-to/upgrade", () => {
     expect(pins).toContain(`DuckDB pack ${duckdb.version}`);
   });
 
-  it("pins the exact version these pages describe, after the templates' newest 1.x", () => {
+  it("upgrades a 1.x standard with PACK_VERSION's fix, and names each 1.x folder until it is gone", () => {
+    const steps = section(page, "### The standard and the folders");
+    const [stopped, retired] = fences(steps, "text");
+    const cwd = shop();
+    const standard = join(cwd, "standard.yaml");
+    writeFileSync(standard, readFileSync(standard, "utf8").replace("duckdb@2", "duckdb@1"));
+    const planned = cli(cwd, ["plan"]);
+    expect(planned.code).toBe(1);
+    expect(planned.output.trim()).toBe(stopped!.trim());
+    writeFileSync(standard, readFileSync(standard, "utf8").replace("duckdb@1", "duckdb@2"));
+    // What 1.x left: a folder for the environment, with its manifest.
+    mkdirSync(join(cwd, "build/dev"), { recursive: true });
+    writeFileSync(join(cwd, "build/dev/.generated.json"), '{ "version": 1, "files": {} }\n');
+    const applied = cli(cwd, ["apply", "--no-diff"]);
+    expect(applied.code).toBe(0);
+    expect(applied.output.trim().split("\n").at(-1)).toBe(retired!.trim());
+    expect(cli(cwd, ["check"]).code).toBe(1);
+    rmSync(join(cwd, "build/dev"), { recursive: true });
+    expect(cli(cwd, ["check"]).code).toBe(0);
+    // Every command but compare and request refuses --env.
+    expect(cli(cwd, ["plan", "--env", "dev"]).code).toBe(2);
+  });
+
+  it("pins the exact version these pages describe, after the templates' newest 2.x", () => {
     const choose = section(page, "## Choose the version you run");
     const version = JSON.parse(
       readFileSync(join(process.cwd(), "node_modules/@ingestron/cli/package.json"), "utf8"),
     ).version as string;
     expect(commands(choose)).toEqual([`npm install -g ingestron@${version}`]);
-    const templates = /run `(npm install -g ingestron@1)`/.exec(choose)![1]!;
-    expect(read("how-to/check-in-ci.mdx")).toContain(
-      `run: ${templates}\n      - run: ingestron check`,
-    );
-    expect(read("how-to/check-in-ci.mdx")).toContain(`script: ${templates}\n`);
+    const templates = /run `(npm install -g ingestron@\d+)`/.exec(choose)![1]!;
+    expect(templates).toBe(`npm install -g ingestron@${version.split(".")[0]}`);
+    for (const file of ["github-actions/ingestron-check.yml", "azure-devops/ingestron-check.yml"])
+      expect(readFileSync(join(process.cwd(), "ci-templates", file), "utf8")).toContain(
+        `: ${templates}\n`,
+      );
   });
 });
