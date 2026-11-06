@@ -79,6 +79,10 @@ Run **Ingestron: Check** from the Command Palette (⇧⌘P on macOS, Ctrl+Shift+
 It writes nothing. It prints `up to date` for each output folder, such as
 `databricks: up to date`, and exits with `0`. It exits with `1` when:
 
+- a value is still `REPLACE_ME`, as `ingestron init` writes it where it cannot
+  know the value. `plan` and `apply` only warn about it; `check` reports it as
+  [`REPLACE_ME`](/docs/reference/errors#REPLACE_ME), an error, so nothing
+  deploys with one. Write it, as the project's `README.md` says.
 - the output differs from what the definitions generate today. It lists
   what differs; run `ingestron apply` locally and commit the result.
 - a file in an output folder was not generated, such as a SQL file someone

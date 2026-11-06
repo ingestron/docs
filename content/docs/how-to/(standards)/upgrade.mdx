@@ -296,6 +296,32 @@ The package READMEs describe each interface; these are the changes:
   `problems` adds pack notices and what generating finds, such as
   `DEPLOY_VALUE`.
 
+## Upgrade to 2.1 [#upgrade-to-2-1]
+
+2.1 changes no generated file. What changes is `init`, and what `check`
+finds:
+
+- `init` asks only what picks the project: the starter, or the connector,
+  connectivity and route. It writes `REPLACE_ME`, with a comment, for each
+  value it cannot know, writes `README.md` with where to find each one, and
+  `--set <name>=<value>` writes one as the project is created; see
+  [Create a project](/docs/how-to/start-from-a-template#write-the-values).
+  A script that answered `init`'s questions on standard input gives `--set`
+  instead.
+- A value still `REPLACE_ME` is a [`REPLACE_ME`](/docs/reference/errors#REPLACE_ME)
+  warning in `plan` and `apply`, and an error in `check`. Projects created
+  before 2.1 have none.
+- `ingestron request` opens with **Values to replace**, and its **Values to
+  provide** says the deploying pipeline supplies each value under the name
+  given.
+- VS Code's **New project** asks no name, environments or standard, and
+  opens the new `README.md`.
+- For code that calls the packages: `@ingestron/definitions` 1.11 adds the
+  `REPLACE_ME` code and the `replaceMe` resolve option, which `check` sets to
+  `error`; the CLI's `Io` gains an optional `now()`, the day `init` writes;
+  and the [`@ingestron/cli` README](https://github.com/ingestron/ingestron/tree/main/packages/cli)
+  describes `generatedOutputs`.
+
 ## What changed in a release
 
 Recent releases are commits whose message starts with the version, such as
