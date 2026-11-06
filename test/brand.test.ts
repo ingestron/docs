@@ -183,7 +183,7 @@ it("marks the code blocks that hold box-drawing characters, and only those", () 
     properties: {},
     children: [{ type: "element", tagName: "code", children: [{ type: "text", value: line }] }],
   });
-  const tree = { type: "root", children: [block("│ Aroha │ 2 │"), block("dev → build/dev")] };
+  const tree = { type: "root", children: [block("│ Ana │ 2 │"), block("dev → build/dev")] };
   rehypeBoxDrawing()(tree);
   expect(tree.children.map((pre) => "dataBoxDrawing" in pre.properties)).toEqual([true, false]);
 });

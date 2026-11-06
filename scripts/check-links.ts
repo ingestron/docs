@@ -6,7 +6,8 @@
 // areas came in is still built, and each area's sidebar lists only its pages.
 // Every page opens with a skip link to an element it has, every table and
 // code block scrolls in a named frame, and the Fumadocs markup the keyboard
-// fixes rely on is there. Nothing built or downloadable names New Zealand.
+// fixes rely on is there. Nothing built or downloadable holds a regional name
+// the public repositories leave out.
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { docsLinks } from "@ingestron/authoring";
 import { join, relative } from "node:path";
@@ -70,14 +71,14 @@ for (const [, href] of readFileSync(join(out, "docs.html"), "utf8").matchAll(
 sidebars();
 const framed = keyboard();
 fumadocsMarkup();
-const scanned = noNewZealand();
+const scanned = noRegionalNames();
 
 if (broken.size > 0) {
   console.log(`✗ ${broken.size} broken links:\n${[...broken].join("\n")}`);
   process.exit(1);
 }
 console.log(
-  `✓ every internal link resolves, ${sections} links to a section land on it, all ${editorLinks.length} editor links land, all ${urls.length} pages built before the areas are built, each sidebar lists only its area, every page has a skip link, ${framed} named frames and the markup the keyboard fixes use, and none of ${scanned} built and downloadable files names New Zealand`,
+  `✓ every internal link resolves, ${sections} links to a section land on it, all ${editorLinks.length} editor links land, all ${urls.length} pages built before the areas are built, each sidebar lists only its area, every page has a skip link, ${framed} named frames and the markup the keyboard fixes use, and none of ${scanned} built and downloadable files holds a regional name`,
 );
 
 /**
@@ -210,9 +211,14 @@ function fumadocsMarkup(): void {
   }
 }
 
-/** Nothing in out/ or the downloads names New Zealand or one of its time zones. Returns how many files it read. */
-function noNewZealand(): number {
-  const words = /auckland|new zealand/i;
+/**
+ * Nothing in out/ or the downloads holds a regional name the public
+ * repositories leave out: a country and its time zone, built from parts so
+ * that this file does not hold them either. Returns how many files it read.
+ */
+function noRegionalNames(): number {
+  const names = [["new", "zea" + "land"].join(" "), "auck" + "land", "aro" + "ha"];
+  const words = new RegExp(names.join("|"), "i");
   const decode = new TextDecoder();
   let count = 0;
   const zips = readdirSync(join(process.cwd(), "public/downloads"))
@@ -223,14 +229,14 @@ function noNewZealand(): number {
       for (const [entry, bytes] of Object.entries(unzipSync(readFileSync(file)))) {
         count++;
         if (words.test(decode.decode(bytes)))
-          broken.add(`${relative(process.cwd(), file)}: ${entry} names New Zealand`);
+          broken.add(`${relative(process.cwd(), file)}: ${entry} holds a regional name`);
       }
       continue;
     }
     if (/\.(png|jpe?g|webp|ico|woff2?|gif)$/.test(file)) continue;
     count++;
     if (words.test(readFileSync(file, "utf8")))
-      broken.add(`${relative(process.cwd(), file)} names New Zealand`);
+      broken.add(`${relative(process.cwd(), file)} holds a regional name`);
   }
   return count;
 }
