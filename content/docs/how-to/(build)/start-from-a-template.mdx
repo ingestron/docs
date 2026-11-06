@@ -20,7 +20,6 @@ Either way, the result is ordinary definitions you edit, then plan and apply.
   steps={[
     { title: "Connection", detail: "Source and reachability" },
     { title: "Route", detail: "Supported platforms" },
-    { title: "Standard", detail: "Defaults and fixed policy" },
     { title: "README.md", detail: "Write each REPLACE_ME, then Plan" },
   ]}
 />
@@ -171,7 +170,14 @@ A name the project does not have is refused, with the names it has. Until
 every value is written, `ingestron plan` and `apply` warn about each, with
 [`REPLACE_ME`](/docs/reference/errors#REPLACE_ME), and still write the files;
 `ingestron check` fails, so nothing with a `REPLACE_ME` passes CI, and
-`ingestron request` lists them first.
+`ingestron request` lists them first. `plan` counts each place a value is
+written, where `init` counts names, so a value such as the storage account,
+written for `dev` and for `prod`, counts once for `init` and twice for `plan`.
+For the project above, plan ends:
+
+```text
+9 values are still REPLACE_ME; ingestron check fails until each is written.
+```
 
 Then make the rest yours:
 
