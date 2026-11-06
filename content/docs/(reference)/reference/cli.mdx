@@ -44,11 +44,11 @@ as `databricks → build/databricks (dev, prod)`; see
 
 ## Exit codes
 
-| Code | Means                                                                                                                          |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `0`  | Success. Warnings, such as a pack's notice, do not change it.                                                                  |
-| `1`  | Problems in the definitions, or output that is not up to date or in conflict.                                                  |
-| `2`  | A mistake in the command, such as an unknown option or `--env` given to `plan`, or a pack that cannot be loaded (`PACK_LOAD`). |
+| Code | Means                                                                                                                           |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `0`  | Success. Warnings, such as a pack's notice, do not change it.                                                                   |
+| `1`  | Problems in the definitions, or output that is not up to date or in conflict. `check` also fails while a value is `REPLACE_ME`. |
+| `2`  | A mistake in the command, such as an unknown option or `--env` given to `plan`, or a pack that cannot be loaded (`PACK_LOAD`).  |
 
 ## Editor schemas
 
@@ -61,7 +61,7 @@ as `databricks → build/databricks (dev, prod)`; see
 The CLI package is also a library: `run` takes the same arguments as the
 command, `generatedOutputs` gives every output folder's files as `plan` would
 write them, and `projectSources`, `projectRoutes` and `projectRecipe` return
-the sources, routes and questions that `init` and **Ingestron: New project**
+the sources, routes and recipes that `init` and **Ingestron: New project**
 offer.
 The
 [`@ingestron/cli` README](https://github.com/ingestron/ingestron/tree/main/packages/cli#project-builder-api)

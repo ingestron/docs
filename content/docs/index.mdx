@@ -82,10 +82,11 @@ with each column cast to the type its contract gives.
 
 <Example name="duckdb" file="build/duckdb/dev/tables/silver.customer_totals.sql" />
 
-The Databricks pack writes the `minimal` example project's orders table as a streaming
-table in a Databricks pipeline, typed and checked from its contract:
+The Databricks pack writes the `quality` example's readings table as a
+streaming table in a Databricks pipeline, typed from its contract and checked
+by the rules its flow and the standard set:
 
-<Example name="minimal" file="build/databricks/src/shop/bronze/orders.sql" />
+<Example name="quality" file="build/databricks/src/iot/bronze/readings.sql" />
 
 The bundle around it is YAML, Azure Data Factory gets pipeline JSON, and
 Synapse gets view SQL. [How Ingestron works](/docs/start/how-it-works) follows
