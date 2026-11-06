@@ -1,12 +1,16 @@
 apiVersion: ingestron.io/v1
 kind: Platform
-id: native
+id: sales
 settings:
   adf-table:
-    landing: ${values.landing}
-    key_vault: ${values.key_vault}
-    integration_runtime: ${values.integration_runtime}
+    # Landing folder: the landing container of each environment's storage account
+    landing: abfss://landing@${values.storage_account}.dfs.core.windows.net/sales
+    key_vault: https://${values.key_vault}.vault.azure.net
+    # Name of the integration runtime that reaches the source
+    integration_runtime: synthetic-self-hosted-runtime
     resource_names:
       key_vault_linked_service: ls_${project.id}_secrets
       landing_linked_service: ls_${project.id}_lake
       landing_dataset: ds_${project.id}_parquet
+# Databricks refreshes hourly, at half past, to read the files Data Factory lands
+schedule: {cron: 0 30 * * * ?, timezone: UTC}

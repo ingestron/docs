@@ -3,7 +3,7 @@ kind: Flow
 id: postgresql
 source: postgresql
 ingest:
-  uses: adf-table
+  uses: adf-table # the route's ingest method; a table may choose another
   with:
     resource_names:
       pipeline: pl_${values.resource_prefix}_orders
@@ -11,5 +11,6 @@ ingest:
       copy_activity: copy_orders
 tables:
   postgresql_records:
-    object: ${values.postgresql_records_object}
+    # The source object: schema.table
+    object: sales.orders
     contract: records

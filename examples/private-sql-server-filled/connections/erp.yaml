@@ -1,0 +1,13 @@
+apiVersion: ingestron.io/v1
+kind: Connection
+id: erp
+description: The ERP's SQL Server, inside the corporate network only.
+connector: sqlserver
+connectivity: private
+settings:
+  # The host name the integration runtime reaches
+  server: erp-sql01.corp.example
+  # The login that reads the tables
+  user: ingest_reader
+  # Key Vault secret: the login's password
+  password: ${secret:erp-erp-password}

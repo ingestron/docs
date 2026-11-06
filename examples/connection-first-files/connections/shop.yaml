@@ -2,6 +2,7 @@ apiVersion: ingestron.io/v1
 kind: Connection
 id: shop
 connector: files
-connectivity: public
+connectivity: public # reached over the internet
 settings:
-  path: ${values.source_path}
+  # Where the files land, such as /Volumes/main/landing/shop
+  path: ${values.landing}
