@@ -89,8 +89,19 @@ ingestron init erp --template private-sql-server --yes
 cd erp
 ```
 
-For your own source, name its connector and the route instead, such as
-`ingestron init sales --connector postgresql --connectivity private --via adf-databricks`.
+Or, from the same parent folder, give each value as you create the project,
+with a `--set` for each, and for one environment `--set <environment>.<name>`.
+The files on this page come from this command, with synthetic values:
+
+```sh
+ingestron init erp --template private-sql-server --yes \
+  --set source_server=erp-sql01.corp.example --set source_user=ingest_reader \
+  --set customers_object=erp.dbo.Customers --set invoices_object=erp.dbo.Invoices \
+  --set dev.storage_account=erplakedev --set prod.storage_account=erplakeprod \
+  --set dev.key_vault=kv-erp-dev --set prod.key_vault=kv-erp-prod \
+  --set integration_runtime=shir-erp
+cd erp
+```
 
 </Tool>
 <Tool name="VS Code">
@@ -102,23 +113,15 @@ supports only one route, it is selected for you.
 </Tool>
 </ToolSteps>
 
-The [connector catalogue](/docs/connectors) lists every source and the routes
-it supports. The starter leaves what Ingestron cannot know as `REPLACE_ME`:
-the ERP's server, login and tables, each environment's storage account and Key
-Vault, and the integration runtime. `init` ends with
+Without `--set`, the starter leaves what Ingestron cannot know as
+`REPLACE_ME`: the ERP's server, login and tables, each environment's storage
+account and Key Vault, and the integration runtime. `init` then ends with
 `7 values are still REPLACE_ME: README.md lists each one and where to find it.`,
-and `README.md` lists them, with the Key Vault secret to create. Write each in
-place, or give them with `--set` as you create the project. The files on this
-page come from this command, with synthetic values:
-
-```sh
-ingestron init erp --template private-sql-server --yes \
-  --set source_server=erp-sql01.corp.example --set source_user=ingest_reader \
-  --set customers_object=erp.dbo.Customers --set invoices_object=erp.dbo.Invoices \
-  --set dev.storage_account=erplakedev --set prod.storage_account=erplakeprod \
-  --set dev.key_vault=kv-erp-dev --set prod.key_vault=kv-erp-prod \
-  --set integration_runtime=shir-erp
-```
+and `README.md` lists them, with the Key Vault secret to create. For your own
+source, name its connector and the route instead, such as
+`ingestron init sales --connector postgresql --connectivity private --via adf-databricks --yes`;
+the [connector catalogue](/docs/connectors) lists every source and the routes
+it supports. The project with the values written is also a download:
 
 <ExampleDownload name="private-sql-server-filled" />
 To compare sources, <ExampleDownload name="adf-native-connectors" /> holds a connection for every
@@ -137,7 +140,8 @@ privately with its password in Key Vault:
 
 <Example name="private-sql-server-filled" file="flows/erp.yaml" />
 
-Then generate both environments:
+Then generate both environments. For the project created with `--set`, plan
+prints:
 
 ```sh
 ingestron plan --no-diff
@@ -172,10 +176,15 @@ create    parameters/prod.json
 11 files: 11 create. Ready to apply.
 ```
 
-The warning is a notice, not a problem: the files are still written, as they
-are while a value is still `REPLACE_ME`. It
+The warning is a notice, not a problem: the files are still written. It
 appears on every plan, apply and check while the factory uses a runtime, as
-[Runtime and Key Vault](#runtime-and-key-vault) explains. Run
+[Runtime and Key Vault](#runtime-and-key-vault) explains.
+
+For the project created without `--set`, plan also warns about each value
+still `REPLACE_ME`, and ends
+`9 values are still REPLACE_ME; ingestron check fails until each is written.`:
+it counts each place a value is written, where `init` counts names. The files
+are still written, and `ingestron check` fails until each is written. Run
 `ingestron apply` to write the files.
 
 ## Settings that shape it [#settings]

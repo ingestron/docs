@@ -92,23 +92,9 @@ ingestron init retail --template retail --yes
 cd retail
 ```
 
-</Tool>
-<Tool name="VS Code">
-
-Run **Ingestron: New project**, choose **From a starter**, then the retail
-starter, then a folder named `retail`.
-
-</Tool>
-</ToolSteps>
-
-The starter leaves what Ingestron cannot know as `REPLACE_ME`: each
-environment's workspace and storage account, who the pipelines run as, who
-manages and views them, and where failures are mailed. `init` ends with
-`6 values are still REPLACE_ME: README.md lists each one and where to find it.`,
-and `README.md` lists them. Write each in `project.yaml`, or give them as you
-create the project, with `--set` and, for one environment,
-`--set <environment>.<name>`. The files on this page come from this command,
-with synthetic values:
+Or, from the same parent folder, give each value as you create the project,
+with a `--set` for each, and for one environment `--set <environment>.<name>`.
+The files on this page come from this command, with synthetic values:
 
 ```sh
 ingestron init retail --template retail --yes \
@@ -118,7 +104,25 @@ ingestron init retail --template retail --yes \
   --set run_as=7f3c2a10-0000-4000-8000-000000000001 \
   --set engineers=sales-engineers --set analysts=sales-analysts \
   --set on_failure=sales-data@example.com
+cd retail
 ```
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: New project**, choose **From a starter**, then the retail
+starter, then a folder named `retail`.
+
+</Tool>
+</ToolSteps>
+
+Without `--set`, the starter leaves what Ingestron cannot know as
+`REPLACE_ME`: each environment's workspace and storage account, who the
+pipelines run as, who manages and views them, and where failures are mailed.
+`init` then ends with
+`6 values are still REPLACE_ME: README.md lists each one and where to find it.`,
+and `README.md` lists them, to write in `project.yaml`. The project with the
+values written is also a download:
 
 <ExampleDownload name="retail-filled" />
 
@@ -143,7 +147,8 @@ The flow reads `orders` as change records, kept current by key, and
 
 <Example name="retail-filled" file="flows/shop.yaml" />
 
-Then generate both environments:
+Then generate both environments. For the project created with `--set`, plan
+prints:
 
 ```sh
 ingestron plan --no-diff
@@ -161,11 +166,14 @@ create    src/retail/silver/daily_sales.sql
 6 files: 6 create. Ready to apply.
 ```
 
-Run `ingestron apply` to write them. If plan reports a problem instead, each
-one names its file, line and fix; see
-[Troubleshooting](/docs/troubleshooting#databricks). A value still
-`REPLACE_ME` is a warning: plan and apply still write the files, and
-`ingestron check` fails until it is written.
+For the project created without `--set`, plan first warns about each value
+still `REPLACE_ME`, then lists the same files, and ends
+`8 values are still REPLACE_ME; ingestron check fails until each is written.`:
+it counts each place a value is written, where `init` counts names. Plan and
+apply still write the files, and `ingestron check` fails until each is
+written. Run `ingestron apply` to write them. If plan reports a problem
+instead, each one names its file, line and fix; see
+[Troubleshooting](/docs/troubleshooting#databricks).
 
 ## Settings that shape it [#settings]
 
