@@ -249,7 +249,7 @@ describe("the platform request", () => {
 
   it("fails for a section the request does not have, naming those it has", () => {
     expect(() => requestSections("minimal", "dev", ["DuckDB job"])).toThrow(
-      'Example "minimal": the request for dev has no section "DuckDB job". It has: Must exist before deploying, Schedules.',
+      'Example "minimal": the request for dev has no section "DuckDB job". It has: Values to replace, Must exist before deploying, Schedules.',
     );
     expect(() => Request({ name: "minimal", sections: [] })).toThrow(/name a section/);
   });
