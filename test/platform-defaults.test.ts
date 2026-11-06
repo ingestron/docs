@@ -38,9 +38,11 @@ describe("platform defaults", () => {
     expect(html).toContain(
       '<a href="/docs/reference/documents#platform-mode"><code>mode</code></a>',
     );
-    expect(html).toContain("production for every environment except dev");
     expect(html).toContain(
-      "<td>running in prod or production, or where mode is set to production; otherwise paused</td>",
+      "development in an environment named dev, and production in every other, test and default included",
+    );
+    expect(html).toContain(
+      "<td>running in an environment named prod or production, and where the platform sets mode: production itself; paused everywhere else, test included, though its mode is production by default</td>",
     );
     // Only fields whose description states a default: the pack also reads run_as, which has none.
     expect(databricks.platformFields).toContain("run_as");
@@ -93,7 +95,7 @@ describe("platform defaults", () => {
       "compute.serverless": "true",
       "schedule.timezone": "UTC",
       "schedule.paused":
-        "running in prod or production, or where mode is set to production; otherwise paused",
+        "running in an environment named prod or production, and where the platform sets mode: production itself; paused everywhere else, test included, though its mode is production by default",
       "manage.tags": "false",
     });
   });
