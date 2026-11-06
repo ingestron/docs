@@ -157,7 +157,10 @@ describe("how-to/configure-a-standard", () => {
     expect(created.code, created.output).toBe(0);
     const name = init.split(" ")[2]!;
     const copied = readFileSync(join(cwd, name, "standard.yaml"), "utf8");
-    expect(copied).toBe(`# From ${path}\n${standard}`);
+    // The standard, after a first line naming where it came from; init writes it back as
+    // YAML, so only its formatting may differ.
+    expect(copied.split("\n")[0]).toBe(`# From ${path}`);
+    expect(parse(copied)).toEqual(parse(standard));
     expect(start).toContain(`\`${name}/standard.yaml\` starts with \`# From ${path}\``);
   });
 });
