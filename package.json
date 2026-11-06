@@ -23,11 +23,11 @@
     "sync:vscode": "node scripts/sync-vscode-commands.mjs"
   },
   "dependencies": {
-    "@ingestron/authoring": "^2.0.0",
-    "@ingestron/cli": "^2.0.0",
-    "@ingestron/definitions": "^1.10.0",
-    "@ingestron/pack-adf": "^2.0.0",
-    "@ingestron/pack-databricks": "^2.0.0",
+    "@ingestron/authoring": "^2.1.0",
+    "@ingestron/cli": "^2.1.0",
+    "@ingestron/definitions": "^1.11.0",
+    "@ingestron/pack-adf": "^2.1.0",
+    "@ingestron/pack-databricks": "^2.1.0",
     "@ingestron/pack-duckdb": "^2.0.0",
     "@ingestron/pack-synapse": "^2.0.0",
     "fflate": "0.8.2",

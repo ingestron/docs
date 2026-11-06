@@ -312,14 +312,13 @@ describe("how-to/upgrade", () => {
   });
 
   it("pins the exact bundle these pages describe, as the templates install it", () => {
-    // The first ingestron 2.x bundle published. When the docs move to @ingestron/cli
-    // 2.1 (Task 6b), this becomes the installed cli's version.
+    // The ingestron bundle these pages describe: the installed cli's version.
     const bundle = "2.1.0";
     const choose = section(page, "## Choose the version you run");
     const version = JSON.parse(
       readFileSync(join(process.cwd(), "node_modules/@ingestron/cli/package.json"), "utf8"),
     ).version as string;
-    expect(bundle.split(".")[0]).toBe(version.split(".")[0]);
+    expect(bundle).toBe(version);
     expect(commands(choose)).toEqual([`npm install -g ingestron@${bundle}`]);
     for (const file of [
       "github-actions/ingestron-check.yml",
