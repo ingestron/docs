@@ -135,12 +135,12 @@ export function routeRow(id: string): RouteRow {
   return row;
 }
 
-/** The command that creates a project from a connector on one route; `init` asks for the rest. */
+/** The command that creates a project from a connector on one route; `init` asks only how the source is reached. */
 export function connectorCommand(connector: string, via: string): string {
   return `ingestron init sales --connector ${connector} --via ${via}`;
 }
 
-/** The command that creates a project from a built-in starter; `init` asks the starter's questions. */
+/** The command that creates a project from a built-in starter; `init` asks nothing more. */
 export function starterCommand(template: string): string {
   return `ingestron init ${template === starter ? "shop" : "sales"} --template ${template}`;
 }
