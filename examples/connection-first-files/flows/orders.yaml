@@ -4,7 +4,8 @@ id: orders
 source: shop
 tables:
   orders:
-    object: ${values.orders_object}
+    # The source object: a folder under the connection's path
+    object: REPLACE_ME
     contract: shop.orders
 ingest:
-  uses: files
+  uses: files # the route's ingest method; a table may choose another

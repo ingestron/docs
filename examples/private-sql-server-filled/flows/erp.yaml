@@ -1,0 +1,17 @@
+apiVersion: ingestron.io/v1
+kind: Flow
+id: erp
+source: erp
+tables:
+  customers:
+    # The source table: its database and schema, database.schema.Customers
+    object: erp.dbo.Customers
+    contract: erp.customers
+  invoices:
+    # The source table: its database and schema, database.schema.Invoices
+    object: erp.dbo.Invoices
+    contract: erp.invoices
+    ingest:
+      with: {watermark_column: updated_at}
+    store:
+      with: {sequence_by: updated_at}

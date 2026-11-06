@@ -1,0 +1,14 @@
+apiVersion: ingestron.io/v1
+kind: Platform
+id: lakehouse
+schedule:
+  cron: 0 15 * * * ? # Quartz cron: the refresh job runs at a quarter past every hour
+  timezone: UTC # the time zone the cron is read in
+settings:
+  adf-copy:
+    # shared infrastructure, referenced by name
+    # Landing folder: the landing container of each environment's storage account
+    landing: abfss://landing@${values.storage_account}.dfs.core.windows.net/erp
+    key_vault: https://${values.key_vault}.vault.azure.net
+    # The self-hosted integration runtime in the data factory that reaches the source
+    integration_runtime: shir-erp

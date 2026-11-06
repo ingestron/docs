@@ -1,5 +1,4 @@
 apiVersion: ingestron.io/v1
 kind: Standard
-id: defaults
-packs:
-  - databricks@2
+id: shop
+packs: [databricks@2] # Databricks reads, names and stores the tables

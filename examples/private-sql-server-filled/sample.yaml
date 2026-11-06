@@ -1,0 +1,4 @@
+# A guide: a small project that shows one idea; the docs embed it.
+title: Private SQL Server, with its values written
+summary: The private-sql-server starter after init --set wrote each value it left as REPLACE_ME, so its factory and bundle deploy to dev and prod.
+order: 15

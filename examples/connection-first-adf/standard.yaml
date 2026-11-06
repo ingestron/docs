@@ -1,21 +1,16 @@
 apiVersion: ingestron.io/v1
 kind: Standard
-id: native
-packs:
-  - databricks@2
-  - adf@2
+id: sales
+packs: [databricks@2, adf@2] # Databricks names and stores the tables; ADF only copies them
 ingest:
   settings:
     adf-table:
-      start: 2026-10-01T00:00:00Z
-      every:
-        frequency: Hour
-        interval: 24
+      # Start of the first window (UTC): midnight on the day this project was created
+      start: 2026-11-06T00:00:00Z
+      # Window size: one window every 24 hours
+      every: {frequency: Hour, interval: 24}
   allowed:
     - adf-table
-naming:
-  catalog: sales_{{ environment }}
-  schema: "{{ layer }}"
 store:
   allowed:
     - streaming-table

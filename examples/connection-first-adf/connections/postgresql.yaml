@@ -2,9 +2,13 @@ apiVersion: ingestron.io/v1
 kind: Connection
 id: postgresql
 connector: postgresql
-connectivity: private
+connectivity: private # reached only through a self-hosted integration runtime or a private network
 settings:
-  server: ${values.source_server}
-  database: ${values.source_database}
-  user: ${values.source_user}
-  password: ${values.source_password}
+  # Database host name or endpoint as reached by the runtime
+  server: source.example.test
+  # Database to read
+  database: sales
+  # Account used to read the source
+  user: reader
+  # Key Vault secret holding the account password
+  password: ${secret:sales-postgresql-password}
