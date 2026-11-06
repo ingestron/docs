@@ -55,9 +55,8 @@ test("every YAML template parses, and the folder holds no other kind of file", (
 });
 
 /**
- * The ingestron bundle the templates install: an exact version. It is the
- * first 2.x bundle published; when the docs move to @ingestron/cli 2.1, the
- * docs test that binds the upgrade page ties the two together.
+ * The ingestron bundle the templates install: an exact version, the one the
+ * docs build with (test/standards-and-teams.test.ts checks the cli's version).
  */
 const bundle = "2.1.0";
 
