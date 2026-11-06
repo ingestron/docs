@@ -180,7 +180,7 @@ describe("how-to/share-a-template", () => {
       .replace(standard![1]!, platformRepo)
       .split(" ")
       .slice(1);
-    // The page's command as written: it asks the template's questions, each answered with Enter.
+    // The page's command as written: init asks nothing.
     const asked: string[] = [];
     let output = "";
     const code = run(args, {
@@ -190,16 +190,19 @@ describe("how-to/share-a-template", () => {
     });
     const created = { code, output };
     expect(created.code, created.output).toBe(0);
-    expect(asked.length, "init asks the reader").toBeGreaterThan(0);
-    expect(
-      asked.some((question) => question.startsWith("Standard")),
-      "--standard answers it",
-    ).toBe(false);
+    expect(asked, "init asks nothing").toEqual([]);
+    // The template's value is still REPLACE_ME, and init says so.
+    expect(created.output).toContain(
+      "1 value is still REPLACE_ME: README.md lists each one and where to find it.",
+    );
     const name = args[1]!;
     const copied = readFileSync(join(local, name, "standard.yaml"), "utf8");
     expect(copied.split("\n")[0]).toBe(`# From ${platformRepo}#${standard![2]!}`);
-    expect(copied).toContain(
-      readFileSync(join(exampleFolder("standards-and-conventions"), "standard.yaml"), "utf8"),
+    // The same standard: init writes it back as YAML, so only its formatting may differ.
+    expect(parse(copied)).toEqual(
+      parse(
+        readFileSync(join(exampleFolder("standards-and-conventions"), "standard.yaml"), "utf8"),
+      ),
     );
     // The template came along: its flow, under the standard's names.
     expect(created.output).toContain(`src/${name}/raw/orders.sql`);

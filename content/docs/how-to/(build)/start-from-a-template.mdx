@@ -21,7 +21,7 @@ Either way, the result is ordinary definitions you edit, then plan and apply.
     { title: "Connection", detail: "Source and reachability" },
     { title: "Route", detail: "Supported platforms" },
     { title: "Standard", detail: "Defaults and fixed policy" },
-    { title: "Definitions", detail: "Configure, then Plan" },
+    { title: "README.md", detail: "Write each REPLACE_ME, then Plan" },
   ]}
 />
 
@@ -45,48 +45,50 @@ ingestron init sales
 ```
 
 Choose the source category, connector, network reachability and route.
-When only one route is supported, Ingestron selects it. Then enter the
-project name, environments, standard and connection settings. Press Enter
-to accept the default shown beside a question.
+When only one route is supported, Ingestron selects it. Nothing else is asked:
+the project's id is the folder's name, its environments are `dev` and `prod`,
+and its standard is the route's own.
 
-To select the connection and route with flags (`--via` is `databricks`, `adf-databricks`,
+To choose them with flags (`--via` is `databricks`, `adf-databricks`,
 `adf-synapse`, `adf-duckdb` or `adf-landing`; see
-[Choose where your data goes](/docs/start/choose-a-route)):
+[Choose where your data goes](/docs/start/choose-a-route)), as a script would:
 
 ```sh
-ingestron init sales --connector postgresql --connectivity private --via adf-databricks \
-  --env dev --env prod --yes
+ingestron init sales --connector postgresql --connectivity private --via adf-databricks --yes
 ```
 
-This creates a project using example settings and shows its generation
-plan. `--yes` accepts defaults for unanswered questions. Without a terminal
-or `--yes`, a missing answer produces an error naming the flag to pass.
-
-Use `--standard ../platform/standard.yaml` to choose your organisation's
-standard. Use `--set source_server=postgres.example.invalid` to answer a
-configuration question by its value key. The keys for the connection and
-route you chose are under `values` in the new `project.yaml`; an unknown key
-is rejected with the keys you can use.
+`--yes` takes the default of each choice not given as a flag. `--env` gives
+other environments, `--name` another id, and
+`--standard ../platform/standard.yaml` your organisation's standard.
 
 </Tool>
 <Tool name="VS Code">
 
 Run **Ingestron: New project** from the Command Palette and choose **From a
-connection**. Choose a category,
-or **All sources**, then type to search connectors. Choose source
-reachability and a supported ingestion route, then answer the project,
-standard and configuration questions. The destination folder comes last.
-Cancelling a question creates no files.
+connection**. Choose a category, or **All sources**, then type to search
+connectors. Choose source reachability and a supported ingestion route, then
+the folder to create the project in: its name becomes the project's id.
+Cancelling a choice creates no files.
 
-The new `project.yaml` opens when creation succeeds. The generation plan
-appears in the Ingestron output panel.
+The new `README.md` opens in a preview, and a message says how many values
+are still to write. The generation plan appears in the Ingestron output
+panel.
 
 </Tool>
 </ToolSteps>
 
-The questions ask for the connection's text values, such as its server, and
-for the source objects and the platform's infrastructure. Nested settings, alternative authentication modes, schedules and
-resource names stay editable in YAML; see [Make it yours](#make-it-yours).
+<Screenshot
+  light="/images/vscode/new-project-light.png"
+  dark="/images/vscode/new-project-dark.png"
+  alt="The New project picker asks How do you want to start? and offers From a connection, to choose a source, how it is reached and a supported route, and From a starter, a ready-made project to try, such as DuckDB on a laptop."
+  caption="New project's first question: from a connection or from a starter. The folder comes last."
+/>
+
+The project holds the connection, its example flows and contracts, and the
+platform settings the route needs. What Ingestron cannot know, such as the
+source's server, the tables to copy, the storage account or the integration
+runtime, is written as `REPLACE_ME`, with a comment above it saying what it
+is; see [Write the values it cannot know](#write-the-values).
 
 ## Start from a starter [#start-from-a-starter]
 
@@ -107,16 +109,14 @@ ingestron init sales --template https://github.com/acme/data-templates.git#lakeh
 
 `--template` cannot be combined with `--connector`, `--connectivity` or
 `--via`. After `#` comes the folder inside the repository. Git uses your
-own credentials. `--standard` and `--set` work as they do from a connection.
+own credentials. The environments are the starter's own; `--env`,
+`--standard` and `--set` work as they do from a connection.
 
 </Tool>
 <Tool name="VS Code">
 
 Run **Ingestron: New project** and choose **From a starter**, then the
-starter. Enter the project name and environments, then a path or Git URL for
-your organisation's standard, or leave it empty to keep the starter's own.
-Then answer the starter's own questions, if it has any. The destination folder
-comes last.
+starter, then the folder to create it in.
 
 </Tool>
 </ToolSteps>
@@ -142,34 +142,61 @@ Creation validates every environment before writing files. See
 [Set your organisation's standard](/docs/how-to/configure-a-standard) for
 allowed methods, settings ownership and fixed policies.
 
-## Make it yours
+## Write the values it cannot know [#write-the-values]
 
-A new project, or an example you downloaded, holds synthetic values. Before
-you deploy:
+<OldAnchor id="make-it-yours" />
 
-1. Replace the example hosts, accounts, objects and platform paths with yours.
-   Answers to the creation questions are `values` in `project.yaml`, which the
-   definition files read with `${values.…}`.
-2. Keep secrets out of the YAML. Secret questions take `${secret:name}`
-   references, not credentials. For ADF connections these name Key Vault
-   secrets; follow the selected connector's requirements for its secret
-   mechanism. See [YAML references and placeholders](/docs/concepts/yaml-references)
-   for values, files and secrets.
-3. Set the source objects in the flows, and adapt each contract to the columns
-   and keys of its object. See [Describe a table with a contract](/docs/how-to/write-a-contract),
-   and the **Read with …** section of the connector's page for its reading
-   options.
-4. Check the environments, platform and standard. Use the connector reference
+`init` writes `README.md`, which lists each value still `REPLACE_ME`, with its
+file and line, what it is, where to find it and the environments it is for,
+then the Key Vault secrets to create, how to deploy each output folder, and
+how to ask the platform team. It is yours: Ingestron never writes it again.
+`init` ends by saying how many there are, such as:
+
+```text
+7 values are still REPLACE_ME: README.md lists each one and where to find it.
+```
+
+Write each value in place, where the comment above it says. A value that
+differs between environments, such as the storage account, is already under
+`environments.<name>.values` in `project.yaml`. Or give the values when you
+create the project, each by the name README.md shows, with `--set`, and
+`--set <environment>.<name>` for one environment:
+
+```sh
+ingestron init sales --connector postgresql --connectivity private --via adf-databricks --yes \
+  --set source_server=pg.example.invalid --set prod.storage_account=salesprod
+```
+
+A name the project does not have is refused, with the names it has. Until
+every value is written, `ingestron plan` and `apply` warn about each, with
+[`REPLACE_ME`](/docs/reference/errors#REPLACE_ME), and still write the files;
+`ingestron check` fails, so nothing with a `REPLACE_ME` passes CI, and
+`ingestron request` lists them first.
+
+Then make the rest yours:
+
+1. Keep secrets out of the YAML. A connection's password is already a
+   `${secret:name}` reference, such as `${secret:sales-postgresql-password}`;
+   create the secret in Key Vault under that name, as README.md says. See
+   [YAML references and placeholders](/docs/concepts/yaml-references).
+2. Adapt each contract to the columns and keys of its object; the tables and
+   contracts README.md names are examples. See
+   [Describe a table with a contract](/docs/how-to/write-a-contract), and the
+   **Read with …** section of the connector's page for its reading options.
+3. Check the environments, platform and standard. Use the connector reference
    and [Azure Data Factory](/docs/platforms/adf) for ADF infrastructure, and
    [ADF resource names](/docs/how-to/name-things-your-way#adf-resource-names)
    for name defaults and overrides.
-5. Arrange the source credentials and platform permissions the route needs.
+4. Arrange the source credentials and platform permissions the route needs.
    Local generation does not need them.
 
 `init` never replaces an existing file. If any target file already exists,
-it lists the clashes and writes nothing. The one exception is `.gitignore`:
-`init` adds the lines that keep `.env` files out of Git, where they are missing,
-and says so. See [Environment files](/docs/concepts/yaml-references#use-environment-files)
+it lists the clashes and writes nothing. Two files are exceptions. An existing
+`README.md` is kept, and `init` prints the values to replace instead. An
+existing `.gitignore` gains only the lines it lacks: those that keep `.env`
+files out of Git, and on a route through Data Factory, the folders
+Microsoft's build writes. See
+[Environment files](/docs/concepts/yaml-references#use-environment-files)
 for what those files are for.
 
 To grow the project later, see [Add a source and its tables](/docs/how-to/add-a-source).
@@ -177,9 +204,9 @@ To grow the project later, see [Add a source and its tables](/docs/how-to/add-a-
 ## Review and generate
 
 From the project folder, run `ingestron plan --no-diff`, or use
-**Ingestron: Plan** in VS Code, and select `dev`. A new project or an unchanged
-download has no generated files yet, so the plan lists every file as one to
-create. After reviewing the plan, run Apply to write the files; see
+**Ingestron: Plan** in VS Code. A new project or an unchanged download has no
+generated files yet, so the plan lists every file as one to create, after a
+warning for each value still `REPLACE_ME`. After reviewing the plan, run Apply to write the files; see
 [Plan, apply and review](/docs/how-to/plan-and-generate).
 
 Inspect the source objects, credential references, landing paths and

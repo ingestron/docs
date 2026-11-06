@@ -4,15 +4,15 @@ description: The built-in starters and how to create a project from one, the tem
 ---
 
 A template is a project folder with a `template.yaml`. `ingestron init` copies
-the folder into a new project and asks the questions the file lists. A starter
-is a template that ships with Ingestron: a complete project for one common
-situation. See [Share templates and standards](/docs/how-to/share-a-template)
+the folder into a new project, writes its `README.md`, and asks nothing. A
+starter is a template that ships with Ingestron: a complete project for one
+common situation, with `REPLACE_ME` where you write your own values. See [Share templates and standards](/docs/how-to/share-a-template)
 to make a template of your own.
 
 ## Create a project from a starter [#create-a-project-from-a-starter]
 
-In the CLI, name the starter with `--template`. Without `--yes`, `init` asks the
-starter's questions, which the table below lists:
+In the CLI, name the starter with `--template`. The new `README.md` lists each
+value still `REPLACE_ME`; `--set` writes them as the project is created:
 
 ```sh
 ingestron init my-project --template retail --yes
@@ -35,15 +35,18 @@ source instead of a starter, see
 | ----------- | -------- | ------------------------------------------------------------------------ |
 | `title`     | yes      | The template's human-readable title                                      |
 | `summary`   | yes      | One sentence on what the template sets up                                |
-| `questions` | no       | What `init` asks; each answer becomes `values.<value>` in `project.yaml` |
+| `questions` | no       | Values for `project.yaml`, each written to `values.<value>`; never asked |
 
 Each question:
 
 | Field     | Meaning                                                               |
 | --------- | --------------------------------------------------------------------- |
 | `value`   | The key in `project.yaml` `values`: lowercase letters, digits and `_` |
-| `ask`     | The question, as the user sees it                                     |
-| `default` | The answer used with `--yes` or an empty answer                       |
+| `ask`     | What the value is                                                     |
+| `default` | The value written, unless `--set <value>=<text>` gives another        |
+
+The built-in starters have no questions: they write `REPLACE_ME`, with a
+comment, where a value is yours to give.
 
 Any other field is an error, so a misspelt one is found at once. Your editor
 checks `template.yaml` too after `ingestron schemas`.
