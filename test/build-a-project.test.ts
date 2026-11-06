@@ -5,6 +5,7 @@
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { run } from "@ingestron/cli";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -270,4 +271,41 @@ it("keeps the old pages' anchors on the pages they merged into", () => {
   expect(read("how-to/start-from-a-template.mdx")).toContain(
     "## Start from a starter [#start-from-a-starter]",
   );
+});
+
+describe("how-to/start-from-a-template", () => {
+  const page = read("how-to/start-from-a-template.mdx");
+
+  it("creates a project from a connection asking nothing, and counts what is still REPLACE_ME", () => {
+    const flags = commands(section(page, "## Start from a connection")).find((line) =>
+      line.includes("--connector"),
+    )!;
+    const parent = mkdtempSync(join(tmpdir(), "docs-init-"));
+    const asked: string[] = [];
+    let output = "";
+    const code = run(flags.split(" ").slice(1), {
+      cwd: parent,
+      write: (text) => (output += text),
+      ask: (question) => (asked.push(question), ""),
+    });
+    expect(code, output).toBe(0);
+    expect(asked).toEqual([]);
+    const values = section(page, "## Write the values it cannot know [#write-the-values]");
+    expect(output.trimEnd().split("\n").at(-1)).toBe(fences(values, "text")[0]!.trim());
+    expect(readFileSync(join(parent, "sales", "README.md"), "utf8")).toContain(
+      "## Values to replace before deploying",
+    );
+    // The page's --set writes two of them, one for every environment and one for prod.
+    const set = commands(values).find((line) => line.includes("--set"))!;
+    const second = mkdtempSync(join(tmpdir(), "docs-init-"));
+    const written = cli(second, set.split(" ").slice(1));
+    expect(written.code, written.output).toBe(0);
+    expect(written.output.trimEnd().split("\n").at(-1)).toBe(
+      "6 values are still REPLACE_ME: README.md lists each one and where to find it.",
+    );
+    const project = readFileSync(join(second, "sales", "project.yaml"), "utf8");
+    expect(project).toContain("storage_account: salesprod");
+    expect(cli(join(second, "sales"), ["apply", "--no-diff"]).code).toBe(0);
+    expect(cli(join(second, "sales"), ["check"]).code).toBe(1);
+  });
 });

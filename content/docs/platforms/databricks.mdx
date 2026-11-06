@@ -17,33 +17,34 @@ files ADF lands on the `adf-databricks` route;
 
 ## What Ingestron writes [#what-you-get]
 
-For the `retail` starter, with `dev` and `prod` environments:
+For the `retail` starter, with `dev` and `prod` environments and its values
+written, as [Create it](#create-it) shows:
 
-<BuildTree name="retail" folder="build/databricks" />
+<BuildTree name="retail-filled" folder="build/databricks" />
 
 What differs between the environments is in one place, the targets of
 `databricks.yml`. Each target sets the workspace, the mode, the identity and
 permissions, and its value for each variable:
 
-<Example name="retail" file="build/databricks/databricks.yml" pick="targets" />
+<Example name="retail-filled" file="build/databricks/databricks.yml" pick="targets" />
 
 Each variable is declared once, with a description and no default, so a
 target cannot take another environment's value by mistake:
 
-<Example name="retail" file="build/databricks/databricks.yml" pick="variables" />
+<Example name="retail-filled" file="build/databricks/databricks.yml" pick="variables" />
 
 The pipeline reads the catalog from `${var.catalog}`, and passes the landing
 folder to its code as the configuration value `ingestron.shop_path`.
 Everything the same in every environment, such as the schema and the tags, is
 written as it is:
 
-<Example name="retail" file="build/databricks/resources/retail.pipeline.yml" />
+<Example name="retail-filled" file="build/databricks/resources/retail.pipeline.yml" />
 
 The table's SQL names tables with two parts, in the pipeline's catalog, and
 reads its files from `${ingestron.shop_path}`. Its expectations come from the
 contract, and `CLUSTER BY AUTO` from the standard's fixed setting:
 
-<Example name="retail" file="build/databricks/src/retail/bronze/customers.sql" />
+<Example name="retail-filled" file="build/databricks/src/retail/bronze/customers.sql" />
 
 A value only the deploying pipeline knows, written as `${envvar:NAME}`, is a
 variable that the targets leave unset; see
@@ -95,33 +96,52 @@ cd retail
 <Tool name="VS Code">
 
 Run **Ingestron: New project**, choose **From a starter**, then the retail
-starter. See [Create a project](/docs/how-to/start-from-a-template) for the
-remaining questions.
+starter, then a folder named `retail`.
 
 </Tool>
 </ToolSteps>
 
+The starter leaves what Ingestron cannot know as `REPLACE_ME`: each
+environment's workspace and storage account, who the pipelines run as, who
+manages and views them, and where failures are mailed. `init` ends with
+`6 values are still REPLACE_ME: README.md lists each one and where to find it.`,
+and `README.md` lists them. Write each in `project.yaml`, or give them as you
+create the project, with `--set` and, for one environment,
+`--set <environment>.<name>`. The files on this page come from this command,
+with synthetic values:
+
+```sh
+ingestron init retail --template retail --yes \
+  --set dev.host=https://adb-1111111111111111.1.azuredatabricks.net \
+  --set prod.host=https://adb-2222222222222222.2.azuredatabricks.net \
+  --set dev.storage_account=retaildev --set prod.storage_account=retailprod \
+  --set run_as=7f3c2a10-0000-4000-8000-000000000001 \
+  --set engineers=sales-engineers --set analysts=sales-analysts \
+  --set on_failure=sales-data@example.com
+```
+
+<ExampleDownload name="retail-filled" />
+
 To start from your own source instead, choose it from the
 [connector catalogue](/docs/connectors); its page lists the routes it
-supports. The files on this page come from the starter:
-
-<ExampleDownload name="retail" />
+supports.
 
 The standard names every catalog `<environment>_sales`, drops rows missing a
 required value, and clusters every streaming table automatically, which no
 project can change because it is `fixed`:
 
-<Example name="retail" file="standard.yaml" />
+<Example name="retail-filled" file="standard.yaml" />
 
 `dev` and `prod` use different workspaces and storage accounts. The rest of
-the definitions read these values, so nothing else changes between them:
+the definitions read these values, so nothing else changes between them;
+each comment says what its value is:
 
-<Example name="retail" file="project.yaml" />
+<Example name="retail-filled" file="project.yaml" />
 
 The flow reads `orders` as change records, kept current by key, and
 `customers` as CSV with a header:
 
-<Example name="retail" file="flows/shop.yaml" />
+<Example name="retail-filled" file="flows/shop.yaml" />
 
 Then generate both environments:
 
@@ -143,7 +163,9 @@ create    src/retail/silver/daily_sales.sql
 
 Run `ingestron apply` to write them. If plan reports a problem instead, each
 one names its file, line and fix; see
-[Troubleshooting](/docs/troubleshooting#databricks).
+[Troubleshooting](/docs/troubleshooting#databricks). A value still
+`REPLACE_ME` is a warning: plan and apply still write the files, and
+`ingestron check` fails until it is written.
 
 ## Settings that shape it [#settings]
 

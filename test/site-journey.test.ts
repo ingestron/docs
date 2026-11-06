@@ -139,7 +139,8 @@ it("merges the downloaded-example guide and moves the contract guide, keeping th
   const create = read("how-to/start-from-a-template.mdx");
   for (const text of [
     "### From a downloaded example",
-    "## Make it yours",
+    '<OldAnchor id="make-it-yours" />',
+    "## Write the values it cannot know",
     "without generated files",
   ])
     expect(create).toContain(text);
@@ -418,8 +419,9 @@ it("keeps the Databricks worked example: dev and prod, with its break in trouble
   const page = read("platforms/databricks.mdx");
   const create = section(page, "## Create it");
   for (const file of ["standard.yaml", "project.yaml", "flows/shop.yaml"])
-    expect(create).toContain(`<Example name="retail" file="${file}" />`);
+    expect(create).toContain(`<Example name="retail-filled" file="${file}" />`);
   expect(create).toContain("ingestron init retail --template retail");
+  expect(create).toContain("--set");
   expect(page).toContain('<OldAnchor id="work-through-the-retail-project" />');
   // The deliberate break lives with its symptom, not on the platform page.
   expect(page).not.toContain("DUPLICATE_TABLE");

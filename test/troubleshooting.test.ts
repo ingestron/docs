@@ -177,7 +177,7 @@ describe("generated files", () => {
   );
 
   it("names a folder that was not applied while the others were", () => {
-    const project = copy("private-sql-server");
+    const project = copy("private-sql-server-filled");
     cli(project, ["apply"]);
     appendFileSync(join(project, "build/databricks/databricks.yml"), "# my change\n");
     appendFileSync(join(project, "standard.yaml"), "layers: [raw, curated]\n");
@@ -423,9 +423,7 @@ describe("environment variables and .env", () => {
 describe("Azure Data Factory", () => {
   it("quotes a connection that lacks, or has too many, settings", () => {
     const project = copy("connection-first-adf");
-    edit(project, "connections/postgresql.yaml", (text) =>
-      text.replace("  server: ${values.source_server}\n", ""),
-    );
+    edit(project, "connections/postgresql.yaml", (text) => text.replace(/^  server: .*\n/m, ""));
     const { code, output } = cli(project, ["plan", "--no-diff"]);
     expect(code).toBe(1);
     quotes("A connection is missing a setting", output);
@@ -477,7 +475,7 @@ describe("Azure Data Factory", () => {
   }, 30_000);
 
   it("quotes the runtime notice that every plan and check prints, which does not fail them", () => {
-    const project = copy("private-sql-server");
+    const project = copy("private-sql-server-filled");
     const planned = cli(project, ["apply", "--no-diff"]);
     expect(planned.code).toBe(0);
     quotes("Every plan and check prints a notice about a runtime", planned.output);
