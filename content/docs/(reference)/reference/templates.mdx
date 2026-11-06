@@ -61,9 +61,13 @@ folder or Git URL can hold either name.
 
 ## Download a starter [#download-a-starter]
 
-Each download holds a starter's synthetic definitions, without generated
-files: run `ingestron apply` in its folder to write them. The platforms and
-connectors listed are read from the resolved starter.
+Each download is what `ingestron init <name> --template <name> --yes` writes:
+the starter's definitions, with `REPLACE_ME` where a value is yours to give,
+and the `README.md` that lists each one and where to find it, without
+generated files: run `ingestron apply` in its folder to write them; `plan`
+and `apply` warn about each `REPLACE_ME`, and `check` fails until each is
+written. The platforms and connectors listed are read from the resolved
+starter.
 
 <SamplesCatalogue kind="starter" />
 

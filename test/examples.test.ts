@@ -4,7 +4,13 @@ import { appendFileSync, cpSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { run } from "@ingestron/cli";
-import { exampleFiles, exampleFolder, listExamples, readExampleFile } from "../lib/examples.js";
+import {
+  downloadFolder,
+  exampleFiles,
+  exampleFolder,
+  listExamples,
+  readExampleFile,
+} from "../lib/examples.js";
 import { connectorExample, watermarkExample } from "../lib/connector-page.js";
 import { connectorEntries, connectorIds } from "../lib/reference.js";
 import { contentFile, contentFolder } from "../lib/content-files.js";
@@ -98,5 +104,24 @@ describe("examples", () => {
     let output = "";
     expect(run(command!.split(" "), { cwd, write: (text) => (output += text) })).toBe(1);
     expect(output).toBe(shown);
+  });
+});
+
+describe("a starter's download", () => {
+  it("is what init writes from it: README.md listing what to replace, .gitignore, no template.yaml", () => {
+    const files = exampleFiles("retail");
+    expect(files).toContain("README.md");
+    expect(files).toContain(".gitignore");
+    expect(files).not.toContain("template.yaml");
+    expect(files).not.toContain("gitignore");
+    const readme = readFileSync(join(downloadFolder("retail"), "README.md"), "utf8");
+    expect(readme).toContain("## Values to replace before deploying");
+    expect(readme).not.toContain("pnpm ingestron");
+    // The starter's own id, as its files on the pages have it.
+    expect(
+      readFileSync(join(downloadFolder("private-sql-server"), "project.yaml"), "utf8"),
+    ).toMatch(/^id: erp$/m);
+    // A guide's download is its committed files.
+    expect(downloadFolder("northwind")).toBe(exampleFolder("northwind"));
   });
 });
