@@ -298,8 +298,8 @@ The package READMEs describe each interface; these are the changes:
 
 ## Upgrade to 2.1 [#upgrade-to-2-1]
 
-2.1 changes no generated file. What changes is `init`, and what `check`
-finds:
+2.1 changes `init`, what `check` finds, and Hive connections on Azure Data
+Factory:
 
 - `init` asks only what picks the project: the starter, or the connector,
   connectivity and route. It writes `REPLACE_ME`, with a comment, for each
@@ -316,6 +316,15 @@ finds:
   given.
 - VS Code's **New project** asks no name, environments or standard, and
   opens the new `README.md`.
+- On Azure Data Factory, a [Hive](/docs/connectors/hive) connection's
+  `transport` now decides how it signs in. `Binary` connects anonymously: the
+  linked service is written with `authenticationType: Anonymous` and no user
+  or password, and a `Binary` connection that gives `user` or `password` is
+  refused. `SASL` and `HTTP` sign in with a user and password, and need both.
+  In a 2.0 project, on `Binary`, remove `user` and `password`, or set
+  `transport` to the one your server uses; on `SASL` or `HTTP`, give both,
+  with the password as a secret such as `${secret:hive-password}`. Then run
+  `ingestron plan` to see the linked service change.
 - For code that calls the packages: `@ingestron/definitions` 1.11 adds the
   `REPLACE_ME` code and the `replaceMe` resolve option, which `check` sets to
   `error`; the CLI's `Io` gains an optional `now()`, the day `init` writes;
