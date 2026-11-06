@@ -7,14 +7,16 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { run } from "@ingestron/cli";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
-import { readTemplateExtract, requestSections } from "../lib/examples.js";
+import { exampleFolder, readTemplateExtract, requestSections } from "../lib/examples.js";
 import {
   cli,
   command,
   commands,
   copy,
+  definitions,
   fences,
   merge,
   read,
@@ -25,14 +27,24 @@ import {
 describe("platforms/databricks", () => {
   const page = read("platforms/databricks.mdx");
 
-  it("creates the retail project and plans the bundle the page shows", () => {
+  it("creates the retail project, writes its values with --set, and plans the bundle the page shows", () => {
     const create = section(page, "## Create it");
-    const lines = commands(create);
-    expect(lines[1], "the page changes into the project").toMatch(/^cd /);
-    const parent = mkdtempSync(join(tmpdir(), "docs-databricks-retail-"));
-    expect(cli(parent, command(lines, "init")).code).toBe(0);
-    const cwd = join(parent, lines[1]!.slice("cd ".length));
-    const planned = cli(cwd, command(lines, "plan"));
+    const [bare, cd, filled, plan] = commands(create);
+    expect(cd).toBe("cd retail");
+    // The starter as init writes it: its values still REPLACE_ME, counted on init's last line.
+    const first = mkdtempSync(join(tmpdir(), "docs-databricks-retail-"));
+    const created = cli(first, bare!.split(" ").slice(1));
+    expect(created.code).toBe(0);
+    const last = created.output.trimEnd().split("\n").at(-1)!;
+    expect(create.replace(/\s+/g, " ")).toContain(`\`${last}\``);
+    // With --set for each, it is the sample the page shows, and plans without a warning.
+    const second = mkdtempSync(join(tmpdir(), "docs-databricks-retail-"));
+    const written = cli(second, filled!.split(" ").slice(1));
+    expect(written.code, written.output).toBe(0);
+    expect(written.output).toContain("Nothing to replace: the project runs as written.");
+    const cwd = join(second, "retail");
+    expect(definitions(cwd)).toEqual(definitions(exampleFolder("retail-filled")));
+    const planned = cli(cwd, plan!.split(" ").slice(1));
     expect(planned.code).toBe(0);
     expect(planned.output.trim()).toBe(fences(create, "text")[0]!.trim());
   });
@@ -47,26 +59,41 @@ describe("platforms/adf", () => {
     expect(written, "the request command, in the prose").not.toBeNull();
     // The page shows the request's last section, rendered from the starter.
     expect(requestUses(prerequisites)).toEqual([
-      { name: "private-sql-server", env: "prod", sections: ["ADF prerequisites"] },
+      { name: "private-sql-server-filled", env: "prod", sections: ["ADF prerequisites"] },
     ]);
-    const request = cli(copy("private-sql-server"), written![1]!.split(" ").slice(1));
+    const request = cli(copy("private-sql-server-filled"), written![1]!.split(" ").slice(1));
     expect(request.code).toBe(0);
     expect(
       request.output
         .trimEnd()
-        .endsWith(requestSections("private-sql-server", "prod", ["ADF prerequisites"])),
+        .endsWith(requestSections("private-sql-server-filled", "prod", ["ADF prerequisites"])),
       "the request ends with the section the page shows",
     ).toBe(true);
   });
 
-  it("creates the starter and plans the factory the page shows, after its notice", () => {
+  it("creates the starter, writes its values with --set, and plans the factory the page shows, after its notice", () => {
     const create = section(page, "## Create it");
-    const lines = commands(create);
-    expect(lines[1], "the page changes into the project").toMatch(/^cd /);
-    const parent = mkdtempSync(join(tmpdir(), "docs-adf-erp-"));
-    expect(cli(parent, command(lines, "init")).code).toBe(0);
-    const cwd = join(parent, lines[1]!.slice("cd ".length));
-    const planned = cli(cwd, command(lines, "plan"));
+    const [bare, cd, filled, plan] = commands(create);
+    expect(cd).toBe("cd erp");
+    const first = mkdtempSync(join(tmpdir(), "docs-adf-erp-"));
+    const created = cli(first, bare!.split(" ").slice(1));
+    expect(created.code).toBe(0);
+    const last = created.output.trimEnd().split("\n").at(-1)!;
+    expect(create.replace(/\s+/g, " ")).toContain(`\`${last}\``);
+    // With --set for each value, on the day the sample was made, it is the sample.
+    const second = mkdtempSync(join(tmpdir(), "docs-adf-erp-"));
+    const sample = exampleFolder("private-sql-server-filled");
+    const day = /start: (\S+)/.exec(readFileSync(join(sample, "standard.yaml"), "utf8"))![1]!;
+    let output = "";
+    const code = run(filled!.split(" ").slice(1), {
+      cwd: second,
+      write: (text) => (output += text),
+      now: () => new Date(day),
+    });
+    expect(code, output).toBe(0);
+    const cwd = join(second, "erp");
+    expect(definitions(cwd)).toEqual(definitions(sample));
+    const planned = cli(cwd, plan!.split(" ").slice(1));
     expect(planned.code).toBe(0);
     expect(planned.output.trim()).toBe(fences(create, "text")[0]!.trim());
     // The notice is a warning: check still passes once applied.
@@ -81,7 +108,7 @@ describe("platforms/adf", () => {
     );
     expect(retry).toContain("set `paused: true` under `settings.adf-copy` in the platform");
     const fragment = "settings:\n  adf-copy:\n    paused: true\n";
-    const cwd = copy("private-sql-server");
+    const cwd = copy("private-sql-server-filled");
     const method = Object.keys(parse(readFileSync(join(cwd, "platform.yaml"), "utf8")).settings);
     expect(method).toEqual(["adf-copy"]);
     const parameters = () =>

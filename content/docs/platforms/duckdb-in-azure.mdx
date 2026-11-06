@@ -93,12 +93,14 @@ cd sales
 <Tool name="VS Code">
 
 Run **Ingestron: New project**, choose **SQL Server** and the ADF route into
-DuckDB tables. See [Create a project](/docs/how-to/start-from-a-template) for
-the remaining questions.
+DuckDB tables, then the folder.
 
 </Tool>
 </ToolSteps>
 
+`init` writes `REPLACE_ME`, with a comment, for each value it cannot know,
+such as the server, the tables and the storage account, and `README.md` lists
+them; see [Write the values it cannot know](/docs/how-to/start-from-a-template#write-the-values).
 For another source, choose it from the [connector catalogue](/docs/connectors);
 its page lists the routes it supports. The files on this page come from a
 finished project, which also runs on a laptop:
