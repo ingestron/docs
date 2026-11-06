@@ -12,6 +12,6 @@ tables:
     object: erp.dbo.Invoices
     contract: erp.invoices
     ingest:
-      with: {watermark_column: updated_at}
+      with: { watermark_column: updated_at }
     store:
-      with: {sequence_by: updated_at}
+      with: { sequence_by: updated_at }
