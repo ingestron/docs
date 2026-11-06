@@ -403,23 +403,24 @@ workspace.
 **Ingestron: New project** starts from a connection or from a starter.
 
 - **From a connection** asks for a source category, connection, network
-  reachability and supported route, then the project name, environments,
-  standard and configuration. You can search across all sources or within a
-  category. See [Create a project](/docs/how-to/start-from-a-template).
+  reachability and supported route. You can search across all sources or
+  within a category.
 - **From a starter** offers the ready-made projects, such as **DuckDB on a
   laptop**, which [runs locally with DuckDB](/docs/platforms/duckdb).
-  It asks for the project name, environments, your organisation's standard if
-  you have one (otherwise the starter's own is kept), and the starter's own
-  questions.
 
-It asks for the destination folder last. When the folder is outside the
-workspace, it offers to open it or add it to the workspace.
+Nothing else is asked. The destination folder comes last, and its name is the
+project's id; the environments are `dev` and `prod`, or the starter's, and the
+standard is the route's or the starter's own. The new `README.md` opens in a
+preview, and a message says how many values are still `REPLACE_ME`: the
+README lists each with where to find it. When the folder is outside the
+workspace, the message offers to open it or add it to the workspace. See
+[Create a project](/docs/how-to/start-from-a-template).
 
 <Screenshot
   light="/images/vscode/new-project-light.png"
   dark="/images/vscode/new-project-dark.png"
   alt="The New project picker asks How do you want to start? and offers From a connection, to choose a source, how it is reached and a supported route, and From a starter, a ready-made project to try, such as DuckDB on a laptop."
-  caption="New project's first question: from a connection or from a starter."
+  caption="New project's first question: from a connection or from a starter. The folder comes last."
 />
 
 ## Check files with the YAML extension [#check-files-with-the-yaml-extension]

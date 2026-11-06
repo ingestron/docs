@@ -7,6 +7,9 @@ Every problem is reported with the file, line and column of the value that
 caused it, and Ingestron reports all problems in one run. A problem about the
 whole project, such as a pack's notice, is reported as `(project)`.
 
+A warning, such as a value still [`REPLACE_ME`](#REPLACE_ME), does not stop
+`plan` or `apply`; `check` reports a value still `REPLACE_ME` as an error.
+
 A pack that cannot be loaded stops every command before it reads the
 definitions: the command prints [`PACK_LOAD`](#PACK_LOAD) alone and exits with
 `2`, as it does for a usage mistake.
