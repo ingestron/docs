@@ -11,6 +11,6 @@ quality:
 store:
   settings:
     streaming-table:
-      properties: {delta.enableChangeDataFeed: "true"}
+      properties: { delta.enableChangeDataFeed: "true" }
   fixed:
-    streaming-table: {cluster_by: auto}
+    streaming-table: { cluster_by: auto }
