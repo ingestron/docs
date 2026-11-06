@@ -27,17 +27,20 @@ import {
 describe("platforms/databricks", () => {
   const page = read("platforms/databricks.mdx");
 
-  it("creates the retail project, writes its values with --set, and plans the bundle the page shows", () => {
+  it("creates the retail project, or the same with --set, from one parent folder, and plans each as the page says", () => {
     const create = section(page, "## Create it");
-    const [bare, cd, filled, plan] = commands(create);
-    expect(cd).toBe("cd retail");
-    // The starter as init writes it: its values still REPLACE_ME, counted on init's last line.
+    const prose = create.replace(/\s+/g, " ");
+    const [bare, cd, filled, cdAgain, plan] = commands(create);
+    expect([cd, cdAgain]).toEqual(["cd retail", "cd retail"]);
+    // The first block: the starter as init writes it, its values still REPLACE_ME.
     const first = mkdtempSync(join(tmpdir(), "docs-databricks-retail-"));
     const created = cli(first, bare!.split(" ").slice(1));
     expect(created.code).toBe(0);
-    const last = created.output.trimEnd().split("\n").at(-1)!;
-    expect(create.replace(/\s+/g, " ")).toContain(`\`${last}\``);
-    // With --set for each, it is the sample the page shows, and plans without a warning.
+    expect(prose).toContain(`\`${created.output.trimEnd().split("\n").at(-1)}\``);
+    const unfilled = cli(join(first, "retail"), plan!.split(" ").slice(1));
+    expect(unfilled.code).toBe(0);
+    expect(prose).toContain(`\`${unfilled.output.trimEnd().split("\n").at(-1)}\``);
+    // The alternative, from a parent folder of its own: the sample, and the plan shown.
     const second = mkdtempSync(join(tmpdir(), "docs-databricks-retail-"));
     const written = cli(second, filled!.split(" ").slice(1));
     expect(written.code, written.output).toBe(0);
@@ -71,15 +74,18 @@ describe("platforms/adf", () => {
     ).toBe(true);
   });
 
-  it("creates the starter, writes its values with --set, and plans the factory the page shows, after its notice", () => {
+  it("creates the starter, or the same with --set, from one parent folder, and plans each as the page says", () => {
     const create = section(page, "## Create it");
-    const [bare, cd, filled, plan] = commands(create);
-    expect(cd).toBe("cd erp");
+    const prose = create.replace(/\s+/g, " ");
+    const [bare, cd, filled, cdAgain, plan] = commands(create);
+    expect([cd, cdAgain]).toEqual(["cd erp", "cd erp"]);
     const first = mkdtempSync(join(tmpdir(), "docs-adf-erp-"));
     const created = cli(first, bare!.split(" ").slice(1));
     expect(created.code).toBe(0);
-    const last = created.output.trimEnd().split("\n").at(-1)!;
-    expect(create.replace(/\s+/g, " ")).toContain(`\`${last}\``);
+    expect(prose).toContain(`\`${created.output.trimEnd().split("\n").at(-1)}\``);
+    const unfilled = cli(join(first, "erp"), plan!.split(" ").slice(1));
+    expect(unfilled.code).toBe(0);
+    expect(prose).toContain(`\`${unfilled.output.trimEnd().split("\n").at(-1)}\``);
     // With --set for each value, on the day the sample was made, it is the sample.
     const second = mkdtempSync(join(tmpdir(), "docs-adf-erp-"));
     const sample = exampleFolder("private-sql-server-filled");
