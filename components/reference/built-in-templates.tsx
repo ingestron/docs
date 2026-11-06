@@ -2,7 +2,7 @@
 import { builtInTemplates } from "@ingestron/cli";
 import { TableFrame } from "@/components/table-frame";
 
-/** One row per built-in template: its name, what it sets up, and what it asks. */
+/** One row per built-in template: its name and what it sets up. `init` asks none of them anything. */
 export function BuiltInTemplates() {
   return (
     <TableFrame label="Built-in starters">
@@ -11,7 +11,6 @@ export function BuiltInTemplates() {
           <tr>
             <th>Template</th>
             <th>Sets up</th>
-            <th>Asks</th>
           </tr>
         </thead>
         <tbody>
@@ -22,15 +21,6 @@ export function BuiltInTemplates() {
               </td>
               <td>
                 <strong>{template.title}.</strong> {template.summary}
-              </td>
-              <td>
-                {template.questions.length === 0
-                  ? "nothing"
-                  : template.questions.map((question) => (
-                      <div key={question.value}>
-                        <code>{question.value}</code>: {question.ask}
-                      </div>
-                    ))}
               </td>
             </tr>
           ))}

@@ -42,9 +42,9 @@ cd shop
 <Tool name="VS Code">
 
 Create an empty folder named `shop`. Run **Ingestron: New project**, choose
-**From a starter**, then **DuckDB on a laptop**. Keep the name `shop` and the
-environment `dev`, leave the standard empty to keep the starter's own, and
-select the `shop` folder. Open that folder in VS Code.
+**From a starter**, then **DuckDB on a laptop**, and select the `shop` folder,
+whose name becomes the project's id. The new `README.md` opens in a preview.
+Open the folder in VS Code.
 
 <Screenshot
   light="/images/vscode/new-project-starter-light.png"
@@ -57,8 +57,11 @@ select the `shop` folder. Open that folder in VS Code.
 </ToolSteps>
 
 `init` copies the starter into `shop` and prints
-`Created shop from the template duckdb (11 files).`, followed by the plan in
-the next step. `--yes` takes the starter's defaults instead of asking. The
+`Created shop from the template duckdb (12 files).`, followed by the plan in
+the next step, and ends with `Nothing to replace: the project runs as written.`
+`--yes` takes the starter's defaults for anything not given as a flag. Among
+the files is `README.md`, which says how to run the project and what, in a
+project for a cloud platform, is still to fill in; this one runs as it is. The
 remaining steps run in the `shop` folder.
 
 ## 2. Plan
