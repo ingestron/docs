@@ -392,7 +392,7 @@ export function connectorSections(id: string): Section[] {
       id: "examples",
       title: "Examples",
       before: [
-        "These projects use synthetic values. Choose a download for your route, then [adapt and generate it](/docs/how-to/start-from-a-template#write-the-values). Multi-connector projects contain other sources too; to start with only this connection, use [Create a project](/docs/how-to/start-from-a-template#start-from-a-connection).",
+        "These projects use synthetic values; a starter's download is what `init` writes from it, with `REPLACE_ME` where a value is yours and a README.md that lists them. Choose a download for your route, then [adapt and generate it](/docs/how-to/start-from-a-template#write-the-values). Multi-connector projects contain other sources too; to start with only this connection, use [Create a project](/docs/how-to/start-from-a-template#start-from-a-connection).",
       ],
       items: [{ slot: "examples" }],
     },
