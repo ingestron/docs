@@ -1,20 +1,24 @@
+# PostgreSQL: ADF ingestion into Databricks. README.md lists what to fill in.
 id: sales
+values:
+  # The prefix of the ADF pipeline and trigger names, set in flows/postgresql.yaml
+  resource_prefix: sales
 environments:
-  dev: {}
-  prod: {}
+  dev:
+    values:
+      # Storage account (ADLS Gen2) that the landing folder is in: its name
+      storage_account: syntheticlakedev
+      # Key Vault that holds the source's secrets: its name, not its URL
+      key_vault: synthetic-vault-dev
+  prod:
+    values:
+      # Storage account (ADLS Gen2) that the landing folder is in: its name
+      storage_account: syntheticlakeprod
+      # Key Vault that holds the source's secrets: its name, not its URL
+      key_vault: synthetic-vault-prod
 imports:
   - standard.yaml
   - platform.yaml
   - connections/*.yaml
   - flows/*.yaml
   - contracts/*.yaml
-values:
-  source_server: source.example.test
-  source_database: sales
-  source_user: reader
-  source_password: ${secret:source-password}
-  postgresql_records_object: sales.orders
-  landing: abfss://landing@syntheticlake.dfs.core.windows.net/native/postgresql
-  key_vault: https://synthetic-vault.vault.azure.net
-  integration_runtime: synthetic-self-hosted-runtime
-  resource_prefix: sales
