@@ -20,6 +20,9 @@ environment in the status bar, unsaved, to review and send.
 
 Each section appears only when it has something to say, in this order:
 
+- **Values to replace:** each value still `REPLACE_ME`, with its file and
+  line. `ingestron check` fails until each is written; the project's
+  `README.md` says where to find each one.
 - **Values to provide:** each environment variable the definitions read,
   where it is used, whether it is set, and the name the deploying pipeline
   supplies it as; never its value. See [Values to provide](#values-to-provide).
@@ -53,7 +56,7 @@ ingestron request --env dev
 ### Databricks
 
 Even the smallest project, with no platform document, gets a request. Create
-one from the `minimal` starter:
+one from the `minimal` starter, whose landing folder is still `REPLACE_ME`:
 
 ```sh
 ingestron init shop --template minimal --yes
@@ -104,7 +107,7 @@ supplies, such as a storage path, can come from an environment variable with
 request opens by asking for it.
 
 In the `shop` project above, read the landing folder from a variable in
-`project.yaml`:
+`project.yaml`, in place of its `REPLACE_ME`:
 
 ```yaml
 values:
@@ -118,9 +121,7 @@ With `LANDING_PATH` set nowhere, `ingestron request --env dev` prints:
 
 ## Values to provide
 
-These values come from environment variables. Set them in the pipeline that runs Ingestron for this environment, or in `.env.dev` on your own computer, kept out of Git.
-
-The files of the packs that build every environment together take these values when deploying: the pipeline that deploys them supplies each value for each environment, under the names given.
+These values come from environment variables. The pipeline that deploys the files supplies each one for each environment, under the names given; on your own computer, `.env.dev` (kept out of Git) is read only by a pack that reads them when generating, such as DuckDB.
 
 - `LANDING_PATH`, used for `values.landing` in `project.yaml`: not set yet. The deploying pipeline supplies it as `BUNDLE_VAR_landing_path` (databricks).
 

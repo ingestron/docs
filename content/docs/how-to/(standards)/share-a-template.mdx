@@ -10,17 +10,23 @@ them in any Git repository the people who start projects can clone.
 ## Share a template
 
 A template is an ordinary project folder with one extra file,
-`template.yaml`, that says what `ingestron init` asks.
+`template.yaml`, that names it.
 
 1. Start from a project that works: `ingestron plan` shows no problems.
-2. Replace the values people will change with `${values.…}`, and give them
-   defaults in `project.yaml`:
+2. Write `REPLACE_ME` for each value the people who start from it must give,
+   with one comment line above it that says what it is. Put a value read in
+   several places in `project.yaml`, and read it with `${values.…}`:
 
 <Example name="minimal" file="project.yaml" />
 
 <Example name="minimal" file="connections/shop.yaml" />
 
-3. Add `template.yaml`. Each question fills one value:
+`init` asks nothing: the new project's `README.md` lists each `REPLACE_ME`
+with its comment, `ingestron plan` warns about each, and `ingestron check`
+fails until each is written. `--set landing=<value>` writes one as the
+project is created.
+
+3. Add `template.yaml`, with the title and summary people choose it by:
 
 <Example name="minimal" file="template.yaml" />
 
