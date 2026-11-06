@@ -295,6 +295,10 @@ describe("how-to/start-from-a-template", () => {
     expect(readFileSync(join(parent, "sales", "README.md"), "utf8")).toContain(
       "## Values to replace before deploying",
     );
+    // plan counts places, init names: its own last line, as the page shows it.
+    const planned = cli(join(parent, "sales"), ["plan", "--no-diff"]);
+    expect(planned.code).toBe(0);
+    expect(planned.output.trimEnd().split("\n").at(-1)).toBe(fences(values, "text")[1]!.trim());
     // The page's --set writes two of them, one for every environment and one for prod.
     const set = commands(values).find((line) => line.includes("--set"))!;
     const second = mkdtempSync(join(tmpdir(), "docs-init-"));
