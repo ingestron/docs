@@ -228,13 +228,47 @@ export function requestSections(name: string, env: string, titles: string[]): st
     .join("\n\n");
 }
 
-/** The definition files of a sample, relative to it: everything but generated output. */
+const initialised = new Map<string, string>();
+
+/**
+ * The folder a sample's download is made from. For a starter, it is what a
+ * user gets from `ingestron init <name> --template <name> --yes`, with the
+ * starter's own id: the README.md that lists what to replace, `.gitignore`,
+ * and no `template.yaml`. Any other sample is its own folder.
+ */
+export function downloadFolder(name: string): string {
+  const sample = listSamples().find((found) => found.name === name);
+  if (sample?.kind !== "starter") return exampleFolder(name);
+  let folder = initialised.get(name);
+  if (!folder) {
+    const parent = mkdtempSync(join(tmpdir(), `ingestron-docs-init-${name}-`));
+    const { id } = parse(readFileSync(join(sample.folder, "project.yaml"), "utf8")) as {
+      id: string;
+    };
+    let output = "";
+    const code = run(["init", name, "--template", name, "--name", id, "--yes"], {
+      cwd: parent,
+      write: (text) => (output += text),
+    });
+    if (code !== 0) throw new Error(`Starter "${name}" does not initialise:\n${output}`);
+    folder = join(parent, name);
+    initialised.set(name, folder);
+  }
+  return folder;
+}
+
+/**
+ * The files of a sample's download, relative to its folder: everything but
+ * generated output. For a starter, what `init` writes (see `downloadFolder`).
+ */
 export function exampleFiles(name: string): string[] {
-  const folder = exampleFolder(name);
+  const folder = downloadFolder(name);
   const files = (path: string): string[] =>
     readdirSync(path, { withFileTypes: true }).flatMap((entry) =>
-      // Hidden files are local state, except .gitkeep, which keeps a folder the example needs.
-      entry.name === "build" || (entry.name.startsWith(".") && entry.name !== ".gitkeep")
+      // Hidden files are local state, except .gitkeep, which keeps a folder the example
+      // needs, and the .gitignore init writes.
+      entry.name === "build" ||
+      (entry.name.startsWith(".") && entry.name !== ".gitkeep" && entry.name !== ".gitignore")
         ? []
         : entry.isDirectory()
           ? files(join(path, entry.name))
