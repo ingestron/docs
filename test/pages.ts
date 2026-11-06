@@ -1,7 +1,7 @@
 // Helpers for tests that run a page as it shows itself: they read its sections,
 // code blocks and commands, run the CLI in a copy of a sample, and merge the
 // page's YAML fragments into it the way a reader adds them.
-import { cpSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { run } from "@ingestron/cli";
@@ -63,9 +63,34 @@ export const fences = (text: string, lang: string) =>
         .join("\n"),
     );
 
-/** The command lines of the `sh` blocks in some text. */
+/** The command lines of the `sh` blocks in some text, with each `\` continuation joined to its line. */
 export const commands = (text: string) =>
-  fences(text, "sh").flatMap((block) => block.trimEnd().split("\n"));
+  fences(text, "sh").flatMap((block) =>
+    block
+      .trimEnd()
+      .replace(/ \\\n\s*/g, " ")
+      .split("\n"),
+  );
+
+/**
+ * The definition files of a project folder, relative to it, as parsed YAML: what
+ * a page's `init` wrote, to compare with a sample. README.md, which holds the
+ * day it was written, and generated files are left out.
+ */
+export function definitions(folder: string): Record<string, unknown> {
+  const found: Record<string, unknown> = {};
+  const walk = (at: string) => {
+    for (const entry of readdirSync(join(folder, at), { withFileTypes: true })) {
+      const path = at ? `${at}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        if (entry.name !== "build") walk(path);
+      } else if (/\.ya?ml$/.test(entry.name) && entry.name !== "sample.yaml")
+        found[path] = parse(readFileSync(join(folder, path), "utf8"));
+    }
+  };
+  walk("");
+  return found;
+}
 
 /** The one `ingestron` command, among some lines, that starts with a prefix. */
 export function command(lines: string[], prefix: string): string[] {

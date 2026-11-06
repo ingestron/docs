@@ -21,10 +21,11 @@ pages cover what reads the files.
 
 ## What Ingestron writes [#what-you-get]
 
-For the `private-sql-server` starter, which copies an ERP's changed rows
+For the `private-sql-server` starter, with its values written as
+[Create it](#create-it) shows, which copies an ERP's changed rows
 through a self-hosted runtime, with `dev` and `prod` environments:
 
-<BuildTree name="private-sql-server" folder="build/adf" />
+<BuildTree name="private-sql-server-filled" folder="build/adf" />
 
 `factory/` is the factory's folder, as Data Factory Studio would keep it in
 Git, and what Microsoft's build reads. Its JSON holds the first environment's
@@ -32,7 +33,7 @@ values, so it reads as a working factory. Each table gets a Copy activity that
 reads the rows changed in the trigger's window and lands them as Parquet:
 
 <Example
-  name="private-sql-server"
+  name="private-sql-server-filled"
   file="build/adf/factory/pipeline/pl_erp_erp.json"
   pick="properties.activities[0]"
 />
@@ -40,7 +41,10 @@ reads the rows changed in the trigger's window and lands them as Parquet:
 The SQL Server linked service reads its password from Key Vault and connects
 through the runtime:
 
-<Example name="private-sql-server" file="build/adf/factory/linkedService/ls_erp_erp_erp.json" />
+<Example
+  name="private-sql-server-filled"
+  file="build/adf/factory/linkedService/ls_erp_erp_erp.json"
+/>
 
 `arm-template-parameters-definition.json` replaces Microsoft's default
 parameterisation: it lists only the properties that differ between
@@ -48,14 +52,14 @@ environments, here the Key Vault, the landing storage and the trigger's state,
 so the template gets a parameter for each and nothing else:
 
 <Example
-  name="private-sql-server"
+  name="private-sql-server-filled"
   file="build/adf/factory/arm-template-parameters-definition.json"
 />
 
 Each environment's file sets every one of them, under the name Microsoft's
 build gives it. In `prod` the trigger starts:
 
-<Example name="private-sql-server" file="build/adf/parameters/prod.json" />
+<Example name="private-sql-server-filled" file="build/adf/parameters/prod.json" />
 
 A value only the deploying pipeline knows, written as `${envvar:NAME}`, is a
 parameter that the environment's file leaves out; see
@@ -92,32 +96,46 @@ For your own source, name its connector and the route instead, such as
 <Tool name="VS Code">
 
 Run **Ingestron: New project** and choose the starter, or your source,
-**private** and the ADF route into Databricks. When a source supports only one
-route, it is selected for you. See
-[Create a project](/docs/how-to/start-from-a-template) for the remaining
-questions.
+**private** and the ADF route into Databricks, then the folder. When a source
+supports only one route, it is selected for you.
 
 </Tool>
 </ToolSteps>
 
 The [connector catalogue](/docs/connectors) lists every source and the routes
-it supports. The files on this page come from the starter:
+it supports. The starter leaves what Ingestron cannot know as `REPLACE_ME`:
+the ERP's server, login and tables, each environment's storage account and Key
+Vault, and the integration runtime. `init` ends with
+`7 values are still REPLACE_ME: README.md lists each one and where to find it.`,
+and `README.md` lists them, with the Key Vault secret to create. Write each in
+place, or give them with `--set` as you create the project. The files on this
+page come from this command, with synthetic values:
 
-<ExampleDownload name="private-sql-server" />
+```sh
+ingestron init erp --template private-sql-server --yes \
+  --set source_server=erp-sql01.corp.example --set source_user=ingest_reader \
+  --set customers_object=erp.dbo.Customers --set invoices_object=erp.dbo.Invoices \
+  --set dev.storage_account=erplakedev --set prod.storage_account=erplakeprod \
+  --set dev.key_vault=kv-erp-dev --set prod.key_vault=kv-erp-prod \
+  --set integration_runtime=shir-erp
+```
+
+<ExampleDownload name="private-sql-server-filled" />
 To compare sources, <ExampleDownload name="adf-native-connectors" /> holds a connection for every
 native connector in one project.
 
-The environments differ in their landing storage and Key Vault:
+The environments differ in their storage account and Key Vault, which the
+platform composes into the landing folder's and the vault's URLs:
 
-<Example name="private-sql-server" file="project.yaml" />
+<Example name="private-sql-server-filled" file="project.yaml" />
 
 The platform names the shared infrastructure the copies use, and the flow
 names the tables to copy from the `erp` connection, which reaches the ERP
 privately with its password in Key Vault:
 
-<Example name="private-sql-server" file="platform.yaml" />
+<Example name="private-sql-server-filled" file="platform.yaml" />
 
-<Example name="private-sql-server" file="flows/erp.yaml" />
+<Example name="private-sql-server-filled" file="flows/erp.yaml" />
 
 Then generate both environments:
 
@@ -154,7 +172,8 @@ create    parameters/prod.json
 11 files: 11 create. Ready to apply.
 ```
 
-The warning is a notice, not a problem: the files are still written. It
+The warning is a notice, not a problem: the files are still written, as they
+are while a value is still `REPLACE_ME`. It
 appears on every plan, apply and check while the factory uses a runtime, as
 [Runtime and Key Vault](#runtime-and-key-vault) explains. Run
 `ingestron apply` to write the files.
