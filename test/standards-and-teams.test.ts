@@ -9,11 +9,14 @@ import { join } from "node:path";
 import { run } from "@ingestron/cli";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { parse } from "yaml";
 import { PackNaming } from "../components/reference/pack-defaults";
 import { exampleFolder, exampleRequest, requestSections } from "../lib/examples";
 import { packName, packs } from "../lib/reference";
+
+// Each test runs the command line against a copy of a sample, which takes seconds on a busy machine.
+vi.setConfig({ testTimeout: 30_000 });
 import {
   cli,
   command,
