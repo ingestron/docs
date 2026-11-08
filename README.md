@@ -26,4 +26,4 @@ Questions and feedback: hello@ingestron.io. Security reports: security@ingestron
 
 Licensed under the [Apache License 2.0](LICENSE); see [NOTICE](NOTICE). The
 fonts in `public/fonts/` are under the SIL Open Font License 1.1, with their
-licence texts beside them. Made by [IntentLabs](https://intentlabs.dev).
+licence texts beside them.
