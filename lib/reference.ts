@@ -1,7 +1,7 @@
 // Reference data read from the packages at build time, so pages match the code.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { projectRecipe, projectRoutes, projectSources, type ProjectRoute } from "@ingestron/cli";
+import { projectRecipe, projectRoutes, projectSources, type ProjectRoute } from "@ingestron/core";
 import {
   documentReference,
   methodReference,

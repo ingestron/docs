@@ -1,6 +1,6 @@
 // Routes stay in package metadata; the sections below them on the page give the detail.
 import { Fragment, type ReactNode } from "react";
-import { projectRoutes } from "@ingestron/cli";
+import { projectRoutes } from "@ingestron/core";
 import { ingestionRows } from "@/lib/connector-settings";
 import { listExamples } from "@/lib/examples";
 import { connectorEntries, packName, type ConnectorEntry } from "@/lib/reference";

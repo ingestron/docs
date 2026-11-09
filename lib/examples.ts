@@ -7,14 +7,14 @@
 import { existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
+import { run } from "@ingestron/cli";
 import {
   listSamples,
   readSample,
-  run,
   sampleFacts,
   type Sample,
   type SampleFacts,
-} from "@ingestron/cli";
+} from "@ingestron/core";
 import { recipesFolder } from "@ingestron/pack-adf";
 import { parse } from "yaml";
 import { pickLines, pickPath } from "./extract";

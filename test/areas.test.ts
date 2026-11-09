@@ -3,7 +3,7 @@
 // area, the home page to none, and no page's URL moved when the areas came in.
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { projectSources } from "@ingestron/cli";
+import { projectSources } from "@ingestron/core";
 import { findPath, findProjection, flattenTree, type Folder } from "fumadocs-core/page-tree";
 import { getLayoutTabs } from "fumadocs-ui/layouts/shared";
 import { createElement } from "react";

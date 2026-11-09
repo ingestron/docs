@@ -59,10 +59,14 @@ as `databricks → build/databricks (dev, prod)`; see
 ## Use the command from code
 
 The CLI package is also a library: `run` takes the same arguments as the
-command, `generatedOutputs` gives every output folder's files as `plan` would
-write them, and `projectSources`, `projectRoutes` and `projectRecipe` return
-the sources, routes and recipes that `init` and **Ingestron: New project**
-offer.
+command. The
+[`@ingestron/cli` README](https://github.com/ingestron/ingestron/tree/main/packages/cli#in-code)
+describes it.
+
+The command is built on `@ingestron/core`, which your code can use too:
+`generatedOutputs` gives every output folder's files as `plan` would write
+them, and `projectSources`, `projectRoutes` and `projectRecipe` return the
+sources, routes and recipes that `init` and **Ingestron: New project** offer.
 The
-[`@ingestron/cli` README](https://github.com/ingestron/ingestron/tree/main/packages/cli#project-builder-api)
+[`@ingestron/core` README](https://github.com/ingestron/ingestron/tree/main/packages/core)
 describes them.

@@ -3,7 +3,7 @@
 // reaches: in its description, its sections, its notes and its related setup.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { projectRoutes } from "@ingestron/cli";
+import { projectRoutes } from "@ingestron/core";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it, vi } from "vitest";
