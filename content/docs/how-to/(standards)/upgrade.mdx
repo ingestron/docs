@@ -46,7 +46,7 @@ choose to upgrade. The [CI templates](/docs/how-to/check-in-ci) and the
 [deployment templates](/docs/how-to/deploy-through-environments) do:
 
 ```sh
-npm install -g ingestron@2.1.0
+npm install -g ingestron@2.2.0
 ```
 
 `npm ls -g ingestron` shows the version a computer has installed.
@@ -95,7 +95,7 @@ next; see [Deploy through environments](/docs/how-to/deploy-through-environments
 
 ### The standard and the folders
 
-1. Install `ingestron@2.1.0` and plan. Every pack is version 2, so a standard that
+1. Install `ingestron@2.2.0` and plan. Every pack is version 2, so a standard that
    names `databricks@1`, `adf@1`, `synapse@1` or `duckdb@1` stops with
    `PACK_VERSION`, once for all the environments that have it:
 
@@ -135,7 +135,7 @@ next; see [Deploy through environments](/docs/how-to/deploy-through-environments
    [`DEPLOY_VALUE`](/docs/reference/errors#DEPLOY_VALUE): write it in
    `project.yaml` for each environment. See
    [Supplied when deploying](/docs/concepts/yaml-references#supplied-when-deploying).
-5. Change CI: the check templates install `ingestron@2.1.0`, and the deploy
+5. Change CI: the check templates install `ingestron@2.2.0`, and the deploy
    pipelines deploy `build/<pack>/` by target, parameter file or script, as
    [Deploy through environments](/docs/how-to/deploy-through-environments)
    shows.
@@ -327,9 +327,29 @@ Factory:
   `ingestron plan` to see the linked service change.
 - For code that calls the packages: `@ingestron/definitions` 1.11 adds the
   `REPLACE_ME` code and the `replaceMe` resolve option, which `check` sets to
-  `error`; the CLI's `Io` gains an optional `now()`, the day `init` writes;
-  and the [`@ingestron/cli` README](https://github.com/ingestron/ingestron/tree/main/packages/cli)
-  describes `generatedOutputs`.
+  `error`; and the CLI's `Io` gains an optional `now()`, the day `init`
+  writes.
+
+## Upgrade to 2.2 [#upgrade-to-2-2]
+
+2.2 generates, prints and checks exactly what 2.1 does, and the VS Code
+extension works as before. Only code that calls the packages changes:
+
+- `@ingestron/core` 1.0 is the API the command is built on.
+  `@ingestron/cli` now exports only `run`, `commands` and `flags`. Import
+  everything else it exported in 2.1, such as `generatedOutputs`,
+  `projectRoutes`, `platformRequest` and `packs`, from `@ingestron/core`,
+  under the same names. The
+  [`@ingestron/core` README](https://github.com/ingestron/ingestron/tree/main/packages/core)
+  describes them.
+- In `@ingestron/authoring`, open a project with `ProjectSnapshot.open(folder)`
+  in place of `openProject`, and call the snapshot's methods. Each function
+  that took the project first is now a method with the same name:
+  `problems(project, "dev")` becomes `snapshot.problems("dev")`. Three are
+  renamed: `projectSymbols` is `symbols`, `compareEnvironments` is `compare`
+  and `platformRequest` is `request`. The
+  [`@ingestron/authoring` README](https://github.com/ingestron/ingestron/tree/main/packages/authoring)
+  shows an example.
 
 ## What changed in a release
 

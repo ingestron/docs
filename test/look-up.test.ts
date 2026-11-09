@@ -4,7 +4,7 @@
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { builtInTemplates, listSamples } from "@ingestron/cli";
+import { builtInTemplates, listSamples } from "@ingestron/core";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -54,12 +54,13 @@ describe("reference/cli", () => {
     );
   });
 
-  it("sends the builder API to the package README and no longer holds it", () => {
+  it("sends the API to the package READMEs and no longer holds it", () => {
     expect(page).not.toContain("projectRecipe(");
     expect(page).not.toContain("ProjectSource");
     expect(page).toContain(
-      "(https://github.com/ingestron/ingestron/tree/main/packages/cli#project-builder-api)",
+      "(https://github.com/ingestron/ingestron/tree/main/packages/cli#in-code)",
     );
+    expect(page).toContain("(https://github.com/ingestron/ingestron/tree/main/packages/core)");
   });
 
   it("works on a project from outside it when both paths are set, and not with --definitions alone", () => {

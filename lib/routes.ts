@@ -2,7 +2,7 @@
 // project offers. Titles, `--via` values and packs come from the CLI; what
 // each route is for, and its guide, are written here, and a route the CLI
 // adds without them fails the build.
-import { builtInTemplates, sampleFacts } from "@ingestron/cli";
+import { builtInTemplates, sampleFacts } from "@ingestron/core";
 import { allRoutes, routePacks } from "@/lib/reference";
 
 /** One way to start a project, and what it gives you. */

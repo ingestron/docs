@@ -1,5 +1,5 @@
 // The routes and their packs come from New project's metadata; link text is each page's title.
-import { projectRoutes } from "@ingestron/cli";
+import { projectRoutes } from "@ingestron/core";
 import { connectorEntries, packName, packs, pageTitle, routePacks } from "@/lib/reference";
 import { routeGuides } from "@/lib/routes";
 

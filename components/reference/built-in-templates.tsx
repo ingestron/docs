@@ -1,5 +1,5 @@
 // The templates `ingestron init` offers, from the CLI itself.
-import { builtInTemplates } from "@ingestron/cli";
+import { builtInTemplates } from "@ingestron/core";
 import { TableFrame } from "@/components/table-frame";
 
 /** One row per built-in template: its name and what it sets up. `init` asks none of them anything. */

@@ -1,6 +1,6 @@
 // Discovery uses the same metadata as the CLI and New project wizard. Headings
 // are MDX's own, so a jump to a category clears the sticky header.
-import { projectSources, projectRoutes } from "@ingestron/cli";
+import { projectSources, projectRoutes } from "@ingestron/core";
 import { Heading } from "fumadocs-ui/components/heading";
 import { categoryAnchor, sourceCategories } from "@/lib/connector-page";
 

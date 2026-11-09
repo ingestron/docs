@@ -1,5 +1,5 @@
 // A compact comparison uses the same supported routes as New project.
-import { projectRoutes, projectSources } from "@ingestron/cli";
+import { projectRoutes, projectSources } from "@ingestron/core";
 import { allRoutes } from "@/lib/reference";
 import { TableFrame } from "@/components/table-frame";
 

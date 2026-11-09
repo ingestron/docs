@@ -30,6 +30,7 @@ function found(text: string, pattern: RegExp, what: string): string {
 export function PackageVersions() {
   const rows: [string, string][] = [
     ["@ingestron/cli", "the `ingestron` command"],
+    ["@ingestron/core", "the API the command is built on"],
     ["@ingestron/definitions", "loading and resolving definitions"],
     ["@ingestron/authoring", "editor features"],
     ...packs.map((pack): [string, string] => [

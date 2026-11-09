@@ -3,7 +3,7 @@
 // chapters and category pages are gone, and the area's page tree holds every page once.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { projectSources } from "@ingestron/cli";
+import { projectSources } from "@ingestron/core";
 import { expect, it } from "vitest";
 import { parse } from "yaml";
 import { categoryAnchor, sourceCategories } from "../lib/connector-page.js";

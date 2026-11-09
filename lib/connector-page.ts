@@ -4,7 +4,7 @@
 // in one of the page's slots.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { projectRoutes, projectSources } from "@ingestron/cli";
+import { projectRoutes, projectSources } from "@ingestron/core";
 import type { TOCItemType } from "fumadocs-core/toc";
 import { parse } from "yaml";
 import { exampleFiles, listExamples, readExampleFile } from "./examples";

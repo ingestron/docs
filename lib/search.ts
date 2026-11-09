@@ -1,6 +1,7 @@
 // Search entries for reference rendered from code, which the MDX indexer
 // cannot see: error codes, method settings, CLI commands and connector pages.
-import { commands, flags, projectSources } from "@ingestron/cli";
+import { commands, flags } from "@ingestron/cli";
+import { projectSources } from "@ingestron/core";
 import { codeHelp } from "@ingestron/definitions";
 import type { StructuredData } from "fumadocs-core/mdx-plugins";
 import { ingestionRows } from "./connector-settings";
