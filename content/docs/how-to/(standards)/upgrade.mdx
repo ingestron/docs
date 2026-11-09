@@ -46,7 +46,7 @@ choose to upgrade. The [CI templates](/docs/how-to/check-in-ci) and the
 [deployment templates](/docs/how-to/deploy-through-environments) do:
 
 ```sh
-npm install -g ingestron@2.1.0
+npm install -g ingestron@2.2.0
 ```
 
 `npm ls -g ingestron` shows the version a computer has installed.
@@ -95,7 +95,7 @@ next; see [Deploy through environments](/docs/how-to/deploy-through-environments
 
 ### The standard and the folders
 
-1. Install `ingestron@2.1.0` and plan. Every pack is version 2, so a standard that
+1. Install `ingestron@2.2.0` and plan. Every pack is version 2, so a standard that
    names `databricks@1`, `adf@1`, `synapse@1` or `duckdb@1` stops with
    `PACK_VERSION`, once for all the environments that have it:
 
@@ -135,7 +135,7 @@ next; see [Deploy through environments](/docs/how-to/deploy-through-environments
    [`DEPLOY_VALUE`](/docs/reference/errors#DEPLOY_VALUE): write it in
    `project.yaml` for each environment. See
    [Supplied when deploying](/docs/concepts/yaml-references#supplied-when-deploying).
-5. Change CI: the check templates install `ingestron@2.1.0`, and the deploy
+5. Change CI: the check templates install `ingestron@2.2.0`, and the deploy
    pipelines deploy `build/<pack>/` by target, parameter file or script, as
    [Deploy through environments](/docs/how-to/deploy-through-environments)
    shows.

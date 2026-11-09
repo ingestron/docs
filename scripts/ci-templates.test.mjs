@@ -58,7 +58,7 @@ test("every YAML template parses, and the folder holds no other kind of file", (
  * The ingestron bundle the templates install: an exact version, the one the
  * docs build with (test/standards-and-teams.test.ts checks the cli's version).
  */
-const bundle = "2.1.0";
+const bundle = "2.2.0";
 
 test("each check installs an exact ingestron from npm, then runs ingestron check", () => {
   for (const file of [...checks, "github-actions/deploy.yml", "azure-devops/azure-pipelines.yml"]) {

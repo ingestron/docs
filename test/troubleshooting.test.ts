@@ -15,7 +15,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
-import { openProject, problems } from "@ingestron/authoring";
+import { ProjectSnapshot } from "@ingestron/authoring";
 import { codeHelp, loadingCodeHelp } from "@ingestron/definitions";
 import { describe, expect, it } from "vitest";
 import { redirectFor } from "../worker/redirects.js";
@@ -194,7 +194,7 @@ describe("generated files", () => {
     // Not produced: a file that cannot be restored needs a second failure. From the shipped writer.
     // pnpm puts the CLI's own dependencies beside it.
     const cliFolder = realpathSync(join(process.cwd(), "node_modules/@ingestron/cli"));
-    const writer = readFileSync(join(cliFolder, "../generate/dist/apply.js"), "utf8");
+    const writer = readFileSync(join(cliFolder, "../generate/dist/apply/apply.js"), "utf8");
     expect(writer).toContain("Some files could not be put back.");
     expect(writer).toContain("Nothing was changed.");
     expect(entry("An apply stopped part-way")).toContain("`Some files could not be put back.`");
@@ -273,9 +273,9 @@ describe("definitions", () => {
       transform.replace("id: more", "id: other"),
     );
     const before = cli(project, ["plan"]);
-    const found = problems(openProject(project, new Map()), "dev").filter(
-      (problem) => problem.code === "NOT_IMPORTED",
-    );
+    const found = ProjectSnapshot.open(project)
+      .problems("dev")
+      .filter((problem) => problem.code === "NOT_IMPORTED");
     expect(found.map((problem) => problem.file)).toEqual([
       "transforms/finance/more.yaml",
       "transforms/other.yml",
@@ -291,9 +291,9 @@ describe("definitions", () => {
     expect(before.output).not.toContain("other");
     // The quick fix: the folder's pattern in imports.
     edit(project, "project.yaml", (text) => `${text}  - transforms/finance/*.yaml\n`);
-    const fixed = problems(openProject(project, new Map()), "dev").filter(
-      (problem) => problem.code === "NOT_IMPORTED",
-    );
+    const fixed = ProjectSnapshot.open(project)
+      .problems("dev")
+      .filter((problem) => problem.code === "NOT_IMPORTED");
     expect(fixed.map((problem) => problem.file)).toEqual(["transforms/other.yml"]);
     // The code is the editor's alone: Errors has no entry for it.
     expect("NOT_IMPORTED" in { ...codeHelp, ...loadingCodeHelp }).toBe(false);
@@ -371,7 +371,7 @@ describe("environment variables and .env", () => {
     quotes("A variable is not set", output, [
       "SAMPLES_DIR isn't set; add it to .env.dev or set it before running Ingestron.",
     ]);
-    const found = problems(openProject(project, new Map()), "dev");
+    const found = ProjectSnapshot.open(project).problems("dev");
     // The variable is information; what plan then finds, the link, shows beside it.
     expect(found.map((problem) => [problem.code, problem.severity])).toEqual([
       ["ENVVAR_MISSING", "information"],
@@ -389,20 +389,20 @@ describe("environment variables and .env", () => {
     expect(cli(project, ["plan"]).output).toContain("ENVVAR_MISSING");
     writeFileSync(join(project, ".env.dev"), "SAMPLES_DIR=./samples\n");
     expect(cli(project, ["plan"]).code).toBe(0);
-    expect(problems(openProject(project, new Map()), "dev")).toEqual([]);
+    expect(ProjectSnapshot.open(project).problems("dev")).toEqual([]);
     // A variable in the editor's own environment is seen, one exported later is not.
     rmSync(join(project, ".env.dev"));
     rmSync(join(project, ".env"));
     process.env.SAMPLES_DIR = "./samples";
     try {
-      expect(problems(openProject(project, new Map()), "dev")).toEqual([]);
+      expect(ProjectSnapshot.open(project).problems("dev")).toEqual([]);
     } finally {
       delete process.env.SAMPLES_DIR;
     }
     expect(
-      problems(openProject(project, new Map()), "dev").filter(
-        (problem) => problem.code === "ENVVAR_MISSING",
-      ),
+      ProjectSnapshot.open(project)
+        .problems("dev")
+        .filter((problem) => problem.code === "ENVVAR_MISSING"),
     ).toHaveLength(1);
   }, 30_000);
 
