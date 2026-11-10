@@ -179,28 +179,34 @@ describe("how-to/add-quality-checks", () => {
     const databricks = plan(exampleFolder("quality"), "flows/readings.yaml", "readings");
     expect(databricks).not.toContain("error");
 
+    // The DuckDB starter's layers say nothing of checking.
     const duckdb = plan(exampleFolder("duckdb"), "flows/orders.yaml", "orders");
     expect(duckdb).toContain("error  METHOD_CHECK");
-    expect(duckdb).toContain("DuckDB tables check no rows yet");
+    expect(duckdb).toContain("DuckDB checks rows only in a layer whose does lists check");
+    expect(duckdb).toContain("warning  NOT_APPLIED");
     expect(row("/docs/platforms/duckdb")).toContain("`METHOD_CHECK`");
+    expect(row("/docs/platforms/duckdb")).toContain("`NOT_APPLIED`");
 
     const synapse = plan(exampleFolder("synapse-views"), "flows/erp.yaml", "customers");
     expect(synapse).not.toContain("error");
-    expect(synapse).not.toContain("has_rows");
-    expect(synapse).toContain("warning  CONTRACT_FIELD_UNUSED");
-    expect(synapse).toContain("Synapse views check no rows.");
-    expect(row("/docs/platforms/synapse")).toContain("`expectations` are not run");
-    expect(row("/docs/platforms/synapse")).toContain("`CONTRACT_FIELD_UNUSED`");
+    expect(synapse).toContain(
+      "The notNull rule isn't applied on synapse: it is applied only in a layer whose does lists check.",
+    );
+    expect(row("/docs/platforms/synapse")).toContain("`NOT_APPLIED`");
 
     const landing = plan(exampleFolder("landing-only"), "flows/erp.yaml", "customers");
     expect(landing).not.toContain("error");
-    expect(landing).toContain("warning  QUALITY_RULE_NOT_CHECKED");
-    expect(row("/docs/platforms/landing-only")).toContain("`QUALITY_RULE_NOT_CHECKED`");
+    expect(landing).toContain(
+      'Expectation "has_rows" isn\'t applied on adf: the table ends at the landed files, and nothing checks them.',
+    );
+    expect(row("/docs/platforms/landing-only")).toContain("`NOT_APPLIED`");
   });
 
-  it("is linked from the DuckDB page, which says checks are an error there", () => {
+  it("is linked from the DuckDB page, which says where checks run there", () => {
     const duckdb = read("platforms/duckdb.mdx");
-    expect(duckdb).toContain("DuckDB tables check no rows yet");
+    expect(duckdb.replace(/\s+/g, " ")).toContain(
+      "DuckDB checks rows only in a layer whose `does` lists `check`",
+    );
     expect(duckdb).toContain("(/docs/how-to/add-quality-checks)");
   });
 });

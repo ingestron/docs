@@ -259,28 +259,124 @@ export function aliasTexts(pack: string, method: string): string[] {
   );
 }
 
+/** A document kind whose fields can write intent, or a contract, which writes the checks. */
+type WritingKind = "Standard" | "Flow" | "Transform" | "DataContract";
+
+/** The places that can write a path, in the order they win. */
+type Place = "standard" | "layer" | "flow" | "flow table" | "transform" | "contract";
+
+/** Where a path's meaning is described, and, for a path no intent field writes as it is named, where it is written. */
+interface Described {
+  /** The field whose description and values explain the path. */
+  field: [WritingKind, string];
+  /** A description for a path whose field explains only part of it. */
+  description?: string;
+  /** Meanings for values the field does not describe. */
+  meanings?: Record<string, string>;
+  /** The fields that write it, by place; without it, the path's own field in each document. */
+  written?: Partial<Record<Place, [WritingKind, string[]]>>;
+}
+
+/** The fields a cleansing operation is written in: one column of a flow table or a transform, and the standard's default when it has one. */
+const operation = (name: string, standard?: string): Described => ({
+  field: standard ? ["Standard", standard] : ["Flow", `tables.*.cleanse.columns.*.${name}`],
+  written: {
+    ...(standard && { standard: ["Standard", [standard]] as [WritingKind, string[]] }),
+    "flow table": ["Flow", [`tables.*.cleanse.columns.*.${name}`]],
+    transform: ["Transform", [`cleanse.columns.*.${name}`]],
+  },
+});
+
 /** Where each intent path's meaning is described: the field of a document that writes it. */
-const intentFields: Record<string, ["Standard" | "Flow", string]> = {
-  "load.mode": ["Standard", "load.default"],
-  "load.cursor": ["Flow", "load.cursor"],
-  "load.deletes.mode": ["Standard", "load.deletes"],
-  "load.deletes.when": ["Flow", "load.deletes.when"],
-  history: ["Standard", "layers.*.history"],
-  sequence: ["Flow", "sequence"],
-  audit: ["Standard", "audit.*.value"],
-  rescued: ["Standard", "rescued"],
-  "retention.time_travel": ["Standard", "retention.time_travel"],
-  "retention.log": ["Standard", "retention.log"],
-  "retention.landed_files": ["Standard", "retention.landed_files"],
-  "storage.clustering": ["Standard", "storage.clustering"],
-  "storage.features": ["Standard", "storage.features"],
-  "operations.schedule": ["Standard", "operations.schedule.per"],
-  "operations.trigger": ["Standard", "operations.trigger"],
-  "operations.retries": ["Standard", "operations.retries"],
-  "operations.timeout": ["Standard", "operations.timeout"],
-  "operations.alerts": ["Standard", "operations.alerts.on"],
-  "operations.concurrency": ["Standard", "operations.concurrency"],
-  "quality.results": ["Standard", "quality.results"],
+const intentFields: Record<string, Described> = {
+  "load.mode": { field: ["Standard", "load.default"] },
+  "load.cursor": { field: ["Flow", "load.cursor"] },
+  "load.deletes.mode": { field: ["Standard", "load.deletes"] },
+  "load.deletes.when": { field: ["Flow", "load.deletes.when"] },
+  history: { field: ["Standard", "layers.*.history"] },
+  sequence: { field: ["Flow", "sequence"] },
+  audit: { field: ["Standard", "audit.*.value"] },
+  rescued: { field: ["Standard", "rescued"] },
+  "retention.time_travel": { field: ["Standard", "retention.time_travel"] },
+  "retention.log": { field: ["Standard", "retention.log"] },
+  "retention.landed_files": { field: ["Standard", "retention.landed_files"] },
+  "storage.clustering": { field: ["Standard", "storage.clustering"] },
+  "storage.features": { field: ["Standard", "storage.features"] },
+  "operations.schedule": { field: ["Standard", "operations.schedule.per"] },
+  "operations.trigger": { field: ["Standard", "operations.trigger"] },
+  "operations.retries": { field: ["Standard", "operations.retries"] },
+  "operations.timeout": { field: ["Standard", "operations.timeout"] },
+  "operations.alerts": { field: ["Standard", "operations.alerts.on"] },
+  "operations.concurrency": { field: ["Standard", "operations.concurrency"] },
+  "quality.results": { field: ["Standard", "quality.results"] },
+  // The checks a contract gives each row, by the kind of rule each becomes.
+  "quality.rules": {
+    field: ["DataContract", "schema.*.properties.*.quality"],
+    description:
+      "The rules a contract gives each row, by kind: a required column, a column's limits in `logicalTypeOptions`, and its `quality` rules that allow no failing row.",
+    meanings: {
+      notNull: "Has a value: `required: true`, `nullValues`, or `missingValues` listing only null.",
+      in: "Is one of a list: `invalidValues` with `validValues`.",
+      notIn: "Is none of a list: `missingValues`.",
+      pattern:
+        "Matches a regular expression: `invalidValues` with `pattern`, or the option `pattern`.",
+      length: "Text no shorter or longer than a limit: the options `minLength` and `maxLength`.",
+      range:
+        "No lower or higher than a limit: the options `minimum`, `maximum`, `exclusiveMinimum` and `exclusiveMaximum`.",
+      multipleOf: "A multiple of a number: the option `multipleOf`.",
+      items: "A list's number of items, or unique items: `minItems`, `maxItems` and `uniqueItems`.",
+    },
+    written: {
+      contract: [
+        "DataContract",
+        [
+          "schema.*.properties.*.required",
+          "schema.*.properties.*.logicalTypeOptions",
+          "schema.*.properties.*.quality",
+        ],
+      ],
+    },
+  },
+  "quality.actions": {
+    field: ["Standard", "quality.default"],
+    description:
+      "What a check does with a row that fails it: the standard's or a layer's `quality.required` and `quality.default`, or an expectation's own `action`.",
+    written: {
+      standard: ["Standard", ["quality.required", "quality.default"]],
+      layer: ["Standard", ["layers.*.quality.required", "layers.*.quality.default"]],
+      "flow table": ["Flow", ["tables.*.expectations.*.action"]],
+      transform: ["Transform", ["expectations.*.action"]],
+    },
+  },
+  "quality.table-checks": {
+    field: ["DataContract", "schema.*.quality"],
+    description:
+      "A contract rule that compares a count over all of a table's rows, such as `rowCount`, or a column's `unique: true`. It is counted after the table is built, with the action `quality.default` gives it; `drop` only warns.",
+    written: {
+      contract: ["DataContract", ["schema.*.quality", "schema.*.properties.*.unique"]],
+    },
+  },
+  "quality.quarantine": { field: ["Standard", "quality.quarantine"] },
+  "cleanse.trim": operation("trim", "cleanse.text.trim"),
+  "cleanse.empty": operation("empty", "cleanse.text.empty"),
+  "cleanse.map": operation("map"),
+  "cleanse.case": operation("case"),
+  "cleanse.default": operation("default"),
+  "cleanse.timezone": {
+    field: ["Flow", "tables.*.cleanse.columns.*.timezone"],
+    written: {
+      standard: ["Standard", ["cleanse.timestamps.to"]],
+      "flow table": ["Flow", ["tables.*.cleanse.columns.*.timezone"]],
+      transform: ["Transform", ["cleanse.columns.*.timezone"]],
+    },
+  },
+  deduplicate: {
+    field: ["Flow", "tables.*.cleanse.deduplicate"],
+    written: {
+      "flow table": ["Flow", ["tables.*.cleanse.deduplicate"]],
+      transform: ["Transform", ["cleanse.deduplicate"]],
+    },
+  },
 };
 
 /** One intent path: what it means, its values with theirs, and the places that can write it. */
@@ -288,46 +384,67 @@ export interface IntentPathInfo {
   path: string;
   /** The field that describes it, in the documents reference. */
   field: FieldInfo;
+  /** What it means, when the field's own description says only part of it. */
+  description?: string;
   values: { value: string; description?: string }[];
-  /** The places that write it, in the order they win: `standard`, `layer`, `flow`, `flow table`, `transform`. */
+  /** The places that write it, in the order they win: `standard`, `layer`, `flow`, `flow table`, `transform`, or `contract`. */
   places: string[];
 }
 
 /**
  * Each intent path of the vocabulary, in its order, described by the
- * documents' own fields. Throws for a path no field describes, so a new path
- * fails the build until it is described.
+ * documents' own fields. Throws for a path no field describes, and for a field
+ * a path names that the documents do not have, so a new or renamed path fails
+ * the build until it is described.
  */
 export function intentVocabulary(): IntentPathInfo[] {
-  const fields = {
+  const fields: Record<WritingKind, FieldInfo[]> = {
     Standard: documentReference("Standard"),
     Flow: documentReference("Flow"),
     Transform: documentReference("Transform"),
+    DataContract: documentReference("DataContract"),
   };
-  const has = (kind: keyof typeof fields, path: string) =>
-    fields[kind].some((field) => fieldPath(field) === path);
+  const find = (kind: WritingKind, path: string) =>
+    fields[kind].find((candidate) => fieldPath(candidate) === path);
+  const has = (kind: WritingKind, path: string) => find(kind, path) !== undefined;
   return Object.entries(intentPaths).map(([path, values]) => {
-    const [kind, at] = intentFields[path] ?? [];
-    const field = kind && fields[kind].find((candidate) => fieldPath(candidate) === at);
-    if (!field) throw new Error(`No field describes the intent path "${path}".`);
+    const described = intentFields[path];
+    const field = described && find(...described.field);
+    if (!described || !field) throw new Error(`No field describes the intent path "${path}".`);
     const meanings = new Map(
       (field.values ?? []).map((item) => [String(item.value), item.description]),
     );
-    // The standard writes the load mode as `load.default`, and deletes as
-    // `load.deletes`; a cursor or a delete condition only for one flow.
-    const inStandard = (
-      { "load.mode": "load.default", "load.deletes.mode": "load.deletes" } as Record<string, string>
-    )[path];
-    const places = [
-      has("Standard", inStandard ?? path) && "standard",
-      has("Standard", `layers.*.${path}`) && "layer",
-      has("Flow", path) && "flow",
-      has("Flow", `tables.*.${path}`) && "flow table",
-      has("Transform", path) && "transform",
-    ].filter((place): place is string => typeof place === "string");
+    for (const [value, meaning] of Object.entries(described.meanings ?? {}))
+      meanings.set(value, meaning);
+    let places: string[];
+    if (described.written) {
+      places = Object.entries(described.written).map(([place, [kind, paths]]) => {
+        for (const at of paths)
+          if (!has(kind, at))
+            throw new Error(`The ${kind} document has no field "${at}" (${path}).`);
+        return place;
+      });
+    } else {
+      // The standard writes the load mode as `load.default`, and deletes as
+      // `load.deletes`; a cursor or a delete condition only for one flow.
+      const inStandard = (
+        { "load.mode": "load.default", "load.deletes.mode": "load.deletes" } as Record<
+          string,
+          string
+        >
+      )[path];
+      places = [
+        has("Standard", inStandard ?? path) && "standard",
+        has("Standard", `layers.*.${path}`) && "layer",
+        has("Flow", path) && "flow",
+        has("Flow", `tables.*.${path}`) && "flow table",
+        has("Transform", path) && "transform",
+      ].filter((place): place is string => typeof place === "string");
+    }
     return {
       path,
       field,
+      ...(described.description && { description: described.description }),
       values: values.map((value) => ({
         value,
         ...(meanings.get(value) && { description: meanings.get(value) }),

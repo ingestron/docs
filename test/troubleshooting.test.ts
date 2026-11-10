@@ -28,6 +28,18 @@ const entry = (heading: string) => section(page, `### ${heading}`);
 /** The trimmed lines of a command's output. */
 const lines = (output: string) => output.split("\n").map((line) => line.trim());
 
+/**
+ * What every plan of the DuckDB starter prints first: its contract's required
+ * order_id is not checked, as the starter's layers say nothing of checking.
+ */
+const starterNotApplied = [
+  "Not applied on this platform",
+  "dev:",
+  "contracts/orders.yaml:11:59  warning  NOT_APPLIED",
+  "The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.",
+  "Add `check` to the layer's `does` to apply it here.",
+];
+
 /** Every line of the entry's `text` blocks is a line of the output, unless it is listed as a placeholder. */
 function quotes(heading: string, output: string, placeholders: string[] = []) {
   const shown = fences(entry(heading), "text").flatMap((block) =>
@@ -133,6 +145,7 @@ describe("generated files", () => {
     rmSync(leftover);
     const plan = cli(project, ["plan", "--no-diff"]);
     expect(lines(plan.output)).toEqual([
+      ...starterNotApplied,
       "duckdb → build/duckdb (dev)",
       "update    dev/tables/silver.customer_totals.sql",
       "",
@@ -392,13 +405,18 @@ describe("environment variables and .env", () => {
     expect(cli(project, ["plan"]).output).toContain("ENVVAR_MISSING");
     writeFileSync(join(project, ".env.dev"), "SAMPLES_DIR=./samples\n");
     expect(cli(project, ["plan"]).code).toBe(0);
-    expect(ProjectSnapshot.open(project).problems("dev")).toEqual([]);
+    // Only the starter's own warning: its required order_id is not checked.
+    const codes = () =>
+      ProjectSnapshot.open(project)
+        .problems("dev")
+        .map((found) => found.code);
+    expect(codes()).toEqual(["NOT_APPLIED"]);
     // A variable in the editor's own environment is seen, one exported later is not.
     rmSync(join(project, ".env.dev"));
     rmSync(join(project, ".env"));
     process.env.SAMPLES_DIR = "./samples";
     try {
-      expect(ProjectSnapshot.open(project).problems("dev")).toEqual([]);
+      expect(codes()).toEqual(["NOT_APPLIED"]);
     } finally {
       delete process.env.SAMPLES_DIR;
     }

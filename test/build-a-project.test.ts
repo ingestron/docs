@@ -59,6 +59,20 @@ describe("how-to/add-a-source", () => {
     const contract = cli(cwd, command(commands(steps), "contract"));
     expect(contract.code).toBe(0);
     expect(contract.output.trim()).toBe(drafted!.trim());
+    // The key the page marks in the drafted contract.
+    expect(prose(steps)).toContain(
+      "mark `customer_id` with `primaryKey: true` and `required: true`",
+    );
+    const contractFile = join(cwd, "contracts/shop.customers.yaml");
+    const key = "{ name: customer_id, logicalType: integer }";
+    expect(readFileSync(contractFile, "utf8")).toContain(key);
+    writeFileSync(
+      contractFile,
+      readFileSync(contractFile, "utf8").replace(
+        key,
+        "{ name: customer_id, logicalType: integer, primaryKey: true, required: true }",
+      ),
+    );
 
     // The line the page adds under the flow's `tables`.
     merge(join(cwd, "flows/orders.yaml"), `tables:\n${fences(steps, "yaml")[0]!}`);

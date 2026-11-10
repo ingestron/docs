@@ -6,12 +6,12 @@ description: Count, drop or stop on rows that break a rule.
 Checks run where the platform builds the table, and not every platform checks
 rows yet:
 
-| Where the table is built                                  | What happens to the checks                                                                                                  |
-| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| [Databricks](/docs/platforms/databricks)                  | Runs them, as this guide describes.                                                                                         |
-| [DuckDB](/docs/platforms/duckdb), on a laptop or in Azure | Checks no rows yet. An `expectations` entry is an error (`METHOD_CHECK`): remove it.                                        |
-| [Synapse serverless views](/docs/platforms/synapse)       | A view checks no rows. `expectations` are not run, and required columns are reported as not used (`CONTRACT_FIELD_UNUSED`). |
-| [Land files only](/docs/platforms/landing-only)           | Nothing reads the files, so each expectation is reported as not checked (`QUALITY_RULE_NOT_CHECKED`).                       |
+| Where the table is built                                  | What happens to the checks                                                                                                                                                                            |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Databricks](/docs/platforms/databricks)                  | Runs them, as this guide describes.                                                                                                                                                                   |
+| [DuckDB](/docs/platforms/duckdb), on a laptop or in Azure | Runs them in a layer whose `does` lists `check`. In any other layer, a flow's `expectations` entry is an error (`METHOD_CHECK`) and each contract rule is not applied (`NOT_APPLIED`).                |
+| [Synapse serverless views](/docs/platforms/synapse)       | In a layer whose `does` lists `check`, the view leaves out the rows a `drop` check fails, and `checks.sql` counts every check. In any other layer, each contract rule is not applied (`NOT_APPLIED`). |
+| [Land files only](/docs/platforms/landing-only)           | Nothing reads the files, so each expectation and contract rule is not applied (`NOT_APPLIED`).                                                                                                        |
 
 The rest of this guide is about Databricks.
 

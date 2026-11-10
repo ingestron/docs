@@ -219,7 +219,7 @@ export function IntentVocabulary() {
           </tr>
         </thead>
         <tbody>
-          {intentVocabulary().map(({ path, field, values, places }) => (
+          {intentVocabulary().map(({ path, field, description, values, places }) => (
             <tr key={path} id={`intent-${path.replaceAll(/[^a-z0-9]+/g, "-")}`}>
               <td>
                 <a href={field.docs}>
@@ -227,7 +227,9 @@ export function IntentVocabulary() {
                 </a>
               </td>
               <td>
-                {field.description && <Inline text={field.description} />}
+                {(description ?? field.description) && (
+                  <Inline text={description ?? field.description!} />
+                )}
                 {values.length === 1 && values[0]!.value === "*" ? (
                   " Any value."
                 ) : (

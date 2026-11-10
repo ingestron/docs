@@ -105,10 +105,26 @@ describe("intent", () => {
       "flow",
       "flow table",
     ]);
+    // The checks a contract gives, and the cleansing each table writes for its columns.
+    const placesOf = (path: string) => vocabulary.find((row) => row.path === path)!.places;
+    expect(placesOf("quality.rules")).toEqual(["contract"]);
+    expect(placesOf("quality.table-checks")).toEqual(["contract"]);
+    expect(placesOf("quality.actions")).toEqual(["standard", "layer", "flow table", "transform"]);
+    expect(placesOf("quality.quarantine")).toEqual([
+      "standard",
+      "layer",
+      "flow table",
+      "transform",
+    ]);
+    expect(placesOf("cleanse.trim")).toEqual(["standard", "flow table", "transform"]);
+    expect(placesOf("cleanse.map")).toEqual(["flow table", "transform"]);
+    expect(placesOf("deduplicate")).toEqual(["flow table", "transform"]);
     const page = read("reference/intent.mdx");
     for (const component of ["<IntentVocabulary />", "<IntentOverview />", "<IntentAliases />"])
       expect(page).toContain(component);
-    expect(html(createElement(IntentVocabulary))).toContain("Only the latest row per key.");
+    const described = html(createElement(IntentVocabulary));
+    expect(described).toContain("Only the latest row per key.");
+    expect(described).toContain("Matches a regular expression");
     const overview = html(createElement(IntentOverview));
     for (const pack of packs) expect(overview).toContain(`/docs/reference/packs/${pack.id}#intent`);
     expect(html(createElement(IntentAliases))).toContain(

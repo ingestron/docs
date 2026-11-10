@@ -167,8 +167,10 @@ job: see [Run DuckDB in Azure](/docs/platforms/duckdb-in-azure).
 
 <OldAnchor id="what-a-local-run-cannot-catch" />
 
-- **No rows are checked yet.** DuckDB tables check no rows yet. A flow's
-  `expectations` are an error here, so leave them out; see
+- **Rows are checked only where a layer says so.** DuckDB checks rows only in
+  a layer whose `does` lists `check`. In any other layer a flow's
+  `expectations` are an error, and each contract rule is
+  [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED); see
   [Check data quality](/docs/how-to/add-quality-checks).
 - **A local run starts after the files land.** It finds mistakes in contracts,
   types, modes and transforms, but not failures inside ADF: connectors,
