@@ -52,6 +52,21 @@ describe("examples", () => {
     }
   });
 
+  it("checks the rows of the guides that keep tables on DuckDB and Synapse, by their layers' duties", () => {
+    for (const name of ["duckdb-local", "data-products", "synapse-views"]) {
+      expect(readExampleFile(name, "standard.yaml"), name).toContain("does: raw");
+      const cwd = mkdtempSync(join(tmpdir(), `docs-duties-${name}-`));
+      cpSync(exampleFolder(name), cwd, { recursive: true });
+      let output = "";
+      expect(run(["apply", "--no-diff"], { cwd, write: (text) => (output += text) }), name).toBe(0);
+      expect(output, name).not.toContain("NOT_APPLIED");
+    }
+    // The passport says what checks each table, and nothing goes unenforced.
+    const passport = readExampleFile("data-products", "build/products/dev/customers.md");
+    expect(passport).toContain("Counted only by DuckDB");
+    expect(passport).not.toContain("Not enforced");
+  }, 30_000);
+
   it("keeps an empty folder the example needs, such as DuckDB's published folder", () => {
     const files = exampleFiles("duckdb-local");
     expect(files).toContain("published/.gitkeep");

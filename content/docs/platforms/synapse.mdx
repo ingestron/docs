@@ -15,7 +15,10 @@ queries a view.
 The ADF pack writes the factory, as on
 [Azure Data Factory](/docs/platforms/adf#what-you-get), and the Synapse pack
 writes one script of views for every environment, with a short script for each
-environment that sets its values:
+environment that sets its values. Where a table's layer checks its rows, it
+also writes `checks.sql`, with `checks/<environment>.sql` for each
+environment, which counts the checks when it runs; see
+[Run and operate](#operate):
 
 <BuildTree name="synapse-views" folder="build/synapse" />
 
@@ -104,7 +107,8 @@ finished project, which you can download:
 
 The standard lists Synapse first, so it names and types the views (see
 [Combine packs](/docs/concepts/standards-and-packs#combine-packs-when-their-actions-fit)),
-and keeps every table as a view:
+keeps every table as a view, and says what each layer does with its rows
+([What a layer does](/docs/concepts/layers#what-a-layer-does)):
 
 <Example name="synapse-views" file="standard.yaml" />
 

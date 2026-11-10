@@ -10,8 +10,8 @@ of these things, Ingestron says so at the line that asks for it, with the
 engine's reason. That state is **not applied here**, the warning
 [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED).
 
-It is always a warning. The files are still written and run; the table simply
-goes without that feature on that engine. The same definitions can be applied
+It is always a warning. The files are still written and run; the table goes
+without that feature on that engine. The same definitions can be applied
 in full on one engine and not on another.
 
 ## What it covers [#what-it-covers]
@@ -60,18 +60,10 @@ changes the exit code, so `check` in CI still passes.
 warning the platform [accepts](/docs/how-to/accept-a-warning) is not shown.
 
 **In a data product's passport,** in its Quality section: each check the
-engine does not apply ends `Not enforced:` and the reason, and each cleansing
-operation it does not apply says `is not applied:` and the reason. The
-`data-products` example keeps its tables in layers that say nothing of
-checking, so its passport says:
-
-<Example
-  name="data-products"
-  file="build/products/dev/customers.md"
-  from="#### `shop.bronze.customers`"
-  to="Not enforced:"
-/>
-
+engine does not apply is listed with its rule in words, then `Not enforced:`
+and the reason, and each cleansing operation it does not apply says
+`is not applied:` and the reason; see
+[Read the passport](/docs/how-to/define-a-data-product#read-the-passport).
 The passport says this whether or not the warning is accepted: accepting a
 warning quiets it, and does not make the check run.
 

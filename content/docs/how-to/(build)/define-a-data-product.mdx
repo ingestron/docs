@@ -70,9 +70,9 @@ rules it meets:
 Its Quality section says, for each table, which engine checks it, when, and
 where the results are, then each check in words with what a failing row does.
 A check the engine does not apply says `Not enforced` and why, even when the
-platform [accepts the warning](/docs/how-to/accept-a-warning). Here the
-tables are in layers that say nothing of checking, so DuckDB runs none of
-their checks; see [Not applied here](/docs/concepts/not-applied).
+platform [accepts the warning](/docs/how-to/accept-a-warning); see
+[Not applied here](/docs/concepts/not-applied). Here `customers` is in
+`bronze`, which keeps raw rows, so its check only counts.
 
 Passports are Markdown with Mermaid diagrams, so GitHub and Azure DevOps show
 them as pages. They are generated with the pipelines, so they are always up to

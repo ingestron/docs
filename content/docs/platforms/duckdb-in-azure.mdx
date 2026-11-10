@@ -50,7 +50,9 @@ factory's managed identity:
 The job's `run.sql` reads and writes `abfss://` paths only, so it runs in
 Azure. It reads each table's landed file, `abfss://landing@…`, at the end of
 its first line, and publishes each table to `abfss://published@…` at the end
-of the last ones:
+of the last ones. `bronze` keeps its rows as they arrived, so the run only
+counts its check of the required `invoice_id`, and prints the count to the
+job's log:
 
 <Example
   name="duckdb-local"

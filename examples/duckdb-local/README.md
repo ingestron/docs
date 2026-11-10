@@ -4,7 +4,9 @@ ADF copies the ERP's invoices into storage, and DuckDB loads them into a table,
 runs a transform and publishes both as Parquet: `packs: [duckdb@2, adf@2]` in
 `standard.yaml`. Each load copies the whole table into one file,
 `erp/erp.dbo.Invoices/erp.dbo.Invoices.parquet`, replacing the last one
-(`layout: snapshot`), so the table is always the latest load.
+(`layout: snapshot`), so the table is always the latest load. The standard's
+`layers` say what each does: `bronze` keeps the rows as they arrived and only
+counts its checks, and `silver` and `gold` check theirs.
 
 The `local` environment names `runs-on: duckdb`, so it runs the same tables on
 a laptop: ADF's copy becomes `duckdb-landed`, which reads a load's files from
@@ -16,7 +18,8 @@ a laptop: ADF's copy becomes `duckdb-landed`, which reads a load's files from
   that runs it and then the DuckDB job, the parent's trigger, linked services
   and datasets, and `parameters/dev.json`;
 - `build/duckdb/<environment>/run.sql`: every table in order, the same SQL in
-  both environments apart from where the files are.
+  both environments apart from where the files are. It counts and prints the
+  invoices with no `invoice_id`, the contract's required column.
 
 In `dev`, ADF's `after_copy` starts the Container Apps job `sales-dev-duckdb`
 after each schedule's copies: the parent pipeline, `pl_sales_every_24_hour`,

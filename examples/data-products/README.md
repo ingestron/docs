@@ -2,7 +2,8 @@
 
 The web shop's orders and customers are copied from Azure SQL by ADF, and
 DuckDB builds the tables (`packs: [duckdb@2, adf@2]`), as in the DuckDB
-example. On top, two **data products**, each an Open Data Product Standard
+example: `bronze` keeps the rows as they arrived and only counts its checks,
+and `silver` checks its rows. On top, two **data products**, each an Open Data Product Standard
 file in `products/`:
 
 - `customers` publishes the customers table (contract `shop.customers`), owned

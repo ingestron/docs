@@ -10,6 +10,10 @@ copies.
 
 - `build/adf/`: the copy pipeline, its trigger, linked services and datasets,
   and a parameter file for each environment;
+- `build/synapse/checks.sql`, with `checks/<environment>.sql`: the checks of
+  the contracts' required columns, counted each time it runs. `bronze` keeps
+  the rows as they arrived and only counts its checks, and `silver` and `gold`
+  check theirs;
 - `build/synapse/views.sql`: a view per table over its file,
   `[bronze].[customers]` and `[bronze].[invoices]`, and
   `[silver].[customer_totals]` over the invoices view, from

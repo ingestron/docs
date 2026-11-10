@@ -12,7 +12,9 @@ pack itself.
 For a task walkthrough, use [Synapse serverless views](/docs/platforms/synapse).
 The pack writes one `views.sql` for every environment, with
 `environments/<environment>.sql` setting each environment's values; run that
-script with sqlcmd when the definitions change. See
+script with sqlcmd when the definitions change. Where a table's layer checks
+its rows, it also writes `checks.sql`, with `checks/<environment>.sql` for each
+environment; run that after each landing to count the checks. See
 [What Ingestron writes](/docs/platforms/synapse#what-you-get). Generation itself
 creates nothing in Azure.
 

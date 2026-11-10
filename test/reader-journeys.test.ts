@@ -10,6 +10,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -203,7 +204,17 @@ describe("how-to/add-quality-checks", () => {
     );
     expect(layers).toContain("`METHOD_CHECK`");
 
-    const synapse = plan(exampleFolder("synapse-views"), "flows/erp.yaml", "customers");
+    // The Synapse example's layers check; without their duties, its rules are not applied.
+    const checked = plan(exampleFolder("synapse-views"), "flows/erp.yaml", "customers");
+    expect(checked).not.toContain("error");
+    expect(checked).not.toContain("NOT_APPLIED");
+    const folder = copy("synapse-views");
+    const standard = join(folder, "standard.yaml");
+    const text = readFileSync(standard, "utf8");
+    const duties = /^layers:\n(?: {2}- .*\n)+/m.exec(text)?.[0];
+    expect(duties, "the example's layers").toBeDefined();
+    writeFileSync(standard, text.replace(duties!, ""));
+    const synapse = plan(folder, "flows/erp.yaml", "customers");
     expect(synapse).not.toContain("error");
     expect(synapse).toContain(
       "The notNull rule isn't applied on synapse: it is applied only in a layer whose does lists check.",
