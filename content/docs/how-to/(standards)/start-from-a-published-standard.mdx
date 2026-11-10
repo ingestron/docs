@@ -119,12 +119,14 @@ one refuses it.
 
 Then read the plan. A value of the standard that the route's methods do not
 apply is a [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED) warning with
-the reason. The streaming lakehouse reads files, and Lakeflow Connect reads
-SQL Server itself, so the plan begins:
+the reason, listed under `Not applied on this platform`. The streaming
+lakehouse reads files, and Lakeflow Connect reads SQL Server itself, so that
+list begins:
 
 ```text
-dev, prod: warnings
-standard.yaml:22:12  warning  NOT_APPLIED
+Not applied on this platform
+dev, prod:
+standard.yaml:27:12  warning  NOT_APPLIED
   load.mode: files isn't applied on databricks: Managed ingestion reads the source, not files.
 ```
 

@@ -1,14 +1,15 @@
 ---
 title: Local medallion on DuckDB
-description: A published standard for DuckDB on a laptop. Bronze loaded in full from CSV files, silver kept to the latest row per key, and nothing to replace.
+description: A published standard for DuckDB on a laptop. Bronze loaded in full from CSV files, silver cleansed, checked and kept to the latest row per key, and nothing to replace.
 ---
 
 <KitFacts id="duckdb/local-medallion" />
 
 Sample orders become two layers in one DuckDB file: `bronze.orders`, the rows
-as they arrive in the file, and `silver.customer_totals`, one row per customer.
-Both are published as Parquet. Nothing is `REPLACE_ME`: the project runs as
-written, so it is the published standard to try first.
+as they arrive in the file, and `silver.customer_totals`, one row per customer,
+with its text trimmed and its check run. Both are published as Parquet. Nothing
+is `REPLACE_ME`: the project runs as written, so it is the published standard
+to try first.
 
 ## Start from it
 
@@ -32,6 +33,15 @@ writes intent of its own, so each value comes from the standard, or from the
 DuckDB pack's default:
 
 <KitIntent id="duckdb/local-medallion" />
+
+Each layer also says what it does with its rows, in `does`. `bronze` does
+`raw`: it keeps every row as it arrived, so nothing there is cleansed or
+checked. `silver` does `cleanse`, `deduplicate`, `check` and `quarantine`: the
+standard's `cleanse` trims its text and turns an empty text into null, the
+contract's required `customer` is checked, a row without one is left out, and
+`quarantine: true` keeps such a row in `silver.customer_totals_quarantine`.
+`quality: results: true` keeps each check's result in
+`silver._ingestron_checks`. The plan reports no warning.
 
 What the DuckDB pack does with each value, and with every other, is in
 [the DuckDB pack's intent](/docs/reference/packs/duckdb#intent).
