@@ -1,0 +1,129 @@
+---
+title: Not applied here
+description: What it means when the engine that keeps a table cannot apply something your definitions ask for, where Ingestron shows it, and what to do about it.
+---
+
+Your definitions say what each table should have: a check and its action, a
+cleansing operation, a quarantine, a way of keeping history. The engine that
+keeps the table does the work, in its own SQL. When that engine cannot do one
+of these things, Ingestron says so at the line that asks for it, with the
+engine's reason. That state is **not applied here**, the warning
+[`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED).
+
+It is always a warning. The files are still written and run; the table simply
+goes without that feature on that engine. The same definitions can be applied
+in full on one engine and not on another.
+
+## What it covers [#what-it-covers]
+
+Each table is judged against the pack that keeps it: its store step, or its
+ingest step when that step writes the table or the table ends at the landed
+files. Another pack in the same standard does not count. Not applied can be:
+
+- a contract rule's kind, such as `pattern` on Synapse, which has no regular
+  expressions; an action, such as `fail` on a Synapse view; or a table check;
+- a cleansing operation, `deduplicate`, or a time zone conversion, including
+  the [zones Synapse cannot convert](/docs/reference/packs/synapse#quality-and-cleansing);
+- quarantine, or the results of the checks;
+- a value of [intent](/docs/reference/intent#support), such as `load.mode` on a
+  method that reads the source itself;
+- a contract field the pack does not apply yet;
+- anything that would check or cleanse a table that ends at the landed files,
+  since nothing reads those files before your reports do.
+
+What each pack applies, and why it does not, is on its page under
+**Quality and cleansing** and **Intent**:
+[Databricks](/docs/reference/packs/databricks#quality-and-cleansing),
+[DuckDB](/docs/reference/packs/duckdb#quality-and-cleansing),
+[Synapse](/docs/reference/packs/synapse#quality-and-cleansing) and
+[Azure Data Factory](/docs/reference/packs/adf#quality-and-cleansing).
+
+## Where it shows [#where-it-shows]
+
+**In `check`, `plan` and `apply`,** under its own heading,
+`Not applied on this platform`, after the other problems and warnings,
+grouped by the environments that have it. This is what the
+[first project](/docs/start/first-project) prints:
+
+```text
+Not applied on this platform
+dev:
+contracts/orders.yaml:11:59  warning  NOT_APPLIED
+  The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.
+  Add `check` to the layer's `does` to apply it here.
+```
+
+Each message says what is not applied, on which pack, and why. A warning never
+changes the exit code, so `check` in CI still passes.
+
+**In VS Code,** as a warning at the same line, with the same message. A
+warning the platform [accepts](/docs/how-to/accept-a-warning) is not shown.
+
+**In a data product's passport,** in its Quality section: each check the
+engine does not apply ends `Not enforced:` and the reason, and each cleansing
+operation it does not apply says `is not applied:` and the reason. The
+`data-products` example keeps its tables in layers that say nothing of
+checking, so its passport says:
+
+<Example
+  name="data-products"
+  file="build/products/dev/customers.md"
+  from="#### `shop.bronze.customers`"
+  to="Not enforced:"
+/>
+
+The passport says this whether or not the warning is accepted: accepting a
+warning quiets it, and does not make the check run.
+
+## A layer that does not check [#layers]
+
+On DuckDB and Synapse the most common case is the one above: a table in a
+layer that does not say it checks. These engines run checks only in a layer
+whose `does` lists `check`, or is `raw`, where checks only count. The hint
+says what to add. Write each layer as an object with what it does:
+
+```yaml
+layers:
+  - { name: bronze, does: raw } # every row as it arrived; checks only count
+  - { name: silver, does: [check] }
+```
+
+With these layers the first project's plan lists no warning, and `run.sql`
+counts the orders that have no `order_id`. Databricks checks rows in every
+layer, so it never gives this hint; see
+[Say which layers check](/docs/how-to/add-quality-checks#layers) and
+[What a layer does](/docs/concepts/layers#what-a-layer-does).
+
+## How it differs from other warnings [#other-warnings]
+
+- **Most warnings** say something in your definitions could be better: a
+  setting has moved ([`SETTING_MOVED`](/docs/reference/errors#SETTING_MOVED)),
+  `deduplicate` is redundant ([`DEDUPLICATE_MODE`](/docs/reference/errors#DEDUPLICATE_MODE)),
+  or quarantine has nothing to keep
+  ([`QUARANTINE_UNUSED`](/docs/reference/errors#QUARANTINE_UNUSED)). Not
+  applied says your definitions are fine and this engine cannot do what they
+  ask, so it is listed apart.
+- **[`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF)** says the
+  engine can do it, but the platform has not turned it on, such as Databricks
+  table checks without `databricks.manage.checks`, or tags without
+  `databricks.manage.tags`. Its fix turns it on in `platform.yaml`, with the
+  grants it needs. Not applied has no switch to turn.
+- **[`QUALITY_RULE_NOT_CHECKED`](/docs/reference/errors#QUALITY_RULE_NOT_CHECKED)**
+  says no engine could check a rule as it is written, such as a `custom` rule
+  or one with no comparison.
+- **[`PREVIEW_FEATURE`](/docs/reference/errors#PREVIEW_FEATURE)** says the
+  feature is applied, but it is in preview on the platform, and the standard
+  asks for generally available features only.
+
+## What to do [#what-to-do]
+
+Read the reason, then choose one:
+
+- **Move it where it is applied.** Add the duty to the layer's `does`, as the
+  hint says; check a table that Lakeflow Connect writes in a transform in the
+  next layer; give a table that ends at the landed files a store step.
+- **Choose another method or pack** that applies it, if your platform has one.
+- **Remove it,** when the table can do without it.
+- **Accept it,** when you have looked at it and decided to live with it, with
+  the reason in `platform.yaml`; see
+  [Accept a warning](/docs/how-to/accept-a-warning).

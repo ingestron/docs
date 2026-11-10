@@ -1,10 +1,17 @@
-# Data quality: required columns from the contract and your own checks,
-# each with warn, drop or fail.
+# One set of checks on three engines: each environment builds the readings
+# table on a different one, so you can compare what each does with the same
+# rules. A real project builds its tables on one engine.
 id: iot
 environments:
-  dev: {}
+  databricks:
+    values: { ingest: files, store: streaming-table, source: sensors }
+  duckdb:
+    values: { ingest: duckdb-files, store: duckdb-table, source: sensors }
+  synapse:
+    values: { ingest: adf-files, store: synapse-view, source: drop }
 imports:
   - standard.yaml
+  - platform.yaml
   - connections/*.yaml
   - flows/*.yaml
   - contracts/*.yaml

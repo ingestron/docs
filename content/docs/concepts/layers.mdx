@@ -1,15 +1,16 @@
 ---
 title: Layers
-description: The stages a project's tables are grouped in, where each table lands, and what its layer changes.
+description: The stages a project's tables are grouped in, where each table lands, what its layer changes, and what each layer does with its rows.
 ---
 
 A layer is a named stage that a table belongs to. A project has one ordered
 list of layers. Without `layers` in the standard, the list is <DefaultLayers />,
 the default of every pack.
 
-A layer changes no data by itself. Ingestron uses a table's layer for its
-names, for the standard's rules, and to decide where a table lands when its
-definition does not say. A [transform](/docs/how-to/write-a-transform) is
+Ingestron uses a table's layer for its names, for the standard's rules, and to
+decide where a table lands when its definition does not say. A layer can also
+say what it does with its rows: keep them as they arrived, or cleanse,
+deduplicate and check them. A [transform](/docs/how-to/write-a-transform) is
 what reads tables and writes a new one; it can read tables in any layer and
 write its table to any layer.
 
@@ -58,6 +59,42 @@ table a materialised view, with a longer log retention:
 
 `region_sales` is the only `gold` table, so only its view has the longer
 retention. `store_sales` keeps the pack's settings.
+
+## What a layer does [#what-a-layer-does]
+
+Write a layer as an object to give it `does`, what the layer does with its
+rows, and defaults for the tables in it, such as `history` and `quality`; see
+[Intent](/docs/reference/intent#where). This is the standard of the
+[local medallion](/docs/how-to/kits/duckdb-local-medallion) published standard:
+
+<KitFile id="duckdb/local-medallion" file="standard.yaml" pick="layers" />
+
+`does` is `raw`, or a list of duties:
+
+| `does`        | The layer's tables                                                                                                 |
+| ------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `raw`         | Keep every row as it arrived. Nothing is cleansed, and checks only count: every action is `warn`.                  |
+| `cleanse`     | Get the standard's `cleanse` defaults, and may cleanse their own columns.                                          |
+| `deduplicate` | May keep one row per key with `cleanse.deduplicate`.                                                               |
+| `check`       | Run their checks, each with its action: `warn`, `drop` or `fail`.                                                  |
+| `quarantine`  | May keep the rows a `drop` check leaves out, with `quality.quarantine`, and get the standard's `quarantine: true`. |
+
+A table asks only for what its layer does. Writing a duty in a table whose
+layer's `does` leaves it out, such as `cleanse.columns` on a table in a `raw`
+layer, or an expectation's `drop` in a layer that does not `check`, is
+[`LAYER_RESPONSIBILITY`](/docs/reference/errors#LAYER_RESPONSIBILITY), an
+error that names the layers that do it. In a layer whose `does` leaves out
+`check`, every action is `warn`.
+
+A layer without `does` asks nothing of its tables, so a project written before
+layers had duties generates the same files. Its flow tables still get the
+standard's `cleanse` defaults; a transform's table does not. Databricks checks
+rows in every layer. DuckDB and Synapse check rows only where `does` lists
+`check` or is `raw`; elsewhere each rule is
+[not applied here](/docs/concepts/not-applied).
+[Cleanse data in the right layer](/docs/how-to/cleanse-data) puts each duty in
+its layer, and [Check data quality](/docs/how-to/add-quality-checks#layers)
+says what each engine does.
 
 ## Name your own layers
 

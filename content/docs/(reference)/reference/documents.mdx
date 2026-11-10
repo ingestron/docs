@@ -27,8 +27,11 @@ documents read with `${values.…}`, and the files to load. It has no
 
 See [Standards and packs](/docs/concepts/standards-and-packs),
 [Which setting wins](/docs/concepts/settings), [Intent](/docs/reference/intent)
-for `layers`, `load`, `audit`, `operations` and the other intent, and
-[Name tables and resources](/docs/how-to/name-things-your-way).
+for `layers`, `load`, `audit`, `operations` and the other intent,
+[What a layer does](/docs/concepts/layers#what-a-layer-does) for `does`,
+[Check data quality](/docs/how-to/add-quality-checks) for `quality`,
+[Cleanse data in the right layer](/docs/how-to/cleanse-data) for `cleanse`,
+and [Name tables and resources](/docs/how-to/name-things-your-way).
 
 ## Platform
 
@@ -43,21 +46,31 @@ and `notifications` with one that moves it to `alerts`.
 
 <DocumentFields kind="Platform" />
 
-See [Environments and platform](/docs/concepts/environments-and-platform).
+See [Environments and platform](/docs/concepts/environments-and-platform), and
+[Accept a warning](/docs/how-to/accept-a-warning) for `accept`.
 
 ## Connection
 
 <DocumentFields kind="Connection" />
 
 See [Connectors](/docs/connectors) and [Reachability](/docs/start/choose-a-route#reachability).
+A connection's `timezone` is the zone its timestamps are converted from; see
+[Cleanse data in the right layer](/docs/how-to/cleanse-data#add-the-columns-to-cleanse).
 
 ## Flow
 
 <DocumentFields kind="Flow" />
 
+See [Check data quality](/docs/how-to/add-quality-checks) for `expectations`
+and `quality`, and [Cleanse data in the right layer](/docs/how-to/cleanse-data)
+for `cleanse`.
+
 ## Transform
 
 <DocumentFields kind="Transform" />
+
+A transform with one input may leave out `code`; see
+[Leave out the code](/docs/how-to/write-a-transform#without-code).
 
 ## Data contract
 

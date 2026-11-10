@@ -32,20 +32,29 @@ name, is [`BAD_SETTING`](/docs/reference/errors#BAD_SETTING).
 ## Where to write it [#where]
 
 - **The standard**, for every table: `load` (`default`, `deletes` and `when`
-  rules), `audit`, `rescued`, `retention`, `storage`, `quality.results` and
-  `operations`. `load.when` rules match a table's `connector`, `connectivity`
-  and `layer`; the first that matches chooses its load mode.
+  rules), `audit`, `rescued`, `retention`, `storage`, `quality` (`required`,
+  `default`, `quarantine` and `results`), `cleanse` (`text` and `timestamps`)
+  and `operations`. `load.when` rules match a table's `connector`,
+  `connectivity` and `layer`; the first that matches chooses its load mode.
 - **A layer** of the standard, for every table in it: write the layer as an
-  object, `{ name: silver, history: latest }`, with `history`, `audit`,
-  `rescued` and `retention`. A layer written as a name gives nothing. Each
-  layer is listed once; a second is
+  object, `{ name: silver, history: latest }`, with `does`, `history`,
+  `audit`, `rescued`, `retention` and `quality`. A layer written as a name
+  gives nothing. Each layer is listed once; a second is
   [`DUPLICATE_LAYER`](/docs/reference/errors#DUPLICATE_LAYER).
 - **A flow**, for its tables, and **a flow table**, for itself: `load`
-  (`mode`, `cursor` and `deletes`), `history`, `sequence` and `audit`.
-- **A transform**, for its table: `history`, `sequence` and `audit`. A
-  transform's table reads no source, so it has no `load`, and the audit
-  values only a source gives, such as `source_file`, are
+  (`mode`, `cursor` and `deletes`), `history`, `sequence` and `audit`. A flow
+  table also gives `cleanse` (`columns` and `deduplicate`), `quality`
+  (`quarantine` and `results`) and its `expectations`' actions.
+- **A transform**, for its table: `history`, `sequence`, `audit`, `cleanse`,
+  `quality` and its `expectations`' actions. A transform's table reads no
+  source, so it has no `load`, and the audit values only a source gives, such
+  as `source_file`, are
   [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED) there.
+- **The contract**: its rules, which become the checks judged as
+  `quality.rules` and `quality.table-checks`; see
+  [Describe a table with a contract](/docs/how-to/write-a-contract#rules-about-the-data).
+- **A connection**: `timezone`, the zone its timestamps are written in, which
+  `cleanse.timezone` converts from.
 - **The standard's `fixed`**: any of these that no layer, flow or transform
   may change, such as `fixed: { history: latest }`. A definition that writes
   another value is [`FIXED_SETTING`](/docs/reference/errors#FIXED_SETTING).
@@ -72,6 +81,12 @@ places, a later one winning:
 
 Mappings merge key by key, so a flow's `load: { cursor: updated_at }` keeps
 the load mode the standard gave. A list, such as `audit`, is replaced whole.
+
+`quality` merges the same way. The actions come from the pack's defaults,
+the standard's `quality`, then the layer's, and an expectation's own `action`
+wins over all of them; in a layer whose `does` leaves out `check`, every
+action is then `warn`. `quarantine` and `results` come from the standard, the
+layer, then the flow table or the transform.
 
 Then the methods are chosen, and what is still unset comes from the chosen
 method's own default: `streaming-table` keeps every row as it arrived,
@@ -135,6 +150,18 @@ links to its full table, with what it does and the platform feature's release
 level.
 
 <IntentOverview />
+
+## Quality and cleansing [#quality]
+
+The quality and cleansing paths, from `quality.rules` to `deduplicate`, are
+judged for each check and each column a table cleanses, by the step that keeps
+the table: a rule's kind, its action, each table check, each operation and
+quarantine. A pack can apply one only in a layer whose `does` lists a duty,
+such as DuckDB's checks, which run only where a layer checks. Each pack's page
+lists them under **Quality and cleansing**, and a value a pack does not apply
+is [not applied here](/docs/concepts/not-applied). See
+[Check data quality](/docs/how-to/add-quality-checks) and
+[Cleanse data in the right layer](/docs/how-to/cleanse-data).
 
 ## Release level of features [#features]
 

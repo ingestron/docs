@@ -118,6 +118,25 @@ describe("how-to/add-a-source", () => {
   });
 });
 
+describe("how-to/write-a-transform", () => {
+  it("builds a silver copy of the first project's orders from a transform with no code", () => {
+    const steps = section(
+      read("how-to/write-a-transform.mdx"),
+      "## Leave out the code [#without-code]",
+    );
+    expect(prose(steps)).toContain("saved as `transforms/orders_clean.yaml`");
+    const cwd = shop();
+    writeFileSync(join(cwd, "transforms/orders_clean.yaml"), fences(steps, "yaml")[0]!);
+    const plan = cli(cwd, ["plan", "--no-diff"]);
+    expect(plan.code, plan.output).toBe(0);
+    expect(plan.output).toMatch(/^create +dev\/tables\/silver\.orders_clean\.sql$/m);
+    expect(cli(cwd, ["apply", "--no-diff"]).code).toBe(0);
+    const sql = readFileSync(join(cwd, "build/duckdb/dev/tables/silver.orders_clean.sql"), "utf8");
+    expect(sql).toContain(`nullif(trim(CAST("customer" AS VARCHAR)), '') AS "customer"`);
+    expect(sql).toContain(`SELECT * FROM "bronze"."orders"`);
+  });
+});
+
 describe("how-to/keep-a-table-current", () => {
   const page = read("how-to/keep-a-table-current.mdx");
 

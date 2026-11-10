@@ -1,0 +1,8 @@
+apiVersion: ingestron.io/v1
+kind: Connection
+id: drop
+description: The same files, which Azure Data Factory lands for Synapse to read.
+connector: adls-gen2
+connectivity: public
+settings:
+  url: https://iotlab.dfs.core.windows.net

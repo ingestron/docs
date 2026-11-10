@@ -288,8 +288,12 @@ When the parent pipeline fails, see
 
 ## Limits [#limits]
 
-DuckDB tables check no rows yet, so a flow's `expectations` are an error; see
-[Check data quality](/docs/how-to/add-quality-checks).
+DuckDB checks rows only in a layer whose `does` lists `check`, or counts them
+in a `raw` one; see
+[Check data quality](/docs/how-to/add-quality-checks#duckdb). The job's log
+shows each check's failing rows, and a `fail` check's message when it stops
+the run. Each run starts with an empty database, so a quarantine table and
+`_ingestron_checks` last only for that run: read the log instead.
 
 ### What has run in Azure
 

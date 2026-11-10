@@ -57,10 +57,12 @@ sets one too.
 
 It can also say how tables are loaded, kept and run, in
 [intent](/docs/reference/intent) that every pack reads: what each layer keeps
-(`history`), columns that record when and where each row came from (`audit`),
-how files and rows are loaded (`load`), how runs are retried and who is told
-(`operations`), and whether platform features in preview may be used
-(`features`). The [published standards](/docs/how-to/choose-a-published-standard)
+(`history`) and does with its rows (`does`), columns that record when and
+where each row came from (`audit`), how text and timestamps are cleansed
+(`cleanse`), how files and rows are loaded (`load`), how runs are retried and
+who is told (`operations`), and whether platform features in preview may be
+used (`features`). See [What a layer does](/docs/concepts/layers#what-a-layer-does)
+and [Cleanse data in the right layer](/docs/how-to/cleanse-data). The [published standards](/docs/how-to/choose-a-published-standard)
 are complete examples.
 
 ## One standard for several packs

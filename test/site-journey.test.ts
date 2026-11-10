@@ -46,6 +46,7 @@ it("opens with one learning path, then areas by the reader's job, with no index 
     "write-a-transform",
     "keep-a-table-current",
     "add-quality-checks",
+    "cleanse-data",
     "define-a-data-product",
     "add-an-environment",
     "plan-and-generate",
@@ -60,6 +61,7 @@ it("opens with one learning path, then areas by the reader's job, with no index 
     "kits",
     "name-things-your-way",
     "ask-the-platform-team",
+    "accept-a-warning",
     "share-a-template",
     "upgrade",
   ]);
@@ -68,6 +70,7 @@ it("opens with one learning path, then areas by the reader's job, with no index 
     "standards-and-packs",
     "settings",
     "layers",
+    "not-applied",
     "environments-and-platform",
     "yaml-references",
     "generated-files",

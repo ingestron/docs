@@ -65,10 +65,12 @@ is still generated, to run on demand.
 
 ## Contract fields
 
-What this pack does with each field of a table's contract. When a contract
-writes a field that no pack of the standard uses yet, Ingestron warns at that
-field with the reason below; **Elsewhere** fields are handled by another pack
-or step and never warn.
+What this pack does with each field of a table's contract. A field is judged
+for each table, against the pack that keeps it. When a contract writes a field
+this pack does not apply yet, on a table this pack keeps, Ingestron warns at
+that field with [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED) and the
+reason below; **Elsewhere** fields are handled by another pack or step and
+never warn.
 
 <ContractUseTable pack="databricks" />
 
@@ -84,3 +86,40 @@ own release level, as the linked page said on the date checked; with
 [`PREVIEW_FEATURE`](/docs/reference/errors#PREVIEW_FEATURE) warning.
 
 <IntentSupport pack="databricks" />
+
+Its checks, cleansing and quarantine are in
+[Quality and cleansing](#quality-and-cleansing).
+
+## Quality and cleansing [#quality-and-cleansing]
+
+What this pack does with each check, action and cleansing operation, from the
+pack itself. Each row links the Databricks page it was checked against, with
+the date; the pack's
+[sources](https://github.com/ingestron/pack-databricks/blob/main/spec/references.md#quality-and-cleansing)
+list every page it writes SQL from.
+
+<IntentSupport pack="databricks" part="quality" />
+
+- **Where checks run.** Each check is a constraint on the table's own SQL
+  file, in every layer: `EXPECT` for `warn`, `ON VIOLATION DROP ROW` for
+  `drop` and `ON VIOLATION FAIL UPDATE` for `fail`. In a layer whose `does`
+  leaves out `check`, such as `raw`, every action is `warn`, so the checks only
+  count. The pipeline's update shows each one's failing rows.
+- **Table checks** run in the `apply_contract` task after each refresh, only
+  when the platform turns on `databricks.manage.checks`; otherwise each is
+  [`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF). See
+  [Platform prerequisites](#platform-prerequisites).
+- **Quarantine** is Databricks' quarantine pattern: `<table>_quarantine` is
+  built from the same rows, read once, with `_failed_checks`, an array of the
+  checks each row failed.
+- **Results** are the pipeline's event log, published as a table.
+- **Cleansing** is written in the `SELECT` that builds the table's rows; a
+  transform's query is wrapped so cleansing never changes it.
+- **Deduplicate** happens only in a materialised view, with `QUALIFY`. On a
+  streaming table it is
+  [`DEDUPLICATE_MODE`](/docs/reference/errors#DEDUPLICATE_MODE): an error when
+  the table appends, and a warning when its history already keeps one row per
+  key.
+- **Lakeflow Connect** writes the table as the source gives it: each check
+  and cleansing operation on such a table is not applied. Check and cleanse it
+  in a transform in the next layer.

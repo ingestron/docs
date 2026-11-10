@@ -51,7 +51,8 @@ came from:
 
 <KitIntent id="databricks/lakehouse-streaming" />
 
-Each layer also says what it does with its rows, in `does`. `bronze` does
+Each layer also says what it does with its rows, in
+[`does`](/docs/concepts/layers#what-a-layer-does). `bronze` does
 `raw`: it keeps every row as it arrived, and its checks only count. `silver`
 does `cleanse`, `deduplicate`, `check` and `quarantine`: the standard's
 `cleanse` trims its text and turns an empty text into null, `required: drop`
@@ -63,7 +64,9 @@ leaves out rows that fail its checks; its SQL trims the emails it reads from
 
 What the Databricks pack does with each value, with each feature's release
 level and the date it was checked, is in
-[the Databricks pack's intent](/docs/reference/packs/databricks#intent).
+[the Databricks pack's intent](/docs/reference/packs/databricks#intent), and
+its checks and cleansing in
+[Quality and cleansing](/docs/reference/packs/databricks#quality-and-cleansing).
 With `features: ga`, Ingestron warns about any value that needs a feature in
 preview ([`PREVIEW_FEATURE`](/docs/reference/errors#PREVIEW_FEATURE)). The
 standard writes none: the job alerts on failure but not on slow runs, because

@@ -20,10 +20,12 @@ creates nothing in Azure.
 
 ## Contract fields
 
-What this pack does with each field of a table's contract. When a contract
-writes a field that no pack of the standard uses yet, Ingestron warns at that
-field with the reason below; **Elsewhere** fields are handled by another pack
-or step and never warn.
+What this pack does with each field of a table's contract. A field is judged
+for each table, against the pack that keeps it. When a contract writes a field
+this pack does not apply yet, on a table this pack keeps, Ingestron warns at
+that field with [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED) and the
+reason below; **Elsewhere** fields are handled by another pack or step and
+never warn.
 
 <ContractUseTable pack="synapse" />
 
@@ -36,3 +38,55 @@ warning where it is written, with the reason below. **Elsewhere** values are
 applied by another pack or step and never warn.
 
 <IntentSupport pack="synapse" />
+
+Its checks, cleansing and quarantine are in
+[Quality and cleansing](#quality-and-cleansing).
+
+## Quality and cleansing [#quality-and-cleansing]
+
+What this pack does with each check, action and cleansing operation, from the
+pack itself. Each row links the Microsoft page it was checked against, with
+the date; the pack's
+[sources](https://github.com/ingestron/pack-synapse/blob/main/spec/references.md#quality-and-cleansing)
+list every page it writes T-SQL from. The pack cannot run T-SQL in its tests,
+so its SQL is checked against those pages.
+
+<IntentSupport pack="synapse" part="quality" />
+
+- **Where checks run.** A table runs its checks only in a layer whose `does`
+  lists `check`, and in a `raw` layer counts them, each as `warn`. In any other
+  layer its view is what it was before checks, and each rule is
+  [not applied here](/docs/concepts/not-applied).
+- **The view** leaves out the rows a `drop` check fails, each time it is
+  queried; `warn` and `fail` checks keep their rows. A view cannot stop a
+  load, so `fail` is not applied.
+- **`checks.sql`** counts every check: row checks over the files, the rows the
+  view leaves out included, and table checks over the rows the view keeps. It
+  returns one row per check, then raises an error for the first `fail` check
+  that fails. It checks nothing unless something runs it after each landing;
+  see [Run and operate](/docs/platforms/synapse#operate). Table checks need
+  nothing turned on: the pack has no `checks` capability.
+- **Text comparisons** ignore spaces at the end of a value, as T-SQL does:
+  `'GB '` equals `'GB'`. With the standard's `trim` first this makes no
+  difference.
+- **Deduplicate** keeps the last row per primary key in the view, numbered
+  with `ROW_NUMBER()`. A view keeps nothing, so it is the only way a view gives
+  one row per key.
+
+### Time zones [#time-zones]
+
+T-SQL's `AT TIME ZONE` names zones by their Windows names, so the pack maps
+each IANA name to one, with a table generated from the Unicode CLDR's
+`windowsZones.xml` and its zone aliases (release 49, read 10 November 2026).
+`Europe/London` is `GMT Standard Time`. Windows has no zone for these, so a
+conversion from or to one of them is not applied, and the column stays in the
+zone it was in:
+
+<ZonesNotApplied pack="synapse" />
+
+Windows keeps less of each zone's history than the IANA database: times from
+before a zone's rules changed can convert differently here than on Databricks
+and DuckDB. In the hour repeated in autumn, T-SQL gives a wall time the offset
+before the change: in London on 25 October 2026, `01:30` is `00:30` UTC,
+where DuckDB gives `01:30`. In the hour skipped in spring, it moves the time
+forward by the gap.

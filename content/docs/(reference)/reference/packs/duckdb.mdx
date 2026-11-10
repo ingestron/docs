@@ -19,10 +19,12 @@ folder with the DuckDB command line; generation itself runs nothing.
 
 ## Contract fields
 
-What this pack does with each field of a table's contract. When a contract
-writes a field that no pack of the standard uses yet, Ingestron warns at that
-field with the reason below; **Elsewhere** fields are handled by another pack
-or step and never warn.
+What this pack does with each field of a table's contract. A field is judged
+for each table, against the pack that keeps it. When a contract writes a field
+this pack does not apply yet, on a table this pack keeps, Ingestron warns at
+that field with [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED) and the
+reason below; **Elsewhere** fields are handled by another pack or step and
+never warn.
 
 <ContractUseTable pack="duckdb" />
 
@@ -35,3 +37,44 @@ warning where it is written, with the reason below. **Elsewhere** values are
 applied by another pack or step and never warn.
 
 <IntentSupport pack="duckdb" />
+
+Its checks, cleansing and quarantine are in
+[Quality and cleansing](#quality-and-cleansing).
+
+## Quality and cleansing [#quality-and-cleansing]
+
+What this pack does with each check, action and cleansing operation, from the
+pack itself. Each row links the DuckDB page it was checked against, with the
+date; the pack's
+[sources](https://github.com/ingestron/pack-duckdb/blob/main/spec/references.md)
+list every page it writes SQL from.
+
+<IntentSupport pack="duckdb" part="quality" />
+
+- **Where checks run.** `run.sql` checks a table's rows only in a layer whose
+  `does` lists `check`, and in a `raw` layer counts them, each as `warn`. In
+  any other layer it runs none, and its SQL is what it was before checks; each
+  rule is [not applied here](/docs/concepts/not-applied).
+- **When.** Each table's rows are cast and cleansed, then counted against
+  every check before the table is built, in the run's one transaction. The
+  DuckDB command line prints each check with its failing rows. A failing
+  `fail` check calls `error()`, so `-bail` stops the run and nothing is
+  published. Table checks are counted once the table is built, with nothing to
+  turn on in the platform: the pack has no `checks` capability, so
+  `manage.checks` changes nothing here.
+- **Quarantine and results** stay in the database and are not published:
+  `<schema>.<table>_quarantine`, rebuilt each run (or added to, for `append`),
+  and `<schema>._ingestron_checks`, one row per check and run. In Azure each
+  run starts with an empty database, so they last only for that run, and the
+  job's log shows the counts.
+- **Deduplicate** applies to a table replaced each run. An `upsert` table, or
+  one kept at `history: latest`, already keeps one row per key, so
+  `deduplicate` there is a
+  [`DEDUPLICATE_MODE`](/docs/reference/errors#DEDUPLICATE_MODE) warning, and
+  on an `append` table it is an error.
+- **Time zones** come from DuckDB's ICU extension, which its command line
+  includes. A column typed with a time zone, such as `TIMESTAMPTZ`, cannot be
+  converted. Around a clock change, a wall time in the hour skipped in spring
+  is read in the offset before the change, and one in the hour repeated in
+  autumn is read as the later of the two: in London on 25 October 2026,
+  `01:30` is `01:30` UTC.

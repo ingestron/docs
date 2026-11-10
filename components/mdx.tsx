@@ -33,6 +33,8 @@ import {
   IntentOverview,
   IntentSupport,
   IntentVocabulary,
+  QualityEngines,
+  ZonesNotApplied,
 } from "@/components/reference/pack-intent";
 import { KitFacts, KitFile, KitIntent, KitList } from "@/components/reference/kits";
 import { ErrorCodes, LoadingCodes } from "@/components/reference/error-codes";
@@ -96,6 +98,8 @@ export function getMDXComponents(components?: MDXComponents) {
     PlatformSection,
     IntentSupport,
     IntentOverview,
+    QualityEngines,
+    ZonesNotApplied,
     IntentVocabulary,
     IntentAliases,
     KitList,

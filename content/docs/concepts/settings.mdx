@@ -64,8 +64,10 @@ a later place wins:
   transform picks one of them with `layer`.
 - **Types:** the pack's type for each logical type, the standard's `types`,
   then a column's `physicalType`.
-- **Quality:** the pack's default actions, the standard's `quality`, then an
-  expectation's `action`.
+- **Quality:** the pack's default actions, the standard's `quality`, the
+  table's layer's `quality`, then an expectation's `action`. In a layer whose
+  `does` leaves out `check`, every action is then `warn`; see
+  [Check data quality](/docs/how-to/add-quality-checks#layers).
 
 The pack is the standard's first pack. A name pattern in the platform
 document replaces the standard's pattern for that name, and the standard's

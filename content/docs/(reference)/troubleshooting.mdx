@@ -192,6 +192,33 @@ setting nobody gave.
 **Fix:** correct the name at the reported line, or add the missing setting,
 usually in the standard or the platform.
 
+### Plan lists warnings under `Not applied on this platform` [#not-applied]
+
+**Symptom:** every `plan`, `apply` and `check` prints warnings under their own
+heading, such as the [first project's](/docs/start/first-project):
+
+```text
+Not applied on this platform
+dev:
+contracts/orders.yaml:11:59  warning  NOT_APPLIED
+  The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.
+  Add `check` to the layer's `does` to apply it here.
+```
+
+**Cause:** the engine that keeps a table cannot apply something the
+definitions ask for, here a contract's required column: DuckDB and Synapse
+check rows only in a layer whose `does` lists `check`. A warning never stops a
+run; the files are written without that feature. Projects written before
+layers had duties show these after an upgrade, with the same files as before.
+
+**Check:** the message's reason, and the pack's
+[Quality and cleansing](/docs/reference/packs/duckdb#quality-and-cleansing).
+
+**Fix:** follow the hint, such as adding `check` to the layer's `does`; move
+the feature where it is applied, or remove it; or, once you have decided to
+live with it, [accept it](/docs/how-to/accept-a-warning). See
+[Not applied here](/docs/concepts/not-applied#what-to-do).
+
 ### The method cannot read this source
 
 **Symptom:**
@@ -579,6 +606,30 @@ building publishes nothing.
 ```sh
 duckdb -bail ingestron.duckdb -c ".read build/duckdb/dev/run.sql"
 ```
+
+### A check stops the run [#a-check-stops-the-run]
+
+**Symptom:** the run prints its checks, each with its failing rows, then stops
+with:
+
+```text
+Invalid Input Error: The check "<check>" failed for <n> rows of <table>, so nothing is published.
+```
+
+or, for a check over the whole table,
+`The table check "<check>" failed on <table>, so nothing is published.`
+
+**Cause:** a check whose action is `fail` found rows that fail it. The run
+stops before it inserts them: with `-bail`, nothing is published and no table
+changes.
+
+**Check:** the table the run printed just before the error lists each check,
+its action and its `failing_rows`. Query the files the table reads for the
+rows the check describes.
+
+**Fix:** correct the data and run again. If such rows should be kept and
+counted, or left out, change the check's action to `warn` or `drop`; see
+[Check data quality](/docs/how-to/add-quality-checks).
 
 ### Publishing fails after the tables are built
 

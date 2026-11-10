@@ -1,7 +1,21 @@
 apiVersion: ingestron.io/v1
 kind: Standard
 id: iot
-packs: [databricks@2]
+packs: [databricks@2, duckdb@2, synapse@2, adf@2]
+layers:
+  - name: bronze
+    does: [check, quarantine] # checks its rows, and keeps the ones a check leaves out
+  - silver
 quality:
-  required: drop # a row missing a required value is dropped and counted
-  default: warn # own checks only count failures unless they say otherwise
+  required: drop # a row missing a required value is left out
+  default: warn # every other check counts the rows that fail it
+  quarantine: true # rows a drop check leaves out go to <table>_quarantine
+  results: true # each check's result is kept where the engine can keep it
+ingest:
+  default: ${values.ingest} # the engine each environment builds on, from project.yaml
+  settings:
+    files: { format: csv }
+    duckdb-files: { format: csv }
+    adf-files: { format: csv, start: 2026-10-01T00:00:00Z }
+store:
+  default: ${values.store}

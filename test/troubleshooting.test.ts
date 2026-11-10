@@ -240,6 +240,12 @@ describe("generated files", () => {
 });
 
 describe("definitions", () => {
+  it("quotes the first project's warning under Not applied on this platform", () => {
+    const plan = cli(copy("duckdb"), ["plan", "--no-diff"]);
+    expect(plan.code).toBe(0);
+    quotes("Plan lists warnings under `Not applied on this platform` [#not-applied]", plan.output);
+  }, 30_000);
+
   it("quotes the setting messages", () => {
     const project = copy("duckdb");
     edit(project, "flows/orders.yaml", (text) =>
@@ -562,6 +568,26 @@ describe("Synapse serverless views", () => {
 
 describe("DuckDB", () => {
   const noise: RegExp[] = [];
+
+  it("quotes the messages a failing check stops the run with, as run.sql writes them", () => {
+    const project = copy("quality");
+    expect(cli(project, ["apply", "--no-diff"]).code).toBe(0);
+    const sql = readFileSync(join(project, "build/duckdb/duckdb/run.sql"), "utf8");
+    const text = entry("A check stops the run [#a-check-stops-the-run]");
+    const [row] = fences(text, "text");
+    // DuckDB names the error; the rest is the message run.sql formats.
+    const message = row!.trim().replace(/^Invalid Input Error: /, "");
+    expect(sql).toContain(
+      `format('${message.replace('"<check>"', '"{}"').replace("<n>", "{}").replace("<table>", "{}")}'`,
+    );
+    const table = /`(The table check "<check>" failed on <table>, so nothing is published\.)`/.exec(
+      text,
+    )?.[1];
+    expect(table, "the table check's message").toBeDefined();
+    expect(sql).toContain(
+      `format('${table!.replace('"<check>"', '"{}"').replace("<table>", "{}")}'`,
+    );
+  }, 30_000);
 
   it("quotes append over a file that is replaced, and upsert without a key", () => {
     const append = copy("duckdb-local");

@@ -33,6 +33,7 @@ const areas: Record<string, string[]> = {
     "/docs/how-to/write-a-transform",
     "/docs/how-to/keep-a-table-current",
     "/docs/how-to/add-quality-checks",
+    "/docs/how-to/cleanse-data",
     "/docs/how-to/define-a-data-product",
     "/docs/how-to/add-an-environment",
     "/docs/how-to/plan-and-generate",
@@ -59,6 +60,7 @@ const areas: Record<string, string[]> = {
     "/docs/how-to/kits/databricks-lakehouse-streaming",
     "/docs/how-to/name-things-your-way",
     "/docs/how-to/ask-the-platform-team",
+    "/docs/how-to/accept-a-warning",
     "/docs/how-to/share-a-template",
     "/docs/how-to/upgrade",
   ],
@@ -67,6 +69,7 @@ const areas: Record<string, string[]> = {
     "/docs/concepts/standards-and-packs",
     "/docs/concepts/settings",
     "/docs/concepts/layers",
+    "/docs/concepts/not-applied",
     "/docs/concepts/environments-and-platform",
     "/docs/concepts/yaml-references",
     "/docs/concepts/generated-files",
@@ -194,7 +197,7 @@ describe("page URLs", () => {
     const built = readFileSync(join(process.cwd(), "test/page-urls.txt"), "utf8")
       .trim()
       .split("\n");
-    expect(built).toHaveLength(133);
+    expect(built).toHaveLength(136);
     expect(
       source
         .getPages()

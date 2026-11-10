@@ -7,6 +7,7 @@ import { KindBlock } from "@/components/code-block";
 import { ReplaceMe, TipText } from "@/components/replace-me";
 import { TableFrame } from "@/components/table-frame";
 import { codeThemes } from "@/lib/code-themes";
+import { pickPath } from "@/lib/extract";
 import {
   kitBlanks,
   kitById,
@@ -147,9 +148,12 @@ function markBlanks(blanks: Blank[]): Transformer {
  * focusable, with a tooltip giving the field, where to find the value and a
  * suggestion, from the same field reference as the editor's hover; the notes
  * below the block say the same, and show on touch screens.
+ * With `pick`, a YAML path, only that part of a file that has no
+ * `REPLACE_ME`, as it is in the file.
  * @example <KitFile id="databricks/lakehouse-streaming" file="platform.yaml" />
+ * @example <KitFile id="duckdb/local-medallion" file="standard.yaml" pick="layers" />
  */
-export function KitFile({ id, file }: { id: string; file: string }) {
+export function KitFile({ id, file, pick }: { id: string; file: string; pick?: string }) {
   const kit = kitById(id);
   const blanks = file.endsWith(".yaml") ? kitBlanks(kit, file) : [];
   const unexplained = blanks.filter((blank) => !blank.help);
@@ -157,12 +161,16 @@ export function KitFile({ id, file }: { id: string; file: string }) {
     throw new Error(
       `${kit.id}@${kit.version} ${file}: no field explains the REPLACE_ME at ${unexplained.map((blank) => blank.pointer).join(", ")}.`,
     );
-  const title = `${file}`;
+  if (pick !== undefined && blanks.length > 0)
+    throw new Error(`${kit.id}@${kit.version} ${file}: pick only a file with no REPLACE_ME.`);
+  const picked = pick === undefined ? kitFile(kit, file) : pickPath(kitFile(kit, file), pick);
+  if (picked === undefined) throw new Error(`${kit.id}@${kit.version} ${file} has no "${pick}".`);
+  const title = pick === undefined ? file : `${file} › ${pick}`;
   const extension = file.split(".").pop() ?? "text";
   return (
     <>
       <ServerCodeBlock
-        code={kitFile(kit, file).trimEnd()}
+        code={picked.trimEnd()}
         lang={extension === "yml" ? "yaml" : extension}
         themes={codeThemes}
         transformers={[markBlanks(blanks)]}

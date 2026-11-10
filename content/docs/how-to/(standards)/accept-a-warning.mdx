@@ -1,0 +1,177 @@
+---
+title: Accept a warning
+description: Take a warning you have looked at and decided to live with out of the problem lists, with the reason, for every environment or only some.
+---
+
+Some warnings stay true however you write the definitions: the engine cannot
+do what a table asks, or the platform team does it another way. Once you have
+looked at one and decided to live with it, accept it in `platform.yaml`, with
+the reason. It then leaves the problem lists, and the run says how many were
+accepted. Nothing generated changes.
+
+This guide uses the [`quality` example](/docs/how-to/add-quality-checks), whose
+`synapse` environment builds the readings table as a Synapse serverless view.
+A view cannot stop a load, so its plan warns:
+
+```text
+flows/readings.yaml:11:87  warning  NOT_APPLIED
+  The fail action isn't applied on synapse: a view can't stop a load; checks.sql checks this rule and raises an error when it runs.
+```
+
+## Accept or fix [#when]
+
+Accept a warning only when the definitions are right and the warning will stay:
+
+- **Accept** when the engine cannot do it and you have something else in
+  place, such as `checks.sql` run from CI after each landing; when the
+  platform team does the work its own way, such as tags applied with
+  Terraform while `databricks.manage.tags` is off
+  ([`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF)); or when a table
+  can go without the feature.
+- **Fix** it when the definitions can change: a duty the layer's `does` should
+  list, a setting that has moved, a value that is still `REPLACE_ME`. The
+  warning's hint says how; see [Not applied here](/docs/concepts/not-applied#what-to-do).
+
+Only a warning can be accepted. An error stops the run until it is fixed.
+
+## Accept one warning [#accept]
+
+Add an `accept` list at the top level of `platform.yaml`. Each entry gives the
+warning's `code`, narrows it with `about`, and says why in `reason`:
+
+```yaml
+accept:
+  - code: NOT_APPLIED
+    about: { feature: fail, table: readings }
+    reason: checks.sql runs from CI after each landing and pages the on-call team.
+```
+
+Plan again:
+
+```sh
+ingestron plan --no-diff
+```
+
+Before the files, it prints:
+
+```text
+databricks, duckdb: warnings
+platform.yaml:16:5  warning  ACCEPT_UNUSED
+  The accept entry for NOT_APPLIED (table "readings", feature "fail") matches no warning in this run.
+  Remove the entry, or correct its code or about. To accept different warnings in each environment, write the list as a value: accept: ${values.accept}.
+  Fix: Remove the entry.
+Not applied on this platform
+synapse:
+contracts/readings.yaml:14:40  warning  NOT_APPLIED
+  The pattern rule isn't applied on synapse: serverless T-SQL has no regular expressions.
+standard.yaml:12:15  warning  NOT_APPLIED
+  Quarantine isn't applied on synapse: a view keeps no rows to quarantine; checks.sql returns how many rows each drop check leaves out instead.
+standard.yaml:13:12  warning  NOT_APPLIED
+  quality.results: true isn't applied on synapse: a view keeps no results; checks.sql returns each check's counts instead when it runs.
+1 accepted warning (platform.yaml)
+```
+
+The `fail` warning has gone, and the last line counts it. The other
+environments build on engines that apply `fail`, so there the entry matches
+nothing, and
+[`ACCEPT_UNUSED`](/docs/reference/errors#ACCEPT_UNUSED) says so: an entry
+that no longer matches anything is reported, so the list never outlives the
+warnings it was written for.
+
+## Accept it in some environments only [#per-environment]
+
+To accept a warning in one environment, write the list as a value that each
+environment gives. In `platform.yaml`, replace the list with:
+
+```yaml
+accept: ${values.accept}
+```
+
+and give the list in `project.yaml`, empty unless an environment says
+otherwise:
+
+```yaml
+# One set of checks on three engines: each environment builds the readings
+# table on a different one, so you can compare what each does with the same
+# rules. A real project builds its tables on one engine.
+id: iot
+environments:
+  databricks:
+    values: { ingest: files, store: streaming-table, source: sensors }
+  duckdb:
+    values: { ingest: duckdb-files, store: duckdb-table, source: sensors }
+  synapse:
+    values:
+      ingest: adf-files
+      store: synapse-view
+      source: drop
+      accept:
+        - code: NOT_APPLIED
+          about: { feature: fail, table: readings }
+          reason: checks.sql runs from CI after each landing and pages the on-call team.
+values:
+  accept: [] # no environment accepts a warning unless it says so
+imports:
+  - standard.yaml
+  - platform.yaml
+  - connections/*.yaml
+  - flows/*.yaml
+  - contracts/*.yaml
+```
+
+An environment's list replaces the one in `values`, whole. Plan again, and
+before the files only the warnings still to look at remain:
+
+```text
+Not applied on this platform
+synapse:
+contracts/readings.yaml:14:40  warning  NOT_APPLIED
+  The pattern rule isn't applied on synapse: serverless T-SQL has no regular expressions.
+standard.yaml:12:15  warning  NOT_APPLIED
+  Quarantine isn't applied on synapse: a view keeps no rows to quarantine; checks.sql returns how many rows each drop check leaves out instead.
+standard.yaml:13:12  warning  NOT_APPLIED
+  quality.results: true isn't applied on synapse: a view keeps no results; checks.sql returns each check's counts instead when it runs.
+1 accepted warning (platform.yaml)
+```
+
+## Say which warnings [#about]
+
+An entry accepts every warning with its `code` that matches each key of its
+`about`:
+
+- `file`: a pattern for the file the warning is in, relative to the project
+  folder, as `imports` writes them: `*` stays within a folder and `**` crosses
+  folders, such as `flows/legacy/**`.
+- `table`: the table the warning is about, by its name.
+- `feature`: what is not applied or is off. For `NOT_APPLIED`, a rule kind
+  (`notNull`, `pattern`, …), an action (`warn`, `drop`, `fail`),
+  `table-checks`, `expectations`, `quarantine`, a cleansing operation such as
+  `cleanse.trim` or `deduplicate`, an intent value such as `history=full`, or
+  a contract field's path; for `CAPABILITY_OFF`, the capability, such as
+  `tags` or `checks`.
+
+Without `about`, an entry accepts every warning with that code, so narrow it to
+what you have looked at. A warning that several entries match is accepted by
+the first. [Documents](/docs/reference/documents#platform-accept) lists the
+fields.
+
+An entry whose `code` cannot be accepted is
+[`ACCEPT_CODE`](/docs/reference/errors#ACCEPT_CODE), an error: a code that is
+only ever an error, one that is no longer reported, such as
+`CONTRACT_FIELD_UNUSED`, or `ACCEPT_CODE` and `ACCEPT_UNUSED` themselves. Each
+code on the [errors page](/docs/reference/errors) says how it is reported.
+
+## What accepting does not change [#what-still-shows]
+
+- **The files.** Accepting changes nothing generated, and a warning never
+  changed an exit code: `check` passes in CI with or without the list.
+- **The count.** `check`, `plan` and `apply` end their problems with
+  `<n> accepted warnings (platform.yaml)`, so an accepted warning is never
+  hidden entirely.
+- **The editor.** VS Code leaves accepted warnings out of the Problems panel.
+- **The passport.** A [data product's passport](/docs/how-to/define-a-data-product#read-the-passport)
+  still says `Not enforced` for an accepted `NOT_APPLIED` or
+  `CAPABILITY_OFF`: accepting a warning does not make the check run.
+
+Review the list as you would the definitions: in a pull request, with its
+reasons.

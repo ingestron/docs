@@ -46,7 +46,11 @@ valid. Problems are for the environment in the status bar; click it, or run
 **Ingestron: Select environment**, to choose another. Problems that generating
 finds, such as a value supplied when deploying that cannot be a name
 (`DEPLOY_VALUE`), show too, and a pack's notice (`PACK_NOTICE`) is a warning
-on the first line of `project.yaml` in every environment.
+on the first line of `project.yaml` in every environment. A feature the engine
+that keeps a table cannot apply is a warning at the line that asks for it
+(`NOT_APPLIED`; see [Not applied here](/docs/concepts/not-applied)). A warning
+that the platform's `accept` list accepts is not shown; see
+[Accept a warning](/docs/how-to/accept-a-warning).
 
 A definition that uses `${envvar:NAME}` reads the variable from `.env.<environment>`
 and `.env` in the project folder, and from the environment VS Code was started

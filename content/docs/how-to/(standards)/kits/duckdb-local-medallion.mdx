@@ -22,6 +22,8 @@ ingestron init shop --kit duckdb/local-medallion@2026-11-10
 Then run it as the new `README.md` says; see
 [Start from a published standard](/docs/how-to/start-from-a-published-standard)
 and [DuckDB](/docs/platforms/duckdb).
+[Cleanse data in the right layer](/docs/how-to/cleanse-data) then adds a
+cleansed silver table to it.
 
 ## The standard
 
@@ -34,7 +36,8 @@ DuckDB pack's default:
 
 <KitIntent id="duckdb/local-medallion" />
 
-Each layer also says what it does with its rows, in `does`. `bronze` does
+Each layer also says what it does with its rows, in
+[`does`](/docs/concepts/layers#what-a-layer-does). `bronze` does
 `raw`: it keeps every row as it arrived, nothing there is cleansed, and its
 checks only count: the run prints how many orders have no `order_id`. `silver` does `cleanse`, `deduplicate`, `check` and `quarantine`: the
 standard's `cleanse` trims its text and turns an empty text into null, the
@@ -44,7 +47,9 @@ contract's required `customer` is checked, a row without one is left out, and
 table of each schema. The plan reports no warning.
 
 What the DuckDB pack does with each value, and with every other, is in
-[the DuckDB pack's intent](/docs/reference/packs/duckdb#intent).
+[the DuckDB pack's intent](/docs/reference/packs/duckdb#intent), and its
+checks and cleansing in
+[Quality and cleansing](/docs/reference/packs/duckdb#quality-and-cleansing).
 
 ## The platform
 

@@ -14,6 +14,8 @@ import {
   IntentAliases,
   IntentOverview,
   IntentSupport,
+  QualityEngines,
+  ZonesNotApplied,
   IntentVocabulary,
 } from "../components/reference/pack-intent";
 import { kitBlanks, kitById, kitPage, kits, latestKits } from "../lib/kits";
@@ -94,6 +96,39 @@ describe("intent", () => {
     expect(databricks).toContain("<td>2026-11-09</td>");
     // Where a method differs from its pack.
     expect(databricks).toContain("Managed ingestion reads the source, not files.");
+  });
+
+  it("has a quality and cleansing section on every pack's page, apart from the rest of intent", () => {
+    for (const pack of packs) {
+      const page = read(`reference/packs/${pack.id}.mdx`);
+      expect(page).toContain("## Quality and cleansing [#quality-and-cleansing]");
+      expect(page).toContain(`<IntentSupport pack="${pack.id}" part="quality" />`);
+      const quality = html(createElement(IntentSupport, { pack: pack.id, part: "quality" }));
+      const rest = html(createElement(IntentSupport, { pack: pack.id }));
+      expect(quality).toContain("<code>quality.rules</code>");
+      expect(quality).toContain("<code>cleanse.timezone</code>");
+      expect(quality).not.toContain("<code>history</code>");
+      expect(rest).toContain("<code>history</code>");
+      expect(rest).not.toContain("<code>quality.rules</code>");
+    }
+    // Where a pack applies a value only in some layers, and the zones it cannot convert.
+    const duckdb = html(createElement(IntentSupport, { pack: "duckdb", part: "quality" }));
+    expect(duckdb).toContain("Only in a layer whose <code>does</code> lists <code>check</code>");
+    expect(read("reference/packs/synapse.mdx")).toContain('<ZonesNotApplied pack="synapse" />');
+    const zones = html(createElement(ZonesNotApplied, { pack: "synapse" }));
+    const use = intentUseOf(
+      packs.find((pack) => pack.id === "synapse")!,
+      "cleanse.timezone",
+      "true",
+    );
+    const listed = Object.keys((use?.use === "used" && use.zonesNotApplied) || {});
+    expect(listed).toContain("Antarctica/Troll");
+    for (const zone of listed) expect(zones).toContain(`<code>${zone}</code>`);
+    expect(() => html(createElement(ZonesNotApplied, { pack: "duckdb" }))).toThrow();
+    // The engine table: what each engine does, or why it does not.
+    const engines = html(createElement(QualityEngines));
+    expect(engines).toContain("Not applied: a view can&#x27;t stop a load");
+    expect(engines).toContain("ON VIOLATION DROP ROW");
   });
 
   it("describes every intent path, and shows every pack's use of each value", () => {

@@ -61,11 +61,18 @@ a `README.md` listing every product, and a page per product. It says who owns
 the product and what it is for, which table it is in this environment and
 where it lives, its columns, with the contract's type for each (such as
 `integer` or `timestamp`, also for columns the landed files add) and sensitive ones
-marked, its quality checks,
+marked, its quality checks and cleansing,
 how fresh it is, who may use it, its lineage as a diagram, and the governance
 rules it meets:
 
 <Example name="data-products" file="build/products/dev/customers.md" />
+
+Its Quality section says, for each table, which engine checks it, when, and
+where the results are, then each check in words with what a failing row does.
+A check the engine does not apply says `Not enforced` and why, even when the
+platform [accepts the warning](/docs/how-to/accept-a-warning). Here the
+tables are in layers that say nothing of checking, so DuckDB runs none of
+their checks; see [Not applied here](/docs/concepts/not-applied).
 
 Passports are Markdown with Mermaid diagrams, so GitHub and Azure DevOps show
 them as pages. They are generated with the pipelines, so they are always up to

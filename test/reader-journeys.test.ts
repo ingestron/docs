@@ -160,8 +160,8 @@ describe("connector pages", () => {
 });
 
 describe("how-to/add-quality-checks", () => {
-  const table = read("how-to/add-quality-checks.mdx").split("\n## ")[0]!.split("\n\n")[2]!;
-  const row = (link: string) => table.split("\n").find((line) => line.includes(`](${link})`))!;
+  const page = read("how-to/add-quality-checks.mdx");
+  const prose = (text: string) => text.replace(/\s+/g, " ");
 
   /** Plans a copy of a sample after giving one table an expectation, the way the guide adds one. */
   function plan(folder: string, flow: string, table: string): string {
@@ -174,40 +174,60 @@ describe("how-to/add-quality-checks", () => {
     return cli(cwd, ["plan", "--no-diff"]).output;
   }
 
-  it("says what each engine does with a check, as the CLI reports it", () => {
-    expect(row("/docs/platforms/databricks")).toContain("Runs them");
-    const databricks = plan(exampleFolder("quality"), "flows/readings.yaml", "readings");
-    expect(databricks).not.toContain("error");
+  it("lists first what Synapse cannot apply in the quality example, as the page shows", () => {
+    const engines = section(page, "## What each engine does [#engines]");
+    const planned = cli(copy("quality"), ["plan", "--no-diff"]);
+    expect(planned.code).toBe(0);
+    expect(planned.output.startsWith(fences(engines, "text")[0]!)).toBe(true);
+    expect(engines).toContain("<QualityEngines />");
+  });
+
+  it("says where DuckDB and Synapse check rows, as the CLI reports it", () => {
+    const layers = prose(section(page, "## Say which layers check [#layers]"));
+    expect(layers).toContain(
+      "DuckDB and Synapse run checks only in a layer whose `does` lists `check` or is `raw`",
+    );
+    expect(layers).toContain("Databricks checks them as it always has");
+
+    // Databricks checks the quality example's expectation; it is in a layer that checks.
+    expect(plan(exampleFolder("quality"), "flows/readings.yaml", "readings")).not.toContain(
+      "error",
+    );
 
     // The DuckDB starter's layers say nothing of checking.
     const duckdb = plan(exampleFolder("duckdb"), "flows/orders.yaml", "orders");
     expect(duckdb).toContain("error  METHOD_CHECK");
     expect(duckdb).toContain("DuckDB checks rows only in a layer whose does lists check");
-    expect(duckdb).toContain("warning  NOT_APPLIED");
-    expect(row("/docs/platforms/duckdb")).toContain("`METHOD_CHECK`");
-    expect(row("/docs/platforms/duckdb")).toContain("`NOT_APPLIED`");
+    expect(duckdb).toContain(
+      "The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.",
+    );
+    expect(layers).toContain("`METHOD_CHECK`");
 
     const synapse = plan(exampleFolder("synapse-views"), "flows/erp.yaml", "customers");
     expect(synapse).not.toContain("error");
     expect(synapse).toContain(
       "The notNull rule isn't applied on synapse: it is applied only in a layer whose does lists check.",
     );
-    expect(row("/docs/platforms/synapse")).toContain("`NOT_APPLIED`");
+    expect(synapse).toContain("Add `check` to the layer's `does` to apply it here.");
+  });
 
+  it("says nothing checks a table that ends at the landed files", () => {
     const landing = plan(exampleFolder("landing-only"), "flows/erp.yaml", "customers");
     expect(landing).not.toContain("error");
     expect(landing).toContain(
       'Expectation "has_rows" isn\'t applied on adf: the table ends at the landed files, and nothing checks them.',
     );
-    expect(row("/docs/platforms/landing-only")).toContain("`NOT_APPLIED`");
+    expect(prose(read("platforms/landing-only.mdx"))).toContain(
+      "each contract quality rule and flow expectation on these tables is",
+    );
   });
 
   it("is linked from the DuckDB page, which says where checks run there", () => {
     const duckdb = read("platforms/duckdb.mdx");
-    expect(duckdb.replace(/\s+/g, " ")).toContain(
+    expect(prose(duckdb)).toContain(
       "DuckDB checks rows only in a layer whose `does` lists `check`",
     );
-    expect(duckdb).toContain("(/docs/how-to/add-quality-checks)");
+    expect(duckdb).toContain("(/docs/how-to/add-quality-checks#duckdb)");
   });
 });
 

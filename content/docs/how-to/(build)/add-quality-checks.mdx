@@ -1,62 +1,213 @@
 ---
 title: Check data quality
-description: Count, drop or stop on rows that break a rule.
+description: Count, leave out or stop on rows that break a rule, in the layers that check, on Databricks, DuckDB and Synapse.
 ---
 
-Checks run where the platform builds the table, and not every platform checks
-rows yet:
+A table's checks come from its contract and from its flow or transform. Each
+check has an action: count the rows that fail it, leave them out, or stop. The
+engine that keeps the table runs the checks, in the layers whose `does` says
+they check.
 
-| Where the table is built                                  | What happens to the checks                                                                                                                                                                            |
-| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Databricks](/docs/platforms/databricks)                  | Runs them, as this guide describes.                                                                                                                                                                   |
-| [DuckDB](/docs/platforms/duckdb), on a laptop or in Azure | Runs them in a layer whose `does` lists `check`. In any other layer, a flow's `expectations` entry is an error (`METHOD_CHECK`) and each contract rule is not applied (`NOT_APPLIED`).                |
-| [Synapse serverless views](/docs/platforms/synapse)       | In a layer whose `does` lists `check`, the view leaves out the rows a `drop` check fails, and `checks.sql` counts every check. In any other layer, each contract rule is not applied (`NOT_APPLIED`). |
-| [Land files only](/docs/platforms/landing-only)           | Nothing reads the files, so each expectation and contract rule is not applied (`NOT_APPLIED`).                                                                                                        |
+This guide uses the `quality` example, one contract's checks generated for
+three engines. Each of its environments builds the readings table on a
+different engine, so the same rules can be compared:
 
-The rest of this guide is about Databricks.
+<Example name="quality" file="project.yaml" />
 
-Every column the contract marks `required: true` gets a check that it is not
-null. You add your own checks on the table with `expectations`:
+## Write the rules
+
+The contract says what every row must hold. Each required column, each limit
+in a column's `logicalTypeOptions`, and each `quality` rule that allows no
+failing row becomes a check of each row:
+
+<Example name="quality" file="contracts/readings.yaml" />
+
+That gives four checks: `sensor_id_not_null` and `read_at_not_null` from
+`required: true`, `sensor_id_pattern` from the `pattern` option, and
+`known_unit`. A check is named by the rule's `name`, else after the column and
+the option or metric. The table's own rule, `has_readings`, compares a count
+over all rows, so it is a **table check**, counted once the table is built;
+see [Rules about the data](/docs/how-to/write-a-contract#rules-about-the-data).
+
+A flow table or a transform adds checks of its own, `expectations`, each a SQL
+condition the rows must meet:
 
 <Example name="quality" file="flows/readings.yaml" />
 
-Each check is a SQL condition rows must meet. `action` says what happens to
-rows that fail:
+An expectation is written in the SQL of the engine that keeps the table. This
+one reads the same in Databricks, DuckDB and T-SQL; the contract's rules are
+written for each engine by its pack.
 
-| `action` | Effect                             |
-| -------- | ---------------------------------- |
-| `warn`   | keep the row and count the failure |
-| `drop`   | leave the row out and count it     |
-| `fail`   | stop the update                    |
+## Choose what a failing row does
 
-Without an `action`, the standard decides. Its `quality` sets the action for
-required columns and the default for your own checks:
+`action` says what happens to a row that fails a check:
+
+| `action` | Effect                                          |
+| -------- | ----------------------------------------------- |
+| `warn`   | keep the row and count it                       |
+| `drop`   | leave the row out and count it                  |
+| `fail`   | stop: the update or the run fails, and says why |
+
+Without an `action`, the standard decides: `quality.required` for a required
+column, `quality.default` for every other check, `warn` unless they say
+otherwise. A layer written as an object can give its own `quality`, which wins
+for its tables. A table check fails with the default action when it is
+`fail`, and otherwise warns, since no row can be left out once the table is
+built.
 
 <Example name="quality" file="standard.yaml" />
 
-`quality: { results: true }` in the standard also keeps the results of the
-checks as a table you can query: on Databricks, the pipeline's event log. It is
-[intent](/docs/reference/intent), so a pack that cannot keep them says so with
-[`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED).
+## Say which layers check [#layers]
 
-<ToolSteps>
-<Tool name="CLI">
+A layer's `does` says what it does with its rows; see
+[What a layer does](/docs/concepts/layers#what-a-layer-does):
+
+- A layer whose `does` lists `check` runs its tables' checks, each with its
+  action.
+- `does: raw` keeps every row as it arrived. Its checks only count: every
+  action there is `warn`.
+- A list without `check`, such as `[cleanse]`, makes every action `warn` too.
+  Databricks counts the checks there; DuckDB and Synapse do not run them. An
+  expectation that asks for `drop` or `fail` there is
+  [`LAYER_RESPONSIBILITY`](/docs/reference/errors#LAYER_RESPONSIBILITY), an
+  error.
+- A layer without `does` asks nothing of its tables, and Databricks checks
+  them as it always has.
+
+DuckDB and Synapse run checks only in a layer whose `does` lists `check` or is
+`raw`. Anywhere else each contract rule is
+[`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED), with the hint to add
+`check` to the layer's `does`, and on DuckDB a flow's own `expectations` are an
+error, [`METHOD_CHECK`](/docs/reference/errors#METHOD_CHECK).
+
+In the example, `bronze` does `check` and `quarantine`, so every engine checks
+the readings there.
+
+## What each engine does [#engines]
+
+Every engine writes the checks into the files it generates, as plain SQL. What
+it can apply differs:
+
+<QualityEngines />
+
+What an engine cannot apply is a
+[not applied here](/docs/concepts/not-applied) warning at the line that asks
+for it. Plan the example:
 
 ```sh
-ingestron plan
+ingestron plan --no-diff
 ```
 
-</Tool>
-<Tool name="VS Code">
+The plan lists them first, for the `synapse` environment:
 
-Run **Ingestron: Plan** from the Command Palette (⇧⌘P on macOS, Ctrl+Shift+P elsewhere). The output is in the Ingestron output panel. Problems show in the Problems panel as you type, before you plan.
+```text
+Not applied on this platform
+synapse:
+contracts/readings.yaml:14:40  warning  NOT_APPLIED
+  The pattern rule isn't applied on synapse: serverless T-SQL has no regular expressions.
+flows/readings.yaml:11:87  warning  NOT_APPLIED
+  The fail action isn't applied on synapse: a view can't stop a load; checks.sql checks this rule and raises an error when it runs.
+standard.yaml:12:15  warning  NOT_APPLIED
+  Quarantine isn't applied on synapse: a view keeps no rows to quarantine; checks.sql returns how many rows each drop check leaves out instead.
+standard.yaml:13:12  warning  NOT_APPLIED
+  quality.results: true isn't applied on synapse: a view keeps no results; checks.sql returns each check's counts instead when it runs.
+```
 
-</Tool>
-</ToolSteps>
+Each is a warning: the files are still written. Remove what an engine cannot
+apply, or keep it and, once you have decided to live with it,
+[accept the warning](/docs/how-to/accept-a-warning).
 
-The checks become constraints on the table:
+### On Databricks [#databricks]
 
-<Example name="quality" file="build/databricks/src/iot/bronze/readings.sql" />
+Each check is a constraint on the table: `EXPECT` for `warn`,
+`ON VIOLATION DROP ROW` for `drop` and `ON VIOLATION FAIL UPDATE` for `fail`.
+The pipeline's update shows how many rows failed each one:
 
-Tables written by Lakeflow Connect cannot run your own checks; put them on a
-transform that reads the table.
+<Example
+  name="quality"
+  file="build/databricks/src/iot/bronze/readings.sql"
+  from="CREATE OR REFRESH STREAMING TABLE `bronze`.`readings`"
+  to="AS SELECT * FROM STREAM(`readings_checked`);"
+/>
+
+Table checks run in a task after each refresh, `tasks/iot/apply_contract.py`,
+only when the platform turns on `databricks.manage.checks`, as the example's
+platform does:
+
+<Example name="quality" file="platform.yaml" />
+
+Without it, each table check is
+[`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF), a warning whose fix
+turns it on. Tables that Lakeflow Connect writes run no checks: each rule is
+`NOT_APPLIED` there, and the hint says to check the table in a transform in
+the next layer.
+
+### On DuckDB [#duckdb]
+
+`run.sql` counts every check before it builds the table, in the run's one
+transaction. The DuckDB command line prints each check's failing rows, a
+`drop` check's rows are not inserted, and a failing `fail` check stops the run
+before anything is published. Table checks are counted once the table is
+built, with nothing to turn on in the platform:
+
+<Example
+  name="quality"
+  file="build/duckdb/duckdb/run.sql"
+  from='CREATE OR REPLACE TEMP TABLE "ingestron_checked" AS SELECT'
+  to="SELECT error(format('The check"
+/>
+
+### On Synapse serverless [#synapse]
+
+A view keeps no rows, so the checks are split in two. The view leaves out the
+rows a `drop` check fails each time it is queried:
+
+<Example
+  name="quality"
+  file="build/synapse/views.sql"
+  from="CREATE OR ALTER VIEW [bronze].[readings] AS"
+  to="AND ([read_at] IS NOT NULL);"
+/>
+
+`build/synapse/checks.sql` counts every check, the rows the view leaves out
+included, returns one row per check, and raises an error when a `fail` check
+fails. It checks nothing unless something runs it after each load: run it with
+sqlcmd, from a pipeline's Script activity, or in CI; see
+[Synapse serverless views](/docs/platforms/synapse#operate).
+
+<Example
+  name="quality"
+  file="build/synapse/checks.sql"
+  from="SELECT N'bronze.readings' AS [table], N'sensor_id_not_null'"
+  to="IF @check_1_4 > 0 THROW"
+/>
+
+## Keep the rows a check leaves out [#quarantine]
+
+`quality.quarantine: true` keeps the rows a `drop` check leaves out in a table
+of their own, `<table>_quarantine`, with a column `_failed_checks` naming the
+checks each row failed. Written in the standard, it reaches the tables of the
+layers whose `does` lists `quarantine`. Written on a layer, a flow table or a
+transform, that layer's `does` must list `quarantine`
+([`LAYER_RESPONSIBILITY`](/docs/reference/errors#LAYER_RESPONSIBILITY)), and a
+table with no `drop` check has nothing to keep
+([`QUARANTINE_UNUSED`](/docs/reference/errors#QUARANTINE_UNUSED)).
+
+Databricks builds `readings_quarantine` beside the table, from the same rows,
+read once. DuckDB rebuilds `bronze.readings_quarantine` each run, or adds to it
+for an `append` table, and does not publish it. A Synapse view has no rows to
+keep.
+
+## Keep the results [#results]
+
+`quality.results: true` keeps each check's outcome where it can be queried:
+
+- **Databricks:** the pipeline's event log, published as a table.
+- **DuckDB:** `<schema>._ingestron_checks` in the run's database, a row per
+  check and run, with the run's id, the time, the action, the failing rows and
+  whether it passed. In Azure the database lasts only for that run, so read
+  the job's log instead.
+- **Synapse:** nothing keeps them. Each run of `checks.sql` returns them.
+
+A [data product's passport](/docs/how-to/define-a-data-product#read-the-passport)
+says for each table what checks it, when, and where its results are.

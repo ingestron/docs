@@ -45,10 +45,12 @@ once it is deployed.
 
 ## Contract fields
 
-What this pack does with each field of a table's contract. When a contract
-writes a field that no pack of the standard uses yet, Ingestron warns at that
-field with the reason below; **Elsewhere** fields are handled by another pack
-or step and never warn.
+What this pack does with each field of a table's contract. A field is judged
+for each table, against the pack that keeps it. When a contract writes a field
+this pack does not apply yet, on a table this pack keeps, Ingestron warns at
+that field with [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED) and the
+reason below; **Elsewhere** fields are handled by another pack or step and
+never warn.
 
 <ContractUseTable pack="adf" />
 
@@ -61,6 +63,19 @@ warning where it is written, with the reason below. **Elsewhere** values are
 applied by another pack or step and never warn.
 
 <IntentSupport pack="adf" />
+
+Its checks, cleansing and quarantine are in
+[Quality and cleansing](#quality-and-cleansing).
+
+## Quality and cleansing [#quality-and-cleansing]
+
+ADF lands the files as the source gives them, and checks and cleanses nothing.
+On a table stored by another pack, that pack does the work. On a table that
+ends at the landed files, each check, cleansing operation and quarantine is
+[not applied here](/docs/concepts/not-applied), with the hint to add a store
+step.
+
+<IntentSupport pack="adf" part="quality" />
 
 ## Native configuration sources
 

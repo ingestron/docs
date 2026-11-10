@@ -225,14 +225,34 @@ the definitions change, such as a new table or column. It creates or alters
 every view, so running it again is safe; it drops nothing, so a view for a
 table you removed stays until you drop it.
 
+When a table's layer checks its rows, `ingestron apply` also writes
+`checks.sql`, with `checks/<environment>.sql` for each environment. It counts
+every check's failing rows, returns one row per check, and raises an error
+when a `fail` check fails. A view reads the files each time it is queried, so
+nothing runs the checks by itself: run the script after each landing, from
+`build/synapse`, here for `dev`:
+
+```sh
+sqlcmd -S <workspace>-ondemand.sql.azuresynapse.net --authentication-method ActiveDirectoryDefault -i checks/dev.sql
+```
+
+or from a pipeline's Script activity, with each `$(…)` replaced by the
+environment's value, or as a step in CI. See
+[Check data quality](/docs/how-to/add-quality-checks#synapse).
+
 When a view fails to create or to read its files, see
 [Synapse serverless views](/docs/troubleshooting#synapse-serverless-views) in
 Troubleshooting.
 
 ## Limits [#limits]
 
-- **No rows are checked.** A view checks no rows; see
-  [Check data quality](/docs/how-to/add-quality-checks).
+- **Checks only where a layer checks, and no `fail`.** In a layer whose `does`
+  lists `check`, the view leaves out the rows a `drop` check fails, and
+  `checks.sql` counts every check, but only when something runs it. A view
+  cannot stop a load, keep the rows it leaves out, or keep results, and
+  serverless T-SQL has no regular expressions: each is
+  [not applied here](/docs/concepts/not-applied). See
+  [Check data quality](/docs/how-to/add-quality-checks#synapse).
 - **No merge or history.** A view shows the files as they are; see
   [Views or tables](#views-or-tables).
 - **Environments may differ only in values.** A table built in some
