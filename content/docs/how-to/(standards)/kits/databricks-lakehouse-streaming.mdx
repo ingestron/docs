@@ -52,8 +52,10 @@ came from:
 What the Databricks pack does with each value, with each feature's release
 level and the date it was checked, is in
 [the Databricks pack's intent](/docs/reference/packs/databricks#intent).
-`features: ga` keeps out features in preview, so the job alerts on failure
-but not on slow runs: Databricks' run duration alert is in Public Preview.
+With `features: ga`, Ingestron warns about any value that needs a feature in
+preview ([`PREVIEW_FEATURE`](/docs/reference/errors#PREVIEW_FEATURE)). The
+standard writes none: the job alerts on failure but not on slow runs, because
+Databricks' run duration alert is in Public Preview.
 
 ## Why each choice
 

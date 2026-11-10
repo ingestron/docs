@@ -9,8 +9,8 @@ import { checkedOn, Screenshot } from "../components/screenshot";
 import { overflows } from "../lib/keyboard";
 import { contentFolder } from "../lib/content-files.js";
 
-const light = "/images/vscode/editor-light.png";
-const dark = "/images/vscode/editor-dark.png";
+const light = "/images/vscode/problems-light.png";
+const dark = "/images/vscode/problems-dark.png";
 const platform = "/images/platforms/adf/adf-11-copy-details.png";
 const render = (props: Parameters<typeof Screenshot>[0]) =>
   renderToStaticMarkup(createElement(Screenshot, props));

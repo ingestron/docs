@@ -365,8 +365,8 @@ some settings to be written in their new places:
   [intent](/docs/reference/intent#settings-that-are-intent), such as
   `history: latest` for `mode: upsert`. They still work, and `plan` reports
   each as [`SETTING_MOVED`](/docs/reference/errors#SETTING_MOVED), a warning.
-  In a flow or a table, its fix writes the intent and removes the setting;
-  in the standard, write the intent by hand.
+  In a flow's or a flow table's `with`, its fix writes the intent and removes
+  the setting; anywhere else, such as the standard, write the intent by hand.
 - **The `databricks:` section.** The platform's `workspace`, `mode`, `run_as`,
   `compute`, `permissions`, `manage` and `grants` now go under `databricks:`,
   and `notifications.on_failure` becomes an email alert in `alerts`. At the

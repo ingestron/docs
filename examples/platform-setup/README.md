@@ -2,14 +2,14 @@
 
 `platform.yaml` holds what a platform team sets up for a project:
 
-| Setting                                 | Generated in `build/databricks/`                                                                                        |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `workspace.host`, `run_as`              | each target of [databricks.yml](build/databricks/databricks.yml)                                                        |
-| `permissions`                           | each target's permissions, applied to every resource                                                                    |
-| `compute.budget_policy_id`, `tags`      | [the pipeline](build/databricks/resources/hr.pipeline.yml)                                                              |
-| `schedule`, `notifications`             | [the refresh job](build/databricks/resources/hr_refresh.job.yml)                                                        |
-| `manage.schemas: true`, `grants.bronze` | [schemas.yml](build/databricks/resources/schemas.yml); the pipeline refers to its schema so the bundle creates it first |
-| `manage.schemas: true`                  | [prerequisites/prod.sql](build/databricks/prerequisites/prod.sql): the grants an administrator runs once in prod        |
+| Setting                                                       | Generated in `build/databricks/`                                                                                        |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `databricks.workspace.host`, `databricks.run_as`              | each target of [databricks.yml](build/databricks/databricks.yml)                                                        |
+| `databricks.permissions`                                      | each target's permissions, applied to every resource                                                                    |
+| `databricks.compute.budget_policy_id`, `tags`                 | [the pipeline](build/databricks/resources/hr.pipeline.yml)                                                              |
+| `schedule`, `alerts`                                          | [the refresh job](build/databricks/resources/hr_refresh.job.yml)                                                        |
+| `databricks.manage.schemas: true`, `databricks.grants.bronze` | [schemas.yml](build/databricks/resources/schemas.yml); the pipeline refers to its schema so the bundle creates it first |
+| `databricks.manage.schemas: true`                             | [prerequisites/prod.sql](build/databricks/prerequisites/prod.sql): the grants an administrator runs once in prod        |
 
-Without `manage.schemas`, no schema is generated, because schemas are often
+Without `databricks.manage.schemas`, no schema is generated, because schemas are often
 shared infrastructure that one project must not change.

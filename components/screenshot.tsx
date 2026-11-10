@@ -56,7 +56,7 @@ type Captures =
 
 /**
  * One framed screenshot.
- * @example <Screenshot light="/images/vscode/editor-light.png" dark="/images/vscode/editor-dark.png" caption="…" />
+ * @example <Screenshot light="/images/vscode/problems-light.png" dark="/images/vscode/problems-dark.png" caption="…" />
  * @example <Screenshot src="/images/adf/pipeline.png" label="Azure Data Factory" checked="2026-11-04" caption="…" />
  */
 export function Screenshot({

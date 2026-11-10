@@ -1,7 +1,7 @@
 "use client";
 // A value still REPLACE_ME in a kit's file (components/reference/kits.tsx):
-// marked by an outline and its note's number, not by colour alone, and
-// focusable. On hover or focus it shows the field, where to find the value and
+// marked by a dashed underline, a light tint and its note's number, not by
+// colour alone, and focusable. On hover or focus it shows the field, where to find the value and
 // a suggestion, in a tooltip drawn above the page, so the code block's
 // scrolling frame does not clip it and Copy does not copy it. Escape closes
 // it, and the pointer can move onto it. The same text is the note the mark's
