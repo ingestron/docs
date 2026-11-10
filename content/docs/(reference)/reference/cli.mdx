@@ -42,7 +42,9 @@ ran it from, not in `shop`.
 `ingestron init <folder> --kit <name>@<version>` creates a project from a
 [published standard](/docs/how-to/choose-a-published-standard). `--kit` takes
 the name and version, such as `duckdb/local-medallion@2026-11-10`; the name
-alone, for the newest version that is not a preview; or
+alone, for the newest version that is not a preview among the installed
+versions and the catalogue's tags (the newest installed one, with a note,
+when the catalogue cannot be reached); or
 `<git-url>#<folder>@<tag>`, for one kept in a Git repository. It is not
 combined with `--template` or `--standard`. See
 [Start from a published standard](/docs/how-to/start-from-a-published-standard).

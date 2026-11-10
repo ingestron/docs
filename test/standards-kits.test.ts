@@ -150,10 +150,14 @@ describe("published standards", () => {
       [
         [12, "to"],
         [18, "service_principal_name"],
-        [22, "group_name"],
-        [25, "group_name"],
       ],
     );
+    // Each permission group is a project.yaml value of its own, explained by the field that reads it.
+    expect(
+      kitBlanks(kit, "project.yaml")
+        .filter((blank) => blank.help!.field === "group_name")
+        .map((blank) => blank.line),
+    ).toEqual([5, 7]);
     // Each kit page shows the files that hold them.
     const page = read(`${kitPage(kit.id).replace("/docs/", "")}.mdx`);
     for (const file of ["platform.yaml", "project.yaml"])
@@ -178,6 +182,14 @@ describe("published standards", () => {
     const { code, output } = cli(cwd, command!.trim().split(" ").slice(1));
     expect(code).toBe(0);
     expect(output).toBe(fences(create, "text")[0]);
+    // The name alone, with the catalogue out of reach: the newest installed version, and a note.
+    const alone = cli(cwd, ["init", "alone", "--kit", "duckdb/local-medallion"]);
+    expect(alone.code).toBe(0);
+    const [note] = alone.output.split("\n");
+    expect(note).toBe(
+      "Could not reach the catalogue; using the newest installed version, duckdb/local-medallion@2026-11-10.",
+    );
+    expect(create).toContain(`\`${note}\``);
     const connection = section(page, "## With a connection [#with-a-connection]");
     const [warning] = fences(connection, "text");
     const sales = cli(cwd, [

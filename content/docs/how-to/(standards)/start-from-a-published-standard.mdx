@@ -25,8 +25,11 @@ ingestron init shop --kit duckdb/local-medallion@2026-11-10
 ```
 
 Without `@<version>`, `--kit duckdb/local-medallion` takes the newest version
-that is not a preview. `--kit` replaces `--template` and `--standard`: give
-one of the three.
+that is not a preview, among the versions installed with `ingestron` and those
+in the public catalogue. When `ingestron` cannot reach the catalogue, it takes
+the newest installed version, and its first line says so:
+`Could not reach the catalogue; using the newest installed version, duckdb/local-medallion@2026-11-10.`
+`--kit` replaces `--template` and `--standard`: give one of the three.
 
 </Tool>
 <Tool name="VS Code">

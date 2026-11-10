@@ -33,8 +33,10 @@ and the `databricks:` section:
 
 <KitFile id="databricks/lakehouse-streaming" file="platform.yaml" />
 
-`project.yaml` holds what differs between `dev` and `prod`: each workspace's
-address, and the volume the shop's files land in:
+`project.yaml` holds the two groups the `databricks:` section's permissions
+read, one that manages the pipeline and job and one that may view them, and
+what differs between `dev` and `prod`: each workspace's address, and the
+volume the shop's files land in:
 
 <KitFile id="databricks/lakehouse-streaming" file="project.yaml" />
 

@@ -103,15 +103,17 @@ standard from a Git URL is never listed by `standard list`.
 ## What Ingestron does with a Git URL
 
 Fetching a template, a standard or a published standard is the only time
-Ingestron uses the network, besides `ingestron standard list` reading the
-catalogue's tags.
+Ingestron uses the network, besides reading the catalogue's tags for
+`ingestron standard list` and for a published standard named without its
+version.
 
 - Cloning uses your own `git`, so your Git credentials and settings apply. It
   takes only the latest commit of the default branch, or of the tag for a
   published standard, and runs none of the repository's hooks or
   submodules; filters from your own git settings, such as Git LFS, still
-  apply. For a published standard, Git never asks for a password: it uses
-  the credentials Git already has.
+  apply. For a published standard, neither Git nor SSH asks for a password:
+  they use the credentials Git and your SSH agent already have. Reading the
+  catalogue's tags stops after 15 seconds, and a clone after 60 seconds.
 - The part after `#` must stay inside the repository, and must be a folder
   for a template or a published standard, or a regular file for a standard.
 - It never runs anything from a template, a standard or a published standard.

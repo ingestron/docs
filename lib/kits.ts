@@ -26,7 +26,7 @@ export function latestKits(): Kit[] {
   return ids.map(kitById);
 }
 
-/** A kit's newest version that is not a preview, as `ingestron init --kit <id>` takes it. */
+/** A kit's newest installed version that is not a preview, as `ingestron init --kit <id>` takes it offline. */
 export function kitById(id: string): Kit {
   const kit = kits()
     .filter((item) => item.id === id && item.features === "ga")

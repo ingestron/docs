@@ -34,12 +34,16 @@ call: moving is your choice.
    ```
 
 2. From the project's folder, name the published standard and the version to
-   move to, such as `duckdb/local-medallion@2026-11-10`, or the name alone for
-   the newest version that is not a preview:
+   move to, such as `duckdb/local-medallion@2026-11-10`:
 
    ```sh
    ingestron standard install duckdb/local-medallion@2026-11-10
    ```
+
+   The name alone takes the newest version that is not a preview, among the
+   versions installed with `ingestron` and those in the public catalogue. When
+   `ingestron` cannot reach the catalogue, it takes the newest installed
+   version, and its output starts by saying so.
 
    It writes the new version's `standard.yaml` in place of the project's,
    with the project's own `id` and at the same path, even when the standard
