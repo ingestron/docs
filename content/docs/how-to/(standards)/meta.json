@@ -1,9 +1,13 @@
 {
   "title": "Standards and teams",
-  "description": "One standard for every project, shared from Git.",
+  "description": "One standard for every project: your own, or a published one, shared from Git.",
   "root": true,
   "pages": [
     "configure-a-standard",
+    "choose-a-published-standard",
+    "start-from-a-published-standard",
+    "upgrade-a-standard",
+    "kits",
     "name-things-your-way",
     "ask-the-platform-team",
     "share-a-template",

@@ -219,3 +219,9 @@ pre code > .line {
   height: 0;
   scroll-margin-top: 7rem;
 }
+
+/* Where to find a field's value, and a suggestion (components/reference/field-rows.tsx): each on a line of its own. */
+.field-help {
+  display: block;
+  margin-top: 0.3rem;
+}

@@ -95,9 +95,10 @@ describe("concepts/layers", () => {
       by: "standard-rule",
       when: { layer: "gold" },
     });
-    expect(table("region_sales").store?.settings.cluster_by).toBe("none");
+    const retention = { "delta.logRetentionDuration": "interval 90 days" };
+    expect(table("region_sales").store?.settings.properties).toEqual(retention);
     expect(table("store_sales").store?.chosenBy.by).not.toBe("standard-rule");
-    expect(table("store_sales").store?.settings.cluster_by).not.toBe("none");
+    expect(table("store_sales").store?.settings.properties).not.toEqual(retention);
   });
 
   it("replaces the list with a standard's own layers, so the default ones no longer exist", () => {

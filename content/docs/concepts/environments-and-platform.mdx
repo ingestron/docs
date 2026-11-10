@@ -38,9 +38,13 @@ an ADF method. A project still has one Platform document when it uses several
 packs. The method reference says which fields it consumes and what must already
 exist before deployment.
 
-Workspace, compute, identity, scheduling and `manage` fields mean something
-specific to each platform, and not every platform uses each one. See
-[Databricks platform configuration](/docs/reference/packs/databricks#platform-configuration)
+`schedule`, `tags` and `alerts` sit at the top of the platform, for every
+pack that runs jobs: when they run, how they are tagged, and who is told when
+a run fails. What only one platform reads goes in that pack's own section,
+under its id: the Databricks workspace, identity, compute, permissions and
+`manage` switches are under `databricks:`. A section for a pack the standard
+does not name is [`UNKNOWN_PACK`](/docs/reference/errors#UNKNOWN_PACK). See
+[the `databricks:` section](/docs/reference/packs/databricks#platform)
 and [ADF runtime and Key Vault](/docs/platforms/adf#runtime-and-key-vault) for
 their effects.
 

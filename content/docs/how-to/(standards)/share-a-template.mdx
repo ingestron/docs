@@ -1,6 +1,6 @@
 ---
 title: Share templates and standards
-description: Keep your team's project templates and your organisation's standard in Git, and start projects from them.
+description: Keep your team's project templates, your organisation's standard and your own published standards in Git, and start projects from them.
 ---
 
 A template is a project folder your team starts from, and a standard is the
@@ -61,16 +61,59 @@ says how to give a project a newer version, and how to keep projects to it.
 **Ingestron: New project** in VS Code keeps the template's own standard; use
 the command for `--standard`.
 
+## Share a published standard [#share-a-published-standard]
+
+To give teams a dated standard with an example that builds, as Ingestron's own
+[published standards](/docs/how-to/choose-a-published-standard) are, make a
+folder `<platform>/<name>/<version>/` that holds a project, and a `kit.yaml`
+beside its files:
+
+- `standard.yaml`, with `origin: { standard: <platform>/<name>, version: <version> }`
+  and the same `packs` as `kit.yaml`;
+- `platform.yaml` and `project.yaml`, with `REPLACE_ME` and a comment for
+  each value that is the team's;
+- `README.md`, which explains each choice, and becomes the project's
+  `STANDARD.md`;
+- the connections, flows, contracts and transforms of a small example.
+
+This is the `kit.yaml` of the local medallion:
+
+<KitFile id="duckdb/local-medallion" file="kit.yaml" />
+
+`id` is `<platform>/<name>`, its platform the first pack's id; `version` is
+the date it was checked, `YYYY-MM-DD`, or `YYYY-MM-DD-preview` with
+`features: preview`. `requires` names the `ingestron` versions it needs, as
+`>=`, `^` or `~` and a version; `replaces` names the version before it, and
+`notes` says what changed, which `standard install` prints. Any other key is
+refused, so a mistake shows at once.
+
+Commit the folder, and tag the commit `<platform>/<name>@<version>`. Teams
+start from it with the repository's URL, the folder after `#`, and the tag
+after `@`:
+
+```sh
+ingestron init orders \
+  --kit https://github.com/acme/data-platform.git#kits/databricks/acme-lakehouse/2026-11-10@databricks/acme-lakehouse@2026-11-10
+```
+
+`ingestron standard install` takes the same form. A version never changes once
+tagged: publish a change as a new version, in a new folder. A published
+standard from a Git URL is never listed by `standard list`.
+
 ## What Ingestron does with a Git URL
 
-Fetching a template or standard is the only time Ingestron uses the network.
+Fetching a template, a standard or a published standard is the only time
+Ingestron uses the network, besides `ingestron standard list` reading the
+catalogue's tags.
 
 - Cloning uses your own `git`, so your Git credentials and settings apply. It
-  takes only the latest commit of the default branch, and runs none of the repository's hooks or
+  takes only the latest commit of the default branch, or of the tag for a
+  published standard, and runs none of the repository's hooks or
   submodules; filters from your own git settings, such as Git LFS, still
-  apply.
+  apply. For a published standard, Git never asks for a password: it uses
+  the credentials Git already has.
 - The part after `#` must stay inside the repository, and must be a folder
-  for a template or a regular file for a standard.
-- It never runs anything from a template or standard.
+  for a template or a published standard, or a regular file for a standard.
+- It never runs anything from a template, a standard or a published standard.
 - A user name or token in a URL is never printed or written into the
   project.

@@ -112,7 +112,8 @@ CLI prints the first fix under the problem, as `Fix: …`.
 
 When the same problem has a fix in several places, the menu also offers
 **Fix all N … problems**, which applies each one's first fix in one change; an
-edit several of them share, such as turning on `manage.checks`, is made once.
+edit several of them share, such as turning on `databricks.manage.checks`, is
+made once.
 
 A method's setting written outside the file its method says it belongs in,
 such as a table's `properties` in a flow or `integration_runtime` in a
@@ -222,7 +223,15 @@ Hover a flow table or a transform to see its full name, the method for each
 step, and every setting with the layer that set it: the pack's default, the
 standard, the platform, a rule, the flow or transform, the table itself, or a
 setting the standard fixes, with the file and line. Hover a setting under
-`with` for that one value.
+`with` for that one value. The same hover lists the table's
+[intent](/docs/reference/intent), each value with where it came from, such as
+`history`: `latest`, from the table's layer in the standard
+(`standard.yaml:18`).
+
+Hover a value that is still `REPLACE_ME` to see the field it fills, what the
+field is, where to find the value, and a suggestion of what it looks like,
+such as `<application id>`. A value in `project.yaml`'s `values` is explained
+by the field that reads it.
 
 Hover any field or setting to see what it is, what each allowed value means,
 its default, an example and where it is usually set; hover a value for that
@@ -402,17 +411,23 @@ workspace.
 
 ## Start a project
 
-**Ingestron: New project** starts from a connection or from a starter.
+**Ingestron: New project** starts from a connection, a starter or a published
+standard.
 
 - **From a connection** asks for a source category, connection, network
   reachability and supported route. You can search across all sources or
   within a category.
 - **From a starter** offers the ready-made projects, such as **DuckDB on a
   laptop**, which [runs locally with DuckDB](/docs/platforms/duckdb).
+- **From a published standard** offers the dated standards installed with the
+  extension, such as **Local medallion on DuckDB**, and makes the same project
+  as `ingestron init --kit`; see
+  [Start from a published standard](/docs/how-to/start-from-a-published-standard).
 
 Nothing else is asked. The destination folder comes last, and its name is the
-project's id; the environments are `dev` and `prod`, or the starter's, and the
-standard is the route's or the starter's own. The new `README.md` opens in a
+project's id; the environments are `dev` and `prod`, or the starter's or the
+published standard's, and the standard is the route's, the starter's or the
+published one. The new `README.md` opens in a
 preview, and a message says how many values are still `REPLACE_ME`: the
 README lists each with where to find it. When the folder is outside the
 workspace, the message offers to open it or add it to the workspace. See
@@ -422,7 +437,7 @@ workspace, the message offers to open it or add it to the workspace. See
   light="/images/vscode/new-project-light.png"
   dark="/images/vscode/new-project-dark.png"
   alt="The New project picker asks How do you want to start? and offers From a connection, to choose a source, how it is reached and a supported route, and From a starter, a ready-made project to try, such as DuckDB on a laptop."
-  caption="New project's first question: from a connection or from a starter. The folder comes last."
+  caption="New project's first question: how to start. The folder comes last."
 />
 
 ## Check files with the YAML extension [#check-files-with-the-yaml-extension]

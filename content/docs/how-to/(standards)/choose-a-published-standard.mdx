@@ -1,0 +1,91 @@
+---
+title: Choose a published standard
+description: Pick a dated standard for your platform, see what it decides, and list the ones there are.
+---
+
+A published standard is a [standard](/docs/how-to/configure-a-standard) that
+someone has checked against the platform's documentation and dated, with a
+small project that builds: a connection, flows, contracts and a transform that
+show each of its choices. Start a project from one, and you start from
+choices that are written down and checked, instead of a blank `standard.yaml`.
+The command calls one a kit, as in `--kit`.
+
+These come with the `ingestron` command and the VS Code extension:
+
+<KitList />
+
+## What one decides
+
+Each published standard is a folder of ordinary definitions:
+
+- `standard.yaml` says how every table is loaded, kept and run, in
+  [intent](/docs/reference/intent): which layers there are and what each
+  keeps, how files are read, the columns that say when and where each row came
+  from, and how a failed run is tried again and who is told.
+- `platform.yaml` and `project.yaml` hold what belongs to your workspace,
+  such as its address and who the jobs run as. What only you can know is
+  `REPLACE_ME`, for you to write.
+- `STANDARD.md`, once it is in your project, explains each choice and the
+  platform page it was checked against.
+
+Each published standard has a page that shows these files, what each
+`REPLACE_ME` stands for, and how each table of its project resolves, such as
+[Streaming lakehouse on Databricks](/docs/how-to/kits/databricks-lakehouse-streaming).
+
+## Versions
+
+A published standard is named `<platform>/<name>`, and each version by the
+date it was checked: `duckdb/local-medallion@2026-11-10`. A version never
+changes once it is published; a newer one has a later date and says in its
+notes what changed. A version whose date ends `-preview`, such as
+`2026-12-01-preview`, uses platform features still in preview, and is used
+only when you name it. The others use only generally available features, and
+their standard says `features: ga`.
+
+Each version names the `ingestron` it needs, such as `>=2.3.0`. `init`
+refuses a version that needs a newer one than you have, and names both,
+before it writes anything.
+
+## Choose one
+
+- **Your platform.** A published standard is for the packs it names, such as
+  `databricks@2`. To keep your source's route, its packs must be among them;
+  see [With a connection](/docs/how-to/start-from-a-published-standard#with-a-connection).
+- **Try it first.** [Local medallion on DuckDB](/docs/how-to/kits/duckdb-local-medallion)
+  runs on a laptop with nothing to replace, so you can see how intent becomes
+  SQL before you choose one for a workspace.
+- **What it keeps.** Read its page: each table's intent, and what the pack
+  does with each value on its [reference page](/docs/reference/packs). A value
+  that does not fit your tables can be changed once the project is yours.
+
+## List them
+
+```sh
+ingestron standard list
+```
+
+```text
+databricks/lakehouse-streaming@2026-11-10  Streaming lakehouse on Databricks  (ga)
+duckdb/local-medallion@2026-11-10  Local medallion on DuckDB  (ga)
+```
+
+Each line is a version, with its title and `(ga)` or `(preview)`. The versions
+installed with `ingestron` come first, and work offline. Then come the
+versions only the public catalogue has, the
+[`ingestron/standards`](https://github.com/ingestron/standards) repository,
+each marked `(online)`: `ingestron` reads its tags with your own `git`. When it
+cannot reach the catalogue, the list starts with
+`Could not reach the catalogue; showing the kits installed with ingestron.`
+`--platform duckdb` keeps one platform's.
+
+Set `INGESTRON_STANDARDS_REPOSITORY` to read another catalogue, such as a
+mirror inside your network. A team's own published standard is read from its
+Git repository instead; see
+[Share a published standard](/docs/how-to/share-a-template#share-a-published-standard).
+
+## Next
+
+- [Start from a published standard](/docs/how-to/start-from-a-published-standard):
+  create the project and write what it leaves to you.
+- [Move to a newer published standard](/docs/how-to/upgrade-a-standard):
+  replace a project's standard with a later version.

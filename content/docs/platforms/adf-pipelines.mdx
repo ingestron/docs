@@ -85,6 +85,11 @@ platform's `schedule.paused`; see the
 
 <SettingsSections pack="adf" method="adf-copy" include={["retries", "paused"]} level={4} />
 
+The standard's [`operations`](/docs/reference/intent#operations) gives every
+ADF table that sets neither its `retries`, from `retries.count`, and its Copy
+activity's timeout, from `timeout`; see what the
+[ADF pack does with each intent value](/docs/reference/packs/adf#intent).
+
 To stop only the copies, for example while the source database is down for
 maintenance, set `paused: true` under `settings.adf-copy` in the platform,
 beside the method's other settings, or under the method your flows use.
@@ -170,6 +175,11 @@ win.
 run values ADF fills in when it runs, or text:
 
 <SettingsSections pack="adf" method="adf-copy" include={["audit_columns"]} level={4} />
+
+The `audit` [intent](/docs/reference/intent) adds the same kind of column in
+words every pack reads, such as `audit: [loaded_at, run_id]` on a flow or a
+layer: ADF adds those its copy can fill, each named `_<value>`, and leaves the
+file values, such as `source_file`, to the pack that reads the files.
 
 <Screenshot
   src="/images/platforms/adf-pipelines/adf-06-copy-audit-columns.png"

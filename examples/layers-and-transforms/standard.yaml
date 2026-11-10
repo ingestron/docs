@@ -4,7 +4,7 @@ id: sales
 packs: [databricks@2]
 store:
   when:
-    # Gold tables are small and read whole: no clustering, longer retention.
+    # Gold tables are small and read whole: kept longer, as materialised views.
     - layer: gold
       use: materialised-view
-      with: { cluster_by: none, properties: { delta.logRetentionDuration: "interval 90 days" } }
+      with: { properties: { delta.logRetentionDuration: "interval 90 days" } }

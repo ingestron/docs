@@ -194,13 +194,13 @@ function reading(id: string, entry: ConnectorEntry): Part {
         ...part,
         title: "Full copies and incremental windows",
         before: [
-          `\`mode: full\` copies the whole table each ${windows}. \`mode: incremental\` copies rows whose \`watermark_column\` falls within that window. Choose a column that records when a row changes, such as \`modified_at\`; an integer identity is not a time-window watermark.`,
+          `\`load: full\` copies the whole table each ${windows}. \`load: incremental\` copies the rows whose cursor column falls within that window, the column a flow or a table names in \`load: { cursor }\`; the method writes them as its \`mode\` and \`watermark_column\` settings. Choose a column that records when a row changes, such as \`modified_at\`; an integer identity is not a time-window watermark.`,
         ],
         after: [
-          "The watermark is configured in the flow's `ingest.with`, or as a default in the standard's `ingest.settings.adf-copy`. It is not a contract property. Each table can override the default with its own `mode` and `watermark_column`; the contract describes the columns and keys of that table.",
+          "Write the load mode once in the standard, as `load: { default: incremental }`, and the cursor on each flow, as `load: { cursor: modified_at }`. Each table can give its own `load`. They are [intent](/docs/reference/intent), not contract properties; the contract describes the columns and keys of that table.",
           "The filter is always the trigger window's inclusive start and exclusive end. Ingestron does not track the greatest value seen in an earlier run. A change outside the selected window is not copied by that window. Arbitrary SQL queries, extra `WHERE` criteria and per-table window schedules are not supported by `adf-copy`.",
-          "Use the source column name for `watermark_column`. A contract's `physicalName` can rename a selected column, but it does not rewrite the watermark filter.",
-          "All tables of one connection and source database share runtime, encryption, schedule, retry and paused settings. Those values must agree even when the tables use different watermarks.",
+          "Use the source column name for the cursor. A contract's `physicalName` can rename a selected column, but it does not rewrite the window filter.",
+          "All tables of one connection and source database share runtime, encryption, schedule, retry and paused settings. Those values must agree even when the tables use different cursors.",
         ],
       };
     case "adf-files":
@@ -253,9 +253,9 @@ function current(id: string, entry: ConnectorEntry): Part | undefined {
   const databricks =
     connector.method === "adf-files"
       ? "Auto Loader reads each file once by default. Choose how the table keeps the rows inside those files, separately from which files ADF copies; see [On Databricks](/docs/how-to/keep-a-table-current#on-databricks)."
-      : "Databricks reads the landed files into a streaming table. With `mode: append`, repeated copies add repeated rows; `upsert` keeps the current row per key and `history` keeps every version, ordered by a column you choose. See [On Databricks](/docs/how-to/keep-a-table-current#on-databricks)." +
+      : "Databricks reads the landed files into a streaming table. With `history: none`, its default, repeated copies add repeated rows; `history: latest` keeps the current row per key and `history: full` keeps every version, ordered by the `sequence` column you choose. See [On Databricks](/docs/how-to/keep-a-table-current#on-databricks)." +
         (connector.method === "adf-copy"
-          ? " The store's `sequence_by` decides which version wins; it is separate from the extraction watermark. ADF and Databricks run on separate schedules."
+          ? " `sequence` decides which version wins; it is separate from the copy's cursor, though often the same column. ADF and Databricks run on separate schedules."
           : "");
   return {
     kind: "current",
@@ -267,7 +267,7 @@ function current(id: string, entry: ConnectorEntry): Part | undefined {
       "adf-synapse":
         "A view reads the landed files each time it is queried and shows them as they are: it cannot keep a current row per key. See [On Synapse](/docs/how-to/keep-a-table-current#on-synapse).",
       "adf-duckdb":
-        "The DuckDB table's `mode` decides what it keeps; see [On DuckDB](/docs/how-to/keep-a-table-current#on-duckdb).",
+        "The DuckDB table's `history` decides what it keeps; see [On DuckDB](/docs/how-to/keep-a-table-current#on-duckdb).",
       "adf-landing": "The landed files are the result: nothing merges them.",
     }),
     after: [],
@@ -332,9 +332,9 @@ function readSection(id: string, entry: ConnectorEntry): Section {
       part: {
         kind: "watermarks",
         id: `${pack}-watermarks`,
-        title: "Different watermarks per table",
+        title: "A different cursor per table",
         before: [
-          "In this example, the standard reads changed rows once an hour using `modified_at`. Customers inherit that default. Invoices override the watermark with `updated_at` in the flow and set the store's ordering column to match. The same hourly trigger serves both tables.",
+          "In this example, the standard copies changed rows once an hour, and the flow reads them by `modified_at`. Customers take the flow's cursor. Invoices give their own, `updated_at`, and order their changes by it too. The same hourly trigger serves both tables.",
           ...watermarkNote(id),
         ],
         after: [],

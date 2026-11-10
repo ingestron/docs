@@ -1,11 +1,12 @@
 apiVersion: ingestron.io/v1
 kind: Platform
 id: azure
-workspace:
-  host: ${values.host}
 settings:
   adf-copy: # shared infrastructure, referenced by name
     landing: ${values.landing}/northwind
     key_vault: ${values.key_vault}
     integration_runtime: ${values.runtime}
     runtime_kind: azure
+databricks:
+  workspace:
+    host: ${values.host}

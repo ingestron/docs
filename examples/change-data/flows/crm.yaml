@@ -4,22 +4,20 @@ id: crm
 source: crm
 ingest:
   with: { format: json }
+sequence: changed_at # the newest change to a key wins
 tables:
   accounts:
     object: accounts
     contract: crm.accounts
+    # Only the current version of each account.
+    history: latest
+    load: { deletes: { when: "operation = 'DELETE'" } }
     store:
-      # Only the current version of each account.
-      with:
-        {
-          mode: upsert,
-          sequence_by: changed_at,
-          delete_when: "operation = 'DELETE'",
-          except_columns: [operation],
-        }
+      with: { except_columns: [operation] }
   contacts:
     object: contacts
     contract: crm.contacts
+    # Every version, with __START_AT and __END_AT.
+    history: full
     store:
-      # Every version, with __START_AT and __END_AT.
-      with: { mode: history, sequence_by: changed_at, except_columns: [operation] }
+      with: { except_columns: [operation] }

@@ -37,6 +37,21 @@ missing setting is reported with the file and line where it was written
 ([`BAD_SETTING`](/docs/reference/errors#BAD_SETTING)). Each method's
 settings and defaults are in [Reference: packs and methods](/docs/reference/packs).
 
+## Intent
+
+[Intent](/docs/reference/intent), such as `history` or `audit`, has an order
+of its own: the standard, then the table's layer, a `load.when` rule, the flow
+or transform, and the table, with the standard's `fixed` intent last. What is
+still unset comes from the chosen method's own default. See
+[Which value wins](/docs/reference/intent#precedence).
+
+Some settings are other names for intent, such as `streaming-table`'s
+`mode: upsert`, which is `history: latest`. Written as a setting, one still
+works, in the place it is written, and `plan` says
+[`SETTING_MOVED`](/docs/reference/errors#SETTING_MOVED), with a fix that
+writes the intent instead; see
+[Settings that are intent](/docs/reference/intent#settings-that-are-intent).
+
 ## Names, layers, types and quality
 
 These are not method settings, and `fixed` does not apply to them. For each,

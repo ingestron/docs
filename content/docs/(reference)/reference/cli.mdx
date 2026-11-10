@@ -5,7 +5,8 @@ description: The ingestron command's commands, options, output and exit codes.
 
 The `ingestron` command reads a project folder and writes each platform's
 files, for every environment. [Install it](/docs/start/install) first. `ingestron init` creates a
-project; see [Create a project](/docs/how-to/start-from-a-template). Then
+project; see [Create a project](/docs/how-to/start-from-a-template), or
+[Published standards](#standard) below. Then
 `ingestron plan` and `ingestron apply` are the everyday loop; see
 [Plan, apply and review](/docs/how-to/plan-and-generate). In CI, run
 `ingestron check`; see [Check generated files in CI](/docs/how-to/check-in-ci).
@@ -35,6 +36,29 @@ ingestron check --definitions shop --out shop/build
 
 With `--definitions shop` alone, `apply` would write `build` in the folder you
 ran it from, not in `shop`.
+
+## Published standards [#standard]
+
+`ingestron init <folder> --kit <name>@<version>` creates a project from a
+[published standard](/docs/how-to/choose-a-published-standard). `--kit` takes
+the name and version, such as `duckdb/local-medallion@2026-11-10`; the name
+alone, for the newest version that is not a preview; or
+`<git-url>#<folder>@<tag>`, for one kept in a Git repository. It is not
+combined with `--template` or `--standard`. See
+[Start from a published standard](/docs/how-to/start-from-a-published-standard).
+
+`ingestron standard` takes one of two commands:
+
+- `ingestron standard install <kit>` replaces the project's standard with the
+  published standard's, keeping its path and `id`, and lists the published
+  standard's other files that changed; it refuses a standard file with
+  changes that are not committed. It exits `0` once the file is written, and
+  `1` when it writes nothing. See
+  [Move to a newer published standard](/docs/how-to/upgrade-a-standard).
+- `ingestron standard list` lists the versions installed with the command,
+  then those only the public catalogue has. `--platform <id>` keeps one
+  platform's. It always exits `0`. See
+  [List them](/docs/how-to/choose-a-published-standard#list-them).
 
 ## Output
 

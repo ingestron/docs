@@ -4,7 +4,7 @@ description: Start from a connection and a supported route, or from a starter or
 ---
 
 A project is a folder of YAML definitions with a `project.yaml` at its root.
-Create one in either of two ways:
+Create one in any of three ways:
 
 - **From a connection:** choose the source, how it can be reached, and the
   route its data takes. The project holds only that connection, its example
@@ -12,8 +12,12 @@ Create one in either of two ways:
 - **From a starter:** copy a complete project for a common situation, such as
   [the DuckDB starter](/docs/start/first-project), or one your organisation
   shares as a template.
+- **From a published standard:** copy a dated standard for your platform,
+  which says how every table is loaded, kept and run, with a small project
+  that builds; see
+  [Start from a published standard](/docs/how-to/start-from-a-published-standard).
 
-Either way, the result is ordinary definitions you edit, then plan and apply.
+Each way, the result is ordinary definitions you edit, then plan and apply.
 
 <FlowDiagram
   title="Create and check a project"
@@ -58,7 +62,8 @@ ingestron init sales --connector postgresql --connectivity private --via adf-dat
 
 `--yes` takes the default of each choice not given as a flag. `--env` gives
 other environments, `--name` another id, and
-`--standard ../platform/standard.yaml` your organisation's standard.
+`--standard ../platform/standard.yaml` your organisation's standard, or
+`--kit` a [published one](/docs/how-to/start-from-a-published-standard#with-a-connection).
 
 </Tool>
 <Tool name="VS Code">
@@ -80,7 +85,7 @@ panel.
   light="/images/vscode/new-project-light.png"
   dark="/images/vscode/new-project-dark.png"
   alt="The New project picker asks How do you want to start? and offers From a connection, to choose a source, how it is reached and a supported route, and From a starter, a ready-made project to try, such as DuckDB on a laptop."
-  caption="New project's first question: from a connection or from a starter. The folder comes last."
+  caption="New project's first question: how to start. The folder comes last."
 />
 
 The project holds the connection, its example flows and contracts, and the

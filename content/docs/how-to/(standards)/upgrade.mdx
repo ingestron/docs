@@ -1,6 +1,6 @@
 ---
 title: Upgrade Ingestron and its packs
-description: Choose the version every project runs, see what an upgrade changes with plan, move CI and your team together, and upgrade from 1.x to 2.0.
+description: Choose the version every project runs, see what an upgrade changes with plan, move CI and your team together, and what changed from 1.x to 2.3.
 ---
 
 The packs come inside the `ingestron` command: each release of the command
@@ -46,7 +46,7 @@ choose to upgrade. The [CI templates](/docs/how-to/check-in-ci) and the
 [deployment templates](/docs/how-to/deploy-through-environments) do:
 
 ```sh
-npm install -g ingestron@2.2.0
+npm install -g ingestron@2.3.0
 ```
 
 `npm ls -g ingestron` shows the version a computer has installed.
@@ -95,7 +95,7 @@ next; see [Deploy through environments](/docs/how-to/deploy-through-environments
 
 ### The standard and the folders
 
-1. Install `ingestron@2.2.0` and plan. Every pack is version 2, so a standard that
+1. Install `ingestron@2.3.0` and plan. Every pack is version 2, so a standard that
    names `databricks@1`, `adf@1`, `synapse@1` or `duckdb@1` stops with
    `PACK_VERSION`, once for all the environments that have it:
 
@@ -135,7 +135,7 @@ next; see [Deploy through environments](/docs/how-to/deploy-through-environments
    [`DEPLOY_VALUE`](/docs/reference/errors#DEPLOY_VALUE): write it in
    `project.yaml` for each environment. See
    [Supplied when deploying](/docs/concepts/yaml-references#supplied-when-deploying).
-5. Change CI: the check templates install `ingestron@2.2.0`, and the deploy
+5. Change CI: the check templates install `ingestron@2.3.0`, and the deploy
    pipelines deploy `build/<pack>/` by target, parameter file or script, as
    [Deploy through environments](/docs/how-to/deploy-through-environments)
    shows.
@@ -151,28 +151,29 @@ given `--env`, they exit with `2`. `compare` and `request` still take `--env`.
   resources in place, if the same identity deploys it. Run
   `databricks bundle validate` and `databricks bundle summary` first.
 - **Deploy as the identity that deployed 1.x.** Without
-  `workspace.root_path` in the platform, a target's deployment state is in the
+  `databricks.workspace.root_path` in the platform, a target's deployment state is in the
   deploying identity's own folder, `~/.bundle/…` in the workspace.
   Another identity, such as the service principal of the new CI templates,
   finds no state there and creates a second copy of every pipeline and job; in
   `prod`, both copies run on schedule. `databricks bundle summary` shows the
   folder a target uses. So run the first 2.0 deploy, and the schema steps
   below, as the identity that deployed 1.x. Before deploys move to CI, set a
-  shared `workspace.root_path` in `platform.yaml`, such as
+  shared `databricks.workspace.root_path` in `platform.yaml`, such as
   `/Workspace/Shared/.bundle/<project>/${environment.name}`, and bind each
   existing resource to it as the CI identity, as
   [Deploy as one identity](/docs/platforms/databricks-deploy#one-identity)
   shows.
 - Only an environment named `dev` is in development mode; `test`, `uat`,
   `staging` and every other environment are in production mode, unless the
-  platform sets `mode`. On such an environment's first 2.0 deploy, jobs and
+  platform sets `databricks.mode`. On such an environment's first 2.0 deploy, jobs and
   pipelines lose the `[dev <identity>]` prefix from their names, pipelines
   leave development, the deployment lock comes on, and production mode checks
   the deploying identity's `run_as`, `permissions` and `root_path`. To keep
-  development mode there, write `mode: ${values.mode}` in the platform,
+  development mode there, write `mode: ${values.mode}` in the platform's
+  `databricks:` section,
   `mode: production` in `project.yaml`'s `values`, and `mode: development` in
   that environment's `values`.
-- With `manage.schemas`, managed schemas are keyed by layer, such as `bronze`,
+- With `databricks.manage.schemas`, managed schemas are keyed by layer, such as `bronze`,
   or by schema name when a layer has several, not `<catalog>_<schema>`. Each
   environment's deployment state still holds the old key, so before the first
   2.0 deploy, for each environment and managed schema, as the identity that
@@ -350,6 +351,56 @@ extension works as before. Only code that calls the packages changes:
   and `platformRequest` is `request`. The
   [`@ingestron/authoring` README](https://github.com/ingestron/ingestron/tree/main/packages/authoring)
   shows an example.
+
+## Upgrade to 2.3 [#upgrade-to-2-3]
+
+2.3 generates the same files as 2.2 for a project that changes nothing. It
+adds [intent](/docs/reference/intent) and
+[published standards](/docs/how-to/choose-a-published-standard), and asks for
+some settings to be written in their new places:
+
+- **Settings that are intent.** `streaming-table`'s `mode`, `sequence_by`,
+  `delete_when` and `cluster_by`, `duckdb-table`'s `mode` and `sequence_by`,
+  and `adf-copy`'s `mode` and `watermark_column` mean the same as
+  [intent](/docs/reference/intent#settings-that-are-intent), such as
+  `history: latest` for `mode: upsert`. They still work, and `plan` reports
+  each as [`SETTING_MOVED`](/docs/reference/errors#SETTING_MOVED), a warning.
+  In a flow or a table, its fix writes the intent and removes the setting;
+  in the standard, write the intent by hand.
+- **The `databricks:` section.** The platform's `workspace`, `mode`, `run_as`,
+  `compute`, `permissions`, `manage` and `grants` now go under `databricks:`,
+  and `notifications.on_failure` becomes an email alert in `alerts`. At the
+  top they still work, with a
+  [`PLATFORM_FIELD_MOVED`](/docs/reference/errors#PLATFORM_FIELD_MOVED)
+  warning whose fix moves each; one written in both places with different
+  values is [`BAD_SETTING`](/docs/reference/errors#BAD_SETTING). See
+  [the `databricks:` section](/docs/reference/packs/databricks#platform).
+- **What each pack applies.** A value of intent the table's pack does not
+  apply is [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED), and with the
+  standard's `features: ga`, one that needs a feature in preview is
+  [`PREVIEW_FEATURE`](/docs/reference/errors#PREVIEW_FEATURE). Projects
+  written before 2.3 declare no intent, so they get neither.
+- **Published standards.** `ingestron init --kit` starts a project from one,
+  `ingestron standard install` moves a project to another version, and
+  `ingestron standard list` lists them; in VS Code, **New project** offers
+  **From a published standard**. Hover a `REPLACE_ME` to see where to find its
+  value.
+
+To move a project to the new places, plan with 2.3.0, apply each fix (in
+VS Code, **Fix all** applies one kind at once), and plan again: the plan should
+list no change to the generated files.
+
+For code that calls the packages:
+
+- `@ingestron/definitions` 1.13 adds intent: `intentPaths`, `intentUseOf` and
+  `intentCoverageGaps`; a pack's `intent`, and a method's `intent`,
+  `intentDefaults` and `aliases`; each table's `intent` and `intentOrigins`;
+  a pack's `platformSection` and `platformSectionReference`; and `find` and
+  `suggest` on each `FieldInfo`.
+- `@ingestron/core` 1.1 adds published standards: `installedKits`,
+  `readKit`, `parseKitSpec` and `kitSchema`.
+- `@ingestron/authoring` 2.3 adds `ProjectSnapshot.replaceMeHelp`, what a
+  `REPLACE_ME` stands for, and lists a table's intent in its hover.
 
 ## What changed in a release
 

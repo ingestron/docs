@@ -310,7 +310,7 @@ describe("platforms/databricks", () => {
     // Deploying as one identity: a shared root_path, and binding what another identity deployed.
     const identity = section(deployPage, "### Deploy as one identity");
     expect(identity).toContain(
-      '<Example name="environments" file="platform.yaml" pick="workspace" />',
+      '<Example name="environments" file="platform.yaml" pick="databricks" />',
     );
     expect(fences(identity, "sh")[0]).toContain(
       "databricks bundle deployment bind <key> <id> -t prod",
@@ -318,7 +318,7 @@ describe("platforms/databricks", () => {
     const platform = parse(
       readFileSync(join(exampleFolder("environments"), "platform.yaml"), "utf8"),
     );
-    expect(platform.workspace.root_path).toMatch(/^\/Workspace\/Shared\//);
+    expect(platform.databricks.workspace.root_path).toMatch(/^\/Workspace\/Shared\//);
     expect(section(page, "## Deploy and run")).toContain("(/docs/platforms/databricks-deploy)");
     const ci = section(deployPage, "### From CI");
     expect(ci).toContain('file="github-actions/deploy-environment.yml"');

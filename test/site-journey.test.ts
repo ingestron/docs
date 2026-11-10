@@ -54,6 +54,10 @@ it("opens with one learning path, then areas by the reader's job, with no index 
   ]);
   expect(JSON.parse(read("how-to/(standards)/meta.json")).pages).toEqual([
     "configure-a-standard",
+    "choose-a-published-standard",
+    "start-from-a-published-standard",
+    "upgrade-a-standard",
+    "kits",
     "name-things-your-way",
     "ask-the-platform-team",
     "share-a-template",
@@ -88,6 +92,7 @@ it("opens with one learning path, then areas by the reader's job, with no index 
   ]);
   expect(JSON.parse(read("reference/meta.json")).pages).toEqual([
     "documents",
+    "intent",
     "packs",
     "errors",
     "cli",

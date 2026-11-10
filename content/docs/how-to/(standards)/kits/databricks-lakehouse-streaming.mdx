@@ -1,0 +1,62 @@
+---
+title: Streaming lakehouse on Databricks
+description: A published standard for Databricks. Streaming tables that read each new file once, silver kept to the latest row per key, gold materialised views, and a refresh job retried and alerted on failure.
+---
+
+<KitFacts id="databricks/lakehouse-streaming" />
+
+A web shop's files become three layers in Databricks: `bronze.customers`, a row
+each time a customer is exported, with the values that do not fit kept aside;
+`silver.orders`, the latest row per order, from change records; and
+`gold.daily_sales`, totals per customer and day. One Lakeflow pipeline builds
+them, and one job refreshes it each day, tries again when it fails, and mails
+your team when it still fails.
+
+## Start from it
+
+From the folder that will hold the project:
+
+```sh
+ingestron init shop --kit databricks/lakehouse-streaming@2026-11-10
+```
+
+Then write each value that is still `REPLACE_ME`, below, and plan; see
+[Start from a published standard](/docs/how-to/start-from-a-published-standard)
+and [Deploy the Databricks bundle](/docs/platforms/databricks-deploy).
+
+## What to write [#replace-me]
+
+What belongs to your workspace is `REPLACE_ME`. Point at each one (or tap it
+on a touch screen) to see the field it fills, where to find the value, and a
+suggestion; in VS Code, hover it. The platform holds who is told of failures
+and the `databricks:` section:
+
+<KitFile id="databricks/lakehouse-streaming" file="platform.yaml" />
+
+`project.yaml` holds what differs between `dev` and `prod`: each workspace's
+address, and the volume the shop's files land in:
+
+<KitFile id="databricks/lakehouse-streaming" file="project.yaml" />
+
+## The standard
+
+<KitFile id="databricks/lakehouse-streaming" file="standard.yaml" />
+
+Each table starts from its layer's intent. `customers` lands in `bronze`, the
+first layer; the orders flow says `layer: silver`, and gives the column that
+orders its changes and the condition for a delete. Each value, and where it
+came from:
+
+<KitIntent id="databricks/lakehouse-streaming" />
+
+What the Databricks pack does with each value, with each feature's release
+level and the date it was checked, is in
+[the Databricks pack's intent](/docs/reference/packs/databricks#intent).
+`features: ga` keeps out features in preview, so the job alerts on failure
+but not on slow runs: Databricks' run duration alert is in Public Preview.
+
+## Why each choice
+
+In your project, `STANDARD.md` explains each section of the standard on
+Databricks, and links the Databricks pages each was checked against, with the
+date.

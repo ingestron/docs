@@ -180,7 +180,10 @@ describe("generated files", () => {
     const project = copy("private-sql-server-filled");
     cli(project, ["apply"]);
     appendFileSync(join(project, "build/databricks/databricks.yml"), "# my change\n");
-    appendFileSync(join(project, "standard.yaml"), "layers: [raw, curated]\n");
+    appendFileSync(
+      join(project, "standard.yaml"),
+      "store: { settings: { streaming-table: { properties: { team: erp } } } }\n",
+    );
     const { code, output } = cli(project, ["apply", "--no-diff"]);
     expect(code).toBe(1);
     expect(lines(output)).toContain("Applied: adf. Not applied: databricks.");
@@ -633,7 +636,7 @@ describe("Databricks", () => {
   it("quotes a change mode without a sequence column, and without a key", () => {
     const project = copy("change-data");
     edit(project, "flows/crm.yaml", (text) =>
-      text.replace("mode: upsert,\n          sequence_by: changed_at,", "mode: upsert,"),
+      text.replace("sequence: changed_at # the newest change to a key wins\n", ""),
     );
     const { code, output } = cli(project, ["plan", "--no-diff"]);
     expect(code).toBe(1);

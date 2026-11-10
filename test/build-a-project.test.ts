@@ -6,6 +6,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { run } from "@ingestron/cli";
+import { intentUseOf } from "@ingestron/definitions";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -117,33 +118,24 @@ describe("how-to/keep-a-table-current", () => {
     expect(after).toContain('ORDER BY "ordered_at" DESC, "_ingestron_file" DESC');
   });
 
-  it("compares the modes each engine's store method accepts", () => {
+  it("compares what each engine does with the intent, from the packs' own coverage", () => {
     const table = page.split("\n## ")[0]!;
-    const row = (engine: string) =>
-      table
-        .split("\n")
-        .find((line) => line.startsWith(`| ${engine} `))!
-        .split("|")
-        .slice(2, -1)
-        .map((cell) => cell.trim());
-    const duckdb = accepted("duckdb", "duckdb-table", "mode");
-    expect(row("DuckDB")).toEqual(["`upsert`", "No", "No"]);
-    expect(duckdb).toContain("upsert");
-    expect(duckdb).not.toContain("history");
-    expect(
-      settingRows("duckdb", "duckdb-table").map((field) => field.path.join(".")),
-    ).not.toContain("delete_when");
-    const databricks = accepted("databricks", "streaming-table", "mode");
-    expect(row("Databricks")).toEqual(["`upsert`", "`history`", "`delete_when`"]);
-    expect(databricks).toEqual(expect.arrayContaining(["upsert", "history"]));
-    expect(
-      settingRows("databricks", "streaming-table").map((field) => field.path.join(".")),
-    ).toContain("delete_when");
-    // A Synapse view has no mode at all.
-    expect(row("Synapse")).toEqual(["No", "No", "No"]);
-    expect(
-      settingRows("synapse", "synapse-view").map((field) => field.path.join(".")),
-    ).not.toContain("mode");
+    expect(table).toContain("<IntentOverview");
+    // DuckDB keeps the latest row but not every version; Databricks both, and deletes.
+    const used = (pack: string, path: string, value?: string) =>
+      intentUseOf(
+        packs.find((item) => item.id === pack)!,
+        path,
+        value,
+      )?.use;
+    expect(used("duckdb", "history", "latest")).toBe("used");
+    expect(used("duckdb", "history", "full")).not.toBe("used");
+    expect(used("databricks", "history", "full")).toBe("used");
+    expect(used("databricks", "load.deletes.when")).toBe("used");
+    expect(used("synapse", "history", "latest")).toBe("not-applicable");
+    // The settings each intent stands for, which the page names.
+    expect(accepted("duckdb", "duckdb-table", "mode")).toContain("upsert");
+    expect(page).toContain("`mode: upsert`");
   });
 });
 
@@ -222,7 +214,7 @@ describe("how-to/write-a-contract", () => {
   it("checks rows by a column's logicalTypeOptions, and unique once checks are on", () => {
     const text = prose(section(page, "## Rules about the data"));
     expect(text).toContain("such as `customer_id_minimum`");
-    expect(text).toContain("when the platform turns on `manage.checks`");
+    expect(text).toContain("when the platform turns on `databricks.manage.checks`");
     const cwd = copy("minimal");
     const contract = join(cwd, "contracts/orders.yaml");
     writeFileSync(
@@ -243,7 +235,7 @@ describe("how-to/write-a-contract", () => {
     // With checks on, unique becomes a check over all rows after the refresh.
     writeFileSync(
       join(cwd, "platform.yaml"),
-      "apiVersion: ingestron.io/v1\nkind: Platform\nid: checks\nmanage: { checks: true }\n",
+      "apiVersion: ingestron.io/v1\nkind: Platform\nid: checks\ndatabricks: { manage: { checks: true } }\n",
     );
     const project = parse(readFileSync(join(cwd, "project.yaml"), "utf8"));
     writeFileSync(

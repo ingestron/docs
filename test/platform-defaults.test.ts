@@ -24,19 +24,20 @@ function platform(folder: string, environment: string) {
 describe("platform defaults", () => {
   it("lists each field the Databricks pack reads, with its default, linked to its reference", () => {
     const rows = platformDefaults("databricks");
+    // A field of the pack's own section is shown there, where it is written now.
     expect(rows.map((row) => row.field.path.join("."))).toEqual([
-      "mode",
-      "compute.serverless",
+      "databricks.mode",
+      "databricks.compute.serverless",
       "schedule.timezone",
       "schedule.paused",
-      "manage.schemas",
-      "manage.tags",
-      "manage.comments",
-      "manage.checks",
+      "databricks.manage.schemas",
+      "databricks.manage.tags",
+      "databricks.manage.comments",
+      "databricks.manage.checks",
     ]);
     const html = renderToStaticMarkup(createElement(PlatformDefaults, { pack: "databricks" }));
     expect(html).toContain(
-      '<a href="/docs/reference/documents#platform-mode"><code>mode</code></a>',
+      '<a href="/docs/reference/packs/databricks#platform-mode"><code>databricks.mode</code></a>',
     );
     expect(html).toContain(
       "development in an environment named dev, and production in every other, test and default included",
@@ -92,11 +93,11 @@ describe("platform defaults", () => {
       platformDefaults("databricks").map((row) => [row.field.path.join("."), row.default]),
     );
     expect(stated).toMatchObject({
-      "compute.serverless": "true",
+      "databricks.compute.serverless": "true",
       "schedule.timezone": "UTC",
       "schedule.paused":
         "running in an environment named prod or production, and where the platform sets mode: production itself; paused everywhere else, test included, though its mode is production by default",
-      "manage.tags": "false",
+      "databricks.manage.tags": "false",
     });
   });
 });

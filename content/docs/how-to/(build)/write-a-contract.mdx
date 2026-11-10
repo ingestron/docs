@@ -105,7 +105,7 @@ standard's `quality.default` action:
 Other rules compare a count over all rows, such as a row count or a share of
 nulls, which a check of one row cannot. So does `unique: true`, which says no
 value repeats. Where the pack checks rows, these run after each refresh when
-the platform turns on `manage.checks`. Otherwise, and always for a `custom`
+the platform turns on `databricks.manage.checks`. Otherwise, and always for a `custom`
 rule, each `quality` rule is a
 [warning](/docs/reference/errors#QUALITY_RULE_NOT_CHECKED) and stays as
 documentation.
@@ -114,7 +114,7 @@ documentation.
 
 A table's `tags`, a column's `tags` and its `classification` are kept for
 packs that tag tables. Databricks sets them as Unity Catalog tags after each
-refresh when the platform turns on `manage.tags`; see
+refresh when the platform turns on `databricks.manage.tags`; see
 [Databricks contract fields](/docs/reference/packs/databricks#contract-fields).
 
 ## Draft from a sample [#draft-from-a-sample]

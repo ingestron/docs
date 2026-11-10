@@ -27,7 +27,7 @@ Each section appears only when it has something to say, in this order:
   where it is used, whether it is set, and the name the deploying pipeline
   supplies it as; never its value. See [Values to provide](#values-to-provide).
 - The identity pipelines and jobs run as, and the workspace.
-- **Switched on:** each `manage` switch the platform turns on, what it does
+- **Switched on:** each `databricks.manage` switch the platform turns on, what it does
   and what it needs on the platform, from the pack's
   [platform prerequisites](/docs/reference/packs/databricks#platform-prerequisites).
 - **Used by the definitions, but switched off:** features the definitions use
@@ -67,7 +67,8 @@ Its request for `dev` is:
 
 <Request name="minimal" />
 
-A platform document that names `run_as` and turns on `manage` switches adds
+A platform document whose `databricks:` section names `run_as` and turns on
+`manage` switches adds
 what each switch needs and the SQL to run once; see
 [Before you deploy](/docs/platforms/databricks-deploy#prerequisites) in Deploy the Databricks bundle.
 

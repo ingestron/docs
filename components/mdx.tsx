@@ -23,7 +23,18 @@ import { ContractUseTable } from "@/components/reference/contract-use";
 import { PackCapabilities } from "@/components/reference/pack-capabilities";
 import { DefaultLayers, PackNaming } from "@/components/reference/pack-defaults";
 import { SamplesCatalogue } from "@/components/reference/samples-catalogue";
-import { ContractFields, DocumentFields } from "@/components/reference/document-fields";
+import {
+  ContractFields,
+  DocumentFields,
+  PlatformSection,
+} from "@/components/reference/document-fields";
+import {
+  IntentAliases,
+  IntentOverview,
+  IntentSupport,
+  IntentVocabulary,
+} from "@/components/reference/pack-intent";
+import { KitFacts, KitFile, KitIntent, KitList } from "@/components/reference/kits";
 import { ErrorCodes, LoadingCodes } from "@/components/reference/error-codes";
 import { ExtensionCommands } from "@/components/reference/extension-commands";
 import { ExamplesList } from "@/components/reference/examples-list";
@@ -82,6 +93,15 @@ export function getMDXComponents(components?: MDXComponents) {
     LoadingCodes,
     DocumentFields,
     ContractFields,
+    PlatformSection,
+    IntentSupport,
+    IntentOverview,
+    IntentVocabulary,
+    IntentAliases,
+    KitList,
+    KitFacts,
+    KitFile,
+    KitIntent,
     CliCommands,
     BuiltInTemplates,
     ProjectSources,

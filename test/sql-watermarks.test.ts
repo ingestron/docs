@@ -42,15 +42,21 @@ it("describes the watermark example as the sample has it, on every adf-copy page
     expect(item.ingest?.settings.mode).toBe("incremental");
     expect(item.ingest?.settings.every).toEqual({ frequency: "Hour", interval: 1 });
   }
-  // "using `modified_at`. Customers inherit that default.": the standard sets it, the flow does not.
+  // "the standard copies changed rows once an hour, and the flow reads them by `modified_at`".
   const standard = parse(readExampleFile(watermarkExample, "standard.yaml"));
-  expect(standard.ingest.settings["adf-copy"].watermark_column).toBe("modified_at");
-  expect(words).toContain("using `modified_at`. Customers inherit that default.");
-  expect(customers.ingest?.settings.watermark_column).toBe("modified_at");
-  // "Invoices override the watermark with `updated_at` in the flow and set the store's ordering column to match."
+  expect(standard.load.default).toBe("incremental");
   const flow = parse(readExampleFile(watermarkExample, "flows/erp.yaml"));
-  expect(flow.tables.customers.ingest).toBeUndefined();
-  expect(flow.tables.invoices.ingest.with.watermark_column).toBe("updated_at");
-  expect(flow.tables.invoices.store.with.sequence_by).toBe("updated_at");
-  expect(words).toContain("Invoices override the watermark with `updated_at` in the flow");
+  expect(flow.load.cursor).toBe("modified_at");
+  expect(words).toContain(
+    "the flow reads them by `modified_at`. Customers take the flow's cursor.",
+  );
+  expect(customers.ingest?.settings.watermark_column).toBe("modified_at");
+  expect(flow.tables.customers.load).toBeUndefined();
+  // "Invoices give their own, `updated_at`, and order their changes by it too."
+  expect(flow.tables.invoices.load.cursor).toBe("updated_at");
+  expect(flow.tables.invoices.sequence).toBe("updated_at");
+  expect(invoices.store?.settings.sequence_by).toBe("updated_at");
+  expect(words).toContain(
+    "Invoices give their own, `updated_at`, and order their changes by it too.",
+  );
 });

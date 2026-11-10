@@ -177,9 +177,9 @@ instead, each one names its file, line and fix; see
 
 ## Settings that shape it [#settings]
 
-The platform document decides the targets: `workspace`, `run_as`,
-`permissions` and `mode` go into each target, and `tags` that differ become
-the target's preset tags. The defaults:
+The platform document decides the targets: the `workspace`, `run_as`,
+`permissions` and `mode` of its `databricks:` section go into each target, and
+`tags` that differ become the target's preset tags. The defaults:
 
 <PlatformDefaults pack="databricks" />
 
@@ -206,7 +206,7 @@ before the first deploy. They are not deployed:
 
 <Example name="platform-setup" file="build/databricks/prerequisites/prod.sql" />
 
-Only set `manage.schemas` when no other project uses the schemas: deploying
+Only set `databricks.manage.schemas` when no other project uses the schemas: deploying
 the bundle can change them, and `databricks bundle destroy` deletes them.
 
 ### Refresh on a schedule [#schedule]
@@ -231,6 +231,13 @@ The schedule runs only in `prod` or `production`; set `paused` in the
 platform's `schedule` stops both the job and the Data Factory triggers; to
 stop only the copies, see
 [Retry and pause](/docs/platforms/adf-pipelines#retry-and-pause).
+
+The standard's [`operations`](/docs/reference/intent#operations) says how the
+job runs: how often a failed refresh is tried again, how long a run may take,
+and whether a run that starts while another is running waits. Who is told when
+a run fails is the platform's `alerts`, as in `platform-setup` above. The
+[streaming lakehouse](/docs/how-to/kits/databricks-lakehouse-streaming)
+published standard sets each of them.
 
 The tables themselves are shaped by the flows and the standard:
 [Keep a table current](/docs/how-to/keep-a-table-current),
@@ -271,4 +278,5 @@ as one identity, and runs the refresh.
 - [Add a source and its tables](/docs/how-to/add-a-source): another table, or
   another source, in the same project.
 - [Databricks pack](/docs/reference/packs/databricks): every setting, the
-  platform defaults and the `manage` switches.
+  platform's `databricks:` section and its defaults, the `manage` switches,
+  and what the pack does with each intent value.

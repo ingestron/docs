@@ -544,8 +544,9 @@ flows/erp.yaml:6:13  error  METHOD_CHECK
 under the same name every load would never be read again. For the same reason,
 a file you re-export under its old name is skipped.
 
-**Fix:** use `replace` or `upsert`, or give each load its own file, such as
-with `increments`. To reload everything, delete `ingestron.duckdb` and run
+**Fix:** keep the table with `history: none` (the method's `replace`) or
+`history: latest` (`upsert`) instead of `mode: append`, or give each load its
+own file, such as with `increments`. To reload everything, delete `ingestron.duckdb` and run
 again. See [Keep a table current](/docs/how-to/keep-a-table-current#on-duckdb).
 
 ### Upsert needs a primary key
@@ -557,8 +558,9 @@ flows/erp.yaml:6:13  error  METHOD_CHECK
   "duckdb-table" for table "invoices": upsert needs the contract's primaryKey.
 ```
 
-**Cause:** `upsert` replaces rows with the same key, and the contract names no
-key. `sequence_by` has to be a column of the contract too.
+**Cause:** `history: latest`, the method's `upsert`, replaces rows with the
+same key, and the contract names no key. `sequence` has to be a column of the
+contract too.
 
 **Fix:** mark the key column `primaryKey: true` in the contract. See
 [Keep a table current](/docs/how-to/keep-a-table-current).
@@ -649,12 +651,13 @@ flows/crm.yaml:9:5  error  METHOD_CHECK
 
 or `mode upsert needs primary key columns in the contract`.
 
-**Cause:** every `mode` but `append` keeps a table current by key, in the order
+**Cause:** `history: latest` or `full`, which the method writes as
+`mode: upsert` or `mode: history`, keeps a table current by key, in the order
 of a column.
 
-**Fix:** set `sequence_by` to the column that orders a key's changes, and mark
-the key columns `primaryKey: true` in the contract. See
-[Keep a table current](/docs/how-to/keep-a-table-current).
+**Fix:** set `sequence` on the flow or the table to the column that orders a
+key's changes, and mark the key columns `primaryKey: true` in the contract.
+See [Keep a table current](/docs/how-to/keep-a-table-current).
 
 ### Databricks rejects the bundle
 
@@ -667,7 +670,7 @@ them, or see
 A Lakeflow Connect pipeline refers to a Unity Catalog connection, which
 Ingestron does not create.
 
-**Fix:** when the platform sets `manage.schemas`, an administrator runs the
+**Fix:** when the platform sets `databricks.manage.schemas`, an administrator runs the
 generated `prerequisites/<environment>.sql` once before the first deploy: it grants
 `USE CATALOG` and `CREATE SCHEMA` on each catalog to the identity the pipelines
 run as, and the same must be given to the identity that deploys when it

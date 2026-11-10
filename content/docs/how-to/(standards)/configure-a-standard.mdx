@@ -19,6 +19,10 @@ To make every project follow your rules:
 4. Answer each project's [platform request](/docs/how-to/ask-the-platform-team),
    and [upgrade](/docs/how-to/upgrade) on purpose.
 
+To start from a standard that is already written and checked for your
+platform, [choose a published standard](/docs/how-to/choose-a-published-standard):
+once a project has it, it is your copy, and this page applies to it.
+
 ## What a standard holds [#what-a-standard-holds]
 
 This is Acme's standard. Its naming, types and storage choices belong to
@@ -50,6 +54,14 @@ set what happens to rows that fail a check (`quality`), and require
 [governance of data products](#require-governance-of-data-products).
 [Which setting wins](/docs/concepts/settings) explains what happens when a project
 sets one too.
+
+It can also say how tables are loaded, kept and run, in
+[intent](/docs/reference/intent) that every pack reads: what each layer keeps
+(`history`), columns that record when and where each row came from (`audit`),
+how files and rows are loaded (`load`), how runs are retried and who is told
+(`operations`), and whether platform features in preview may be used
+(`features`). The [published standards](/docs/how-to/choose-a-published-standard)
+are complete examples.
 
 ## One standard for several packs
 
@@ -161,8 +173,8 @@ To take it from a Git repository instead, see
 </Tool>
 <Tool name="VS Code">
 
-**Ingestron: New project** keeps the starter's or route's own standard. To
-start from yours, run `ingestron init` with `--standard` in a terminal, or
+**Ingestron: New project** keeps the starter's or route's own standard, or
+takes a published one with **From a published standard**. To start from yours, run `ingestron init` with `--standard` in a terminal, or
 replace the new project's `standard.yaml` with your standard and plan.
 
 </Tool>

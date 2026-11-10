@@ -4,7 +4,9 @@ description: Every field of project.yaml and the Standard, Platform, Connection,
 ---
 
 Each document starts with `apiVersion: ingestron.io/v1`, its `kind` and an
-`id`. The fields below come from the documents' schemas. For how the
+`id`. The fields below come from the documents' schemas, with where to find a
+value and a suggestion for each field that has them, as the editor's hover
+gives them. For how the
 documents work together, see [Definitions](/docs/concepts/definitions).
 
 Your editor can check these as you type: run `ingestron schemas` and follow
@@ -24,9 +26,20 @@ documents read with `${values.…}`, and the files to load. It has no
 <DocumentFields kind="Standard" />
 
 See [Standards and packs](/docs/concepts/standards-and-packs),
-[Which setting wins](/docs/concepts/settings) and [Name tables and resources](/docs/how-to/name-things-your-way).
+[Which setting wins](/docs/concepts/settings), [Intent](/docs/reference/intent)
+for `layers`, `load`, `audit`, `operations` and the other intent, and
+[Name tables and resources](/docs/how-to/name-things-your-way).
 
 ## Platform
+
+Each pack can have a section of its own, under its id, such as `databricks:`;
+its fields are on the pack's page, as for
+[the `databricks:` section](/docs/reference/packs/databricks#platform). The
+Databricks fields below, `workspace`, `mode`, `run_as`, `compute`,
+`permissions`, `manage` and `grants`, are read at the top of the platform as
+before, with a
+[`PLATFORM_FIELD_MOVED`](/docs/reference/errors#PLATFORM_FIELD_MOVED) warning,
+and `notifications` with one that moves it to `alerts`.
 
 <DocumentFields kind="Platform" />
 

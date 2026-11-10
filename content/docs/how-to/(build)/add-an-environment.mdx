@@ -42,8 +42,8 @@ Other platforms add their own file or folder for it; see
 
 Only an environment named `dev` is in development mode; every other one,
 `test` included, is in production mode, and schedules run only in `prod` or
-`production`, so `test`'s refresh job is paused. A platform can set `mode` and
-`schedule.paused` itself; see the
+`production`, so `test`'s refresh job is paused. A platform can set
+`databricks.mode` and `schedule.paused` itself; see the
 [platform defaults](/docs/reference/packs/databricks#platform-configuration).
 Environments may differ only in values, such as names, paths and hosts: a table
 built in one environment only is refused as
@@ -72,6 +72,7 @@ For the example above, it prints:
 - `mode`: `development` → `production`
 - `workspace.root_path`: `/Workspace/Shared/.bundle/finance/dev` → `/Workspace/Shared/.bundle/finance/test`
 - `tags.environment`: `dev` → `test`
+- `sections.databricks.workspace.root_path`: `/Workspace/Shared/.bundle/finance/dev` → `/Workspace/Shared/.bundle/finance/test`
 
 ## Table journals
 
@@ -83,7 +84,9 @@ For the example above, it prints:
 place, and lists only what differs:
 
 - **Platform:** the platform document's values, and the defaults that follow
-  from the environment, such as `mode`. Compared with `prod`, it also shows
+  from the environment, such as `mode`. The values of a pack's own section,
+  such as `databricks:`, show twice: as the pack reads them, such as
+  `workspace.root_path`, and as written, under `sections.databricks`. Compared with `prod`, it also shows
   `schedule.paused`, because only `prod` runs its schedule.
 - **Names:** the pipeline and job names, which are not per table.
 - **Table:** one section for each table that differs: its full name, each

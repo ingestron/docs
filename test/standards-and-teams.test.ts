@@ -324,7 +324,7 @@ describe("how-to/upgrade", () => {
 
   it("pins the exact bundle these pages describe, as the templates install it", () => {
     // The ingestron bundle these pages describe: the installed cli's version.
-    const bundle = "2.2.0";
+    const bundle = "2.3.0";
     const choose = section(page, "## Choose the version you run");
     const version = JSON.parse(
       readFileSync(join(process.cwd(), "node_modules/@ingestron/cli/package.json"), "utf8"),

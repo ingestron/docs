@@ -34,6 +34,11 @@ required columns and the default for your own checks:
 
 <Example name="quality" file="standard.yaml" />
 
+`quality: { results: true }` in the standard also keeps the results of the
+checks as a table you can query: on Databricks, the pipeline's event log. It is
+[intent](/docs/reference/intent), so a pack that cannot keep them says so with
+[`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED).
+
 <ToolSteps>
 <Tool name="CLI">
 

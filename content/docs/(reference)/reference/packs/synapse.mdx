@@ -26,3 +26,13 @@ field with the reason below; **Elsewhere** fields are handled by another pack
 or step and never warn.
 
 <ContractUseTable pack="synapse" />
+
+## Intent [#intent]
+
+What this pack does with each value of [intent](/docs/reference/intent), from
+the pack itself. A view keeps nothing, so most intent is not applicable. A value the pack does not apply, **Not yet** or
+**Not applicable**, is a [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED)
+warning where it is written, with the reason below. **Elsewhere** values are
+applied by another pack or step and never warn.
+
+<IntentSupport pack="synapse" />

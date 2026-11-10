@@ -19,7 +19,8 @@ then [deploy the generated bundle](/docs/platforms/databricks-deploy#deploy).
 
 Without a platform document, or where it leaves a setting out, the Databricks
 pack uses these defaults. Each target of the bundle gets its environment's
-`mode`, workspace, `run_as` and `permissions`. Without `run_as`, the pipelines and jobs run as the
+`mode`, workspace, `run_as` and `permissions`, from the platform's
+`databricks:` section. Without `run_as`, the pipelines and jobs run as the
 identity that deploys the bundle, and without `schedule`, nothing runs on a
 schedule.
 
@@ -27,13 +28,29 @@ schedule.
 
 <Example name="platform-setup" file="platform.yaml" />
 
-Only enable management of shared resources when this project owns them. The
-following capability reference describes each switch and its prerequisites.
+`schedule`, `tags` and `alerts` stay at the top of the platform, where every
+pack that runs jobs reads them. Only enable management of shared resources
+when this project owns them. The following capability reference describes
+each switch and its prerequisites.
+
+### The `databricks:` section [#platform]
+
+What only Databricks reads goes in the platform's `databricks:` section. Each
+field says where to find its value, and what it could look like; the editor's
+hover says the same.
+
+<PlatformSection pack="databricks" />
+
+Written at the top of the platform, as before 2.3, `workspace`, `mode`,
+`run_as`, `compute`, `permissions`, `manage` and `grants` still work, with a
+[`PLATFORM_FIELD_MOVED`](/docs/reference/errors#PLATFORM_FIELD_MOVED) warning
+whose fix moves each into the section. `notifications.on_failure` becomes an
+email alert in `alerts`.
 
 ## Platform prerequisites
 
 Some features change shared Unity Catalog objects, so the platform turns each
-on with a `manage` switch. While a switch is off, a definition or contract that
+on with a `databricks.manage` switch. While a switch is off, a definition or contract that
 uses the feature gets a `CAPABILITY_OFF` warning with a quick fix that turns it
 on. When a switch is on, the bundle has a `prerequisites/<environment>.sql` for
 each environment, which lists the grants to run once there as an
@@ -54,3 +71,16 @@ field with the reason below; **Elsewhere** fields are handled by another pack
 or step and never warn.
 
 <ContractUseTable pack="databricks" />
+
+## Intent [#intent]
+
+What this pack does with each value of [intent](/docs/reference/intent), from
+the pack itself. A value the pack does not apply, **Not yet** or **Not
+applicable**, is a [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED) warning
+where it is written, with the reason below. **Elsewhere** values are applied by
+another pack or step and never warn. **Release** is the Databricks feature's
+own release level, as the linked page said on the date checked; with
+`features: ga`, a feature in preview is a
+[`PREVIEW_FEATURE`](/docs/reference/errors#PREVIEW_FEATURE) warning.
+
+<IntentSupport pack="databricks" />

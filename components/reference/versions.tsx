@@ -33,6 +33,10 @@ export function PackageVersions() {
     ["@ingestron/core", "the API the command is built on"],
     ["@ingestron/definitions", "loading and resolving definitions"],
     ["@ingestron/authoring", "editor features"],
+    [
+      "@ingestron/standards",
+      "the [published standards](/docs/how-to/choose-a-published-standard) installed with the command",
+    ],
     ...packs.map((pack): [string, string] => [
       `@ingestron/pack-${pack.id}`,
       `${packName(pack.id)} pack, \`${pack.id}@${pack.version}\``,

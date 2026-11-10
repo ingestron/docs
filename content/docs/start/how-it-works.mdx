@@ -108,7 +108,12 @@ from then on; see
 - **What it holds:** the packs, and naming patterns, layers and column types.
   `settings` gives defaults, `allowed` limits the methods a project may use,
   `fixed` holds settings no project may change, and `governance` says what
-  every data product must declare.
+  every data product must declare. [Intent](/docs/reference/intent) says how
+  tables are loaded, kept and run, in words every pack reads.
+- **Or a published one.** `ingestron init <name> --kit <name>@<version>`
+  starts a project from a standard written for one platform, checked and
+  dated, with a small project that builds; see
+  [Choose a published standard](/docs/how-to/choose-a-published-standard).
 - **The project overrides only what the standard leaves open.** A flow that
   changes a fixed setting reports `FIXED_SETTING`, and nothing is generated.
   [Which setting wins](/docs/concepts/settings) explains the order.
@@ -125,8 +130,10 @@ from then on; see
 
 ## What it never does
 
-- It doesn't connect to your sources or your cloud. Its only network call is
-  to fetch a template or standard from a Git URL you give it.
+- It doesn't connect to your sources or your cloud. Its only network calls
+  use your own `git`: to fetch a template, a standard or a published standard
+  from a Git URL you give it, or a published standard that is not installed,
+  and to list the published standards' versions.
 - It doesn't deploy anything. Your platform's tools do.
 - It doesn't read secret values. A `${secret:…}` reference carries only the
   secret's name; see [YAML references](/docs/concepts/yaml-references#reference-a-secret).

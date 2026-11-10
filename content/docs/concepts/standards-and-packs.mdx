@@ -31,9 +31,30 @@ This example uses a pack for copying and another for downstream storage:
 
 <Example name="private-sql-server" file="standard.yaml" />
 
-[Choose where your data goes](/docs/start/choose-a-route) lists the routes and
-the packs each one uses; [Packs and methods](/docs/reference/packs) lists each
-pack's methods and capabilities.
+Its `layers` and `load` are intent, below. [Choose where your data
+goes](/docs/start/choose-a-route) lists the routes and the packs each one
+uses; [Packs and methods](/docs/reference/packs) lists each pack's methods and
+capabilities.
+
+## Intent: what to keep, not how [#intent]
+
+Besides choosing methods, a standard can say how data is loaded, kept and run
+in words that belong to no platform: load only new files, keep the latest row
+per key, add a column saying when a row was loaded, try a failed run twice
+more. That is **intent**. Each pack turns it into its own platform's terms:
+`history: latest` is AUTO CDC on Databricks and `INSERT OR REPLACE` on DuckDB.
+
+Methods are chosen first, as below; intent changes what a chosen method
+writes, never which method is chosen, unless a `when` rule matches on it. A
+value the chosen pack does not apply is a
+[`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED) warning, with the pack's
+reason, so a standard never promises what a project does not build. Each pack's
+reference page lists what it does with every value, and the
+[intent reference](/docs/reference/intent) lists the words, where each can be
+written and which value wins.
+
+A [published standard](/docs/how-to/choose-a-published-standard) is a
+standard of this kind for one platform, with a small project that builds.
 
 ## How a method is chosen
 

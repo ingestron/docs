@@ -52,6 +52,11 @@ const areas: Record<string, string[]> = {
   ],
   "Standards and teams": [
     "/docs/how-to/configure-a-standard",
+    "/docs/how-to/choose-a-published-standard",
+    "/docs/how-to/start-from-a-published-standard",
+    "/docs/how-to/upgrade-a-standard",
+    "/docs/how-to/kits/duckdb-local-medallion",
+    "/docs/how-to/kits/databricks-lakehouse-streaming",
     "/docs/how-to/name-things-your-way",
     "/docs/how-to/ask-the-platform-team",
     "/docs/how-to/share-a-template",
@@ -69,6 +74,7 @@ const areas: Record<string, string[]> = {
   Connectors: ["/docs/connectors"],
   Reference: [
     "/docs/reference/documents",
+    "/docs/reference/intent",
     "/docs/reference/packs",
     "/docs/reference/packs/databricks",
     "/docs/reference/packs/adf",
@@ -188,7 +194,7 @@ describe("page URLs", () => {
     const built = readFileSync(join(process.cwd(), "test/page-urls.txt"), "utf8")
       .trim()
       .split("\n");
-    expect(built).toHaveLength(127);
+    expect(built).toHaveLength(133);
     expect(
       source
         .getPages()

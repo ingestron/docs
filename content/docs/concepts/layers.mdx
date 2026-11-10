@@ -52,12 +52,12 @@ use `{{ layer }}` anywhere; see
 
 **Rules.** A rule in the standard can match `layer`, to choose a method or
 settings for the tables in that layer. This standard makes every `gold`
-table a materialised view, with no clustering and a longer log retention:
+table a materialised view, with a longer log retention:
 
 <Example name="layers-and-transforms" file="standard.yaml" />
 
-`region_sales` is the only `gold` table, so only its view has clustering
-off and the longer retention. `store_sales` keeps the pack's settings.
+`region_sales` is the only `gold` table, so only its view has the longer
+retention. `store_sales` keeps the pack's settings.
 
 ## Name your own layers
 

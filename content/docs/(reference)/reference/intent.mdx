@@ -1,0 +1,167 @@
+---
+title: Intent
+description: The words a standard, flow or transform uses for how data is loaded, kept and run, which value wins, where each came from, and what each pack does with it.
+---
+
+Intent says how a table's data is loaded, kept and run, in words that belong
+to no platform: `load: files`, `history: latest`, `audit: [loaded_at]`. Each
+pack turns it into its platform's terms, and says what it cannot do. Every
+part is optional: a project that writes none builds as it did before.
+
+This is the standard of the
+[local medallion](/docs/how-to/kits/duckdb-local-medallion) published
+standard. Its `layers`, `load` and `features` are intent; `ingest` is a method
+setting:
+
+<KitFile id="duckdb/local-medallion" file="standard.yaml" />
+
+## Paths and values [#paths]
+
+Each path, what it means, its values, and the places that can write it.
+Follow a path's link for every field that writes it in
+[Documents](/docs/reference/documents).
+
+<IntentVocabulary />
+
+A duration is a whole number and a unit, `s`, `m`, `h` or `d`, such as `30d`.
+An audit value is a column after the contract's columns, named `_<value>`,
+such as `_loaded_at`; `{ value: loaded_at, as: _ingested_at }` names it
+yourself. Two audit columns with one name, or one with a contract column's
+name, is [`BAD_SETTING`](/docs/reference/errors#BAD_SETTING).
+
+## Where to write it [#where]
+
+- **The standard**, for every table: `load` (`default`, `deletes` and `when`
+  rules), `audit`, `rescued`, `retention`, `storage`, `quality.results` and
+  `operations`. `load.when` rules match a table's `connector`, `connectivity`
+  and `layer`; the first that matches chooses its load mode.
+- **A layer** of the standard, for every table in it: write the layer as an
+  object, `{ name: silver, history: latest }`, with `history`, `audit`,
+  `rescued` and `retention`. A layer written as a name gives nothing. Each
+  layer is listed once; a second is
+  [`DUPLICATE_LAYER`](/docs/reference/errors#DUPLICATE_LAYER).
+- **A flow**, for its tables, and **a flow table**, for itself: `load`
+  (`mode`, `cursor` and `deletes`), `history`, `sequence` and `audit`.
+- **A transform**, for its table: `history`, `sequence` and `audit`. A
+  transform's table reads no source, so it has no `load`, and the audit
+  values only a source gives, such as `source_file`, are
+  [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED) there.
+- **The standard's `fixed`**: any of these that no layer, flow or transform
+  may change, such as `fixed: { history: latest }`. A definition that writes
+  another value is [`FIXED_SETTING`](/docs/reference/errors#FIXED_SETTING).
+
+This flow of the
+[streaming lakehouse](/docs/how-to/kits/databricks-lakehouse-streaming)
+published standard says which change to an order is newest, and which change
+is a delete:
+
+<KitFile id="databricks/lakehouse-streaming" file="flows/orders.yaml" />
+
+## Which value wins [#precedence]
+
+Each table's intent is resolved before its methods are chosen, from these
+places, a later one winning:
+
+1. the standard: `load.default`, `load.deletes`, `audit`, `rescued`,
+   `retention` and `storage`;
+2. the table's layer in the standard;
+3. the first `load.when` rule of the standard that matches the table;
+4. the flow or the transform;
+5. the flow table;
+6. the standard's `fixed`.
+
+Mappings merge key by key, so a flow's `load: { cursor: updated_at }` keeps
+the load mode the standard gave. A list, such as `audit`, is replaced whole.
+
+Then the methods are chosen, and what is still unset comes from the chosen
+method's own default: `streaming-table` keeps every row as it arrived,
+`history: none`, unless something says otherwise. Each method's defaults are
+on its pack's page, under the method. A `${envvar:…}` value cannot decide
+what is generated, so in `load.mode`, `load.deletes.mode`, `history` or
+`storage.features` it sets nothing, and is
+[`DEPLOY_VALUE`](/docs/reference/errors#DEPLOY_VALUE) when deploying.
+
+## Where a value came from [#origins]
+
+Each value of a table's intent remembers where it was written. In VS Code,
+hover a flow table or a transform: the hover lists the table's intent, each
+value with where it came from, in these words:
+
+- **the standard**, **the table's layer in the standard**, **a standard rule**
+  or **the standard, fixed**, with the file and line;
+- **the flow** or **the transform**, and **this table**, with the file and
+  line;
+- **the setting "…"** in one of those places, for a
+  [setting that is intent](#settings-that-are-intent);
+- **the platform**, for such a setting in the platform's `settings`;
+- **the pack's default**, with no file.
+
+This is how each table of the streaming lakehouse resolves:
+
+<KitIntent id="databricks/lakehouse-streaming" />
+
+## Settings that are intent [#settings-that-are-intent]
+
+Some method settings mean the same as intent. They still work, as intent
+written at the place the setting is: a flow's `store.with.mode: append`
+wins over a layer's `history: latest`, as the flow's own `history: none`
+would.
+
+<IntentAliases />
+
+`plan` reports each such setting as
+[`SETTING_MOVED`](/docs/reference/errors#SETTING_MOVED). In a flow's or a
+table's `with`, its fix, **Write as intent**, writes the intent there and
+removes the setting. Anywhere else, such as the standard's settings or a
+rule's `with`, write the intent by hand where it should apply: written for a
+whole standard or layer, intent also reaches tables and methods the setting
+did not. A setting in the standard's `fixed.<method>` is not reported: it
+fixes that intent for the method's tables.
+
+A setting and intent at the same place that disagree, such as
+`mode: append` beside `history: latest` on one table, is
+[`INTENT_CONFLICT`](/docs/reference/errors#INTENT_CONFLICT). A setting a
+pack's own rule writes is kept as the rule wrote it, and intent that it
+overrides is `NOT_APPLIED`.
+
+## What each pack does [#support]
+
+Every pack says what it does with each value: **Used**, with how; **Not yet**;
+**Elsewhere**, done by another step or pack, such as the pack that lands the
+files; or **Not applicable** on its platform. A value its pack does not apply
+is a [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED) warning where it is
+written, with the pack's reason; **Elsewhere** never warns. Each pack's name
+links to its full table, with what it does and the platform feature's release
+level.
+
+<IntentOverview />
+
+## Release level of features [#features]
+
+Some values use platform features in preview, such as Databricks' run
+duration alert. The standard's `features` says which a project may use:
+
+- `features: ga`: only generally available features. A value that needs one
+  in preview is [`PREVIEW_FEATURE`](/docs/reference/errors#PREVIEW_FEATURE),
+  a warning that names the feature's release level and the date it was
+  checked, with a fix that allows preview features.
+- `features: preview`: preview features as well; they may change before they
+  are generally available.
+
+Without `features`, nothing is reported. Published standards say
+`features: ga` unless their version ends `-preview`.
+
+## Operations [#operations]
+
+`operations` is the policy for running what is generated: one schedule for
+the project (`schedule: { per: project }`), what starts a run (`trigger`),
+`retries`, a `timeout`, `alerts` and `concurrency`. Without it, the project
+runs on one schedule, and the platform's alerts are sent when a run fails. Values that differ per
+environment belong in the platform: the cron and time zone in `schedule`, who
+is told in `alerts`, and the tags in `tags`. `require_tags` names tags the
+platform must give; one missing is
+[`BAD_SETTING`](/docs/reference/errors#BAD_SETTING) at the platform's `tags`.
+
+The first pack in the standard's list that runs jobs applies `operations`:
+the Databricks refresh job, or the Data Factory triggers and copies. When no
+pack of the standard runs jobs, each value is `NOT_APPLIED`.

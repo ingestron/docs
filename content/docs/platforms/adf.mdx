@@ -132,9 +132,12 @@ platform composes into the landing folder's and the vault's URLs:
 
 <Example name="private-sql-server-filled" file="project.yaml" />
 
-The platform names the shared infrastructure the copies use, and the flow
-names the tables to copy from the `erp` connection, which reaches the ERP
-privately with its password in Key Vault:
+The platform names the shared infrastructure the copies use. The flow names
+the tables to copy from the `erp` connection, which reaches the ERP privately
+with its password in Key Vault, and the column each copy reads changed rows
+by, its `load: { cursor }`. The standard copies changed rows for every table,
+`load: { default: incremental }`, and its `bronze` layer keeps the latest row
+of each key, `history: latest`, in the order of the flow's `sequence`:
 
 <Example name="private-sql-server-filled" file="platform.yaml" />
 
@@ -227,9 +230,10 @@ source its own landing folder.
 
 Native table copies write a full selection each window. On the
 `adf-databricks` route, repeated snapshots append repeated rows with the
-default store; choose [upsert or history](/docs/how-to/keep-a-table-current)
+default store; choose [`history: latest` or `full`](/docs/how-to/keep-a-table-current)
 for current rows or change history. SQL-family copies, as in this starter,
-can copy only the rows changed in each window (`mode: incremental`). An
+can copy only the rows changed in each window: `load: incremental`, by the
+flow's `load: { cursor }`. An
 unknown setting stops generation with a diagnostic, and the standard's fixed
 settings still win.
 
