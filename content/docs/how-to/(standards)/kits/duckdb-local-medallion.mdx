@@ -35,13 +35,13 @@ DuckDB pack's default:
 <KitIntent id="duckdb/local-medallion" />
 
 Each layer also says what it does with its rows, in `does`. `bronze` does
-`raw`: it keeps every row as it arrived, so nothing there is cleansed or
-checked. `silver` does `cleanse`, `deduplicate`, `check` and `quarantine`: the
+`raw`: it keeps every row as it arrived, nothing there is cleansed, and its
+checks only count: the run prints how many orders have no `order_id`. `silver` does `cleanse`, `deduplicate`, `check` and `quarantine`: the
 standard's `cleanse` trims its text and turns an empty text into null, the
 contract's required `customer` is checked, a row without one is left out, and
 `quarantine: true` keeps such a row in `silver.customer_totals_quarantine`.
-`quality: results: true` keeps each check's result in
-`silver._ingestron_checks`. The plan reports no warning.
+`quality: results: true` keeps each check's result in the `_ingestron_checks`
+table of each schema. The plan reports no warning.
 
 What the DuckDB pack does with each value, and with every other, is in
 [the DuckDB pack's intent](/docs/reference/packs/duckdb#intent).

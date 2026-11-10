@@ -58,7 +58,8 @@ does `cleanse`, `deduplicate`, `check` and `quarantine`: the standard's
 leaves out a change missing a required value, and `quarantine: true` keeps it
 in `silver.orders_quarantine`. `silver.orders` does not deduplicate: AUTO CDC
 already keeps one row per order. `gold` does `check`, so `gold.daily_sales`
-leaves out rows that fail its checks.
+leaves out rows that fail its checks; its SQL trims the emails it reads from
+`bronze.customers` and leaves out customers with no id or email itself.
 
 What the Databricks pack does with each value, with each feature's release
 level and the date it was checked, is in
