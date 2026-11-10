@@ -161,6 +161,13 @@ only ever an error, one that is no longer reported, such as
 `CONTRACT_FIELD_UNUSED`, or `ACCEPT_CODE` and `ACCEPT_UNUSED` themselves. Each
 code on the [errors page](/docs/reference/errors) says how it is reported.
 
+A few warnings come only from a pack building the files, such as
+[`PACK_NOTICE`](/docs/reference/errors#PACK_NOTICE) and
+[`SECRET_NAME_DIFFERS`](/docs/reference/errors#SECRET_NAME_DIFFERS). An entry
+for one of these is matched, and judged unused, only once the packs have built
+the files, by `plan`, `apply` and `check`; the editor, which builds nothing,
+never reports it unused.
+
 ## What accepting does not change [#what-still-shows]
 
 - **The files.** Accepting changes nothing generated, and a warning never

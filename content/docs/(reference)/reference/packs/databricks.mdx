@@ -120,6 +120,8 @@ list every page it writes SQL from.
   [`DEDUPLICATE_MODE`](/docs/reference/errors#DEDUPLICATE_MODE): an error when
   the table appends, and a warning when its history already keeps one row per
   key.
-- **Lakeflow Connect** writes the table as the source gives it: each check
-  and cleansing operation on such a table is not applied. Check and cleanse it
-  in a transform in the next layer.
+- **Lakeflow Connect** writes the table as the source gives it: its row
+  checks, their actions, quarantine, cleansing and deduplicate are not
+  applied, and the hint says to check and cleanse it in a transform in the
+  next layer. Its table checks still run in the `apply_contract` task, and the
+  event log still keeps the results.

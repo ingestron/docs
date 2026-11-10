@@ -94,9 +94,23 @@ What an engine cannot apply is a
 [not applied here](/docs/concepts/not-applied) warning at the line that asks
 for it. Plan the example:
 
+<ToolSteps>
+<Tool name="CLI">
+
 ```sh
 ingestron plan --no-diff
 ```
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: Plan** from the Command Palette (⇧⌘P on macOS, Ctrl+Shift+P
+elsewhere). The output is in the Ingestron output panel. Each warning is also
+marked at its line as you type, for the environment selected in the status
+bar: select `synapse` to see these.
+
+</Tool>
+</ToolSteps>
 
 The plan lists them first, for the `synapse` environment:
 
@@ -138,9 +152,11 @@ platform does:
 
 Without it, each table check is
 [`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF), a warning whose fix
-turns it on. Tables that Lakeflow Connect writes run no checks: each rule is
-`NOT_APPLIED` there, and the hint says to check the table in a transform in
-the next layer.
+turns it on. A table that Lakeflow Connect writes is written as the source
+gives it: its row checks, their actions and quarantine are `NOT_APPLIED`
+there, and the hint says to check the table in a transform in the next layer.
+Its table checks still run in the task after each refresh, and the event log
+still keeps the results.
 
 ### On DuckDB [#duckdb]
 
