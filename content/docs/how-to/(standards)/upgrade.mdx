@@ -354,10 +354,13 @@ extension works as before. Only code that calls the packages changes:
 
 ## Upgrade to 2.3 [#upgrade-to-2-3]
 
-2.3 generates the same files as 2.2 for a project that changes nothing. It
-adds [intent](/docs/reference/intent) and
-[published standards](/docs/how-to/choose-a-published-standard), and asks for
-some settings to be written in their new places:
+2.3 generates the same files as 2.2 for a project that changes nothing,
+apart from a data product's passport, whose Quality section is rewritten. It
+adds [intent](/docs/reference/intent),
+[published standards](/docs/how-to/choose-a-published-standard), layers that
+say what they do, checks on every engine, cleansing, and accepted warnings. It
+asks for some settings to be written in their new places, and some warnings
+have new codes:
 
 - **Settings that are intent.** `streaming-table`'s `mode`, `sequence_by`,
   `delete_when` and `cluster_by`, `duckdb-table`'s `mode` and `sequence_by`,
@@ -385,10 +388,51 @@ some settings to be written in their new places:
   `ingestron standard list` lists them; in VS Code, **New project** offers
   **From a published standard**. Hover a `REPLACE_ME` to see where to find its
   value.
+- **Quality and cleansing.** A layer can say what it does with its rows,
+  `does`; a table can cleanse its columns, keep one row per key, convert time
+  zones, and keep the rows a `drop` check leaves out; and a transform with one
+  input can leave out `code`. See
+  [What a layer does](/docs/concepts/layers#what-a-layer-does),
+  [Check data quality](/docs/how-to/add-quality-checks) and
+  [Cleanse data in the right layer](/docs/how-to/cleanse-data). All of it is
+  optional.
+- **DuckDB and Synapse check rows where a layer says so.** They run a table's
+  checks only in a layer whose `does` lists `check`, and count them, each as
+  `warn`, in a `raw` one. In a layer without `does` their files are what they
+  were, and each contract rule they do not run is a new warning,
+  [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED), with the hint to add
+  `check` to the layer's `does`. Expect these on the first plan with 2.3; see
+  [Not applied here](/docs/concepts/not-applied).
+- **Table checks on DuckDB and Synapse need nothing turned on.** Where a layer
+  checks, they count table checks and `unique` in their own run, whatever
+  `manage.checks` says. Only Databricks needs `databricks.manage.checks`.
+- **New codes for old warnings.**
+  - `CONTRACT_FIELD_UNUSED` is no longer reported. A contract field the pack
+    that keeps a table does not apply yet is `NOT_APPLIED` instead, judged for
+    each table against that pack, not against every pack of the standard.
+  - `QUALITY_RULE_NOT_CHECKED` for a check an engine cannot run, such as one
+    on a table that ends at the landed files, is `NOT_APPLIED`. It stays for a
+    rule no engine can check as written, such as a `custom` rule.
+  - A rule that counts over all rows while `databricks.manage.checks` is off
+    was `QUALITY_RULE_NOT_CHECKED`; it is
+    [`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF), with the fix
+    that turns checks on.
+  - A flow's `expectations` on a table that Lakeflow Connect writes were an
+    error; each is `NOT_APPLIED`, and so is each required column there.
+
+  A script that looks for an old code should look for the new one.
+
+- **Accepted warnings.** A warning you have decided to live with can be
+  accepted in `platform.yaml`, with the reason; see
+  [Accept a warning](/docs/how-to/accept-a-warning). An entry for
+  `CONTRACT_FIELD_UNUSED` is [`ACCEPT_CODE`](/docs/reference/errors#ACCEPT_CODE),
+  an error: accept `NOT_APPLIED` instead.
 
 To move a project to the new places, plan with 2.3.0, apply each fix (in
 VS Code, **Fix all** applies one kind at once), and plan again: the plan should
-list no change to the generated files.
+list no change to the generated files, other than the passports. Then read
+what it lists under `Not applied on this platform`, and decide for each
+whether to give the layer a duty, change the definitions or accept it.
 
 For code that calls the packages:
 
@@ -397,6 +441,16 @@ For code that calls the packages:
   `intentDefaults` and `aliases`; each table's `intent` and `intentOrigins`;
   a pack's `platformSection` and `platformSectionReference`; and `find` and
   `suggest` on each `FieldInfo`.
+- It also adds quality and cleansing: an expectation's `rule` (`RowRule`); a
+  table's `does`, `cleanse` (`TableCleanse` and `ColumnCleanse`), `timezone`,
+  `quality`, `qualityOrigins`, `quarantine` and `notApplied`; a coverage
+  entry's `onlyWhere` and `zonesNotApplied`; a diagnostic's `subject`; a
+  result's `accepted` and `acceptAtBuild`, and `acceptsWarning`; and
+  `severities` and `origin` in each code's help (`CodeHelp`).
+  `CONTRACT_FIELD_UNUSED` stays in `DefinitionCode`, no longer reported.
+- `@ingestron/config` adds `matchesImport`, the one rule `imports` and an
+  accepted warning's `file` follow, and `@ingestron/core`'s `Report` gains
+  `accepted`.
 - `@ingestron/core` 1.1 adds published standards: `installedKits`,
   `readKit`, `parseKitSpec` and `kitSchema`.
 - `@ingestron/authoring` 2.3 adds `ProjectSnapshot.replaceMeHelp`, what a
