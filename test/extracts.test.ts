@@ -243,7 +243,7 @@ describe("the platform request", () => {
 
   it("fails with the request's output when the request fails", () => {
     expect(() => exampleRequest("landing-only", "nope")).toThrow(
-      'Example "landing-only": the request for nope fails:\n# Platform request (nope)\n\nThe definitions have problems; fix them first.\n',
+      'Example "landing-only": the request for nope fails:\n# Platform request (nope)\n\nThe definitions have problems; fix them first:\n\n```text\nproject.yaml:5:3  error  UNKNOWN_ENVIRONMENT\n  Environment "nope" is not declared in project.yaml.\n  Declared environments: dev, prod.\n```\n',
     );
   });
 
