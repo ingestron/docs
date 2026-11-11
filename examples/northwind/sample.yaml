@@ -1,4 +1,4 @@
 # A guide: a small project that shows one idea; the docs embed it.
 title: Northwind on Azure
 summary: ADF copies four Northwind tables with one ForEach, audit columns and a retry policy, and Databricks builds the tables and a daily sales view from the landed files.
-order: 13
+order: 14

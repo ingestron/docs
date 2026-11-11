@@ -163,9 +163,9 @@ list every page it writes SQL from. To set them up, see
   `ingestron_filter_<name>` for each filter. With `databricks.manage.schemas`
   on, each is on the schema, which the bundle creates; otherwise each is on
   the project's own tables, so a shared schema's policies are never changed.
-  Each applies to `account users` except the `run_as` identity, so the
-  pipelines never read masked or filtered data, and the principals in
-  `databricks.governance.unmasked`.
+  Each applies to `account users` except the `run_as` identity and the
+  principals in `databricks.governance.unmasked`. Exempting `run_as` means
+  the pipelines never read masked or filtered data.
 - **Mask functions.** `null`, `hash` and `redact` are functions the task
   creates in `databricks.governance.functions`, `ingestron_mask_null`,
   `ingestron_mask_hash` and `ingestron_mask_redact`, only for the masks a

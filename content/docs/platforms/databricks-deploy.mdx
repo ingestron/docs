@@ -17,7 +17,11 @@ v0.264.0 or later, which applies preset tags to pipelines.
 <Request name="retail-filled" env="prod" sections={["Must exist before deploying"]} />
 
 With `databricks.manage` switches on, the request also says what each needs and gives the
-SQL to run once. See [Ask the platform team](/docs/how-to/ask-the-platform-team)
+SQL to run once, `prerequisites/<environment>.sql`. Run it before the first
+deploy, except the lines it marks to run after: with masks or row filters on
+schemas the bundle creates, `MANAGE` on those schemas can be granted only once
+the first deploy has created them. Those lines are not needed when `run_as`
+deploys and so owns the schemas. See [Ask the platform team](/docs/how-to/ask-the-platform-team)
 for the whole request.
 
 ## Deploy [#deploy]

@@ -446,7 +446,9 @@ their new places, and some warnings have new codes:
     has no access control.
 
   Masks and row filters, which only a standard written for 2.3 can give,
-  warn the same way for each classified column they mask and each filter.
+  warn for each classified column they mask and each filter:
+  `CAPABILITY_OFF` on Databricks, and `NOT_APPLIED` on Synapse and DuckDB,
+  which cannot mask or filter.
   Turn the capability on, or accept the warning with
   `about: { feature: grants }` (or `write`, `exact`, `masks` or `filters`)
   and the reason; see [Accept a gap](/docs/how-to/grant-access#accept-a-gap).

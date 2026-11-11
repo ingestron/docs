@@ -190,12 +190,12 @@ given:
 `match` finds the column on each table:
 
 - `{ tag: region }`: the column whose contract `tags` has the key `region`,
-  as both contracts here do;
+  as every contract here does;
 - `{ tag: region, value: emea }`: the column with that tag key and value;
 - `{ classification: restricted }`: the column classified `restricted`.
 
 A filter applies to every table with a matching column, and to none without
-one. It must match one column of each table
+one. It may match at most one column of each table
 ([`FILTER_MATCH`](/docs/reference/errors#FILTER_MATCH)), and a table may
 have one row filter
 ([`FILTER_MULTIPLE`](/docs/reference/errors#FILTER_MULTIPLE)): on Databricks

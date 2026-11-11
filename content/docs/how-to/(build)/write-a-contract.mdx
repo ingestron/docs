@@ -34,7 +34,9 @@ Ingestron reads:
 - for the table: the schema entry's `description`, for the table's comment,
   and its `quality` rules;
 - the table's and each column's `tags`, and each column's `classification`,
-  which it keeps for packs that tag tables.
+  which it keeps for packs that tag tables, and which choose masks and row
+  filters;
+- the contract's `roles`, who may use its tables, which a pack can grant.
 
 [Data contract](/docs/reference/documents#data-contract) lists every ODCS
 field.
@@ -129,6 +131,13 @@ A table's `tags`, a column's `tags` and its `classification` are kept for
 packs that tag tables. Databricks sets them as Unity Catalog tags after each
 refresh when the platform turns on `databricks.manage.tags`; see
 [Databricks contract fields](/docs/reference/packs/databricks#contract-fields).
+The classification is set under the key the standard's
+`governance.classification.tag` gives, `classification` by default.
+
+A column's classification also chooses its mask, from the standard's
+`governance.masks`, and a row filter can match a column by its tag or its
+classification. The contract's `roles` say who may use its tables. See
+[Grant access, mask columns and filter rows](/docs/how-to/grant-access).
 
 ## Draft from a sample [#draft-from-a-sample]
 
