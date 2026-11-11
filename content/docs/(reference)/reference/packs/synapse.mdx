@@ -128,8 +128,10 @@ list every page it writes T-SQL from. To set them up, see
   role's `write` is [not applied here](/docs/concepts/not-applied).
 - **Exact grants** revoke, after a view's grants, each permission granted
   directly on the view that its roles do not give. They keep ownership,
-  permissions on the schema or database, denials, and permissions given
-  `WITH GRANT OPTION`, which only `CASCADE` could revoke.
+  permissions on the schema or database, denials, permissions given
+  `WITH GRANT OPTION`, which only `CASCADE` could revoke, and those of the
+  database user that runs `views.sql` (`USER_NAME()`), which SQL Server
+  cannot revoke from itself. A group that user belongs to is not kept.
 - **Served views.** A view that `synapse-serve` writes over a table another
   pack keeps is granted the same way, and judged by this pack a second time:
   a mask or row filter on its table is not applied on the view.

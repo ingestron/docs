@@ -37,8 +37,13 @@ policies go on each schema.
 
 `ingestron apply` writes `build/databricks/`. After each refresh,
 `tasks/shop/apply_contract.py` sets the tags, creates the mask functions in
-`dev_governance.functions` (`prod_governance.functions` in `prod`), grants and
-revokes, then makes the policies. `prerequisites/<environment>.sql` gives the
+`dev_governance.functions` (`prod_governance.functions` in `prod`), makes the
+policies, then grants and revokes, so no one it grants reads real values if a
+policy cannot be made. `prerequisites/<environment>.sql` gives the
 run_as service principal what that needs, and `ingestron request --env dev`
 lists what must exist first: each group, the function `region_filter`, and
 the governed tags `classification` and `region`.
+
+The masks and filters apply to the tables, not to the files ADF lands:
+anyone who can read the landing container reads `email` and `phone` in full.
+Set access to the landed files on the storage account.

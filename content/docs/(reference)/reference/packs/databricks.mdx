@@ -175,6 +175,14 @@ list every page it writes SQL from. To set them up, see
   `ingestron_mask_` or `ingestron_filter_` policy on the project's schemas and
   tables that it no longer makes, for a switch that is on. Every other policy
   stays.
+- **Order.** The task sets tags and comments, creates the mask functions,
+  makes the policies and drops the stale ones, and only then grants and
+  revokes, then runs the table checks. If a policy cannot be made, the task
+  fails before it grants anything, so no role it grants reads real values.
+- **Landed files.** Grants, masks and filters apply to the tables Databricks
+  keeps. A table that ends at the landed files, even one another pack serves,
+  gets nothing here, and the landed files themselves keep the values in
+  full: set their access on the storage account.
 - **Limits.** A schema may have 100 policies, a table 50, and a policy may
   exempt 20 principals; more is
   [`POLICY_LIMIT`](/docs/reference/errors#POLICY_LIMIT) or

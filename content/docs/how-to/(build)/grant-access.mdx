@@ -166,7 +166,9 @@ also says where the mask functions are and who sees real values:
 
 Each masked classification is one Unity Catalog column mask policy,
 `ingestron_mask_<classification>`, for every account user except `run_as` and
-`unmasked`. The task makes it after the tags:
+`unmasked`. The task makes it after the tags and before it grants anything,
+so if a policy cannot be made, such as when a function it uses does not
+exist yet, the task fails before any role it grants can read the real values:
 
 <Example
   name="governed-databricks"
@@ -177,6 +179,13 @@ Each masked classification is one Unity Catalog column mask policy,
 
 The tables Ingestron builds beside a table, such as `<table>_quarantine`,
 get the same tags and policies, so their copies hide the same values.
+
+Masks hide values in the tables, not in the files the tables are loaded
+from. In this example ADF lands the customers as files first, and anyone who
+can read the landing container reads `email` and `phone` in full. Ingestron
+does not set access to the landed files: give storage access only to those
+who may see real values, as
+[the ADF pack](/docs/reference/packs/adf#access) says.
 
 ## Filter rows [#filters]
 
@@ -263,8 +272,11 @@ each environment's script sets:
   [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED) warning.
 - Exact grants revoke, each time `views.sql` runs, each permission granted
   directly on a view that its roles do not give. They keep ownership,
-  permissions on the schema or database, denials, and permissions given
-  `WITH GRANT OPTION`. In additive mode, revoke a removed role by hand, such as
+  permissions on the schema or database, denials, permissions given
+  `WITH GRANT OPTION`, and those of the database user that runs `views.sql`.
+  A group that user belongs to is not kept, so give the user its rights
+  through ownership, `db_owner` or the schema or database, not through a
+  group granted on a view. In additive mode, revoke a removed role by hand, such as
   `REVOKE SELECT ON OBJECT::[silver].[customer_totals] FROM [sales-finance-analysts-dev]`.
 - Each principal must be a database user, with the rights views over files
   need. Those rights also let it read the files directly, not only through

@@ -472,6 +472,15 @@ their new places, and some warnings have new codes:
   name, `` `first.last@example.com` ``, so that file changes for such a
   project. A service principal's application ID has no dot, and is written as
   before.
+- **A classified column that already has the tag key.** On Databricks, a
+  column whose contract `tags` already hold the classification's tag key, and
+  that has a `classification` too, was tagged with the key twice. The apply
+  task now sets it once, from the `classification`, so that task changes for
+  such a project.
+- **`ingestron request` lists each pack's switches.** A Synapse switch is read
+  from the platform's `synapse:` section and listed as
+  `synapse.manage.grants`; Databricks' list is unchanged. A name holding a
+  backtick is written as code with two backticks around it.
 
 To move a project to the new places, plan with 2.3.0, apply each fix (in
 VS Code, **Fix all** applies one kind at once), and plan again: the plan should
