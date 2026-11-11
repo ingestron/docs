@@ -20,6 +20,24 @@ creates nothing in Azure.
 
 <PackMethods pack="synapse" />
 
+## Platform configuration
+
+### The `synapse:` section [#platform]
+
+What only Synapse reads goes in the platform's `synapse:` section. Its one
+switch, `synapse.manage.grants`, lets `views.sql` grant each view to the
+roles that may read it; see [Access](#access).
+
+<PlatformSection pack="synapse" />
+
+While it is off, a role on a view is a
+[`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF) warning, with a
+quick fix that turns it on, and `views.sql` is what it was without it.
+`manage` at the top of the platform is Databricks' and turns nothing on for
+Synapse.
+
+<PackCapabilities pack="synapse" />
+
 ## Contract fields
 
 What this pack does with each field of a table's contract. A field is judged
@@ -92,3 +110,32 @@ and DuckDB. In the hour repeated in autumn, T-SQL gives a wall time the offset
 before the change: in London on 25 October 2026, `01:30` is `00:30` UTC,
 where DuckDB gives `01:30`. In the hour skipped in spring, it moves the time
 forward by the gap.
+
+## Access [#access]
+
+What this pack does with each role, grant mode, mask and row filter, from the
+pack itself. Each row links the Microsoft page it was checked against, with
+the date; the pack's
+[sources](https://github.com/ingestron/pack-synapse/blob/main/spec/references.md#access)
+list every page it writes T-SQL from. To set them up, see
+[Grant access, mask columns and filter rows](/docs/how-to/grant-access#on-synapse).
+
+<IntentSupport pack="synapse" part="access" />
+
+- **Grants** are `GRANT SELECT ON OBJECT::[<schema>].[<view>]` to each role's
+  principal, after each view in `views.sql`, in the view's own database. Each
+  principal is in brackets, with `]` doubled. A view is read-only, so a
+  role's `write` is [not applied here](/docs/concepts/not-applied).
+- **Exact grants** revoke, after a view's grants, each permission granted
+  directly on the view that its roles do not give. They keep ownership,
+  permissions on the schema or database, denials, and permissions given
+  `WITH GRANT OPTION`, which only `CASCADE` could revoke.
+- **Served views.** A view that `synapse-serve` writes over a table another
+  pack keeps is granted the same way, and judged by this pack a second time:
+  a mask or row filter on its table is not applied on the view.
+- **Masks and row filters** are not applied: serverless SQL pools have no data
+  masking or row-level security, and readers of views over files can read
+  the files directly.
+- **Readers' rights.** `ingestron request` lists each principal as a database
+  user, with the rights views over files need. Those rights also let it read
+  the files under the data source directly, not only through the views.

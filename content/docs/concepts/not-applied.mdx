@@ -4,7 +4,8 @@ description: What it means when the engine that keeps a table cannot apply somet
 ---
 
 Your definitions say what each table should have: a check and its action, a
-cleansing operation, a quarantine, a way of keeping history. The engine that
+cleansing operation, a quarantine, a way of keeping history, who may read it.
+The engine that
 keeps the table does the work, in its own SQL. When that engine cannot do one
 of these things, Ingestron says so at the line that asks for it, with the
 engine's reason. That state is **not applied here**, the warning
@@ -28,11 +29,14 @@ files. Another pack in the same standard does not count. Not applied can be:
 - a value of [intent](/docs/reference/intent#support), such as `load.mode` on a
   method that reads the source itself;
 - a contract field the pack does not apply yet;
+- a role's grant, its `write`, exact grants, a mask or a row filter, such as
+  any of them on DuckDB, which has no access control, or a mask on a Synapse
+  view; a table one pack keeps and another serves is judged by both;
 - anything that would check or cleanse a table that ends at the landed files,
   since nothing reads those files before your reports do.
 
 What each pack applies, and why it does not, is on its page under
-**Quality and cleansing** and **Intent**:
+**Quality and cleansing**, **Access** and **Intent**:
 [Databricks](/docs/reference/packs/databricks#quality-and-cleansing),
 [DuckDB](/docs/reference/packs/duckdb#quality-and-cleansing),
 [Synapse](/docs/reference/packs/synapse#quality-and-cleansing) and
@@ -62,10 +66,12 @@ warning the platform [accepts](/docs/how-to/accept-a-warning) is not shown.
 **In a data product's passport,** in its Quality section: each check the
 engine does not apply is listed with its rule in words, then `Not enforced:`
 and the reason, and each cleansing operation it does not apply says
-`is not applied:` and the reason; see
+`is not applied:` and the reason. Its Who may use it section says
+`Not enforced on <engine>:` and the reason for each role, mask or filter the
+engine does not apply; see
 [Read the passport](/docs/how-to/define-a-data-product#read-the-passport).
 The passport says this whether or not the warning is accepted: accepting a
-warning quiets it, and does not make the check run.
+warning quiets it, and does not make the check run or the role granted.
 
 ## A layer that does not check [#layers]
 
@@ -97,9 +103,11 @@ layer, so it never gives this hint; see
   ask, so it is listed apart.
 - **[`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF)** says the
   engine can do it, but the platform has not turned it on, such as Databricks
-  table checks without `databricks.manage.checks`, or tags without
-  `databricks.manage.tags`. Its fix turns it on in `platform.yaml`, with the
-  grants it needs. Not applied has no switch to turn.
+  table checks without `databricks.manage.checks`, tags without
+  `databricks.manage.tags`, or a contract's roles without
+  `databricks.manage.grants` or `synapse.manage.grants`. Its fix turns it on
+  in `platform.yaml`, and the hint says what it needs. Not applied has no
+  switch to turn.
 - **[`QUALITY_RULE_NOT_CHECKED`](/docs/reference/errors#QUALITY_RULE_NOT_CHECKED)**
   says no engine could check a rule as it is written, such as a `custom` rule
   or one with no comparison.

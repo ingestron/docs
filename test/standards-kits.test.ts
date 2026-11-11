@@ -131,6 +131,30 @@ describe("intent", () => {
     expect(engines).toContain("ON VIOLATION DROP ROW");
   });
 
+  it("has an access section on every pack's page, apart from the rest of intent", () => {
+    for (const pack of packs) {
+      const page = read(`reference/packs/${pack.id}.mdx`);
+      expect(page).toContain("## Access [#access]");
+      expect(page).toContain(`<IntentSupport pack="${pack.id}" part="access" />`);
+      const access = html(createElement(IntentSupport, { pack: pack.id, part: "access" }));
+      const rest = html(createElement(IntentSupport, { pack: pack.id }));
+      const quality = html(createElement(IntentSupport, { pack: pack.id, part: "quality" }));
+      for (const path of ["access.grants", "access.exact", "access.masks", "access.filters"]) {
+        expect(access).toContain(`<code>${path}</code>`);
+        expect(rest).not.toContain(`<code>${path}</code>`);
+        expect(quality).not.toContain(`<code>${path}</code>`);
+      }
+      expect(access).not.toContain("<code>history</code>");
+    }
+    // What each pack does, or why not, from its own coverage.
+    const databricks = html(createElement(IntentSupport, { pack: "databricks", part: "access" }));
+    expect(databricks).toContain("GRANT SELECT, MODIFY ON TABLE, after each refresh.");
+    const synapse = html(createElement(IntentSupport, { pack: "synapse", part: "access" }));
+    expect(synapse).toContain("Synapse serverless has no data masking");
+    const duckdb = html(createElement(IntentSupport, { pack: "duckdb", part: "access" }));
+    expect(duckdb).toContain("DuckDB has no access control.");
+  });
+
   it("describes every intent path, and shows every pack's use of each value", () => {
     const vocabulary = intentVocabulary();
     expect(vocabulary.map((row) => row.path)).toEqual(Object.keys(intentPaths));

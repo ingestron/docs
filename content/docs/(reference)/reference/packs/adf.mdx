@@ -77,6 +77,15 @@ step.
 
 <IntentSupport pack="adf" part="quality" />
 
+## Access [#access]
+
+ADF lands files and keeps no table, so it grants, masks and filters nothing.
+Access to the landed files is set on the storage account. A table another
+pack stores is judged by that pack; a table that ends at the landed files has
+no access to judge, unless a view serves it.
+
+<IntentSupport pack="adf" part="access" />
+
 ## Native configuration sources
 
 <details>

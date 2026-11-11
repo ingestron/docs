@@ -78,3 +78,14 @@ list every page it writes SQL from.
   is read in the offset before the change, and one in the hour repeated in
   autumn is read as the later of the two: in London on 25 October 2026,
   `01:30` is `01:30` UTC.
+
+## Access [#access]
+
+DuckDB has no users, roles or permissions, so the pack applies no grant, mask
+or row filter, and its files are what they would be without them. Each role,
+grant mode, mask and row filter on a table DuckDB keeps is
+[not applied here](/docs/concepts/not-applied). When the files DuckDB
+publishes are protected another way, such as on the storage account,
+[accept the warning](/docs/how-to/grant-access#accept-a-gap).
+
+<IntentSupport pack="duckdb" part="access" />

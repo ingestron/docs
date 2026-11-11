@@ -355,12 +355,13 @@ extension works as before. Only code that calls the packages changes:
 ## Upgrade to 2.3 [#upgrade-to-2-3]
 
 2.3 generates the same files as 2.2 for a project that changes nothing,
-apart from a data product's passport, whose Quality section is rewritten. It
-adds [intent](/docs/reference/intent),
+apart from a data product's passport, whose Quality and Who may use it
+sections are rewritten, and one fix on Databricks (below). It adds
+[intent](/docs/reference/intent),
 [published standards](/docs/how-to/choose-a-published-standard), layers that
-say what they do, checks on every engine, cleansing, and accepted warnings. It
-asks for some settings to be written in their new places, and some warnings
-have new codes:
+say what they do, checks on every engine, cleansing, accepted warnings, and
+grants, masks and row filters. It asks for some settings to be written in
+their new places, and some warnings have new codes:
 
 - **Settings that are intent.** `streaming-table`'s `mode`, `sequence_by`,
   `delete_when` and `cluster_by`, `duckdb-table`'s `mode` and `sequence_by`,
@@ -427,6 +428,48 @@ have new codes:
   [Accept a warning](/docs/how-to/accept-a-warning). An entry for
   `CONTRACT_FIELD_UNUSED` is [`ACCEPT_CODE`](/docs/reference/errors#ACCEPT_CODE),
   an error: accept `NOT_APPLIED` instead.
+- **Grants, masks and row filters.** A contract's `roles`, and a layer's
+  `access`, can be granted on each table; the standard's `governance` can
+  make grants exact, mask columns by their classification, and filter rows.
+  Databricks applies them after each refresh, with `databricks.manage.grants`,
+  `masks` and `filters`; Synapse grants each view, with
+  `synapse.manage.grants`. `principals` in `platform.yaml` says who each role
+  is. Each switch is off by default, so the files do not change until you
+  turn one on. See
+  [Grant access, mask columns and filter rows](/docs/how-to/grant-access).
+- **New warnings for roles.** A project whose contracts name `roles` gets a
+  warning for each role on the first plan with 2.3, and the same files:
+  - on Databricks or Synapse,
+    [`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF), whose fix
+    turns on `databricks.manage.grants` or `synapse.manage.grants`;
+  - on DuckDB, [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED): DuckDB
+    has no access control.
+
+  Masks and row filters, which only a standard written for 2.3 can give,
+  warn the same way for each classified column they mask and each filter.
+  Turn the capability on, or accept the warning with
+  `about: { feature: grants }` (or `write`, `exact`, `masks` or `filters`)
+  and the reason; see [Accept a gap](/docs/how-to/grant-access#accept-a-gap).
+  Either way, the passport's Who may use it says which roles are granted
+  and which are not enforced, and why.
+
+- **A role's `access` is checked where it is granted.** A role whose
+  `access` is neither `read` nor `write` is
+  [`ROLE_ACCESS`](/docs/reference/errors#ROLE_ACCESS), an error, only on a
+  table where its grant would be applied. A project that does not turn grants
+  on gets no new error.
+- **Tag keys Unity Catalog refuses.** With `databricks.manage.tags` on, a
+  contract tag key, or the classification's tag key, holding
+  `* < > % & ? \`, a control character, or a space at either end is now
+  [`PACK_CHECK`](/docs/reference/errors#PACK_CHECK), an error, as `. , - = / :`
+  already were. Unity Catalog refused such a key when the task ran; now
+  `plan` says so first. Rename the tag.
+- **A Databricks `run_as` user name with a dot.** `prerequisites/<environment>.sql`
+  wrote a `run_as` `user_name` such as `first.last@example.com` as two names,
+  `` `first`.`last@example.com` ``, which is not the user. It is now one
+  name, `` `first.last@example.com` ``, so that file changes for such a
+  project. A service principal's application ID has no dot, and is written as
+  before.
 
 To move a project to the new places, plan with 2.3.0, apply each fix (in
 VS Code, **Fix all** applies one kind at once), and plan again: the plan should
@@ -448,6 +491,13 @@ For code that calls the packages:
   result's `accepted` and `acceptAtBuild`, and `acceptsWarning`; and
   `severities` and `origin` in each code's help (`CodeHelp`).
   `CONTRACT_FIELD_UNUSED` stays in `DefinitionCode`, no longer reported.
+- It also adds access: each table's `access` (`TableAccess`, with
+  `AccessGrant`, `ColumnMask`, `RowFilter` and `FilterMatch`), a serve step's
+  `notApplied`, the platform's `principals`, the `grants`, `masks` and
+  `filters` capabilities, `classificationTag` and `defaultClassificationTag`,
+  and the codes `ROLE_ACCESS`, `MASK_TYPE`, `FILTER_MATCH`, `FILTER_MULTIPLE`,
+  `MASK_NEEDS_RUN_AS`, `MASK_FUNCTIONS`, `POLICY_LIMIT` and
+  `POLICY_PRINCIPALS`.
 - `@ingestron/config` adds `matchesImport`, the one rule `imports` and an
   accepted warning's `file` follow, and `@ingestron/core`'s `Report` gains
   `accepted`.

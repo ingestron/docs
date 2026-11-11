@@ -1,0 +1,13 @@
+apiVersion: ingestron.io/v1
+kind: Transform
+id: regional_sales
+description: Revenue and orders per day and region.
+inputs: [orders]
+code: |
+  SELECT CAST(ordered_at AS DATE) AS order_day,
+         region,
+         COUNT(*) AS orders,
+         SUM(amount) AS revenue
+  FROM {{ tables.orders }}
+  GROUP BY CAST(ordered_at AS DATE), region
+contract: shop.regional_sales

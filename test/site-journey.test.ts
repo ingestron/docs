@@ -48,6 +48,7 @@ it("opens with one learning path, then areas by the reader's job, with no index 
     "add-quality-checks",
     "cleanse-data",
     "define-a-data-product",
+    "grant-access",
     "add-an-environment",
     "plan-and-generate",
     "check-in-ci",

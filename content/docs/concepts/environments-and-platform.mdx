@@ -42,13 +42,17 @@ exist before deployment.
 pack that runs jobs: when they run, how they are tagged, and who is told when
 a run fails. What only one platform reads goes in that pack's own section,
 under its id: the Databricks workspace, identity, compute, permissions and
-`manage` switches are under `databricks:`. A section for a pack the standard
+`manage` switches are under `databricks:`, and Synapse's grants switch under
+`synapse:`. A section for a pack the standard
 does not name is [`UNKNOWN_PACK`](/docs/reference/errors#UNKNOWN_PACK). See
 [the `databricks:` section](/docs/reference/packs/databricks#platform)
 and [ADF runtime and Key Vault](/docs/platforms/adf#runtime-and-key-vault) for
 their effects. The platform's `accept` list holds the warnings the platform
 team has decided to live with, each with its reason; see
-[Accept a warning](/docs/how-to/accept-a-warning).
+[Accept a warning](/docs/how-to/accept-a-warning). Its `principals` say which
+user, group or service principal each contract role is, often per environment
+through a value; see
+[Grant access, mask columns and filter rows](/docs/how-to/grant-access#roles).
 
 ## One set of files for every environment [#one-set-of-files]
 

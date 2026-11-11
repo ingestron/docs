@@ -1,6 +1,6 @@
 ---
 title: Layers
-description: The stages a project's tables are grouped in, where each table lands, what its layer changes, and what each layer does with its rows.
+description: The stages a project's tables are grouped in, where each table lands, what its layer changes, what each layer does with its rows, and who reads them.
 ---
 
 A layer is a named stage that a table belongs to. A project has one ordered
@@ -95,6 +95,14 @@ rows in every layer. DuckDB and Synapse check rows only where `does` lists
 [Cleanse data in the right layer](/docs/how-to/cleanse-data) puts each duty in
 its layer, and [Check data quality](/docs/how-to/add-quality-checks#layers)
 says what each engine does.
+
+## Who reads a layer [#access]
+
+A layer written as an object can also say who may use its tables, with
+`access`: `contract: false` grants none of the contracts' roles there, such
+as on raw rows, and `roles` are granted on every table in the layer, beside
+the contracts'. See
+[Grant access, mask columns and filter rows](/docs/how-to/grant-access#roles).
 
 ## Name your own layers
 

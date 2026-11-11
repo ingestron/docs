@@ -3,7 +3,9 @@ kind: Standard
 id: sales
 packs: [synapse@2, adf@2] # Synapse first: the first pack names and types the views; ADF only copies
 layers:
-  - { name: bronze, does: raw } # every row as it arrived; its checks only count
+  - name: bronze # every row as it arrived; its checks only count
+    does: raw
+    access: { roles: [{ role: data-engineers }] } # beside the contracts' roles
   - { name: silver, does: [check] }
   - { name: gold, does: [check] }
 store:

@@ -1,0 +1,4 @@
+# A guide: a small project that shows one idea; the docs embed it.
+title: Grant, mask and filter on Databricks
+summary: Contract and layer roles granted exactly, two classifications masked and one row filter, with each role's group per environment.
+order: 10

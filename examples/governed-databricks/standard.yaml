@@ -1,0 +1,26 @@
+apiVersion: ingestron.io/v1
+kind: Standard
+id: shop
+packs: [databricks@2, adf@2] # Databricks names, types and keeps the tables; ADF copies
+layers:
+  - name: bronze # raw rows: only the engineers who load them read them
+    access: { contract: false, roles: [{ role: data-engineers }] }
+  - silver # each table's contract roles are granted
+ingest:
+  default: adf-copy
+  settings:
+    adf-copy:
+      layout: snapshot
+      start: 2026-11-01T00:00:00Z
+governance:
+  classification:
+    values: [public, internal, confidential, restricted]
+  access:
+    grants: exact # also take away what the contracts and layers do not name
+  masks:
+    confidential: hash # readers see a hash of the text
+    restricted: "null" # readers see no value
+  filters:
+    region_rows: # each reader sees the rows of their own region
+      function: region_filter # a BOOLEAN function the team owns, in databricks.governance.functions
+      match: { tag: region }

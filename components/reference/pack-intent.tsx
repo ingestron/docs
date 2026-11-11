@@ -59,6 +59,22 @@ export function isQualityPath(path: string): boolean {
   return path.startsWith("quality.") || path.startsWith("cleanse.") || path === "deduplicate";
 }
 
+/** The access paths (grants, exact grants, masks and row filters), which each pack's page also lists apart. */
+export function isAccessPath(path: string): boolean {
+  return path.startsWith("access.");
+}
+
+/** The part of a pack's page an intent path is listed in. */
+function partOf(path: string): "quality" | "access" | undefined {
+  return isQualityPath(path) ? "quality" : isAccessPath(path) ? "access" : undefined;
+}
+
+/** What a part's values are called in its table's label. */
+const partWords = {
+  quality: { value: "quality and cleansing value", differs: " in quality and cleansing" },
+  access: { value: "access value", differs: " in access" },
+} as const;
+
 /** A value as the vocabulary writes it; `*` is any text, such as a column's name. */
 function Values({ values }: { values: string[] }) {
   if (values.length === 1 && values[0] === "*") return <>any</>;
@@ -86,16 +102,18 @@ function Release({ status }: { status?: FeatureStatus }) {
  * uses it, what it does or why not, the layers it applies in, and, where it is
  * used, the platform feature's release level, linked to the page that says so,
  * and the date it was checked. Then each method whose own entries differ from
- * the pack's. `part="quality"` keeps only the quality and cleansing paths;
- * without it, they are left out, for the page's section of their own.
+ * the pack's. `part="quality"` keeps only the quality and cleansing paths, and
+ * `part="access"` only the access paths; without it, both are left out, for
+ * the page's sections of their own.
  * @example <IntentSupport pack="databricks" />
  * @example <IntentSupport pack="synapse" part="quality" />
+ * @example <IntentSupport pack="databricks" part="access" />
  */
-export function IntentSupport({ pack, part }: { pack: string; part?: "quality" }) {
+export function IntentSupport({ pack, part }: { pack: string; part?: "quality" | "access" }) {
   const name = packName(pack);
-  const kept = (path: string) => isQualityPath(path) === (part === "quality");
+  const kept = (path: string) => partOf(path) === part;
   const methods = methodIntentRows(pack).filter((row) => kept(row.path));
-  const what = part === "quality" ? "quality and cleansing value" : "intent value";
+  const what = part ? partWords[part].value : "intent value";
   return (
     <>
       <TableFrame label={`What the ${name} pack does with each ${what}`}>
@@ -136,7 +154,7 @@ export function IntentSupport({ pack, part }: { pack: string; part?: "quality" }
         <>
           <p>Where a method differs from the pack, its own entry wins for the tables it builds:</p>
           <TableFrame
-            label={`Where a ${name} method differs${part === "quality" ? " in quality and cleansing" : ""}`}
+            label={`Where a ${name} method differs${part ? partWords[part].differs : ""}`}
           >
             <table>
               <thead>

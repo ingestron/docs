@@ -9,10 +9,14 @@ environments:
       landing: abfss://landing@saleslakeprod.dfs.core.windows.net/erp
       storage: abfss://landing@saleslakeprod.dfs.core.windows.net
       key_vault: https://kv-sales-prod.vault.azure.net
+      finance_analysts: sales-finance-analysts
+      data_engineers: sales-data-engineers
 values:
   landing: abfss://landing@saleslakedev.dfs.core.windows.net/erp
   storage: abfss://landing@saleslakedev.dfs.core.windows.net
   key_vault: https://kv-sales-dev.vault.azure.net
+  finance_analysts: sales-finance-analysts-dev
+  data_engineers: sales-data-engineers-dev
 imports:
   - standard.yaml
   - platform.yaml

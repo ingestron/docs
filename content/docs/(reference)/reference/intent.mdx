@@ -163,6 +163,25 @@ is [not applied here](/docs/concepts/not-applied). See
 [Check data quality](/docs/how-to/add-quality-checks) and
 [Cleanse data in the right layer](/docs/how-to/cleanse-data).
 
+## Access [#access]
+
+The access paths say who may use a table and what of it is hidden:
+`access.grants` for each role granted on it, `read` or `write`;
+`access.exact` when the standard's grants are exact; `access.masks` for each
+masked column, by its mask; and `access.filters` for each row filter. They
+are not written as intent: they come from the contracts' `roles` and
+classifications, the layers' `access`, and the standard's `governance`. Each
+item is judged by the step that keeps the table, and again by a step that
+serves it from another pack, such as a Synapse view over a Databricks table.
+
+An item is applied only when the pack uses it and the platform turns it on in
+the pack's section, such as `databricks.manage.grants`. One the pack does not
+apply is [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED), and one whose
+switch is off is [`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF),
+each at the line that declares it, once for all its tables. Each pack's page
+lists them under **Access**. See
+[Grant access, mask columns and filter rows](/docs/how-to/grant-access).
+
 ## Release level of features [#features]
 
 Some values use platform features in preview, such as Databricks' run

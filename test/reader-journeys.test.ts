@@ -211,7 +211,7 @@ describe("how-to/add-quality-checks", () => {
     const folder = copy("synapse-views");
     const standard = join(folder, "standard.yaml");
     const text = readFileSync(standard, "utf8");
-    const duties = /^layers:\n(?: {2}- .*\n)+/m.exec(text)?.[0];
+    const duties = /^layers:\n(?: {2}- .*\n(?: {4}.*\n)*)+/m.exec(text)?.[0];
     expect(duties, "the example's layers").toBeDefined();
     writeFileSync(standard, text.replace(duties!, ""));
     const synapse = plan(folder, "flows/erp.yaml", "customers");

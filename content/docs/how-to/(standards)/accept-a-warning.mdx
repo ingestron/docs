@@ -148,7 +148,10 @@ An entry accepts every warning with its `code` that matches each key of its
   `table-checks`, `expectations`, `quarantine`, a cleansing operation such as
   `cleanse.trim` or `deduplicate`, an intent value such as `history=full`, or
   a contract field's path; for `CAPABILITY_OFF`, the capability, such as
-  `tags` or `checks`.
+  `tags` or `checks`. For a role, a grant mode, a mask or a row filter, both
+  codes use `grants`, `write`, `exact`, `masks` or `filters`, such as
+  `about: { feature: grants }` for roles DuckDB cannot grant; see
+  [Accept a gap](/docs/how-to/grant-access#accept-a-gap).
 
 Without `about`, an entry accepts every warning with that code, so narrow it to
 what you have looked at. A warning that several entries match is accepted by
@@ -178,7 +181,8 @@ never reports it unused.
 - **The editor.** VS Code leaves accepted warnings out of the Problems panel.
 - **The passport.** A [data product's passport](/docs/how-to/define-a-data-product#read-the-passport)
   still says `Not enforced` for an accepted `NOT_APPLIED` or
-  `CAPABILITY_OFF`: accepting a warning does not make the check run.
+  `CAPABILITY_OFF`: accepting a warning does not make the check run, or grant
+  the role.
 
 Review the list as you would the definitions: in a pull request, with its
 reasons.

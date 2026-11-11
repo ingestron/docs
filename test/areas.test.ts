@@ -35,6 +35,7 @@ const areas: Record<string, string[]> = {
     "/docs/how-to/add-quality-checks",
     "/docs/how-to/cleanse-data",
     "/docs/how-to/define-a-data-product",
+    "/docs/how-to/grant-access",
     "/docs/how-to/add-an-environment",
     "/docs/how-to/plan-and-generate",
     "/docs/how-to/check-in-ci",
@@ -197,7 +198,7 @@ describe("page URLs", () => {
     const built = readFileSync(join(process.cwd(), "test/page-urls.txt"), "utf8")
       .trim()
       .split("\n");
-    expect(built).toHaveLength(136);
+    expect(built).toHaveLength(137);
     expect(
       source
         .getPages()

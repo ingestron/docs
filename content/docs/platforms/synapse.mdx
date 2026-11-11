@@ -112,7 +112,8 @@ keeps every table as a view, and says what each layer does with its rows
 
 <Example name="synapse-views" file="standard.yaml" />
 
-The platform names the external data source the views read through:
+The platform names the external data source the views read through, turns
+on grants, and says which database user each role is:
 
 <Example name="synapse-views" file="platform.yaml" />
 
@@ -148,6 +149,23 @@ schedule, runtime and landing settings are on
 SQL can do is in
 [What each engine makes of it](/docs/how-to/write-a-transform#what-each-engine-makes-of-it).
 
+### Who may read the views [#grants]
+
+With `synapse.manage.grants`, `views.sql` grants each view to the roles its
+contract and its layer name, right after the view, in its own database:
+
+<Example
+  name="synapse-views"
+  file="build/synapse/views.sql"
+  from="GRANT SELECT ON OBJECT::[bronze].[customers]"
+  to="GO"
+/>
+
+Serverless SQL has no data masking or row-level security, so a masked column
+or a row filter is [not applied here](/docs/concepts/not-applied). See
+[On Synapse](/docs/how-to/grant-access#on-synapse) for exact grants and what
+each reader needs.
+
 ### Views or tables
 
 A view cannot merge changes or keep history. For that, keep the table with a
@@ -166,8 +184,8 @@ store pack and serve it with `synapse-serve`; see
 Ingestron creates nothing in Synapse. `ingestron request --env dev` lists what
 the team that owns the workspace creates first, with this project's names: the
 serverless database, the external data source with a managed-identity
-credential, the workspace's read access to the storage, and report users'
-permissions.
+credential, the workspace's read access to the storage, and the database user
+each role is, with the permissions views over files need.
 
 <Request
   name="synapse-views"
@@ -259,6 +277,8 @@ Troubleshooting.
   [Check data quality](/docs/how-to/add-quality-checks#synapse).
 - **No merge or history.** A view shows the files as they are; see
   [Views or tables](#views-or-tables).
+- **Grants, but no masks or row filters.** A reader who may query a view over
+  files can also read the files under the data source directly.
 - **Environments may differ only in values.** A table built in some
   environments only, or a transform whose code differs in more than a value,
   is [`ENVIRONMENTS_DIFFER`](/docs/reference/errors#ENVIRONMENTS_DIFFER). A

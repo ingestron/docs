@@ -31,13 +31,17 @@ for `layers`, `load`, `audit`, `operations` and the other intent,
 [What a layer does](/docs/concepts/layers#what-a-layer-does) for `does`,
 [Check data quality](/docs/how-to/add-quality-checks) for `quality`,
 [Cleanse data in the right layer](/docs/how-to/cleanse-data) for `cleanse`,
-and [Name tables and resources](/docs/how-to/name-things-your-way).
+[Define a data product](/docs/how-to/define-a-data-product) for `governance`'s
+rules, [Grant access, mask columns and filter rows](/docs/how-to/grant-access)
+for a layer's `access` and `governance`'s `access.grants`, `masks` and
+`filters`, and [Name tables and resources](/docs/how-to/name-things-your-way).
 
 ## Platform
 
 Each pack can have a section of its own, under its id, such as `databricks:`;
 its fields are on the pack's page, as for
-[the `databricks:` section](/docs/reference/packs/databricks#platform). The
+[the `databricks:` section](/docs/reference/packs/databricks#platform) and
+[the `synapse:` section](/docs/reference/packs/synapse#platform). The
 Databricks fields below, `workspace`, `mode`, `run_as`, `compute`,
 `permissions`, `manage` and `grants`, are read at the top of the platform as
 before, with a
@@ -46,8 +50,10 @@ and `notifications` with one that moves it to `alerts`.
 
 <DocumentFields kind="Platform" />
 
-See [Environments and platform](/docs/concepts/environments-and-platform), and
-[Accept a warning](/docs/how-to/accept-a-warning) for `accept`.
+See [Environments and platform](/docs/concepts/environments-and-platform),
+[Accept a warning](/docs/how-to/accept-a-warning) for `accept`, and
+[Grant access, mask columns and filter rows](/docs/how-to/grant-access#roles)
+for `principals`.
 
 ## Connection
 

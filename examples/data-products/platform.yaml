@@ -10,3 +10,7 @@ settings:
       job: ${values.duckdb_job}
   duckdb-table:
     published: ${values.published}
+accept: # warnings the platform team has looked at, and why it lives with them
+  - code: NOT_APPLIED
+    about: { feature: grants }
+    reason: DuckDB has no access control. Who may read the published files is set on the storage account.

@@ -26,7 +26,9 @@ one owner. Other ODPS fields, such as `inputPorts`, are kept as documentation.
 
 What a product promises about its columns stays in the ODCS contract:
 `classification` on each column, `roles` for who may use the data, and
-`slaProperties` for freshness.
+`slaProperties` for freshness. Ingestron can grant those roles, and mask
+columns by their classification; see
+[Grant access, mask columns and filter rows](/docs/how-to/grant-access).
 
 <Example name="data-products" file="contracts/customers.yaml" />
 
@@ -42,6 +44,11 @@ The standard's `governance` section says what every product must give:
   one (`columns: required`), and which values are sensitive.
 - `access.sensitive.require`: for a contract with a sensitive column, the
   fields each of its `roles` must give.
+
+The same section can also say how access is generated, for every table, not
+only those a product publishes: `access.grants`, `masks` and `filters`; see
+[Grant access, mask columns and filter rows](/docs/how-to/grant-access).
+They check nothing here.
 
 Only contracts a product publishes are governed. A broken rule is an error,
 so `ingestron check` fails in CI and the pull request is stopped. Remove
@@ -78,4 +85,18 @@ Passports are Markdown with Mermaid diagrams, so GitHub and Azure DevOps show
 them as pages. They are generated with the pipelines, so they are always up to
 date, and `ingestron check` fails when one is stale.
 
-Access is shown as the contract declares it. Ingestron does not grant it yet.
+Its **Who may use it** section lists, for each table, each role granted on
+it, the role's principal in this environment, and whether each engine grants
+it. A role the engine cannot grant, or the platform has not turned on, says
+`Not enforced` and why. Here DuckDB has no access control, so the role of
+`customers` is not enforced; the example's `platform.yaml` accepts that
+warning, and the passport still says so. The section also gives the grant
+mode, and each masked column and row filter. See
+[Grant access, mask columns and filter rows](/docs/how-to/grant-access).
+
+## Next
+
+- Have Ingestron grant the roles and mask the sensitive columns:
+  [Grant access, mask columns and filter rows](/docs/how-to/grant-access).
+- Live with a warning the engine cannot fix:
+  [Accept a warning](/docs/how-to/accept-a-warning).

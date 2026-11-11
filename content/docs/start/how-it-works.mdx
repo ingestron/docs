@@ -57,7 +57,7 @@ environment's files in it, laid out as that platform's CI/CD tools expect:
 - **[DuckDB](/docs/platforms/duckdb#what-you-get):** for each environment,
   `run.sql`, and each table's SQL on its own.
 - **Data products:** for each environment, a passport for each product, in
-  Markdown: who owns it, its columns and its lineage.
+  Markdown: who owns it, its columns, who may use it and its lineage.
 
 Only what differs between environments varies, so a reviewer sees the
 difference between dev and prod in one place, and a deployment pipeline
@@ -108,7 +108,10 @@ from then on; see
 - **What it holds:** the packs, and naming patterns, layers and column types.
   `settings` gives defaults, `allowed` limits the methods a project may use,
   `fixed` holds settings no project may change, and `governance` says what
-  every data product must declare. [Intent](/docs/reference/intent) says how
+  every data product must declare, and how columns are masked and rows
+  filtered; see
+  [Grant access, mask columns and filter rows](/docs/how-to/grant-access).
+  [Intent](/docs/reference/intent) says how
   tables are loaded, kept and run, in words every pack reads.
 - **Or a published one.** `ingestron init <name> --kit <name>@<version>`
   starts a project from a standard written for one platform, checked and

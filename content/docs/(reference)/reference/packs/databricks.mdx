@@ -56,10 +56,12 @@ on. When a switch is on, the bundle has a `prerequisites/<environment>.sql` for
 each environment, which lists the grants to run once there as an
 administrator; it is not deployed.
 
-Tags, column comments and table checks run in an `apply_contract` task after
-the refresh, on serverless jobs compute: Lakeflow pipelines cannot set tags or
-column comments, nor compare counts over all rows. With no schedule, the job
-is still generated, to run on demand.
+Tags, column comments, table checks, grants, masks and row filters run in an
+`apply_contract` task after the refresh, on serverless jobs compute, as the
+`run_as` identity: Lakeflow pipelines cannot set tags or column comments, nor
+compare counts over all rows. With no schedule, the job is still generated,
+to run on demand. Masks and row filters match columns by their tags, so they
+need `databricks.manage.tags` too; see [Access](#access).
 
 <PackCapabilities pack="databricks" />
 
@@ -125,3 +127,58 @@ list every page it writes SQL from.
   applied, and the hint says to check and cleanse it in a transform in the
   next layer. Its table checks still run in the `apply_contract` task, and the
   event log still keeps the results.
+
+## Access [#access]
+
+What this pack does with each role, grant mode, mask and row filter, from the
+pack itself. Each row links the Databricks page it was checked against, with
+the date; the pack's
+[sources](https://github.com/ingestron/pack-databricks/blob/main/spec/references.md#access)
+list every page it writes SQL from. To set them up, see
+[Grant access, mask columns and filter rows](/docs/how-to/grant-access).
+
+<IntentSupport pack="databricks" part="access" />
+
+- **Switches.** Grants need `databricks.manage.grants`, masks
+  `databricks.manage.masks` and row filters `databricks.manage.filters`, each
+  with what [Platform prerequisites](#platform-prerequisites) lists. Masks
+  and row filters also need `databricks.manage.tags`. While a switch is off,
+  each role, mask or filter it would apply is
+  [`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF), and the files
+  are what they were without it.
+- **Grants** are `GRANT SELECT ON TABLE`, and `MODIFY` too for a role with
+  `access: write`, made after each refresh. A materialised view takes no
+  `MODIFY`, so `write` there is
+  [not applied here](/docs/concepts/not-applied). Each principal is written
+  in backticks, with a backtick in it doubled. With
+  `databricks.manage.schemas`, each principal also gets `USE_SCHEMA` on the
+  schemas the bundle creates.
+- **Exact grants** read `SHOW GRANTS ON TABLE` and revoke what the table's
+  roles do not give. They revoke only privileges granted directly on the
+  project's own tables, and never ownership, a denial, a privilege the table
+  inherits from its schema or catalog, the `run_as` identity's or those of
+  `databricks.governance.unmasked`.
+- **Masks and row filters** are Unity Catalog policies:
+  `ingestron_mask_<classification>` for each masked classification and
+  `ingestron_filter_<name>` for each filter. With `databricks.manage.schemas`
+  on, each is on the schema, which the bundle creates; otherwise each is on
+  the project's own tables, so a shared schema's policies are never changed.
+  Each applies to `account users` except the `run_as` identity, so the
+  pipelines never read masked or filtered data, and the principals in
+  `databricks.governance.unmasked`.
+- **Mask functions.** `null`, `hash` and `redact` are functions the task
+  creates in `databricks.governance.functions`, `ingestron_mask_null`,
+  `ingestron_mask_hash` and `ingestron_mask_redact`, only for the masks a
+  table uses. A function of your own named in one part is in that schema too;
+  one named in three parts is used as written.
+- **Stale policies.** After making the policies, the task drops each
+  `ingestron_mask_` or `ingestron_filter_` policy on the project's schemas and
+  tables that it no longer makes, for a switch that is on. Every other policy
+  stays.
+- **Limits.** A schema may have 100 policies, a table 50, and a policy may
+  exempt 20 principals; more is
+  [`POLICY_LIMIT`](/docs/reference/errors#POLICY_LIMIT) or
+  [`POLICY_PRINCIPALS`](/docs/reference/errors#POLICY_PRINCIPALS). A table
+  may have one row filter
+  ([`FILTER_MULTIPLE`](/docs/reference/errors#FILTER_MULTIPLE)). Readers need
+  serverless compute or Databricks Runtime 16.4 or later.

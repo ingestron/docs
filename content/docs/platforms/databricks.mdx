@@ -9,7 +9,7 @@ tables. The Databricks pack writes one
 every environment, with a target per environment: Lakeflow pipelines with
 their SQL and Python files, Lakeflow Connect ingestion for databases, and a
 refresh job when the platform has a schedule or a contract task (tags, column
-comments or table checks) runs after the refresh. The same bundle reads the
+comments, table checks, grants, masks or row filters) runs after the refresh. The same bundle reads the
 files ADF lands on the `adf-databricks` route;
 [Azure Data Factory](/docs/platforms/adf) covers the copies.
 
@@ -209,6 +209,16 @@ before the first deploy. They are not deployed:
 Only set `databricks.manage.schemas` when no other project uses the schemas: deploying
 the bundle can change them, and `databricks bundle destroy` deletes them.
 
+### Grant, mask and filter [#access]
+
+With `databricks.manage.grants`, the task after each refresh grants each
+table to the roles its contract and its layer name, and with exact grants
+takes away what they do not give. With `databricks.manage.masks` and
+`databricks.manage.filters`, it masks classified columns and filters rows
+with Unity Catalog policies, for everyone but `run_as` and the principals
+you list. See
+[Grant access, mask columns and filter rows](/docs/how-to/grant-access).
+
 ### Refresh on a schedule [#schedule]
 
 A `schedule` in the platform, with a
@@ -269,7 +279,9 @@ as one identity, and runs the refresh.
 - **What has been tried.** The screenshots show the demo deployed with
   ingestron 1.8, which wrote a bundle per environment. The 2.0 bundle, one for
   every environment, validates against the Databricks CLI's bundle schema
-  (v1.23.0), but has not yet been deployed to a live workspace.
+  (v1.23.0), but has not yet been deployed to a live workspace. Nor have the
+  grants, masks and row filters: their SQL follows the Databricks pages the
+  [pack's reference](/docs/reference/packs/databricks#access) links.
 
 ## Next
 
@@ -279,4 +291,4 @@ as one identity, and runs the refresh.
   another source, in the same project.
 - [Databricks pack](/docs/reference/packs/databricks): every setting, the
   platform's `databricks:` section and its defaults, the `manage` switches,
-  and what the pack does with each intent value.
+  and what the pack does with each intent value and each part of access.

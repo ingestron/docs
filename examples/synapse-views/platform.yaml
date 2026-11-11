@@ -1,6 +1,9 @@
 apiVersion: ingestron.io/v1
 kind: Platform
 id: azure
+principals: # the database user each role is, per environment
+  finance-analysts: ${values.finance_analysts}
+  data-engineers: ${values.data_engineers}
 settings:
   adf-copy: # shared infrastructure, referenced by name
     landing: ${values.landing}
@@ -9,3 +12,5 @@ settings:
   synapse-view: # the external data source the views read through
     data_source: landing
     data_source_location: ${values.storage}
+synapse:
+  manage: { grants: true } # views.sql grants SELECT on each view to its roles

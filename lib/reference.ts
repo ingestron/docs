@@ -377,6 +377,46 @@ const intentFields: Record<string, Described> = {
       transform: ["Transform", ["cleanse.deduplicate"]],
     },
   },
+  // Who may use a table, and which of its columns and rows are hidden.
+  "access.grants": {
+    field: ["DataContract", "roles.*.access"],
+    description:
+      "A role granted on a table: each of its contract's `roles`, and each of its layer's `access.roles`. The platform's `principals` says who the role is.",
+    meanings: { read: "Read the table.", write: "Read and change the table." },
+    written: {
+      layer: ["Standard", ["layers.*.access.roles", "layers.*.access.contract"]],
+      contract: ["DataContract", ["roles"]],
+    },
+  },
+  "access.exact": {
+    field: ["Standard", "governance.access.grants"],
+    description:
+      "Exact grants, the standard's `governance.access.grants: exact`: a privilege granted directly on a table to anyone its roles do not name is taken away.",
+    meanings: { true: "Grants are exact." },
+    written: { standard: ["Standard", ["governance.access.grants"]] },
+  },
+  "access.masks": {
+    field: ["Standard", "governance.masks.*"],
+    description:
+      "A column's mask: the standard's `governance.masks` gives one for each classification, and the contract classifies the column.",
+    meanings: {
+      null: "Shown as no value, for a column of any type.",
+      hash: "Text shown as a hash of its value, so equal values still match.",
+      redact: "Text replaced by a fixed value.",
+      function: "Masked by a function your team owns.",
+    },
+    written: {
+      standard: ["Standard", ["governance.masks"]],
+      contract: ["DataContract", ["schema.*.properties.*.classification"]],
+    },
+  },
+  "access.filters": {
+    field: ["Standard", "governance.filters"],
+    description:
+      "A row filter of the standard's `governance.filters`, on each table with a column its `match` names.",
+    meanings: { true: "The table has the filter." },
+    written: { standard: ["Standard", ["governance.filters"]] },
+  },
 };
 
 /** One intent path: what it means, its values with theirs, and the places that can write it. */

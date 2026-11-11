@@ -34,6 +34,9 @@ describe("platform defaults", () => {
       "databricks.manage.tags",
       "databricks.manage.comments",
       "databricks.manage.checks",
+      "databricks.manage.grants",
+      "databricks.manage.masks",
+      "databricks.manage.filters",
     ]);
     const html = renderToStaticMarkup(createElement(PlatformDefaults, { pack: "databricks" }));
     expect(html).toContain(
