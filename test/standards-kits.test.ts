@@ -200,7 +200,9 @@ describe("published standards", () => {
     expect(kitBlanks(kit, "platform.yaml").map((blank) => [blank.line, blank.help!.field])).toEqual(
       [
         [12, "to"],
-        [18, "service_principal_name"],
+        [15, "principals"],
+        [21, "service_principal_name"],
+        [34, "functions"],
       ],
     );
     // Each permission group is a project.yaml value of its own, explained by the field that reads it.

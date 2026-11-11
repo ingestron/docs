@@ -1,6 +1,6 @@
 ---
 title: Streaming lakehouse on Databricks
-description: A published standard for Databricks. Streaming tables that read each new file once, silver cleansed, checked and kept to the latest row per key, gold materialised views, and a refresh job retried and alerted on failure.
+description: A published standard for Databricks. Streaming tables that read each new file once, silver cleansed, checked and kept to the latest row per key, gold materialised views, and a refresh job retried and alerted on failure. Contract roles are granted, and confidential and restricted columns masked.
 ---
 
 <KitFacts id="databricks/lakehouse-streaming" />
@@ -10,7 +10,9 @@ each time a customer is exported, with the values that do not fit kept aside;
 `silver.orders`, the latest row per order, from change records, cleansed and
 checked; and `gold.daily_sales`, totals per customer and day. One Lakeflow
 pipeline builds them, and one job refreshes it each day, tries again when it
-fails, and mails your team when it still fails.
+fails, and mails your team when it still fails. The contracts name who may
+read `silver.orders` and `gold.daily_sales`, and the customers' email and phone
+number are masked for everyone but the people who run the pipeline.
 
 ## Start from it
 
@@ -28,8 +30,10 @@ and [Deploy the Databricks bundle](/docs/platforms/databricks-deploy).
 
 What belongs to your workspace is `REPLACE_ME`. Point at each one (or tap it
 on a touch screen) to see the field it fills, where to find the value, and a
-suggestion; in VS Code, hover it. The platform holds who is told of failures
-and the `databricks:` section:
+suggestion; in VS Code, hover it. The platform holds who is told of failures,
+who the contracts' role `shop-analysts` is (`principals`), and the
+`databricks:` section, which also turns on tags, grants and masks and names
+the schema for the mask functions:
 
 <KitFile id="databricks/lakehouse-streaming" file="platform.yaml" />
 
@@ -71,6 +75,33 @@ With `features: ga`, Ingestron warns about any value that needs a feature in
 preview ([`PREVIEW_FEATURE`](/docs/reference/errors#PREVIEW_FEATURE)). The
 standard writes none: the job alerts on failure but not on slow runs, because
 Databricks' run duration alert is in Public Preview.
+
+## Who reads what [#governance]
+
+The standard's `governance` section says how data is classified and protected,
+and the Platform turns each part on:
+
+- `classification` lists the classes a column may have, and `sensitive` names
+  the two that need care, `confidential` and `restricted`.
+  `contracts/customers.yaml` classifies `email` as `confidential` and `phone`
+  as `restricted`; `contracts/daily_sales.yaml` classifies its `email` too.
+  Ingestron sets each class as a tag on its column.
+- `access: grants: additive` grants each table the roles its contract names, as
+  `GRANT SELECT`, and never takes a privilege away. The orders and sales
+  contracts name the role `shop-analysts`; `principals` in `platform.yaml` says
+  which group that is. `exact` would also revoke the direct grants a contract
+  does not give.
+- `masks` hides a class: `confidential: hash` shows a hash of the text, and
+  `restricted: "null"` shows null. Each is a Unity Catalog column mask policy
+  that matches the class tag, and exempts the `run_as` identity and the groups
+  in `unmasked`, here `engineers`, so the pipeline never reads masked data.
+- `bronze` has `access: { contract: false }`: no contract role is granted on a
+  raw table, which is for the engineers who load it.
+
+Masks need governed tags, which an account administrator creates;
+`ingestron request` lists them, and the schema of the mask functions, with
+what `run_as` needs on each. Readers need serverless compute or Databricks
+Runtime 16.4 or later.
 
 ## Why each choice
 
