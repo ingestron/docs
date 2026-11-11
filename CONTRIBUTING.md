@@ -15,7 +15,8 @@ example README, package README and user-facing command text.
   `from` and `to`; never paste sample YAML into a page. `<Template>` shows
   part of a file in `ci-templates/` the same way. What a sample uses comes from resolving it; never hand-write it.
 - Facts the code knows (settings, defaults, connector facts, error codes,
-  document fields, CLI commands) are rendered by components in
+  document fields, CLI commands, what each pack does with intent, and the
+  published standards' files) are rendered by components in
   `components/reference/`. Change the code, not the page.
 - Every page belongs to one of seven areas, each a folder whose `meta.json`
   says `"root": true`. A folder in brackets, such as `how-to/(build)/`,

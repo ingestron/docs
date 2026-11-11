@@ -1,6 +1,6 @@
 ---
 title: Upgrade Ingestron and its packs
-description: Choose the version every project runs, see what an upgrade changes with plan, move CI and your team together, and upgrade from 1.x to 2.0.
+description: Choose the version every project runs, see what an upgrade changes with plan, move CI and your team together, and what changed from 1.x to 2.3.
 ---
 
 The packs come inside the `ingestron` command: each release of the command
@@ -46,7 +46,7 @@ choose to upgrade. The [CI templates](/docs/how-to/check-in-ci) and the
 [deployment templates](/docs/how-to/deploy-through-environments) do:
 
 ```sh
-npm install -g ingestron@2.2.0
+npm install -g ingestron@2.3.0
 ```
 
 `npm ls -g ingestron` shows the version a computer has installed.
@@ -95,7 +95,7 @@ next; see [Deploy through environments](/docs/how-to/deploy-through-environments
 
 ### The standard and the folders
 
-1. Install `ingestron@2.2.0` and plan. Every pack is version 2, so a standard that
+1. Install `ingestron@2.3.0` and plan. Every pack is version 2, so a standard that
    names `databricks@1`, `adf@1`, `synapse@1` or `duckdb@1` stops with
    `PACK_VERSION`, once for all the environments that have it:
 
@@ -135,7 +135,7 @@ next; see [Deploy through environments](/docs/how-to/deploy-through-environments
    [`DEPLOY_VALUE`](/docs/reference/errors#DEPLOY_VALUE): write it in
    `project.yaml` for each environment. See
    [Supplied when deploying](/docs/concepts/yaml-references#supplied-when-deploying).
-5. Change CI: the check templates install `ingestron@2.2.0`, and the deploy
+5. Change CI: the check templates install `ingestron@2.3.0`, and the deploy
    pipelines deploy `build/<pack>/` by target, parameter file or script, as
    [Deploy through environments](/docs/how-to/deploy-through-environments)
    shows.
@@ -151,28 +151,29 @@ given `--env`, they exit with `2`. `compare` and `request` still take `--env`.
   resources in place, if the same identity deploys it. Run
   `databricks bundle validate` and `databricks bundle summary` first.
 - **Deploy as the identity that deployed 1.x.** Without
-  `workspace.root_path` in the platform, a target's deployment state is in the
+  `databricks.workspace.root_path` in the platform, a target's deployment state is in the
   deploying identity's own folder, `~/.bundle/…` in the workspace.
   Another identity, such as the service principal of the new CI templates,
   finds no state there and creates a second copy of every pipeline and job; in
   `prod`, both copies run on schedule. `databricks bundle summary` shows the
   folder a target uses. So run the first 2.0 deploy, and the schema steps
   below, as the identity that deployed 1.x. Before deploys move to CI, set a
-  shared `workspace.root_path` in `platform.yaml`, such as
+  shared `databricks.workspace.root_path` in `platform.yaml`, such as
   `/Workspace/Shared/.bundle/<project>/${environment.name}`, and bind each
   existing resource to it as the CI identity, as
   [Deploy as one identity](/docs/platforms/databricks-deploy#one-identity)
   shows.
 - Only an environment named `dev` is in development mode; `test`, `uat`,
   `staging` and every other environment are in production mode, unless the
-  platform sets `mode`. On such an environment's first 2.0 deploy, jobs and
+  platform sets `databricks.mode`. On such an environment's first 2.0 deploy, jobs and
   pipelines lose the `[dev <identity>]` prefix from their names, pipelines
   leave development, the deployment lock comes on, and production mode checks
   the deploying identity's `run_as`, `permissions` and `root_path`. To keep
-  development mode there, write `mode: ${values.mode}` in the platform,
+  development mode there, write `mode: ${values.mode}` in the platform's
+  `databricks:` section,
   `mode: production` in `project.yaml`'s `values`, and `mode: development` in
   that environment's `values`.
-- With `manage.schemas`, managed schemas are keyed by layer, such as `bronze`,
+- With `databricks.manage.schemas`, managed schemas are keyed by layer, such as `bronze`,
   or by schema name when a layer has several, not `<catalog>_<schema>`. Each
   environment's deployment state still holds the old key, so before the first
   2.0 deploy, for each environment and managed schema, as the identity that
@@ -350,6 +351,171 @@ extension works as before. Only code that calls the packages changes:
   and `platformRequest` is `request`. The
   [`@ingestron/authoring` README](https://github.com/ingestron/ingestron/tree/main/packages/authoring)
   shows an example.
+
+## Upgrade to 2.3 [#upgrade-to-2-3]
+
+2.3 generates the same files as 2.2 for a project that changes nothing,
+apart from a data product's passport, whose Quality and Who may use it
+sections are rewritten, and one fix on Databricks (below). It adds
+[intent](/docs/reference/intent),
+[published standards](/docs/how-to/choose-a-published-standard), layers that
+say what they do, checks on every engine, cleansing, accepted warnings, and
+grants, masks and row filters. It asks for some settings to be written in
+their new places, and some warnings have new codes:
+
+- **Settings that are intent.** `streaming-table`'s `mode`, `sequence_by`,
+  `delete_when` and `cluster_by`, `duckdb-table`'s `mode` and `sequence_by`,
+  and `adf-copy`'s `mode` and `watermark_column` mean the same as
+  [intent](/docs/reference/intent#settings-that-are-intent), such as
+  `history: latest` for `mode: upsert`. They still work, and `plan` reports
+  each as [`SETTING_MOVED`](/docs/reference/errors#SETTING_MOVED), a warning.
+  In a flow's or a flow table's `with`, its fix writes the intent and removes
+  the setting; anywhere else, such as the standard, write the intent by hand.
+- **The `databricks:` section.** The platform's `workspace`, `mode`, `run_as`,
+  `compute`, `permissions`, `manage` and `grants` now go under `databricks:`,
+  and `notifications.on_failure` becomes an email alert in `alerts`. At the
+  top they still work, with a
+  [`PLATFORM_FIELD_MOVED`](/docs/reference/errors#PLATFORM_FIELD_MOVED)
+  warning whose fix moves each; one written in both places with different
+  values is [`BAD_SETTING`](/docs/reference/errors#BAD_SETTING). See
+  [the `databricks:` section](/docs/reference/packs/databricks#platform).
+- **What each pack applies.** A value of intent the table's pack does not
+  apply is [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED), and with the
+  standard's `features: ga`, one that needs a feature in preview is
+  [`PREVIEW_FEATURE`](/docs/reference/errors#PREVIEW_FEATURE). Projects
+  written before 2.3 declare no intent, so they get neither.
+- **Published standards.** `ingestron init --kit` starts a project from one,
+  `ingestron standard install` moves a project to another version, and
+  `ingestron standard list` lists them; in VS Code, **New project** offers
+  **From a published standard**. Hover a `REPLACE_ME` to see where to find its
+  value.
+- **Quality and cleansing.** A layer can say what it does with its rows,
+  `does`; a table can cleanse its columns, keep one row per key, convert time
+  zones, and keep the rows a `drop` check leaves out; and a transform with one
+  input can leave out `code`. See
+  [What a layer does](/docs/concepts/layers#what-a-layer-does),
+  [Check data quality](/docs/how-to/add-quality-checks) and
+  [Cleanse data in the right layer](/docs/how-to/cleanse-data). All of it is
+  optional.
+- **DuckDB and Synapse check rows where a layer says so.** They run a table's
+  checks only in a layer whose `does` lists `check`, and count them, each as
+  `warn`, in a `raw` one. In a layer without `does` their files are what they
+  were, and each contract rule they do not run is a new warning,
+  [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED), with the hint to add
+  `check` to the layer's `does`. Expect these on the first plan with 2.3; see
+  [Not applied here](/docs/concepts/not-applied).
+- **Table checks on DuckDB and Synapse need nothing turned on.** Where a layer
+  checks, they count table checks and `unique` in their own run, whatever
+  `manage.checks` says. Only Databricks needs `databricks.manage.checks`.
+- **New codes for old warnings.**
+  - `CONTRACT_FIELD_UNUSED` is no longer reported. A contract field the pack
+    that keeps a table does not apply yet is `NOT_APPLIED` instead, judged for
+    each table against that pack, not against every pack of the standard.
+  - `QUALITY_RULE_NOT_CHECKED` for a check an engine cannot run, such as one
+    on a table that ends at the landed files, is `NOT_APPLIED`. It stays for a
+    rule no engine can check as written, such as a `custom` rule.
+  - A rule that counts over all rows while `databricks.manage.checks` is off
+    was `QUALITY_RULE_NOT_CHECKED`; it is
+    [`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF), with the fix
+    that turns checks on.
+  - A flow's `expectations` on a table that Lakeflow Connect writes were an
+    error; each is `NOT_APPLIED`, and so is each required column there.
+
+  A script that looks for an old code should look for the new one.
+
+- **Accepted warnings.** A warning you have decided to live with can be
+  accepted in `platform.yaml`, with the reason; see
+  [Accept a warning](/docs/how-to/accept-a-warning). An entry for
+  `CONTRACT_FIELD_UNUSED` is [`ACCEPT_CODE`](/docs/reference/errors#ACCEPT_CODE),
+  an error: accept `NOT_APPLIED` instead.
+- **Grants, masks and row filters.** A contract's `roles`, and a layer's
+  `access`, can be granted on each table; the standard's `governance` can
+  make grants exact, mask columns by their classification, and filter rows.
+  Databricks applies them after each refresh, with `databricks.manage.grants`,
+  `masks` and `filters`; Synapse grants each view, with
+  `synapse.manage.grants`. `principals` in `platform.yaml` says who each role
+  is. Each switch is off by default, so the files do not change until you
+  turn one on. See
+  [Grant access, mask columns and filter rows](/docs/how-to/grant-access).
+- **New warnings for roles.** A project whose contracts name `roles` gets a
+  warning for each role on the first plan with 2.3, and the same files:
+  - on Databricks or Synapse,
+    [`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF), whose fix
+    turns on `databricks.manage.grants` or `synapse.manage.grants`;
+  - on DuckDB, [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED): DuckDB
+    has no access control.
+
+  Masks and row filters, which only a standard written for 2.3 can give,
+  warn for each classified column they mask and each filter:
+  `CAPABILITY_OFF` on Databricks, and `NOT_APPLIED` on Synapse and DuckDB,
+  which cannot mask or filter.
+  Turn the capability on, or accept the warning with
+  `about: { feature: grants }` (or `write`, `exact`, `masks` or `filters`)
+  and the reason; see [Accept a gap](/docs/how-to/grant-access#accept-a-gap).
+  Either way, the passport's Who may use it says which roles are granted
+  and which are not enforced, and why.
+
+- **A role's `access` is checked where it is granted.** A role whose
+  `access` is neither `read` nor `write` is
+  [`ROLE_ACCESS`](/docs/reference/errors#ROLE_ACCESS), an error, only on a
+  table where its grant would be applied. A project that does not turn grants
+  on gets no new error.
+- **Tag keys Unity Catalog refuses.** With `databricks.manage.tags` on, a
+  contract tag key, or the classification's tag key, holding
+  `* < > % & ? \`, a control character, or a space at either end is now
+  [`PACK_CHECK`](/docs/reference/errors#PACK_CHECK), an error, as `. , - = / :`
+  already were. Unity Catalog refused such a key when the task ran; now
+  `plan` says so first. Rename the tag.
+- **A Databricks `run_as` user name with a dot.** `prerequisites/<environment>.sql`
+  wrote a `run_as` `user_name` such as `first.last@example.com` as two names,
+  `` `first`.`last@example.com` ``, which is not the user. It is now one
+  name, `` `first.last@example.com` ``, so that file changes for such a
+  project. A service principal's application ID has no dot, and is written as
+  before.
+- **A classified column that already has the tag key.** On Databricks, a
+  column whose contract `tags` already hold the classification's tag key, and
+  that has a `classification` too, was tagged with the key twice. The apply
+  task now sets it once, from the `classification`, so that task changes for
+  such a project.
+- **`ingestron request` lists each pack's switches.** A Synapse switch is read
+  from the platform's `synapse:` section and listed as
+  `synapse.manage.grants`; Databricks' list is unchanged. A name holding a
+  backtick is written as code with two backticks around it.
+
+To move a project to the new places, plan with 2.3.0, apply each fix (in
+VS Code, **Fix all** applies one kind at once), and plan again: the plan should
+list no change to the generated files, other than the passports. Then read
+what it lists under `Not applied on this platform`, and decide for each
+whether to give the layer a duty, change the definitions or accept it.
+
+For code that calls the packages:
+
+- `@ingestron/definitions` 1.13 adds intent: `intentPaths`, `intentUseOf` and
+  `intentCoverageGaps`; a pack's `intent`, and a method's `intent`,
+  `intentDefaults` and `aliases`; each table's `intent` and `intentOrigins`;
+  a pack's `platformSection` and `platformSectionReference`; and `find` and
+  `suggest` on each `FieldInfo`.
+- It also adds quality and cleansing: an expectation's `rule` (`RowRule`); a
+  table's `does`, `cleanse` (`TableCleanse` and `ColumnCleanse`), `timezone`,
+  `quality`, `qualityOrigins`, `quarantine` and `notApplied`; a coverage
+  entry's `onlyWhere` and `zonesNotApplied`; a diagnostic's `subject`; a
+  result's `accepted` and `acceptAtBuild`, and `acceptsWarning`; and
+  `severities` and `origin` in each code's help (`CodeHelp`).
+  `CONTRACT_FIELD_UNUSED` stays in `DefinitionCode`, no longer reported.
+- It also adds access: each table's `access` (`TableAccess`, with
+  `AccessGrant`, `ColumnMask`, `RowFilter` and `FilterMatch`), a serve step's
+  `notApplied`, the platform's `principals`, the `grants`, `masks` and
+  `filters` capabilities, `classificationTag` and `defaultClassificationTag`,
+  and the codes `ROLE_ACCESS`, `MASK_TYPE`, `FILTER_MATCH`, `FILTER_MULTIPLE`,
+  `MASK_NEEDS_RUN_AS`, `MASK_FUNCTIONS`, `POLICY_LIMIT` and
+  `POLICY_PRINCIPALS`.
+- `@ingestron/config` adds `matchesImport`, the one rule `imports` and an
+  accepted warning's `file` follow, and `@ingestron/core`'s `Report` gains
+  `accepted`.
+- `@ingestron/core` 1.1 adds published standards: `installedKits`,
+  `readKit`, `parseKitSpec` and `kitSchema`.
+- `@ingestron/authoring` 2.3 adds `ProjectSnapshot.replaceMeHelp`, what a
+  `REPLACE_ME` stands for, and lists a table's intent in its hover.
 
 ## What changed in a release
 

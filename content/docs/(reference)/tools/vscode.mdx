@@ -46,7 +46,11 @@ valid. Problems are for the environment in the status bar; click it, or run
 **Ingestron: Select environment**, to choose another. Problems that generating
 finds, such as a value supplied when deploying that cannot be a name
 (`DEPLOY_VALUE`), show too, and a pack's notice (`PACK_NOTICE`) is a warning
-on the first line of `project.yaml` in every environment.
+on the first line of `project.yaml` in every environment. A feature the engine
+that keeps a table cannot apply is a warning at the line that asks for it
+(`NOT_APPLIED`; see [Not applied here](/docs/concepts/not-applied)). A warning
+that the platform's `accept` list accepts is not shown; see
+[Accept a warning](/docs/how-to/accept-a-warning).
 
 A definition that uses `${envvar:NAME}` reads the variable from `.env.<environment>`
 and `.env` in the project folder, and from the environment VS Code was started
@@ -112,7 +116,8 @@ CLI prints the first fix under the problem, as `Fix: …`.
 
 When the same problem has a fix in several places, the menu also offers
 **Fix all N … problems**, which applies each one's first fix in one change; an
-edit several of them share, such as turning on `manage.checks`, is made once.
+edit several of them share, such as turning on `databricks.manage.checks`, is
+made once.
 
 A method's setting written outside the file its method says it belongs in,
 such as a table's `properties` in a flow or `integration_runtime` in a
@@ -164,13 +169,6 @@ marked **fixed by the standard**, and marks the others **not allowed**. If a
 definition sets a fixed value anyway, the `FIXED_SETTING` problem has a quick
 fix, **Remove this setting**, so the standard's value applies.
 
-<Screenshot
-  light="/images/vscode/completion-light.png"
-  dark="/images/vscode/completion-dark.png"
-  alt="Under a new store with: in the customers table, completion lists mode with default: append, then sequence_by, delete_when, except_columns, changes_suffix, cluster_by and properties."
-  caption="Under a table's store and with, completion lists the settings of the method the table uses, streaming-table, with mode's default."
-/>
-
 It also fills in what the project already decides:
 
 - **A new, empty file** offers a document to start from: the project
@@ -209,20 +207,21 @@ it resolves to:
 Turn these off with VS Code's `editor.inlayHints.enabled` and
 `editor.codeLens` settings.
 
-<Screenshot
-  light="/images/vscode/editor-light.png"
-  dark="/images/vscode/editor-dark.png"
-  alt="In flows/shop.yaml, “files → streaming-table | orders.sql” above the orders table and “→ dev_sales.bronze.orders” after it, the same for customers, and a hover on sequence_by explaining the setting."
-  caption="Above each table, the methods that build it and its generated file; after it, its full name. The hover on sequence_by says what set it and what it means."
-/>
-
 ## Why is this value what it is?
 
 Hover a flow table or a transform to see its full name, the method for each
 step, and every setting with the layer that set it: the pack's default, the
 standard, the platform, a rule, the flow or transform, the table itself, or a
 setting the standard fixes, with the file and line. Hover a setting under
-`with` for that one value.
+`with` for that one value. The same hover lists the table's
+[intent](/docs/reference/intent), each value with where it came from, such as
+`history`: `latest`, from the table's layer in the standard
+(`standard.yaml:18`).
+
+Hover a value that is still `REPLACE_ME` to see the field it fills, what the
+field is, where to find the value, and a suggestion of what it looks like,
+such as `<application id>`. A value in `project.yaml`'s `values` is explained
+by the field that reads it.
 
 Hover any field or setting to see what it is, what each allowed value means,
 its default, an example and where it is usually set; hover a value for that
@@ -231,13 +230,6 @@ docs, and each problem's code in the Problems panel links to its entry in
 [Errors](/docs/reference/errors). Links open the address in the
 `ingestron.docs.url` setting; set it to a local build, such as
 `http://localhost:3000`, to read the docs offline.
-
-<Screenshot
-  light="/images/vscode/hover-light.png"
-  dark="/images/vscode/hover-dark.png"
-  alt="The hover on the orders table: orders → dev_sales.bronze.orders; ingest: files (databricks) with its pack defaults; store: streaming-table (databricks) with a table of settings: mode upsert from this table, cluster_by auto from the standard, fixed, properties from the standard, sequence_by updated_at from this table, each with its file and line; and the pack default changes_suffix."
-  caption="The hover on a table: its full name, the method for each step, and each setting with the layer that set it, the file and the line."
-/>
 
 ## Project view
 
@@ -402,28 +394,27 @@ workspace.
 
 ## Start a project
 
-**Ingestron: New project** starts from a connection or from a starter.
+**Ingestron: New project** starts from a connection, a starter or a published
+standard.
 
 - **From a connection** asks for a source category, connection, network
   reachability and supported route. You can search across all sources or
   within a category.
 - **From a starter** offers the ready-made projects, such as **DuckDB on a
   laptop**, which [runs locally with DuckDB](/docs/platforms/duckdb).
+- **From a published standard** offers the dated standards installed with the
+  extension, such as **Local medallion on DuckDB**, and makes the same project
+  as `ingestron init --kit`; see
+  [Start from a published standard](/docs/how-to/start-from-a-published-standard).
 
 Nothing else is asked. The destination folder comes last, and its name is the
-project's id; the environments are `dev` and `prod`, or the starter's, and the
-standard is the route's or the starter's own. The new `README.md` opens in a
+project's id; the environments are `dev` and `prod`, or the starter's or the
+published standard's, and the standard is the route's, the starter's or the
+published one. The new `README.md` opens in a
 preview, and a message says how many values are still `REPLACE_ME`: the
 README lists each with where to find it. When the folder is outside the
 workspace, the message offers to open it or add it to the workspace. See
 [Create a project](/docs/how-to/start-from-a-template).
-
-<Screenshot
-  light="/images/vscode/new-project-light.png"
-  dark="/images/vscode/new-project-dark.png"
-  alt="The New project picker asks How do you want to start? and offers From a connection, to choose a source, how it is reached and a supported route, and From a starter, a ready-made project to try, such as DuckDB on a laptop."
-  caption="New project's first question: from a connection or from a starter. The folder comes last."
-/>
 
 ## Check files with the YAML extension [#check-files-with-the-yaml-extension]
 

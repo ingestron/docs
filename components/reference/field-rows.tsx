@@ -1,10 +1,11 @@
 // Rows of described fields: what each is, its values with their meanings, its
-// default and an example. Each row has the anchor the editor links to.
+// default, an example, and where to find a value with a suggestion, as the
+// editor's hover says them. Each row has the anchor the editor links to.
 import type { FieldInfo } from "@ingestron/definitions";
 import { anchorId, fieldPath, shown } from "@/lib/reference";
 import { Inline } from "./inline";
 
-/** The meaning column: description, allowed values with meanings, example. */
+/** The meaning column: description, allowed values with meanings, example, where to find it and a suggestion. */
 export function Meaning({ field }: { field: FieldInfo }) {
   const described = field.values ?? [];
   return (
@@ -35,6 +36,25 @@ export function Meaning({ field }: { field: FieldInfo }) {
           {" "}
           For example: <code>{shown(field.example)}</code>.
         </>
+      )}
+      <FindAndSuggest find={field.find} suggest={field.suggest} />
+    </>
+  );
+}
+
+/** Where the owner finds a value, and what it could look like, each on a line of its own. */
+export function FindAndSuggest({ find, suggest }: { find?: string; suggest?: string }) {
+  return (
+    <>
+      {find && (
+        <span className="field-help">
+          Where to find it: <Inline text={find} />
+        </span>
+      )}
+      {suggest && (
+        <span className="field-help">
+          Suggested: <code>{suggest}</code>
+        </span>
       )}
     </>
   );

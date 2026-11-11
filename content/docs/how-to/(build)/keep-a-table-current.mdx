@@ -4,25 +4,33 @@ description: Keep the current row for each key, or every version, from loads of 
 ---
 
 Use this when each load brings rows that change rows the table already has:
-a key, a column that orders the changes, and sometimes a column that says
-which rows are deletions. The store method's `mode` decides what the table
-keeps. Set it in the flow's `store.with` for every table of the flow, or in a
-table's own `store.with` for that table alone. These modes need the contract to
-mark the key with `primaryKey: true`; see
-[Describe a table with a contract](/docs/how-to/write-a-contract#keys-and-required-columns).
+a key, a column that orders the changes, and sometimes a condition that says
+which rows are deletions. Three words of [intent](/docs/reference/intent) say
+what the table keeps:
 
-| Engine     | Current row per key | Every version | Deleted keys  |
-| ---------- | ------------------- | ------------- | ------------- |
-| DuckDB     | `upsert`            | No            | No            |
-| Databricks | `upsert`            | `history`     | `delete_when` |
-| Synapse    | No                  | No            | No            |
+- `history: latest` keeps the current row per key, and `history: full`
+  every version;
+- `sequence` names the column that orders a key's changes;
+- `load: { deletes: { when } }` is a SQL condition that is true for a row
+  deleted at the source.
+
+Write them on a flow for every table of the flow, on a table for that table
+alone, or `history` on a layer of the standard for every table in it. They
+need the contract to mark the key with `primaryKey: true`; see
+[Describe a table with a contract](/docs/how-to/write-a-contract#keys-and-required-columns).
+What each engine does with them:
+
+<IntentOverview
+  only={["history=latest", "history=full", "sequence", "load.deletes.when"]}
+  packs={["duckdb", "databricks", "synapse"]}
+/>
 
 ## On DuckDB
 
 `duckdb-table` replaces the table with the files' rows each run, unless the
-table sets another `mode`. To keep one row per order, the latest by
-`ordered_at`, give the orders table in the
-[DuckDB starter](/docs/start/first-project)'s `flows/orders.yaml` this `store`:
+table keeps history. To keep one row per order, the latest by `ordered_at`,
+give the orders table in the [DuckDB starter](/docs/start/first-project)'s
+`flows/orders.yaml` this intent:
 
 ```yaml
 # flows/orders.yaml
@@ -30,19 +38,19 @@ tables:
   orders:
     object: orders.csv
     contract: shop.orders
-    store: { with: { mode: upsert, sequence_by: ordered_at } }
+    history: latest
+    sequence: ordered_at
 ```
 
-<SettingsSections pack="duckdb" method="duckdb-table" include={["mode", "sequence_by"]} />
-
-Each run then inserts each key's latest row, by `sequence_by` and then by file
-name, and replaces the row the table had for that key. Set `sequence_by` when
-one file can hold a key twice. Running again is safe in every mode. A changed
-primary key or column type needs the table built again: delete
-`ingestron.duckdb` and run again, which reloads everything from the files.
-Every setting is listed under
+Each run then inserts each key's latest row, by `sequence` and then by file
+name, and replaces the row the table had for that key: the method's
+`mode: upsert`. Set `sequence` when one file can hold a key twice. Running
+again is safe in every mode. A changed primary key or column type needs the
+table built again: delete `ingestron.duckdb` and run again, which reloads
+everything from the files. Every setting is listed under
 [`duckdb-table`](/docs/reference/packs/duckdb#duckdb-table).
 
+The method also has a `mode` that no intent stands for, `append`.
 `append` adds each file's rows once: it reads each file name once, so a file
 re-exported under the same name is skipped and its new rows are not loaded.
 Give a re-export a new name, or delete `ingestron.duckdb` and run again to
@@ -54,19 +62,22 @@ cannot be appended; see
 ## On Databricks
 
 `streaming-table` keeps the current row per key, or every version, with
-`AUTO CDC`. Set its `mode` on the flow or on each table:
+`AUTO CDC`. This flow orders both tables' changes by `changed_at`, keeps the
+current account and every version of each contact, and removes an account
+whose change says `DELETE`:
 
 <Example name="change-data" file="flows/crm.yaml" />
 
-<SettingsSections
-  pack="databricks"
-  method="streaming-table"
-  include={["mode", "sequence_by", "delete_when", "except_columns"]}
-/>
+`history: latest` keeps the current row per key (SCD type 1), and
+`history: full` every version (SCD type 2), with `__START_AT` and `__END_AT`
+columns. `except_columns` is a setting of the method, not intent: the columns
+left out of the kept table, such as the one that says what the change was.
 
-`upsert` keeps the current row per key (SCD type 1). `history` keeps every
-version (SCD type 2), with `__START_AT` and `__END_AT` columns. Every setting is
-listed under [`streaming-table`](/docs/reference/packs/databricks#streaming-table).
+<SettingsSections pack="databricks" method="streaming-table" include={["except_columns"]} />
+
+Every setting is listed under
+[`streaming-table`](/docs/reference/packs/databricks#streaming-table), with
+the settings that mean the same as this intent.
 
 <ToolSteps>
 <Tool name="CLI">

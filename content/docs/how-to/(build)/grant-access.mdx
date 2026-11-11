@@ -1,0 +1,339 @@
+---
+title: Grant access, mask columns and filter rows
+description: Say who may read each table, hide sensitive columns and filter rows, and have Ingestron grant, mask and filter on Databricks, grant on Synapse, and say what an engine cannot do.
+---
+
+Who may read a table belongs with its contract, and how sensitive columns
+and rows are hidden belongs in the standard. Ingestron turns both into the
+`GRANT`, `REVOKE` and policy statements the generated files run, so access
+changes in a pull request, as the tables do. Each part is off until the
+platform turns it on, and an engine that cannot apply one says so.
+
+This page uses the `governed-databricks` example: ADF copies a web shop's
+customers and orders, Databricks keeps the tables, and each table says who
+may read it.
+
+<ExampleDownload name="governed-databricks" />
+
+## Say who may read each table [#roles]
+
+A contract's `roles` name who may read the tables built from it. Each role
+reads (`access: read`, the default) or reads and changes the table
+(`access: write`):
+
+<Example name="governed-databricks" file="contracts/regional_sales.yaml" pick="roles" />
+
+A layer can change who reads its tables. In the standard, a layer written as
+an object gives `access`: `contract: false` grants none of the contracts'
+roles on the layer's tables, and `roles` are granted on every table in the
+layer, beside the contracts':
+
+<Example name="governed-databricks" file="standard.yaml" pick="layers" />
+
+Here `bronze` holds the raw rows, so only `data-engineers` read them, and
+`marketing-analysts`, the role of the customers contract, is not granted on
+`bronze.customers`.
+
+A role is a name, not a group. `principals` in `platform.yaml` says which
+user, group or service principal each role is, usually per environment from
+`project.yaml`'s values:
+
+<Example name="governed-databricks" file="platform.yaml" pick="principals" />
+
+A role that `principals` does not list is granted under its own name. A
+role's `access` other than `read` or `write` is
+[`ROLE_ACCESS`](/docs/reference/errors#ROLE_ACCESS), an error where the role
+would be granted.
+
+## Turn grants on [#turn-on]
+
+Grants change who can read shared data, so the platform turns them on in its
+pack's section: `databricks.manage.grants` on Databricks and
+`synapse.manage.grants` on Synapse:
+
+<Example name="governed-databricks" file="platform.yaml" pick="databricks.manage" />
+
+While the switch is off, each role is a
+[`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF) warning that names
+its tables, with a fix that turns the switch on. Without `grants: true`, the
+example's plan warns, for one role:
+
+```text
+contracts/regional_sales.yaml:16:5  warning  CAPABILITY_OFF
+  Access for the role "finance-analysts" in table "regional_sales" is not applied: the platform has Grants off.
+  Turn it on with databricks.manage.grants in platform.yaml. It needs: The run_as identity owns the tables the pipelines create, so it may grant and revoke on them; Each principal needs USE CATALOG, and USE SCHEMA unless the bundle manages the schemas; ingestron request lists them.
+  Fix: Turn on manage.grants.
+```
+
+With the switch off, the files grant nothing, as they did before the
+contracts named roles.
+
+With the switch on, the `apply_contract` task grants each table after each
+refresh, as the `run_as` identity, which owns the tables its pipelines
+create. Each role's principal gets `SELECT`, and `MODIFY` too for `write`;
+a principal that differs between environments is a value the job passes in:
+
+<Example
+  name="governed-databricks"
+  file="build/databricks/tasks/shop/apply_contract.py"
+  from='"table": "`${ingestron.catalog}`.`silver`.`regional_sales`"'
+  to='"exact": true'
+/>
+
+The platform's `databricks.grants` is a different thing: the privileges on
+the schemas the bundle creates, by layer. With `databricks.manage.schemas`
+on, the bundle also gives each principal granted a table `USE_SCHEMA` on its
+schema:
+
+<Example name="governed-databricks" file="build/databricks/resources/schemas.yml" />
+
+## Choose a grant mode [#grant-mode]
+
+The standard's `governance.access.grants` says what happens to access given
+some other way:
+
+- **`additive`**, the default, grants what the contracts and layers name and
+  takes nothing away. Removing a role from a contract does not remove its
+  grant: revoke it by hand, once, on each table, such as
+  `` REVOKE SELECT ON TABLE `dev`.`silver`.`regional_sales` FROM `shop-finance-analysts-dev` ``
+  on Databricks.
+- **`exact`** also takes away every privilege granted directly on the
+  project's own tables that their roles do not give, each time the grants
+  run. A table whose layer and contract grant no role loses every direct
+  grant.
+
+<Example name="governed-databricks" file="standard.yaml" pick="governance.access" />
+
+Exact grants never take away:
+
+- ownership, or a denial;
+- a privilege granted on the schema or catalog, which the table inherits;
+- the `run_as` identity's privileges, or those of the principals in
+  `databricks.governance.unmasked`.
+
+Before you turn exact grants on, move any access given by hand into the
+contracts or the layers: the next refresh takes the rest away. The request
+says so, and lists the tables:
+
+<Request name="governed-databricks" sections={["Exact grants"]} />
+
+## Mask sensitive columns [#masks]
+
+A column's `classification` in its contract says how sensitive it is. The
+standard's `governance.masks` gives a mask for each classification to hide:
+
+<Example name="governed-databricks" file="standard.yaml" pick="governance.masks" />
+
+<Example name="governed-databricks" file="contracts/customers.yaml" />
+
+A mask is one of:
+
+- `null`: readers see no value. It works on a column of any type. Quote it,
+  `"null"`; written unquoted, YAML's null means the same.
+- `hash`: readers see a hash of the text, so equal values still match.
+- `redact`: readers see `****`.
+- the name of a function your team owns, in one part, which is in
+  `databricks.governance.functions`, or in three, `catalog.schema.function`.
+
+`hash` and `redact` work on text. On a column whose `logicalType` is not
+`string`, they are [`MASK_TYPE`](/docs/reference/errors#MASK_TYPE), an error:
+
+```text
+contracts/customers.yaml:11:77  error  MASK_TYPE
+  The mask "hash" for "confidential" works on text, and "id" is integer in contract "shop.customers".
+  Mask "confidential" with "null" or a function of your own, or classify "id" differently.
+```
+
+On Databricks, masks need `databricks.manage.masks` and
+`databricks.manage.tags`: Ingestron sets each classification as a tag on its
+column, and the mask matches the tag. The platform's `databricks:` section
+also says where the mask functions are and who sees real values:
+
+<Example name="governed-databricks" file="platform.yaml" pick="databricks" />
+
+- `governance.functions` is the schema, `catalog.schema`, where the task
+  creates the built-in masks, `ingestron_mask_null`, `ingestron_mask_hash`
+  and `ingestron_mask_redact`, and where a function named in one part is.
+  Without it, a mask that needs it is
+  [`MASK_FUNCTIONS`](/docs/reference/errors#MASK_FUNCTIONS), an error.
+- `governance.unmasked` lists the principals that see real values.
+- `run_as` always sees real values. The pipelines run as it, so they never
+  read masked data and write it into the next table. Without `run_as`, masks
+  are [`MASK_NEEDS_RUN_AS`](/docs/reference/errors#MASK_NEEDS_RUN_AS), an
+  error. Together with `unmasked`, at most 20 principals may see real values
+  ([`POLICY_PRINCIPALS`](/docs/reference/errors#POLICY_PRINCIPALS)); put
+  them in groups.
+
+Each masked classification is one Unity Catalog column mask policy,
+`ingestron_mask_<classification>`, for every account user except `run_as` and
+`unmasked`. The task makes it after the tags and before it grants anything,
+so if a policy cannot be made, such as when a function it uses does not
+exist yet, the task fails before any role it grants can read the real values:
+
+<Example
+  name="governed-databricks"
+  file="build/databricks/tasks/shop/apply_contract.py"
+  from='"policies": ['
+  to="has_tag_value('classification', 'confidential')"
+/>
+
+The tables Ingestron builds beside a table, such as `<table>_quarantine`,
+get the same tags and policies, so their copies hide the same values.
+
+Masks hide values in the tables, not in the files the tables are loaded
+from. In this example ADF lands the customers as files first, and anyone who
+can read the landing container reads `email` and `phone` in full. Ingestron
+does not set access to the landed files: give storage access only to those
+who may see real values, as
+[the ADF pack](/docs/reference/packs/adf#access) says.
+
+## Filter rows [#filters]
+
+A row filter decides which rows each reader sees, with a function your team
+owns that returns `BOOLEAN` for a column's value. The standard's
+`governance.filters` names each filter, its function and the column it is
+given:
+
+<Example name="governed-databricks" file="standard.yaml" pick="governance.filters" />
+
+`match` finds the column on each table:
+
+- `{ tag: region }`: the column whose contract `tags` has the key `region`,
+  as every contract here does;
+- `{ tag: region, value: emea }`: the column with that tag key and value;
+- `{ classification: restricted }`: the column classified `restricted`.
+
+A filter applies to every table with a matching column, and to none without
+one. It may match at most one column of each table
+([`FILTER_MATCH`](/docs/reference/errors#FILTER_MATCH)), and a table may
+have one row filter
+([`FILTER_MULTIPLE`](/docs/reference/errors#FILTER_MULTIPLE)): on Databricks
+a query fails when two row filters apply to a table. Write one function that
+combines their conditions.
+
+On Databricks, filters need `databricks.manage.filters` and
+`databricks.manage.tags`, and use the same `run_as`, `governance.functions`
+and `unmasked` as masks. Each filter is one row filter policy,
+`ingestron_filter_<name>`. Write the function itself as Databricks describes
+in
+[Create and manage row filter and column mask policies](https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/policies)
+(checked 11 November 2026), and create it before the first refresh: the
+request lists it.
+
+## Where the policies go [#policies]
+
+- **On each schema** when `databricks.manage.schemas` is on: the bundle
+  creates the schemas, so they are the project's own.
+- **On each table** of the project otherwise, so a schema other projects
+  share keeps its own policies.
+
+A schema may have 100 policies and a table 50; more is
+[`POLICY_LIMIT`](/docs/reference/errors#POLICY_LIMIT), an error. Readers need
+serverless compute or Databricks Runtime 16.4 or later: older runtimes cannot
+read a table with a policy.
+
+After making the policies, the task drops each `ingestron_mask_` and
+`ingestron_filter_` policy on the project's schemas and tables that it no
+longer makes, so removing a mask or a filter from the standard removes its
+policy. It drops only the policies of a switch that is on, and never another
+team's. So:
+
+- To remove every mask, remove `governance.masks` and refresh with
+  `databricks.manage.masks` still on. Turning the switch off leaves the
+  policies in place.
+- Turning `databricks.manage.schemas` off moves the policies to the tables,
+  and leaves those on the schemas. Drop them by hand, such as
+  `` DROP POLICY `ingestron_mask_confidential` ON SCHEMA `dev`.`bronze` ``.
+
+## On Synapse [#on-synapse]
+
+Synapse serverless grants each view, and cannot mask or filter. The
+[`synapse-views` example](/docs/platforms/synapse) turns grants on in its
+`synapse:` section, and grants `data-engineers` on `bronze` and
+`finance-analysts` on `customer_totals`:
+
+<Example name="synapse-views" file="platform.yaml" />
+
+`views.sql` grants each view right after it, in the view's own database:
+
+<Example
+  name="synapse-views"
+  file="build/synapse/views.sql"
+  from="GRANT SELECT ON OBJECT::[silver].[customer_totals]"
+  to="GO"
+/>
+
+A principal that differs between environments is a sqlcmd variable, which
+each environment's script sets:
+
+<Example name="synapse-views" file="build/synapse/environments/dev.sql" />
+
+- A view is read-only, so a role's `write` grants `SELECT` only, with a
+  [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED) warning.
+- Exact grants revoke, each time `views.sql` runs, each permission granted
+  directly on a view that its roles do not give. They keep ownership,
+  permissions on the schema or database, denials, permissions given
+  `WITH GRANT OPTION`, and those of the database user that runs `views.sql`.
+  A group that user belongs to is not kept, so give the user its rights
+  through ownership, `db_owner` or the schema or database, not through a
+  group granted on a view. In additive mode, revoke a removed role by hand, such as
+  `REVOKE SELECT ON OBJECT::[silver].[customer_totals] FROM [sales-finance-analysts-dev]`.
+- Each principal must be a database user, with the rights views over files
+  need. Those rights also let it read the files directly, not only through
+  the views; the request says so.
+- A mask or a row filter is not applied:
+
+  ```text
+  contracts/customers.yaml:12:60  warning  NOT_APPLIED
+    The "hash" mask on "name" in table "customers" isn't applied on synapse: Synapse serverless has no data masking, and readers of views over files can read the files directly.
+  ```
+
+  The same holds for a view `synapse-serve` writes over a table Databricks
+  keeps: Databricks masks the table, but the view does not.
+
+## Accept a gap [#accept-a-gap]
+
+DuckDB has no users or permissions, so a role, mask or filter on a table
+DuckDB keeps is [not applied here](/docs/concepts/not-applied), as is a mask
+or filter on a Synapse view. When the data is protected another way, such as
+on the storage account, accept the warning with the reason. The [`data-products` example](/docs/how-to/define-a-data-product)
+does, for its role on DuckDB:
+
+<Example name="data-products" file="platform.yaml" pick="accept" />
+
+`about: { feature: … }` narrows an entry to `grants`, `write`, `exact`,
+`masks` or `filters`. The same features narrow a
+[`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF) entry, when the
+platform team grants or masks some other way. See
+[Accept a warning](/docs/how-to/accept-a-warning).
+
+Accepting a warning does not grant anything. A data product's passport still
+says, under **Who may use it**, which roles are granted on each table, by
+which engine, and which are not enforced and why, with its masked columns
+and row filters; see
+[Read the passport](/docs/how-to/define-a-data-product#read-the-passport).
+
+## Ask the platform team [#request]
+
+Grants, masks and filters need things only an administrator can create.
+`ingestron request --env dev` lists them:
+
+<Request name="governed-databricks" sections={["Must exist before deploying"]} />
+
+The governed tags come first: an account administrator creates
+`classification`, with the standard's values, and each tag a filter matches.
+Run `prerequisites/<environment>.sql`, which the request ends with, once as an
+administrator: it gives `run_as` what it needs on the function schema and the
+team's functions, and `MANAGE` on the schemas, after the first deployment.
+See [Ask the platform team](/docs/how-to/ask-the-platform-team).
+
+## Next
+
+- Publish the tables as a data product, with who may use each:
+  [Define a data product](/docs/how-to/define-a-data-product).
+- Every switch, and what each pack applies:
+  [Databricks](/docs/reference/packs/databricks#access),
+  [Synapse](/docs/reference/packs/synapse#access).
+- The fields: [`governance`](/docs/reference/documents#standard-governance),
+  [`principals`](/docs/reference/documents#platform-principals) and a
+  [layer's `access`](/docs/reference/documents#standard-layers-item-access).

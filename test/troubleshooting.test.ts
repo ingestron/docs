@@ -28,6 +28,18 @@ const entry = (heading: string) => section(page, `### ${heading}`);
 /** The trimmed lines of a command's output. */
 const lines = (output: string) => output.split("\n").map((line) => line.trim());
 
+/**
+ * What every plan of the DuckDB starter prints first: its contract's required
+ * order_id is not checked, as the starter's layers say nothing of checking.
+ */
+const starterNotApplied = [
+  "Not applied on this platform",
+  "dev:",
+  "contracts/orders.yaml:11:59  warning  NOT_APPLIED",
+  "The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.",
+  "Add `check` to the layer's `does` to apply it here.",
+];
+
 /** Every line of the entry's `text` blocks is a line of the output, unless it is listed as a placeholder. */
 function quotes(heading: string, output: string, placeholders: string[] = []) {
   const shown = fences(entry(heading), "text").flatMap((block) =>
@@ -133,6 +145,7 @@ describe("generated files", () => {
     rmSync(leftover);
     const plan = cli(project, ["plan", "--no-diff"]);
     expect(lines(plan.output)).toEqual([
+      ...starterNotApplied,
       "duckdb → build/duckdb (dev)",
       "update    dev/tables/silver.customer_totals.sql",
       "",
@@ -180,7 +193,10 @@ describe("generated files", () => {
     const project = copy("private-sql-server-filled");
     cli(project, ["apply"]);
     appendFileSync(join(project, "build/databricks/databricks.yml"), "# my change\n");
-    appendFileSync(join(project, "standard.yaml"), "layers: [raw, curated]\n");
+    appendFileSync(
+      join(project, "standard.yaml"),
+      "store: { settings: { streaming-table: { properties: { team: erp } } } }\n",
+    );
     const { code, output } = cli(project, ["apply", "--no-diff"]);
     expect(code).toBe(1);
     expect(lines(output)).toContain("Applied: adf. Not applied: databricks.");
@@ -224,6 +240,12 @@ describe("generated files", () => {
 });
 
 describe("definitions", () => {
+  it("quotes the first project's warning under Not applied on this platform", () => {
+    const plan = cli(copy("duckdb"), ["plan", "--no-diff"]);
+    expect(plan.code).toBe(0);
+    quotes("Plan lists warnings under `Not applied on this platform` [#not-applied]", plan.output);
+  }, 30_000);
+
   it("quotes the setting messages", () => {
     const project = copy("duckdb");
     edit(project, "flows/orders.yaml", (text) =>
@@ -389,13 +411,18 @@ describe("environment variables and .env", () => {
     expect(cli(project, ["plan"]).output).toContain("ENVVAR_MISSING");
     writeFileSync(join(project, ".env.dev"), "SAMPLES_DIR=./samples\n");
     expect(cli(project, ["plan"]).code).toBe(0);
-    expect(ProjectSnapshot.open(project).problems("dev")).toEqual([]);
+    // Only the starter's own warning: its required order_id is not checked.
+    const codes = () =>
+      ProjectSnapshot.open(project)
+        .problems("dev")
+        .map((found) => found.code);
+    expect(codes()).toEqual(["NOT_APPLIED"]);
     // A variable in the editor's own environment is seen, one exported later is not.
     rmSync(join(project, ".env.dev"));
     rmSync(join(project, ".env"));
     process.env.SAMPLES_DIR = "./samples";
     try {
-      expect(ProjectSnapshot.open(project).problems("dev")).toEqual([]);
+      expect(codes()).toEqual(["NOT_APPLIED"]);
     } finally {
       delete process.env.SAMPLES_DIR;
     }
@@ -542,6 +569,26 @@ describe("Synapse serverless views", () => {
 describe("DuckDB", () => {
   const noise: RegExp[] = [];
 
+  it("quotes the messages a failing check stops the run with, as run.sql writes them", () => {
+    const project = copy("quality");
+    expect(cli(project, ["apply", "--no-diff"]).code).toBe(0);
+    const sql = readFileSync(join(project, "build/duckdb/duckdb/run.sql"), "utf8");
+    const text = entry("A check stops the run [#a-check-stops-the-run]");
+    const [row] = fences(text, "text");
+    // DuckDB names the error; the rest is the message run.sql formats.
+    const message = row!.trim().replace(/^Invalid Input Error: /, "");
+    expect(sql).toContain(
+      `format('${message.replace('"<check>"', '"{}"').replace("<n>", "{}").replace("<table>", "{}")}'`,
+    );
+    const table = /`(The table check "<check>" failed on <table>, so nothing is published\.)`/.exec(
+      text,
+    )?.[1];
+    expect(table, "the table check's message").toBeDefined();
+    expect(sql).toContain(
+      `format('${table!.replace('"<check>"', '"{}"').replace("<table>", "{}")}'`,
+    );
+  }, 30_000);
+
   it("quotes append over a file that is replaced, and upsert without a key", () => {
     const append = copy("duckdb-local");
     appendFileSync(
@@ -633,7 +680,7 @@ describe("Databricks", () => {
   it("quotes a change mode without a sequence column, and without a key", () => {
     const project = copy("change-data");
     edit(project, "flows/crm.yaml", (text) =>
-      text.replace("mode: upsert,\n          sequence_by: changed_at,", "mode: upsert,"),
+      text.replace("sequence: changed_at # the newest change to a key wins\n", ""),
     );
     const { code, output } = cli(project, ["plan", "--no-diff"]);
     expect(code).toBe(1);

@@ -16,8 +16,12 @@ v0.264.0 or later, which applies preset tags to pipelines.
 
 <Request name="retail-filled" env="prod" sections={["Must exist before deploying"]} />
 
-With `manage` switches on, the request also says what each needs and gives the
-SQL to run once. See [Ask the platform team](/docs/how-to/ask-the-platform-team)
+With `databricks.manage` switches on, the request also says what each needs and gives the
+SQL to run once, `prerequisites/<environment>.sql`. Run it before the first
+deploy, except the lines it marks to run after: with masks or row filters on
+schemas the bundle creates, `MANAGE` on those schemas can be granted only once
+the first deploy has created them. Those lines are not needed when `run_as`
+deploys and so owns the schemas. See [Ask the platform team](/docs/how-to/ask-the-platform-team)
 for the whole request.
 
 ## Deploy [#deploy]
@@ -39,8 +43,8 @@ not start the ADF copies.
 ### Deploy as one identity [#one-identity]
 
 A target's deployment state, which records the pipelines and jobs it created,
-is kept in the target's `root_path`. Without `workspace.root_path` in the
-platform, that is the deploying identity's own folder,
+is kept in the target's `root_path`. Without `databricks.workspace.root_path`
+in the platform, that is the deploying identity's own folder,
 `~/.bundle/<bundle>/<target>` in the workspace. Another identity
 deploying the same target finds no state there and creates a second copy of
 every pipeline and job; in `prod`, both copies then run on their schedule.
@@ -49,7 +53,7 @@ So deploy each environment as one identity, such as the service principal your
 pipeline uses, and give every target a shared `root_path` in `platform.yaml`
 before a second identity deploys it, as the `environments` example does:
 
-<Example name="environments" file="platform.yaml" pick="workspace" />
+<Example name="environments" file="platform.yaml" pick="databricks" />
 
 A target that is already deployed under another `root_path` has its state
 there. Before the first deployment with the new path, bind each of its

@@ -3,6 +3,7 @@ import type { Connector } from "@ingestron/definitions";
 import { parse } from "yaml";
 import { readExampleFile } from "@/lib/examples";
 import { connectorEntries, shown } from "@/lib/reference";
+import { FindAndSuggest } from "./field-rows";
 import { Inline } from "./inline";
 
 interface Props {
@@ -84,6 +85,11 @@ function ConnectionField({
         <Inline text={setting.description} />
       </p>
       <ConnectionValues setting={setting} />
+      {(setting.find || setting.suggest) && (
+        <p>
+          <FindAndSuggest find={setting.find} suggest={setting.suggest} />
+        </p>
+      )}
       {example !== undefined && (
         <p>
           In the example: <code>{shown(example)}</code>.

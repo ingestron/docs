@@ -33,6 +33,30 @@ which reads the file next to the definition:
 
 <Example name="layers-and-transforms" file="transforms/store_sales.yaml" />
 
+## Leave out the code [#without-code]
+
+A transform with one input can leave out `code`. It then reads every column of
+its input, `SELECT * FROM {{ tables.<input> }}`, and keeps the columns its
+contract names. Use it for a table that only cleanses, checks or keeps
+another, such as a silver copy of the first project's orders, saved as
+`transforms/orders_clean.yaml`:
+
+```yaml
+apiVersion: ingestron.io/v1
+kind: Transform
+id: orders_clean
+inputs: [orders]
+contract: shop.orders
+cleanse:
+  columns:
+    customer: { trim: true, empty: null }
+```
+
+A transform with any other number of inputs needs its code
+([`TRANSFORM_CODE`](/docs/reference/errors#TRANSFORM_CODE)).
+[Cleanse data in the right layer](/docs/how-to/cleanse-data) builds this table
+and runs it.
+
 ## What each engine makes of it
 
 On DuckDB, the transform is a table, built again each run from its query,

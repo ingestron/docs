@@ -84,7 +84,7 @@ with each column cast to the type its contract gives.
 
 The Databricks pack writes the `quality` example's readings table as a
 streaming table in a Databricks pipeline, typed from its contract and checked
-by the rules its flow and the standard set:
+by the rules its contract, its flow and the standard set:
 
 <Example name="quality" file="build/databricks/src/iot/bronze/readings.sql" />
 
@@ -118,7 +118,9 @@ The platform team writes one standard: the packs, names, layers, types,
 default settings, settings no project may change, and what every data product
 must declare. VS Code marks a break as you type, `ingestron plan` reports
 every one, and `ingestron check` fails the CI build. See
-[Set your organisation's standard](/docs/how-to/configure-a-standard).
+[Set your organisation's standard](/docs/how-to/configure-a-standard). Or
+start from a [published standard](/docs/how-to/choose-a-published-standard):
+one written for your platform, checked against its documentation and dated.
 
 ### Reuse your team's work
 
@@ -141,8 +143,10 @@ each one and what runs after each load.
 
 ## What Ingestron does not do
 
-- It doesn't connect to your sources or your cloud. Its only network call is
-  to fetch a template or standard from a Git URL you give it.
+- It doesn't connect to your sources or your cloud. Its only network calls
+  use your own `git`: to fetch a template, a standard or a published standard
+  from a Git URL you give it, or a published standard that is not installed,
+  and to list the published standards' versions.
 - It doesn't deploy anything. Your platform's tools do, from your CI/CD
   pipeline.
 - It doesn't read secret values. A `${secret:…}` reference carries only the

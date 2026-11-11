@@ -1,0 +1,114 @@
+---
+title: Move to a newer published standard
+description: Replace a project's standard with a later version of its published standard, see what changes with plan and git diff, and keep your own edits.
+---
+
+A published standard never changes once it is published: a newer version has
+a later date. To move a project to it, replace the project's standard in a
+pull request, read what the plan and `git diff` show, and put back the edits
+your team made. Only `standard.yaml` is replaced; the rest of the project is
+yours and stays as it is.
+
+Upgrading `ingestron` itself is a separate step; see
+[Upgrade Ingestron and its packs](/docs/how-to/upgrade).
+
+## Find the version
+
+`ingestron standard list` lists the versions there are; see
+[List them](/docs/how-to/choose-a-published-standard#list-them). The
+project's `standard.yaml` names the one it has, in its `origin`:
+
+<KitFile id="duckdb/local-medallion" file="standard.yaml" />
+
+`ingestron check` never says a newer version exists, and makes no network
+call: moving is your choice.
+
+## Install it
+
+1. On a new branch, commit any change to the standard first. `install` refuses
+   to replace a file with changes that are not committed, so that `git diff`
+   shows only the new version:
+
+   ```text
+   standard.yaml has changes that are not committed; commit them first so git diff shows only the new standard.
+   ```
+
+2. From the project's folder, name the published standard and the version to
+   move to, such as `duckdb/local-medallion@2026-11-10`:
+
+   ```sh
+   ingestron standard install duckdb/local-medallion@2026-11-10
+   ```
+
+   The name alone takes the newest version that is not a preview, among the
+   versions installed with `ingestron` and those in the public catalogue. When
+   `ingestron` cannot reach the catalogue, it takes the newest installed
+   version, and its output starts by saying so.
+
+   It writes the new version's `standard.yaml` in place of the project's,
+   with the project's own `id` and at the same path, even when the standard
+   is in another file, such as `standards/acme.yaml`. Its comments come with
+   it. In a project created from that same version, it prints:
+
+   ```text
+   Replaced standard.yaml with duckdb/local-medallion@2026-11-10 (was 2026-11-10).
+
+   First version.
+
+   Not applied: no other kit file changed since 2026-11-10.
+
+   Next: run ingestron plan, then review git diff.
+   ```
+
+   After `Replaced`, the new version's notes say what changed. **Not
+   applied** lists the published standard's other files that changed since
+   the project's version, such as `platform.yaml` or a contract: `install`
+   does not copy them, because they are yours now. Compare each with yours.
+   When the project's `origin` names no version it can find, it says the
+   earlier version is not available, and you compare by hand. If the project
+   no longer builds with the new standard, the problems follow, as `plan`
+   prints them; the new file stays written.
+
+## Review the change
+
+3. Plan, to see every generated file the new standard changes:
+
+   ```sh
+   ingestron plan
+   ```
+
+   Review each `update`, `create` and `delete` as you would a change to the
+   definitions. A value the new standard sets that a pack does not apply is a
+   [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED) warning, with the
+   reason.
+
+4. Read the standard's own change:
+
+   ```sh
+   git diff standard.yaml
+   ```
+
+   Lines the new version adds, and lines your team had changed, both show
+   here. The new file has the published version's text, so an edit your team
+   made to `standard.yaml`, such as another catalog name, shows as a removed
+   line.
+
+5. Put back each edit you want to keep, in `standard.yaml`, and plan again.
+   For each file **Not applied** listed, take what you want from the new
+   version into yours.
+
+6. Apply, and commit the standard with the generated files:
+
+   ```sh
+   ingestron apply
+   ```
+
+   `ingestron check` in CI then passes on the pull request, because the
+   committed files are what the new standard generates.
+
+## Next
+
+- [Set your organisation's standard](/docs/how-to/configure-a-standard): keep
+  the project to the standard in CI and in review.
+- [Intent](/docs/reference/intent): what each value of a standard means, and
+  what each pack does with it.

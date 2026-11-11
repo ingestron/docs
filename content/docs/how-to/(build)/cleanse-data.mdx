@@ -1,0 +1,258 @@
+---
+title: Cleanse data in the right layer
+description: Keep raw rows in bronze, and trim, map and default text and bring timestamps to UTC in silver, with a transform that needs no code.
+---
+
+The standard says what each layer does with its rows: bronze keeps them as they
+arrived, silver cleanses and checks them. You then write the cleansing once,
+and it happens in the layer that is responsible for it. This guide starts from
+the [local medallion](/docs/how-to/kits/duckdb-local-medallion) published
+standard, which runs on your laptop with DuckDB, and adds a silver table of
+cleansed orders without writing SQL.
+
+You need Ingestron and the
+[DuckDB command line](https://duckdb.org/docs/installation/), as for
+[your first project](/docs/start/first-project#before-you-start).
+
+## Create the project
+
+```sh
+ingestron init shop --kit duckdb/local-medallion@2026-11-10
+cd shop
+```
+
+The remaining steps run in the `shop` folder.
+
+## What each layer does
+
+The standard's `layers` give each layer its duties, in `does`:
+
+<KitFile id="duckdb/local-medallion" file="standard.yaml" pick="layers" />
+
+- `bronze` does `raw`. Its tables keep every row as the file had it, so you can
+  always see what arrived. Nothing there is cleansed, and its checks only
+  count.
+- `silver` does `cleanse`, `deduplicate`, `check` and `quarantine`. Its tables
+  are cleansed, then checked, and the rows a check leaves out are kept in a
+  quarantine table.
+
+A flow's table lands in the first layer and a transform's in the second, so
+the orders file becomes `bronze.orders`, and each transform that reads it
+builds a `silver` table. [What a layer does](/docs/concepts/layers#what-a-layer-does)
+lists each duty.
+
+## What every silver table gets
+
+The standard's `cleanse` gives defaults to every table in a layer that
+cleanses:
+
+<KitFile id="duckdb/local-medallion" file="standard.yaml" pick="cleanse" />
+
+- `text`: each text column, one whose contract `logicalType` is `string`, has
+  the spaces at either end removed, and an empty text becomes null.
+- `timestamps`: each timestamp column is converted to UTC, from the time zone
+  its source writes in. A connection without `timezone` writes UTC.
+
+Only `silver` gets them; `bronze` keeps its rows as they arrived.
+
+## Add the columns to cleanse
+
+The shop's till also writes the time of each order, in London time, and the
+channel it came through, typed by hand. Replace `samples/orders.csv` with:
+
+```csv
+order_id,customer,amount,ordered_at,channel
+1,Ana,25.50,2026-10-01 09:15:00,web
+2, Ben,12.00,2026-10-01 18:40:00,Shop
+3,Ana,40.25,2026-10-02 12:05:00,WEB
+4,Chen,8.75,2026-10-03 08:30:00,
+5,Ben,30.00,2026-10-03 21:10:00,store
+```
+
+In `contracts/orders.yaml`, make `ordered_at` a timestamp and add `channel`,
+so its columns end:
+
+{/* prettier-ignore */}
+```yaml
+      - { name: ordered_at, logicalType: timestamp }
+      - { name: channel, logicalType: string }
+```
+
+Then say which zone the till writes in. Add this line to
+`connections/shop.yaml`, under `connectivity`:
+
+```yaml
+timezone: Europe/London # the till writes local time
+```
+
+A zone is `UTC` or a name from the IANA time zone database, written exactly;
+any other name is [`TIMEZONE_NAME`](/docs/reference/errors#TIMEZONE_NAME).
+
+## Add a silver table without code
+
+A transform with one input can leave out `code`: it reads every column of its
+input, and keeps the columns its contract names. Save this as
+`transforms/orders_clean.yaml`:
+
+```yaml
+apiVersion: ingestron.io/v1
+kind: Transform
+id: orders_clean
+description: Each order, cleansed.
+inputs: [orders]
+contract: shop.orders
+cleanse:
+  columns:
+    channel: { map: { Shop: store }, case: lower, default: unknown }
+```
+
+`orders_clean` lands in `silver`, so it gets the standard's defaults, and
+`cleanse.columns` adds its own for `channel`. A column's operations run in a
+fixed order, after the column is cast to its contract's type: `timezone`,
+`trim`, `empty`, `map`, `case`, then `default`. So `channel` is trimmed, an
+empty one becomes null, `Shop` becomes `store`, every value is put in lower
+case, and a channel with no value becomes `unknown`. A column the contract
+does not have is [`CLEANSE_COLUMN`](/docs/reference/errors#CLEANSE_COLUMN),
+and an operation that does not fit the column's type, such as `case` on a
+number, is [`CLEANSE_TYPE`](/docs/reference/errors#CLEANSE_TYPE).
+
+A transform with more than one input needs its code:
+[`TRANSFORM_CODE`](/docs/reference/errors#TRANSFORM_CODE).
+
+## Plan, apply and run
+
+```sh
+ingestron plan --no-diff
+```
+
+```text
+duckdb → build/duckdb (dev)
+create    dev/README.md
+create    dev/run.sql
+create    dev/tables/bronze.orders.sql
+create    dev/tables/silver.customer_totals.sql
+create    dev/tables/silver.orders_clean.sql
+
+5 files: 5 create. Ready to apply.
+```
+
+No warning: DuckDB applies every operation in `silver`. Apply, and build the
+tables:
+
+```sh
+ingestron apply
+duckdb -bail ingestron.duckdb -c ".read build/duckdb/dev/run.sql"
+```
+
+The run prints each table's checks, with the rows that fail each one; none
+fails here. Compare the orders as they arrived with the cleansed ones:
+
+```sh
+duckdb ingestron.duckdb -c "SELECT order_id, customer, ordered_at, channel FROM bronze.orders ORDER BY order_id"
+duckdb ingestron.duckdb -c "SELECT order_id, customer, ordered_at, channel FROM silver.orders_clean ORDER BY order_id"
+```
+
+```text
+┌──────────┬──────────┬─────────────────────┬─────────┐
+│ order_id │ customer │     ordered_at      │ channel │
+│  int64   │ varchar  │      timestamp      │ varchar │
+├──────────┼──────────┼─────────────────────┼─────────┤
+│        1 │ Ana      │ 2026-10-01 09:15:00 │ web     │
+│        2 │  Ben     │ 2026-10-01 18:40:00 │ Shop    │
+│        3 │ Ana      │ 2026-10-02 12:05:00 │ WEB     │
+│        4 │ Chen     │ 2026-10-03 08:30:00 │ NULL    │
+│        5 │ Ben      │ 2026-10-03 21:10:00 │ store   │
+└──────────┴──────────┴─────────────────────┴─────────┘
+┌──────────┬──────────┬─────────────────────┬─────────┐
+│ order_id │ customer │     ordered_at      │ channel │
+│  int64   │ varchar  │      timestamp      │ varchar │
+├──────────┼──────────┼─────────────────────┼─────────┤
+│        1 │ Ana      │ 2026-10-01 08:15:00 │ web     │
+│        2 │ Ben      │ 2026-10-01 17:40:00 │ store   │
+│        3 │ Ana      │ 2026-10-02 11:05:00 │ web     │
+│        4 │ Chen     │ 2026-10-03 07:30:00 │ unknown │
+│        5 │ Ben      │ 2026-10-03 20:10:00 │ store   │
+└──────────┴──────────┴─────────────────────┴─────────┘
+```
+
+Bronze keeps `" Ben"`, `Shop` and the London times as the till wrote them.
+Silver has trimmed the name, mapped and lowered each channel, given order 4 a
+channel, and moved each time an hour back: London is an hour ahead of UTC in
+October. Around a clock change, the hour that is skipped or repeated converts
+as each engine documents; see the pack's
+[Quality and cleansing](/docs/reference/packs/duckdb#quality-and-cleansing).
+
+`ordered_at` in `silver.orders_clean` is now in UTC, and Ingestron knows it: a
+table that reads it with the same rule converts nothing again.
+
+## Ask a layer for a duty it does not do
+
+Bronze does not cleanse, so a table there that asks for cleansing is refused.
+Replace `flows/orders.yaml` with:
+
+```yaml
+apiVersion: ingestron.io/v1
+kind: Flow
+id: orders
+source: shop
+tables:
+  orders:
+    object: orders.csv
+    contract: shop.orders
+    cleanse:
+      columns:
+        channel: { case: lower }
+```
+
+```sh
+ingestron plan --no-diff
+```
+
+```text
+dev: the definitions have problems
+flows/orders.yaml:11:9  error  LAYER_RESPONSIBILITY
+  The layer "bronze" does not list cleanse in its does, so cleansing cannot be set here.
+  Layers that do cleanse: silver. Or add `cleanse` to this layer's `does`.
+```
+
+Nothing is written. Cleanse in the transform that builds the silver table, as
+above, and put `flows/orders.yaml` back:
+
+```yaml
+apiVersion: ingestron.io/v1
+kind: Flow
+id: orders
+source: shop
+tables:
+  orders: { object: orders.csv, contract: shop.orders }
+```
+
+## Keep one row per key
+
+`silver` also does `deduplicate`. A table there can keep one row per primary
+key, the last by the columns you name:
+
+```yaml
+cleanse:
+  deduplicate: { order_by: [ordered_at] }
+```
+
+`orders_clean` does not need it: the standard keeps `silver` tables at
+`history: latest`, which already keeps one row per `order_id`, and plan would
+warn that deduplicate is redundant
+([`DEDUPLICATE_MODE`](/docs/reference/errors#DEDUPLICATE_MODE)). Use it for a
+table that is replaced each run, such as one with `history: none`. A table
+whose contract has no primary key cannot deduplicate:
+[`DEDUPLICATE_KEY`](/docs/reference/errors#DEDUPLICATE_KEY).
+
+## On other engines
+
+The same YAML cleanses on Databricks and Synapse: each pack writes the
+operations in its own SQL, in the table's `SELECT` or the view's. What each
+applies, and the time zones Synapse cannot convert, are in each pack's
+**Quality and cleansing**:
+[Databricks](/docs/reference/packs/databricks#quality-and-cleansing),
+[DuckDB](/docs/reference/packs/duckdb#quality-and-cleansing) and
+[Synapse](/docs/reference/packs/synapse#quality-and-cleansing). A table that
+ends at the landed files is not cleansed: each operation there is
+[not applied](/docs/concepts/not-applied).

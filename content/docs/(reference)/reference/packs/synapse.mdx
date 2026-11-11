@@ -12,17 +12,132 @@ pack itself.
 For a task walkthrough, use [Synapse serverless views](/docs/platforms/synapse).
 The pack writes one `views.sql` for every environment, with
 `environments/<environment>.sql` setting each environment's values; run that
-script with sqlcmd when the definitions change. See
+script with sqlcmd when the definitions change. Where a table's layer checks
+its rows, it also writes `checks.sql`, with `checks/<environment>.sql` for each
+environment; run that after each landing to count the checks. See
 [What Ingestron writes](/docs/platforms/synapse#what-you-get). Generation itself
 creates nothing in Azure.
 
 <PackMethods pack="synapse" />
 
+## Platform configuration
+
+### The `synapse:` section [#platform]
+
+What only Synapse reads goes in the platform's `synapse:` section. Its one
+switch, `synapse.manage.grants`, lets `views.sql` grant each view to the
+roles that may read it; see [Access](#access).
+
+<PlatformSection pack="synapse" />
+
+While it is off, a role on a view is a
+[`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF) warning, with a
+quick fix that turns it on, and `views.sql` is what it was without it.
+`manage` at the top of the platform is Databricks' and turns nothing on for
+Synapse.
+
+<PackCapabilities pack="synapse" />
+
 ## Contract fields
 
-What this pack does with each field of a table's contract. When a contract
-writes a field that no pack of the standard uses yet, Ingestron warns at that
-field with the reason below; **Elsewhere** fields are handled by another pack
-or step and never warn.
+What this pack does with each field of a table's contract. A field is judged
+for each table, against the pack that keeps it. When a contract writes a field
+this pack does not apply yet, on a table this pack keeps, Ingestron warns at
+that field with [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED) and the
+reason below; **Elsewhere** fields are handled by another pack or step and
+never warn.
 
 <ContractUseTable pack="synapse" />
+
+## Intent [#intent]
+
+What this pack does with each value of [intent](/docs/reference/intent), from
+the pack itself. A view keeps nothing, so most intent is not applicable. A value the pack does not apply, **Not yet** or
+**Not applicable**, is a [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED)
+warning where it is written, with the reason below. **Elsewhere** values are
+applied by another pack or step and never warn.
+
+<IntentSupport pack="synapse" />
+
+Its checks, cleansing and quarantine are in
+[Quality and cleansing](#quality-and-cleansing).
+
+## Quality and cleansing [#quality-and-cleansing]
+
+What this pack does with each check, action and cleansing operation, from the
+pack itself. Each row links the Microsoft page it was checked against, with
+the date; the pack's
+[sources](https://github.com/ingestron/pack-synapse/blob/main/spec/references.md#quality-and-cleansing)
+list every page it writes T-SQL from. The pack cannot run T-SQL in its tests,
+so its SQL is checked against those pages.
+
+<IntentSupport pack="synapse" part="quality" />
+
+- **Where checks run.** A table runs its checks only in a layer whose `does`
+  lists `check`, and in a `raw` layer counts them, each as `warn`. In any other
+  layer its view is what it was before checks, and each rule is
+  [not applied here](/docs/concepts/not-applied).
+- **The view** leaves out the rows a `drop` check fails, each time it is
+  queried; `warn` and `fail` checks keep their rows. A view cannot stop a
+  load, so `fail` is not applied.
+- **`checks.sql`** counts every check: row checks over the files, the rows the
+  view leaves out included, and table checks over the rows the view keeps. It
+  returns one row per check, then raises an error for the first `fail` check
+  that fails. It checks nothing unless something runs it after each landing;
+  see [Run and operate](/docs/platforms/synapse#operate). Table checks need
+  nothing turned on: the pack has no `checks` capability.
+- **Text comparisons** ignore spaces at the end of a value, as T-SQL does:
+  `'GB '` equals `'GB'`. With the standard's `trim` first this makes no
+  difference.
+- **Deduplicate** keeps the last row per primary key in the view, numbered
+  with `ROW_NUMBER()`. A view keeps nothing, so it is the only way a view gives
+  one row per key.
+
+### Time zones [#time-zones]
+
+T-SQL's `AT TIME ZONE` names zones by their Windows names, so the pack maps
+each IANA name to one, with a table generated from the Unicode CLDR's
+`windowsZones.xml` and its zone aliases (release 49, read 10 November 2026).
+`Europe/London` is `GMT Standard Time`. Windows has no zone for these, so a
+conversion from or to one of them is not applied, and the column stays in the
+zone it was in:
+
+<ZonesNotApplied pack="synapse" />
+
+Windows keeps less of each zone's history than the IANA database: times from
+before a zone's rules changed can convert differently here than on Databricks
+and DuckDB. In the hour repeated in autumn, T-SQL gives a wall time the offset
+before the change: in London on 25 October 2026, `01:30` is `00:30` UTC,
+where DuckDB gives `01:30`. In the hour skipped in spring, it moves the time
+forward by the gap.
+
+## Access [#access]
+
+What this pack does with each role, grant mode, mask and row filter, from the
+pack itself. Each row links the Microsoft page it was checked against, with
+the date; the pack's
+[sources](https://github.com/ingestron/pack-synapse/blob/main/spec/references.md#access)
+list every page it writes T-SQL from. To set them up, see
+[Grant access, mask columns and filter rows](/docs/how-to/grant-access#on-synapse).
+
+<IntentSupport pack="synapse" part="access" />
+
+- **Grants** are `GRANT SELECT ON OBJECT::[<schema>].[<view>]` to each role's
+  principal, after each view in `views.sql`, in the view's own database. Each
+  principal is in brackets, with `]` doubled. A view is read-only, so a
+  role's `write` is [not applied here](/docs/concepts/not-applied).
+- **Exact grants** revoke, after a view's grants, each permission granted
+  directly on the view that its roles do not give. They keep ownership,
+  permissions on the schema or database, denials, permissions given
+  `WITH GRANT OPTION`, which only `CASCADE` could revoke, and those of the
+  database user that runs `views.sql` (`USER_NAME()`), which SQL Server
+  cannot revoke from itself. A group that user belongs to is not kept.
+- **Served views.** A view that `synapse-serve` writes over a table another
+  pack keeps is granted the same way, and judged by this pack a second time:
+  a mask or row filter on its table is not applied on the view.
+- **Masks and row filters** are not applied: serverless SQL pools have no data
+  masking or row-level security, and readers of views over files can read
+  the files directly.
+- **Readers' rights.** `ingestron request` lists each principal as a database
+  user, with the rights views over files need. Those rights also let it read
+  the files under the data source directly, not only through the views.

@@ -47,8 +47,8 @@ export const areaCardSettings: { area: string; icon: string; links: string[] }[]
     icon: "standard",
     links: [
       "/docs/how-to/configure-a-standard",
+      "/docs/how-to/choose-a-published-standard",
       "/docs/how-to/ask-the-platform-team",
-      "/docs/how-to/upgrade",
     ],
   },
   {

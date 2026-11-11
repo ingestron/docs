@@ -1,4 +1,4 @@
 # A guide: a small project that shows one idea; the docs embed it.
 title: Retail, with its values written
 summary: The retail starter after init --set wrote each value it left as REPLACE_ME, so it deploys to its dev and prod workspaces.
-order: 14
+order: 15

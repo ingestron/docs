@@ -1,0 +1,143 @@
+---
+title: Start from a published standard
+description: Create a project from a published standard, write the values it leaves to you, and plan.
+---
+
+A [published standard](/docs/how-to/choose-a-published-standard) gives a new
+project its standard, its platform skeleton and a small example that builds.
+This page creates one on your laptop with
+[Local medallion on DuckDB](/docs/how-to/kits/duckdb-local-medallion), then
+shows what changes for a workspace, with
+[Streaming lakehouse on Databricks](/docs/how-to/kits/databricks-lakehouse-streaming).
+You need the `ingestron` command or the VS Code extension; see
+[Install](/docs/start/install).
+
+## Create the project
+
+<ToolSteps>
+<Tool name="CLI">
+
+From the folder that will hold the project, name the published standard and
+its version with `--kit`:
+
+```sh
+ingestron init shop --kit duckdb/local-medallion@2026-11-10
+```
+
+Without `@<version>`, `--kit duckdb/local-medallion` takes the newest version
+that is not a preview, among the versions installed with `ingestron` and those
+in the public catalogue. When `ingestron` cannot reach the catalogue, it takes
+the newest installed version, and its first line says so:
+`Could not reach the catalogue; using the newest installed version, duckdb/local-medallion@2026-11-10.`
+`--kit` replaces `--template` and `--standard`: give one of the three.
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: New project** from the Command Palette (⇧⌘P on macOS,
+Ctrl+Shift+P elsewhere), choose **From a published standard**, then
+**Local medallion on DuckDB**, then a folder named `shop`. The new
+`README.md` opens in a preview, and the plan is in the Ingestron output panel.
+
+</Tool>
+</ToolSteps>
+
+Ingestron copies the published standard's files into `shop`, checks every
+environment, and plans:
+
+```text
+Created shop from the kit duckdb/local-medallion@2026-11-10 (13 files).
+
+duckdb → shop/build/duckdb (dev)
+create    dev/README.md
+create    dev/run.sql
+create    dev/tables/bronze.orders.sql
+create    dev/tables/silver.customer_totals.sql
+
+4 files: 4 create. Ready to apply.
+Nothing to replace: the project runs as written.
+```
+
+The project holds the standard's files as they are, except two:
+
+- `STANDARD.md` is the published standard's own README: what each section of
+  `standard.yaml` does on DuckDB, and the DuckDB pages it was checked
+  against.
+- `README.md` is the project's, as for every new project: how to run it, and
+  the values still to write.
+
+`standard.yaml` names its `origin`, the published standard and version it
+came from, so a later version can be compared with it; see
+[Move to a newer published standard](/docs/how-to/upgrade-a-standard).
+
+Run it as its `README.md` says: `ingestron apply`, then the DuckDB command
+line; see [DuckDB](/docs/platforms/duckdb).
+
+## Write the values it leaves to you [#write-the-values]
+
+A published standard for a workspace cannot know your workspace. Each value
+that is yours is `REPLACE_ME`, with a comment above it. These are the
+platform's, in the streaming lakehouse; point at a `REPLACE_ME` (or tap it on
+a touch screen) to see what to write:
+
+<KitFile id="databricks/lakehouse-streaming" file="platform.yaml" />
+
+In VS Code, hover a `REPLACE_ME` to see the same: the field it fills, where to
+find the value, and a suggestion. The project's `README.md` lists every value
+still to write, with its file and line. `ingestron plan` warns about each one,
+and `ingestron check` fails until each is written; see
+[`REPLACE_ME`](/docs/reference/errors#REPLACE_ME).
+
+To write some as you create the project, give each with `--set <name>=<value>`,
+or `--set <environment>.<name>=<value>` for one environment:
+
+```sh
+ingestron init shop --kit databricks/lakehouse-streaming@2026-11-10 \
+  --set dev.host=https://adb-1111111111111111.1.azuredatabricks.net \
+  --set service_principal_name=7f3c2a10-0000-4000-8000-000000000001
+```
+
+Each published standard's page lists all of its values, in every file.
+
+## With a connection [#with-a-connection]
+
+To start from your own source with a published standard, add the connection
+options, as [Create a project](/docs/how-to/start-from-a-template#start-from-a-connection)
+describes:
+
+```sh
+ingestron init sales --kit databricks/lakehouse-streaming@2026-11-10 \
+  --connector sqlserver --connectivity public --via databricks --yes
+```
+
+The published standard gives `standard.yaml`, `project.yaml`, `platform.yaml`
+and `STANDARD.md`; the route gives the connection, its flows, contracts and
+transforms. Where both write a key of `project.yaml` or `platform.yaml`, the
+published standard's value stays. Every pack the route needs must be one the
+published standard names: `--via adf-databricks` needs `adf@2` too, so this
+one refuses it.
+
+Then read the plan. A value of the standard that the route's methods do not
+apply is a [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED) warning with
+the reason, listed under `Not applied on this platform`. The streaming
+lakehouse reads files, and Lakeflow Connect reads SQL Server itself, so that
+list begins:
+
+```text
+Not applied on this platform
+dev, prod:
+standard.yaml:28:12  warning  NOT_APPLIED
+  load.mode: files isn't applied on databricks: Managed ingestion reads the source, not files.
+```
+
+Keep a warning you can live with, and
+[accept it](/docs/how-to/accept-a-warning) in the platform with the reason, or
+change the standard where it does not fit your source: the project is yours.
+
+## Make it yours
+
+Once created, the project is ordinary definitions: change the contracts and
+flows to your source's, and the standard where your team decides otherwise.
+Run `ingestron plan` after each change. To take a later version of the
+published standard, see
+[Move to a newer published standard](/docs/how-to/upgrade-a-standard).

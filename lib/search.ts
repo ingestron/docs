@@ -6,7 +6,16 @@ import { codeHelp } from "@ingestron/definitions";
 import type { StructuredData } from "fumadocs-core/mdx-plugins";
 import { ingestionRows } from "./connector-settings";
 import { categoryAnchor, connectorSections, sourceCategories } from "./connector-page";
-import { anchorId, connectorEntries, fieldPath, packPages, packs, settingRows } from "./reference";
+import {
+  anchorId,
+  connectorEntries,
+  fieldPath,
+  intentRows,
+  packPages,
+  packs,
+  platformSectionFields,
+  settingRows,
+} from "./reference";
 
 /** Headings and paragraphs to add to a page's search entries, by page URL. */
 export function extraStructure(url: string): StructuredData {
@@ -30,19 +39,34 @@ function errorCodes(): StructuredData {
   };
 }
 
+/** A pack's page: its methods and settings, its section of the Platform, and its intent. */
 function methods(pack: string): StructuredData {
   const found = packs.find((candidate) => candidate.id === pack);
   const all = Object.entries(found?.methods ?? {}).map(([id, method]) => ({ pack, id, method }));
+  const section = platformSectionFields(pack);
   return {
-    headings: all.map(({ id }) => ({ id, content: id })),
-    contents: all.flatMap(({ pack, id, method }) => [
-      { heading: id, content: method.description },
-      ...settingRows(pack, id).map((field) => ({
-        heading: id,
-        content:
-          `${field.path.join(".")}: ${field.description ?? ""} ${(field.values ?? []).map((item) => item.value).join(", ")}`.trim(),
+    headings: [
+      ...all.map(({ id }) => ({ id, content: id })),
+      ...section.map((field) => ({ id: anchorId(field), content: fieldPath(field) })),
+    ],
+    contents: [
+      ...all.flatMap(({ pack, id, method }) => [
+        { heading: id, content: method.description },
+        ...settingRows(pack, id).map((field) => ({
+          heading: id,
+          content:
+            `${field.path.join(".")}: ${field.description ?? ""} ${(field.values ?? []).map((item) => item.value).join(", ")}`.trim(),
+        })),
+      ]),
+      ...section.map((field) => ({
+        heading: anchorId(field),
+        content: `${fieldPath(field)}: ${field.description ?? ""} ${field.find ?? ""}`.trim(),
       })),
-    ]),
+      ...intentRows(pack).map(({ path, values, use }) => ({
+        heading: "intent",
+        content: `${path} ${values.join(", ")}: ${use.use === "used" ? use.does : use.reason}`,
+      })),
+    ],
   };
 }
 

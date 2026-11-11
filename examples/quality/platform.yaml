@@ -1,0 +1,14 @@
+apiVersion: ingestron.io/v1
+kind: Platform
+id: lab
+databricks:
+  manage: { checks: true } # Databricks runs table checks after each refresh
+settings:
+  adf-files:
+    landing: abfss://landing@iotlab.dfs.core.windows.net/iot
+    integration_runtime: AutoResolveIntegrationRuntime
+  synapse-view: # the external data source the view reads through
+    data_source: landing
+    data_source_location: abfss://landing@iotlab.dfs.core.windows.net
+  duckdb-table:
+    published: abfss://published@iotlab.dfs.core.windows.net/iot

@@ -8,7 +8,19 @@ schema:
     logicalType: object
     description: One reading per sensor and time.
     properties:
-      - { name: sensor_id, logicalType: string, required: true }
+      - name: sensor_id
+        logicalType: string
+        required: true
+        logicalTypeOptions: { pattern: "^S[0-9]+$" }
       - { name: read_at, logicalType: timestamp, required: true }
       - { name: temperature, logicalType: number }
-      - { name: unit, logicalType: string }
+      - name: unit
+        logicalType: string
+        quality:
+          - name: known_unit
+            type: library
+            metric: invalidValues
+            arguments: { validValues: [C, F] }
+            mustBe: 0
+    quality:
+      - { name: has_readings, type: library, metric: rowCount, mustBeGreaterThan: 0 }

@@ -9,6 +9,13 @@ whole project, such as a pack's notice, is reported as `(project)`.
 
 A warning, such as a value still [`REPLACE_ME`](#REPLACE_ME), does not stop
 `plan` or `apply`; `check` reports a value still `REPLACE_ME` as an error.
+Each code below says how it is reported: as an error, a warning or
+information. A feature the engine that keeps a table cannot apply is
+[`NOT_APPLIED`](#NOT_APPLIED), listed apart under `Not applied on this platform`;
+see [Not applied here](/docs/concepts/not-applied). A warning you have decided
+to live with can be accepted in `platform.yaml`, and is then counted, not
+shown; see [Accept a warning](/docs/how-to/accept-a-warning). A code marked
+removed is no longer reported, and its help says what replaced it.
 
 A pack that cannot be loaded stops every command before it reads the
 definitions: the command prints [`PACK_LOAD`](#PACK_LOAD) alone and exits with

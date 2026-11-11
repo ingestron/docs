@@ -10,6 +10,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -160,8 +161,8 @@ describe("connector pages", () => {
 });
 
 describe("how-to/add-quality-checks", () => {
-  const table = read("how-to/add-quality-checks.mdx").split("\n## ")[0]!.split("\n\n")[2]!;
-  const row = (link: string) => table.split("\n").find((line) => line.includes(`](${link})`))!;
+  const page = read("how-to/add-quality-checks.mdx");
+  const prose = (text: string) => text.replace(/\s+/g, " ");
 
   /** Plans a copy of a sample after giving one table an expectation, the way the guide adds one. */
   function plan(folder: string, flow: string, table: string): string {
@@ -174,34 +175,70 @@ describe("how-to/add-quality-checks", () => {
     return cli(cwd, ["plan", "--no-diff"]).output;
   }
 
-  it("says what each engine does with a check, as the CLI reports it", () => {
-    expect(row("/docs/platforms/databricks")).toContain("Runs them");
-    const databricks = plan(exampleFolder("quality"), "flows/readings.yaml", "readings");
-    expect(databricks).not.toContain("error");
-
-    const duckdb = plan(exampleFolder("duckdb"), "flows/orders.yaml", "orders");
-    expect(duckdb).toContain("error  METHOD_CHECK");
-    expect(duckdb).toContain("DuckDB tables check no rows yet");
-    expect(row("/docs/platforms/duckdb")).toContain("`METHOD_CHECK`");
-
-    const synapse = plan(exampleFolder("synapse-views"), "flows/erp.yaml", "customers");
-    expect(synapse).not.toContain("error");
-    expect(synapse).not.toContain("has_rows");
-    expect(synapse).toContain("warning  CONTRACT_FIELD_UNUSED");
-    expect(synapse).toContain("Synapse views check no rows.");
-    expect(row("/docs/platforms/synapse")).toContain("`expectations` are not run");
-    expect(row("/docs/platforms/synapse")).toContain("`CONTRACT_FIELD_UNUSED`");
-
-    const landing = plan(exampleFolder("landing-only"), "flows/erp.yaml", "customers");
-    expect(landing).not.toContain("error");
-    expect(landing).toContain("warning  QUALITY_RULE_NOT_CHECKED");
-    expect(row("/docs/platforms/landing-only")).toContain("`QUALITY_RULE_NOT_CHECKED`");
+  it("lists first what Synapse cannot apply in the quality example, as the page shows", () => {
+    const engines = section(page, "## What each engine does [#engines]");
+    const planned = cli(copy("quality"), ["plan", "--no-diff"]);
+    expect(planned.code).toBe(0);
+    expect(planned.output.startsWith(fences(engines, "text")[0]!)).toBe(true);
+    expect(engines).toContain("<QualityEngines />");
   });
 
-  it("is linked from the DuckDB page, which says checks are an error there", () => {
+  it("says where DuckDB and Synapse check rows, as the CLI reports it", () => {
+    const layers = prose(section(page, "## Say which layers check [#layers]"));
+    expect(layers).toContain(
+      "DuckDB and Synapse run checks only in a layer whose `does` lists `check` or is `raw`",
+    );
+    expect(layers).toContain("Databricks checks them as it always has");
+
+    // Databricks checks the quality example's expectation; it is in a layer that checks.
+    expect(plan(exampleFolder("quality"), "flows/readings.yaml", "readings")).not.toContain(
+      "error",
+    );
+
+    // The DuckDB starter's layers say nothing of checking.
+    const duckdb = plan(exampleFolder("duckdb"), "flows/orders.yaml", "orders");
+    expect(duckdb).toContain("error  METHOD_CHECK");
+    expect(duckdb).toContain("DuckDB checks rows only in a layer whose does lists check");
+    expect(duckdb).toContain(
+      "The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.",
+    );
+    expect(layers).toContain("`METHOD_CHECK`");
+
+    // The Synapse example's layers check; without their duties, its rules are not applied.
+    const checked = plan(exampleFolder("synapse-views"), "flows/erp.yaml", "customers");
+    expect(checked).not.toContain("error");
+    expect(checked).not.toContain("NOT_APPLIED");
+    const folder = copy("synapse-views");
+    const standard = join(folder, "standard.yaml");
+    const text = readFileSync(standard, "utf8");
+    const duties = /^layers:\n(?: {2}- .*\n(?: {4}.*\n)*)+/m.exec(text)?.[0];
+    expect(duties, "the example's layers").toBeDefined();
+    writeFileSync(standard, text.replace(duties!, ""));
+    const synapse = plan(folder, "flows/erp.yaml", "customers");
+    expect(synapse).not.toContain("error");
+    expect(synapse).toContain(
+      "The notNull rule isn't applied on synapse: it is applied only in a layer whose does lists check.",
+    );
+    expect(synapse).toContain("Add `check` to the layer's `does` to apply it here.");
+  });
+
+  it("says nothing checks a table that ends at the landed files", () => {
+    const landing = plan(exampleFolder("landing-only"), "flows/erp.yaml", "customers");
+    expect(landing).not.toContain("error");
+    expect(landing).toContain(
+      'Expectation "has_rows" isn\'t applied on adf: the table ends at the landed files, and nothing checks them.',
+    );
+    expect(prose(read("platforms/landing-only.mdx"))).toContain(
+      "each contract quality rule and flow expectation on these tables is",
+    );
+  });
+
+  it("is linked from the DuckDB page, which says where checks run there", () => {
     const duckdb = read("platforms/duckdb.mdx");
-    expect(duckdb).toContain("DuckDB tables check no rows yet");
-    expect(duckdb).toContain("(/docs/how-to/add-quality-checks)");
+    expect(prose(duckdb)).toContain(
+      "DuckDB checks rows only in a layer whose `does` lists `check`",
+    );
+    expect(duckdb).toContain("(/docs/how-to/add-quality-checks#duckdb)");
   });
 });
 
@@ -310,7 +347,7 @@ describe("platforms/databricks", () => {
     // Deploying as one identity: a shared root_path, and binding what another identity deployed.
     const identity = section(deployPage, "### Deploy as one identity");
     expect(identity).toContain(
-      '<Example name="environments" file="platform.yaml" pick="workspace" />',
+      '<Example name="environments" file="platform.yaml" pick="databricks" />',
     );
     expect(fences(identity, "sh")[0]).toContain(
       "databricks bundle deployment bind <key> <id> -t prod",
@@ -318,7 +355,7 @@ describe("platforms/databricks", () => {
     const platform = parse(
       readFileSync(join(exampleFolder("environments"), "platform.yaml"), "utf8"),
     );
-    expect(platform.workspace.root_path).toMatch(/^\/Workspace\/Shared\//);
+    expect(platform.databricks.workspace.root_path).toMatch(/^\/Workspace\/Shared\//);
     expect(section(page, "## Deploy and run")).toContain("(/docs/platforms/databricks-deploy)");
     const ci = section(deployPage, "### From CI");
     expect(ci).toContain('file="github-actions/deploy-environment.yml"');

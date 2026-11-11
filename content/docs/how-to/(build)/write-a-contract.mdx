@@ -34,7 +34,9 @@ Ingestron reads:
 - for the table: the schema entry's `description`, for the table's comment,
   and its `quality` rules;
 - the table's and each column's `tags`, and each column's `classification`,
-  which it keeps for packs that tag tables.
+  which it keeps for packs that tag tables, and which choose masks and row
+  filters;
+- the contract's `roles`, who may use its tables, which a pack can grant.
 
 [Data contract](/docs/reference/documents#data-contract) lists every ODCS
 field.
@@ -43,9 +45,10 @@ What each pack does with a field, or why it does not yet, is on its page:
 [Databricks](/docs/reference/packs/databricks#contract-fields),
 [Azure Data Factory](/docs/reference/packs/adf#contract-fields),
 [Synapse](/docs/reference/packs/synapse#contract-fields) and
-[DuckDB](/docs/reference/packs/duckdb#contract-fields). A contract field that
-no pack of your standard uses yet is a
-[warning](/docs/reference/errors#CONTRACT_FIELD_UNUSED) at that field.
+[DuckDB](/docs/reference/packs/duckdb#contract-fields). A field is judged for
+each table that uses the contract, against the pack that keeps that table. A
+field that pack does not apply yet is
+[not applied here](/docs/concepts/not-applied), a warning at that field.
 
 ## Give each column a type
 
@@ -82,15 +85,15 @@ When a column has a different name at the source, write that name as its
 - `primaryKey: true` marks the table's key. With several key columns,
   `primaryKeyPosition` orders them. The key is what `upsert` and `history`
   keep the current row by; see [Keep a table current](/docs/how-to/keep-a-table-current).
-- `required: true` says the column always has a value. Where the pack checks
-  rows, a required column gets a check that it is not null, with the
-  standard's `quality.required` action; see
+- `required: true` says the column always has a value. A required column
+  gets a check that it is not null, with the standard's `quality.required`
+  action, run where the table's layer checks rows; see
   [Check data quality](/docs/how-to/add-quality-checks).
 
 ## Rules about the data
 
-Where the pack checks rows, these become checks on each row, with the
-standard's `quality.default` action:
+These become checks on each row, with the standard's `quality.default`
+action, run where the table's layer checks rows:
 
 - A column's `logicalTypeOptions`: `minLength` and `maxLength`, `pattern`,
   `minimum`, `maximum`, `exclusiveMinimum` and `exclusiveMaximum`,
@@ -104,18 +107,37 @@ standard's `quality.default` action:
 
 Other rules compare a count over all rows, such as a row count or a share of
 nulls, which a check of one row cannot. So does `unique: true`, which says no
-value repeats. Where the pack checks rows, these run after each refresh when
-the platform turns on `manage.checks`. Otherwise, and always for a `custom`
-rule, each `quality` rule is a
-[warning](/docs/reference/errors#QUALITY_RULE_NOT_CHECKED) and stays as
-documentation.
+value repeats. These are **table checks**, counted once the table is built.
+DuckDB and Synapse count them in their own run, wherever the table's layer
+checks rows. Databricks counts them after each refresh only when the platform
+turns on `databricks.manage.checks`; otherwise each is
+[`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF), a warning with a
+fix that turns it on.
+
+A rule no engine could check as written, such as a `custom` rule, which
+only another engine could run, or one with no comparison, is
+[`QUALITY_RULE_NOT_CHECKED`](/docs/reference/errors#QUALITY_RULE_NOT_CHECKED),
+a warning, and stays as documentation. A `text` rule is documentation and is
+never reported. What each engine applies is in
+[Check data quality](/docs/how-to/add-quality-checks#engines).
+
+A contract says what the data must hold, not how to tidy it: trimming text or
+converting time zones belongs to the table that cleanses it; see
+[Cleanse data in the right layer](/docs/how-to/cleanse-data).
 
 ## Tags and classification
 
 A table's `tags`, a column's `tags` and its `classification` are kept for
 packs that tag tables. Databricks sets them as Unity Catalog tags after each
-refresh when the platform turns on `manage.tags`; see
+refresh when the platform turns on `databricks.manage.tags`; see
 [Databricks contract fields](/docs/reference/packs/databricks#contract-fields).
+The classification is set under the key the standard's
+`governance.classification.tag` gives, `classification` by default.
+
+A column's classification also chooses its mask, from the standard's
+`governance.masks`, and a row filter can match a column by its tag or its
+classification. The contract's `roles` say who may use its tables. See
+[Grant access, mask columns and filter rows](/docs/how-to/grant-access).
 
 ## Draft from a sample [#draft-from-a-sample]
 

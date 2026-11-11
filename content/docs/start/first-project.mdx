@@ -84,6 +84,11 @@ Run **Ingestron: Plan**. The output appears in the **Ingestron** output panel.
 You should see:
 
 ```text
+Not applied on this platform
+dev:
+contracts/orders.yaml:11:59  warning  NOT_APPLIED
+  The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.
+  Add `check` to the layer's `does` to apply it here.
 duckdb → build/duckdb (dev)
 create    dev/README.md
 create    dev/run.sql
@@ -96,6 +101,15 @@ create    dev/tables/silver.customer_totals.sql
 Each platform's files go to one folder, here `build/duckdb/`, with a folder
 for each environment that DuckDB runs: `dev` is the project's one environment.
 Plan writes nothing: it shows what `apply` would write.
+
+The warning above is about the contract you meet in step 5. It says every
+order has an `order_id` (`required: true`), and DuckDB checks rows only in a
+layer whose `does` says it checks them. This starter's layers say nothing
+about what they do, so DuckDB builds the tables without that check, and every
+command says so. A warning never stops a run.
+[Not applied here](/docs/concepts/not-applied) explains these warnings, and
+[Cleanse data in the right layer](/docs/how-to/cleanse-data) starts from a
+standard whose layers check their rows.
 
 ## 3. Apply
 
@@ -124,6 +138,11 @@ file generated for it and its full name:
 </ToolSteps>
 
 ```text
+Not applied on this platform
+dev:
+contracts/orders.yaml:11:59  warning  NOT_APPLIED
+  The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.
+  Add `check` to the layer's `does` to apply it here.
 duckdb → build/duckdb (dev)
 create    dev/README.md
 create    dev/run.sql
@@ -251,6 +270,11 @@ Plan shows each changed line: the `channel` column is read, cast and
 published. A reviewer sees the same change in a pull request.
 
 ```text
+Not applied on this platform
+dev:
+contracts/orders.yaml:11:59  warning  NOT_APPLIED
+  The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.
+  Add `check` to the layer's `does` to apply it here.
 duckdb → build/duckdb (dev)
 update    dev/run.sql
           @@ -5,5 +5,5 @@
@@ -313,6 +337,11 @@ ingestron plan
 ```
 
 ```text
+Not applied on this platform
+dev:
+contracts/orders.yaml:11:59  warning  NOT_APPLIED
+  The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.
+  Add `check` to the layer's `does` to apply it here.
 duckdb → build/duckdb (dev)
 conflict  dev/run.sql
           Changed by hand since it was generated. Move the change into the definitions, or delete the file to generate it again.
@@ -330,6 +359,11 @@ ingestron apply
 ```
 
 ```text
+Not applied on this platform
+dev:
+contracts/orders.yaml:11:59  warning  NOT_APPLIED
+  The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.
+  Add `check` to the layer's `does` to apply it here.
 duckdb → build/duckdb (dev)
 create    dev/run.sql
 

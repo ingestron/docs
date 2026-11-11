@@ -2,7 +2,8 @@
 
 The web shop's orders and customers are copied from Azure SQL by ADF, and
 DuckDB builds the tables (`packs: [duckdb@2, adf@2]`), as in the DuckDB
-example. On top, two **data products**, each an Open Data Product Standard
+example: `bronze` keeps the rows as they arrived and only counts its checks,
+and `silver` checks its rows. On top, two **data products**, each an Open Data Product Standard
 file in `products/`:
 
 - `customers` publishes the customers table (contract `shop.customers`), owned
@@ -31,6 +32,15 @@ it is for, which table it is in this environment and where, its columns and
 which are sensitive, its quality checks, how fresh it is, who may use it, its
 lineage as a diagram, and the governance rules it meets. It is generated with
 the pipelines, so it is always up to date.
+
+DuckDB has no users or permissions, so it cannot grant `marketing-analysts`
+access to `customers`. Planning says so, as a `NOT_APPLIED` warning on the
+contract's role. The platform team has decided to live with it: who may read
+the published files is set on the storage account. So `platform.yaml` accepts
+the warning, with that reason, in its `accept` list. The plan then prints
+`1 accepted warning (platform.yaml)` in place of the warning. Accepting a
+warning does not grant anything: the passport's "Who may use it" still says
+`Not enforced on DuckDB: DuckDB has no access control.`
 
 The `local` environment runs the same tables on a laptop with DuckDB, from a
 load's files in `./samples/`, and gets its own passports.

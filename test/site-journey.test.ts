@@ -46,7 +46,9 @@ it("opens with one learning path, then areas by the reader's job, with no index 
     "write-a-transform",
     "keep-a-table-current",
     "add-quality-checks",
+    "cleanse-data",
     "define-a-data-product",
+    "grant-access",
     "add-an-environment",
     "plan-and-generate",
     "check-in-ci",
@@ -54,8 +56,13 @@ it("opens with one learning path, then areas by the reader's job, with no index 
   ]);
   expect(JSON.parse(read("how-to/(standards)/meta.json")).pages).toEqual([
     "configure-a-standard",
+    "choose-a-published-standard",
+    "start-from-a-published-standard",
+    "upgrade-a-standard",
+    "kits",
     "name-things-your-way",
     "ask-the-platform-team",
+    "accept-a-warning",
     "share-a-template",
     "upgrade",
   ]);
@@ -64,6 +71,7 @@ it("opens with one learning path, then areas by the reader's job, with no index 
     "standards-and-packs",
     "settings",
     "layers",
+    "not-applied",
     "environments-and-platform",
     "yaml-references",
     "generated-files",
@@ -88,6 +96,7 @@ it("opens with one learning path, then areas by the reader's job, with no index 
   ]);
   expect(JSON.parse(read("reference/meta.json")).pages).toEqual([
     "documents",
+    "intent",
     "packs",
     "errors",
     "cli",

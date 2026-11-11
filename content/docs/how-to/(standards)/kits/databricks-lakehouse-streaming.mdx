@@ -1,0 +1,112 @@
+---
+title: Streaming lakehouse on Databricks
+description: A published standard for Databricks. Streaming tables that read each new file once, silver cleansed, checked and kept to the latest row per key, gold materialised views, and a refresh job retried and alerted on failure. Contract roles are granted, and confidential and restricted columns masked.
+---
+
+<KitFacts id="databricks/lakehouse-streaming" />
+
+A web shop's files become three layers in Databricks: `bronze.customers`, a row
+each time a customer is exported, with the values that do not fit kept aside;
+`silver.orders`, the latest row per order, from change records, cleansed and
+checked; and `gold.daily_sales`, totals per customer and day. One Lakeflow
+pipeline builds them, and one job refreshes it each day, tries again when it
+fails, and mails your team when it still fails. The contracts name who may
+read `silver.orders` and `gold.daily_sales`, and the customers' email and phone
+number are masked for everyone but the people who run the pipeline.
+
+## Start from it
+
+From the folder that will hold the project:
+
+```sh
+ingestron init shop --kit databricks/lakehouse-streaming@2026-11-10
+```
+
+Then write each value that is still `REPLACE_ME`, below, and plan; see
+[Start from a published standard](/docs/how-to/start-from-a-published-standard)
+and [Deploy the Databricks bundle](/docs/platforms/databricks-deploy).
+
+## What to write [#replace-me]
+
+What belongs to your workspace is `REPLACE_ME`. Point at each one (or tap it
+on a touch screen) to see the field it fills, where to find the value, and a
+suggestion; in VS Code, hover it. The platform holds who is told of failures,
+who the contracts' role `shop-analysts` is (`principals`), and the
+`databricks:` section, which also turns on tags, grants and masks and names
+the schema for the mask functions:
+
+<KitFile id="databricks/lakehouse-streaming" file="platform.yaml" />
+
+`project.yaml` holds the two groups the `databricks:` section's permissions
+read, one that manages the pipeline and job and one that may view them, and
+what differs between `dev` and `prod`: each workspace's address, and the
+volume the shop's files land in:
+
+<KitFile id="databricks/lakehouse-streaming" file="project.yaml" />
+
+## The standard
+
+<KitFile id="databricks/lakehouse-streaming" file="standard.yaml" />
+
+Each table starts from its layer's intent. `customers` lands in `bronze`, the
+first layer; the orders flow says `layer: silver`, and gives the column that
+orders its changes and the condition for a delete. Each value, and where it
+came from:
+
+<KitIntent id="databricks/lakehouse-streaming" />
+
+Each layer also says what it does with its rows, in
+[`does`](/docs/concepts/layers#what-a-layer-does). `bronze` does
+`raw`: it keeps every row as it arrived, and its checks only count. `silver`
+does `cleanse`, `deduplicate`, `check` and `quarantine`: the standard's
+`cleanse` trims its text and turns an empty text into null, `required: drop`
+leaves out a change missing a required value, and `quarantine: true` keeps it
+in `silver.orders_quarantine`. `silver.orders` does not deduplicate: AUTO CDC
+already keeps one row per order. `gold` does `check`, so `gold.daily_sales`
+leaves out rows that fail its checks; its SQL trims the emails it reads from
+`bronze.customers` and leaves out customers with no id or email itself.
+
+What the Databricks pack does with each value, with each feature's release
+level and the date it was checked, is in
+[the Databricks pack's intent](/docs/reference/packs/databricks#intent), and
+its checks and cleansing in
+[Quality and cleansing](/docs/reference/packs/databricks#quality-and-cleansing).
+With `features: ga`, Ingestron warns about any value that needs a feature in
+preview ([`PREVIEW_FEATURE`](/docs/reference/errors#PREVIEW_FEATURE)). The
+standard writes none: the job alerts on failure but not on slow runs, because
+Databricks' run duration alert is in Public Preview.
+
+## Who reads what [#governance]
+
+The standard's `governance` section says how data is classified and protected,
+and the Platform turns each part on:
+
+- `classification` lists the classes a column may have, and `sensitive` names
+  the two that need care, `confidential` and `restricted`.
+  `contracts/customers.yaml` classifies `email` as `confidential` and `phone`
+  as `restricted`; `contracts/daily_sales.yaml` classifies its `email` too.
+  Ingestron sets each class as a tag on its column.
+- `access: grants: additive` grants each table the roles its contract names, as
+  `GRANT SELECT`, and never takes a privilege away. The orders and sales
+  contracts name the role `shop-analysts`; `principals` in `platform.yaml` says
+  which group that is. `exact` would also revoke the direct grants a contract
+  does not give.
+- `masks` hides a class: `confidential: hash` shows a hash of the text, and
+  `restricted: "null"` shows null. Each is a Unity Catalog column mask policy
+  that matches the class tag, and exempts the `run_as` identity and the groups
+  in `unmasked`, here `engineers`, so the pipeline never reads masked data.
+- `bronze` has `access: { contract: false }`: no contract role is granted on a
+  raw table, which is for the engineers who load it.
+
+Masks need governed tags, which an account administrator creates;
+`ingestron request` lists them, and the schema of the mask functions, with
+what `run_as` needs on each. Readers need serverless compute or Databricks
+Runtime 16.4 or later. See
+[Grant access, mask columns and filter rows](/docs/how-to/grant-access) for
+exact grants, row filters and where the policies go.
+
+## Why each choice
+
+In your project, `STANDARD.md` explains each section of the standard on
+Databricks, and links the Databricks pages each was checked against, with the
+date.

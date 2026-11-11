@@ -19,7 +19,8 @@ then [deploy the generated bundle](/docs/platforms/databricks-deploy#deploy).
 
 Without a platform document, or where it leaves a setting out, the Databricks
 pack uses these defaults. Each target of the bundle gets its environment's
-`mode`, workspace, `run_as` and `permissions`. Without `run_as`, the pipelines and jobs run as the
+`mode`, workspace, `run_as` and `permissions`, from the platform's
+`databricks:` section. Without `run_as`, the pipelines and jobs run as the
 identity that deploys the bundle, and without `schedule`, nothing runs on a
 schedule.
 
@@ -27,30 +28,165 @@ schedule.
 
 <Example name="platform-setup" file="platform.yaml" />
 
-Only enable management of shared resources when this project owns them. The
-following capability reference describes each switch and its prerequisites.
+`schedule`, `tags` and `alerts` stay at the top of the platform, where every
+pack that runs jobs reads them. Only enable management of shared resources
+when this project owns them. The following capability reference describes
+each switch and its prerequisites.
+
+### The `databricks:` section [#platform]
+
+What only Databricks reads goes in the platform's `databricks:` section. Each
+field says where to find its value, and what it could look like; the editor's
+hover says the same.
+
+<PlatformSection pack="databricks" />
+
+Written at the top of the platform, as before 2.3, `workspace`, `mode`,
+`run_as`, `compute`, `permissions`, `manage` and `grants` still work, with a
+[`PLATFORM_FIELD_MOVED`](/docs/reference/errors#PLATFORM_FIELD_MOVED) warning
+whose fix moves each into the section. `notifications.on_failure` becomes an
+email alert in `alerts`.
 
 ## Platform prerequisites
 
 Some features change shared Unity Catalog objects, so the platform turns each
-on with a `manage` switch. While a switch is off, a definition or contract that
+on with a `databricks.manage` switch. While a switch is off, a definition or contract that
 uses the feature gets a `CAPABILITY_OFF` warning with a quick fix that turns it
 on. When a switch is on, the bundle has a `prerequisites/<environment>.sql` for
 each environment, which lists the grants to run once there as an
 administrator; it is not deployed.
 
-Tags, column comments and table checks run in an `apply_contract` task after
-the refresh, on serverless jobs compute: Lakeflow pipelines cannot set tags or
-column comments, nor compare counts over all rows. With no schedule, the job
-is still generated, to run on demand.
+Tags, column comments, table checks, grants, masks and row filters run in an
+`apply_contract` task after the refresh, on serverless jobs compute, as the
+`run_as` identity: Lakeflow pipelines cannot set tags or column comments, nor
+compare counts over all rows. With no schedule, the job is still generated,
+to run on demand. Masks and row filters match columns by their tags, so they
+need `databricks.manage.tags` too; see [Access](#access).
 
 <PackCapabilities pack="databricks" />
 
 ## Contract fields
 
-What this pack does with each field of a table's contract. When a contract
-writes a field that no pack of the standard uses yet, Ingestron warns at that
-field with the reason below; **Elsewhere** fields are handled by another pack
-or step and never warn.
+What this pack does with each field of a table's contract. A field is judged
+for each table, against the pack that keeps it. When a contract writes a field
+this pack does not apply yet, on a table this pack keeps, Ingestron warns at
+that field with [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED) and the
+reason below; **Elsewhere** fields are handled by another pack or step and
+never warn.
 
 <ContractUseTable pack="databricks" />
+
+## Intent [#intent]
+
+What this pack does with each value of [intent](/docs/reference/intent), from
+the pack itself. A value the pack does not apply, **Not yet** or **Not
+applicable**, is a [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED) warning
+where it is written, with the reason below. **Elsewhere** values are applied by
+another pack or step and never warn. **Release** is the Databricks feature's
+own release level, as the linked page said on the date checked; with
+`features: ga`, a feature in preview is a
+[`PREVIEW_FEATURE`](/docs/reference/errors#PREVIEW_FEATURE) warning.
+
+<IntentSupport pack="databricks" />
+
+Its checks, cleansing and quarantine are in
+[Quality and cleansing](#quality-and-cleansing).
+
+## Quality and cleansing [#quality-and-cleansing]
+
+What this pack does with each check, action and cleansing operation, from the
+pack itself. Each row links the Databricks page it was checked against, with
+the date; the pack's
+[sources](https://github.com/ingestron/pack-databricks/blob/main/spec/references.md#quality-and-cleansing)
+list every page it writes SQL from.
+
+<IntentSupport pack="databricks" part="quality" />
+
+- **Where checks run.** Each check is a constraint on the table's own SQL
+  file, in every layer: `EXPECT` for `warn`, `ON VIOLATION DROP ROW` for
+  `drop` and `ON VIOLATION FAIL UPDATE` for `fail`. In a layer whose `does`
+  leaves out `check`, such as `raw`, every action is `warn`, so the checks only
+  count. The pipeline's update shows each one's failing rows.
+- **Table checks** run in the `apply_contract` task after each refresh, only
+  when the platform turns on `databricks.manage.checks`; otherwise each is
+  [`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF). See
+  [Platform prerequisites](#platform-prerequisites).
+- **Quarantine** is Databricks' quarantine pattern: `<table>_quarantine` is
+  built from the same rows, read once, with `_failed_checks`, an array of the
+  checks each row failed.
+- **Results** are the pipeline's event log, published as a table.
+- **Cleansing** is written in the `SELECT` that builds the table's rows; a
+  transform's query is wrapped so cleansing never changes it.
+- **Deduplicate** happens only in a materialised view, with `QUALIFY`. On a
+  streaming table it is
+  [`DEDUPLICATE_MODE`](/docs/reference/errors#DEDUPLICATE_MODE): an error when
+  the table appends, and a warning when its history already keeps one row per
+  key.
+- **Lakeflow Connect** writes the table as the source gives it: its row
+  checks, their actions, quarantine, cleansing and deduplicate are not
+  applied, and the hint says to check and cleanse it in a transform in the
+  next layer. Its table checks still run in the `apply_contract` task, and the
+  event log still keeps the results.
+
+## Access [#access]
+
+What this pack does with each role, grant mode, mask and row filter, from the
+pack itself. Each row links the Databricks page it was checked against, with
+the date; the pack's
+[sources](https://github.com/ingestron/pack-databricks/blob/main/spec/references.md#access)
+list every page it writes SQL from. To set them up, see
+[Grant access, mask columns and filter rows](/docs/how-to/grant-access).
+
+<IntentSupport pack="databricks" part="access" />
+
+- **Switches.** Grants need `databricks.manage.grants`, masks
+  `databricks.manage.masks` and row filters `databricks.manage.filters`, each
+  with what [Platform prerequisites](#platform-prerequisites) lists. Masks
+  and row filters also need `databricks.manage.tags`. While a switch is off,
+  each role, mask or filter it would apply is
+  [`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF), and the files
+  are what they were without it.
+- **Grants** are `GRANT SELECT ON TABLE`, and `MODIFY` too for a role with
+  `access: write`, made after each refresh. A materialised view takes no
+  `MODIFY`, so `write` there is
+  [not applied here](/docs/concepts/not-applied). Each principal is written
+  in backticks, with a backtick in it doubled. With
+  `databricks.manage.schemas`, each principal also gets `USE_SCHEMA` on the
+  schemas the bundle creates.
+- **Exact grants** read `SHOW GRANTS ON TABLE` and revoke what the table's
+  roles do not give. They revoke only privileges granted directly on the
+  project's own tables, and never ownership, a denial, a privilege the table
+  inherits from its schema or catalog, the `run_as` identity's or those of
+  `databricks.governance.unmasked`.
+- **Masks and row filters** are Unity Catalog policies:
+  `ingestron_mask_<classification>` for each masked classification and
+  `ingestron_filter_<name>` for each filter. With `databricks.manage.schemas`
+  on, each is on the schema, which the bundle creates; otherwise each is on
+  the project's own tables, so a shared schema's policies are never changed.
+  Each applies to `account users` except the `run_as` identity and the
+  principals in `databricks.governance.unmasked`. Exempting `run_as` means
+  the pipelines never read masked or filtered data.
+- **Mask functions.** `null`, `hash` and `redact` are functions the task
+  creates in `databricks.governance.functions`, `ingestron_mask_null`,
+  `ingestron_mask_hash` and `ingestron_mask_redact`, only for the masks a
+  table uses. A function of your own named in one part is in that schema too;
+  one named in three parts is used as written.
+- **Stale policies.** After making the policies, the task drops each
+  `ingestron_mask_` or `ingestron_filter_` policy on the project's schemas and
+  tables that it no longer makes, for a switch that is on. Every other policy
+  stays.
+- **Order.** The task sets tags and comments, creates the mask functions,
+  makes the policies and drops the stale ones, and only then grants and
+  revokes, then runs the table checks. If a policy cannot be made, the task
+  fails before it grants anything, so no role it grants reads real values.
+- **Landed files.** Grants, masks and filters apply to the tables Databricks
+  keeps. A table that ends at the landed files, even one another pack serves,
+  gets nothing here, and the landed files themselves keep the values in
+  full: set their access on the storage account.
+- **Limits.** A schema may have 100 policies, a table 50, and a policy may
+  exempt 20 principals; more is
+  [`POLICY_LIMIT`](/docs/reference/errors#POLICY_LIMIT) or
+  [`POLICY_PRINCIPALS`](/docs/reference/errors#POLICY_PRINCIPALS). A table
+  may have one row filter
+  ([`FILTER_MULTIPLE`](/docs/reference/errors#FILTER_MULTIPLE)). Readers need
+  serverless compute or Databricks Runtime 16.4 or later.

@@ -1,0 +1,4 @@
+{
+  "title": "Published standards",
+  "pages": ["duckdb-local-medallion", "databricks-lakehouse-streaming"]
+}

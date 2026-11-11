@@ -147,9 +147,11 @@ Troubleshooting.
 
 <OldAnchor id="what-is-not-checked" />
 
-- **No rows are checked.** Nothing reads the files before your reports do, so
-  each contract quality rule and flow expectation on these tables is reported
-  as not checked (`QUALITY_RULE_NOT_CHECKED`); see
+- **No rows are checked or cleansed.** Nothing reads the files before your
+  reports do, so each contract quality rule and flow expectation on these
+  tables is [not applied here](/docs/concepts/not-applied)
+  ([`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED)), with the hint to add a
+  store step, and so is any cleansing; see
   [Check data quality](/docs/how-to/add-quality-checks).
 - **No transforms.** A transform cannot read a table that ends at the landed
   files: give its flow a store step first.

@@ -1,0 +1,26 @@
+apiVersion: ingestron.io/v1
+kind: Platform
+id: azure
+principals: # the group each contract and layer role is, per environment
+  marketing-analysts: ${values.marketing}
+  finance-analysts: ${values.finance}
+  data-engineers: ${values.engineers}
+settings:
+  adf-copy: # shared infrastructure, referenced by name
+    landing: ${values.landing}/shop
+    key_vault: ${values.key_vault}
+    integration_runtime: AutoResolveIntegrationRuntime
+databricks:
+  workspace:
+    host: ${values.host}
+  run_as: # the pipelines run as this service principal, which always sees real values
+    service_principal_name: 00000000-0000-0000-0000-000000000001
+  manage:
+    schemas: true # the bundle creates the schemas, so policies go on each schema
+    tags: true # set each column's classification and tags, which the policies match
+    grants: true # grant each table's roles after each refresh
+    masks: true # mask the columns whose classification the standard masks
+    filters: true # filter the rows of the tables with a region column
+  governance:
+    functions: ${values.functions}
+    unmasked: [shop-data-stewards] # also sees real values

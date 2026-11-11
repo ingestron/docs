@@ -1,0 +1,15 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: shop.orders
+version: 1.0.0
+status: active
+schema:
+  - name: orders
+    logicalType: object
+    description: Orders placed in the web shop.
+    properties:
+      - { name: order_id, logicalType: integer, primaryKey: true }
+      - { name: customer_id, logicalType: integer, required: true }
+      - { name: region, logicalType: string, tags: [region] }
+      - { name: amount, logicalType: number, physicalType: "DECIMAL(18,2)" }
+      - { name: ordered_at, logicalType: timestamp, required: true }

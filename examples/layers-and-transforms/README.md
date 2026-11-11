@@ -6,8 +6,7 @@
   `transforms/store_sales.sql`, where `{{ tables.sales }}` became
   `` `bronze`.`sales` ``, in the pipeline's catalog.
 - `region_sales` reads `store_sales` and says `layer: gold`.
-  The standard's rule for `layer: gold` turns clustering off and adds a
-  retention property: compare [gold](build/databricks/src/sales/gold/region_sales.sql)
+  The standard's rule for `layer: gold` adds a retention property: compare [gold](build/databricks/src/sales/gold/region_sales.sql)
   with silver.
 
 Transforms are ordered by their inputs, not by file name, and one pipeline

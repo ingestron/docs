@@ -33,7 +33,9 @@ const areas: Record<string, string[]> = {
     "/docs/how-to/write-a-transform",
     "/docs/how-to/keep-a-table-current",
     "/docs/how-to/add-quality-checks",
+    "/docs/how-to/cleanse-data",
     "/docs/how-to/define-a-data-product",
+    "/docs/how-to/grant-access",
     "/docs/how-to/add-an-environment",
     "/docs/how-to/plan-and-generate",
     "/docs/how-to/check-in-ci",
@@ -52,8 +54,14 @@ const areas: Record<string, string[]> = {
   ],
   "Standards and teams": [
     "/docs/how-to/configure-a-standard",
+    "/docs/how-to/choose-a-published-standard",
+    "/docs/how-to/start-from-a-published-standard",
+    "/docs/how-to/upgrade-a-standard",
+    "/docs/how-to/kits/duckdb-local-medallion",
+    "/docs/how-to/kits/databricks-lakehouse-streaming",
     "/docs/how-to/name-things-your-way",
     "/docs/how-to/ask-the-platform-team",
+    "/docs/how-to/accept-a-warning",
     "/docs/how-to/share-a-template",
     "/docs/how-to/upgrade",
   ],
@@ -62,6 +70,7 @@ const areas: Record<string, string[]> = {
     "/docs/concepts/standards-and-packs",
     "/docs/concepts/settings",
     "/docs/concepts/layers",
+    "/docs/concepts/not-applied",
     "/docs/concepts/environments-and-platform",
     "/docs/concepts/yaml-references",
     "/docs/concepts/generated-files",
@@ -69,6 +78,7 @@ const areas: Record<string, string[]> = {
   Connectors: ["/docs/connectors"],
   Reference: [
     "/docs/reference/documents",
+    "/docs/reference/intent",
     "/docs/reference/packs",
     "/docs/reference/packs/databricks",
     "/docs/reference/packs/adf",
@@ -188,7 +198,7 @@ describe("page URLs", () => {
     const built = readFileSync(join(process.cwd(), "test/page-urls.txt"), "utf8")
       .trim()
       .split("\n");
-    expect(built).toHaveLength(127);
+    expect(built).toHaveLength(137);
     expect(
       source
         .getPages()

@@ -21,7 +21,9 @@ export function PackCapabilities({ pack }: { pack: string }) {
           {found.capabilities.map((capability) => (
             <tr key={capability.id} id={`manage-${capability.id}`}>
               <td>
-                <code>manage.{capability.id}</code>
+                <code>
+                  {pack}.manage.{capability.id}
+                </code>
                 <br />
                 {capability.title}
               </td>

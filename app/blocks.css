@@ -205,3 +205,55 @@ figure[data-kind="run"] .line.cmd::before {
   color: var(--brand-signal);
   user-select: none;
 }
+
+/* A value still REPLACE_ME in a kit's file (components/replace-me.tsx): a
+   dashed underline and its note's number mark it, not colour alone, with a
+   light tint. Its tooltip sits above the page; touch screens, which cannot
+   hover, show the notes below the block instead. */
+.replace-me {
+  text-decoration: underline dashed 1px;
+  text-underline-offset: 3px;
+  background: color-mix(in srgb, var(--docs-link) 12%, transparent);
+  border-radius: 2px;
+  cursor: help;
+}
+.replace-me::after {
+  content: attr(data-note);
+  margin-left: 0.15em;
+  font-size: 0.7em;
+  vertical-align: super;
+  line-height: 0;
+}
+.replace-me:focus-visible {
+  outline: 2px solid var(--docs-link);
+  outline-offset: 2px;
+}
+.replace-me-tip {
+  position: fixed;
+  z-index: 60;
+  max-width: min(24rem, calc(100vw - 16px));
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.5rem;
+  background: var(--color-fd-popover);
+  color: var(--color-fd-popover-foreground);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.replace-me-line {
+  display: block;
+  margin-top: 0.3rem;
+}
+.prose .replace-me-notes {
+  display: none;
+  font-size: 0.9rem;
+}
+.replace-me-where {
+  color: var(--color-fd-muted-foreground);
+}
+@media (hover: none), print {
+  .prose .replace-me-notes {
+    display: block;
+  }
+}

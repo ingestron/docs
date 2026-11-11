@@ -1,0 +1,21 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: shop.regional_sales
+version: 1.0.0
+status: active
+schema:
+  - name: regional_sales
+    logicalType: object
+    description: Revenue and orders per day and region.
+    properties:
+      - { name: order_day, logicalType: date, primaryKey: true }
+      - { name: region, logicalType: string, primaryKey: true, tags: [region] }
+      - { name: orders, logicalType: integer }
+      - { name: revenue, logicalType: number, physicalType: "DECIMAL(18,2)" }
+roles:
+  - role: finance-analysts
+    access: read
+    description: Revenue reporting
+  - role: marketing-analysts
+    access: read
+    description: Campaign results by region

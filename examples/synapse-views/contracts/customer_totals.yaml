@@ -10,3 +10,7 @@ schema:
     properties:
       - { name: customer_id, logicalType: integer, required: true, primaryKey: true }
       - { name: total, logicalType: number, physicalType: "DECIMAL(18,2)" }
+roles:
+  - role: finance-analysts
+    access: read
+    description: Monthly revenue reporting

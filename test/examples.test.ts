@@ -44,13 +44,32 @@ describe("examples", () => {
   }, 30_000);
   it("lists every sample with a title, summary and the facts found by resolving it", () => {
     const examples = listExamples();
-    expect(examples).toHaveLength(26);
+    expect(examples).toHaveLength(27);
     for (const example of examples) {
       expect(example.title, example.name).not.toBe("");
       expect(example.summary, example.name).toMatch(/\.$/);
       expect(example.facts.packs.length, example.name).toBeGreaterThan(0);
     }
   });
+
+  it("checks the rows of the guides that keep tables on DuckDB and Synapse, by their layers' duties", () => {
+    for (const name of ["duckdb-local", "data-products", "synapse-views"]) {
+      expect(readExampleFile(name, "standard.yaml"), name).toContain("does: raw");
+      const cwd = mkdtempSync(join(tmpdir(), `docs-duties-${name}-`));
+      cpSync(exampleFolder(name), cwd, { recursive: true });
+      let output = "";
+      expect(run(["apply", "--no-diff"], { cwd, write: (text) => (output += text) }), name).toBe(0);
+      expect(output, name).not.toContain("NOT_APPLIED");
+    }
+    // The passport says what checks each table, and no check goes unenforced.
+    const passport = readExampleFile("data-products", "build/products/dev/customers.md");
+    const quality = passport.slice(passport.indexOf("## Quality"), passport.indexOf("## Fresh"));
+    expect(quality).toContain("Counted only by DuckDB");
+    expect(quality).not.toContain("Not enforced");
+    // The role DuckDB cannot grant is accepted, and the passport still says so.
+    expect(readExampleFile("data-products", "platform.yaml")).toContain("feature: grants");
+    expect(passport).toContain("Not enforced on DuckDB: DuckDB has no access control.");
+  }, 30_000);
 
   it("keeps an empty folder the example needs, such as DuckDB's published folder", () => {
     const files = exampleFiles("duckdb-local");

@@ -1,7 +1,8 @@
 apiVersion: ingestron.io/v1
 kind: Connection
 id: sensors
+description: The CSV files the sensor gateways drop, read by Databricks and DuckDB.
 connector: files
 connectivity: public
 settings:
-  path: /Volumes/dev/landing/iot
+  path: abfss://drop@iotlab.dfs.core.windows.net/sensors

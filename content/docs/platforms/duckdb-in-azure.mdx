@@ -50,7 +50,9 @@ factory's managed identity:
 The job's `run.sql` reads and writes `abfss://` paths only, so it runs in
 Azure. It reads each table's landed file, `abfss://landing@…`, at the end of
 its first line, and publishes each table to `abfss://published@…` at the end
-of the last ones:
+of the last ones. `bronze` keeps its rows as they arrived, so the run only
+counts its check of the required `invoice_id`, and prints the count to the
+job's log:
 
 <Example
   name="duckdb-local"
@@ -288,8 +290,12 @@ When the parent pipeline fails, see
 
 ## Limits [#limits]
 
-DuckDB tables check no rows yet, so a flow's `expectations` are an error; see
-[Check data quality](/docs/how-to/add-quality-checks).
+DuckDB checks rows only in a layer whose `does` lists `check`, or counts them
+in a `raw` one; see
+[Check data quality](/docs/how-to/add-quality-checks#duckdb). The job's log
+shows each check's failing rows, and a `fail` check's message when it stops
+the run. Each run starts with an empty database, so a quarantine table and
+`_ingestron_checks` last only for that run: read the log instead.
 
 ### What has run in Azure
 

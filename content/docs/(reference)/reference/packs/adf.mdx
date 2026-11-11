@@ -45,12 +45,46 @@ once it is deployed.
 
 ## Contract fields
 
-What this pack does with each field of a table's contract. When a contract
-writes a field that no pack of the standard uses yet, Ingestron warns at that
-field with the reason below; **Elsewhere** fields are handled by another pack
-or step and never warn.
+What this pack does with each field of a table's contract. A field is judged
+for each table, against the pack that keeps it. When a contract writes a field
+this pack does not apply yet, on a table this pack keeps, Ingestron warns at
+that field with [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED) and the
+reason below; **Elsewhere** fields are handled by another pack or step and
+never warn.
 
 <ContractUseTable pack="adf" />
+
+## Intent [#intent]
+
+What this pack does with each value of [intent](/docs/reference/intent), from
+the pack itself. ADF lands files, so what a table keeps is the store pack's. A value the pack does not apply, **Not yet** or
+**Not applicable**, is a [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED)
+warning where it is written, with the reason below. **Elsewhere** values are
+applied by another pack or step and never warn.
+
+<IntentSupport pack="adf" />
+
+Its checks, cleansing and quarantine are in
+[Quality and cleansing](#quality-and-cleansing).
+
+## Quality and cleansing [#quality-and-cleansing]
+
+ADF lands the files as the source gives them, and checks and cleanses nothing.
+On a table stored by another pack, that pack does the work. On a table that
+ends at the landed files, each check, cleansing operation and quarantine is
+[not applied here](/docs/concepts/not-applied), with the hint to add a store
+step.
+
+<IntentSupport pack="adf" part="quality" />
+
+## Access [#access]
+
+ADF lands files and keeps no table, so it grants, masks and filters nothing.
+Access to the landed files is set on the storage account. A table another
+pack stores is judged by that pack; a table that ends at the landed files has
+no access to judge, unless a view serves it.
+
+<IntentSupport pack="adf" part="access" />
 
 ## Native configuration sources
 
