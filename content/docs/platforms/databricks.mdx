@@ -168,7 +168,7 @@ create    src/retail/silver/daily_sales.sql
 
 For the project created without `--set`, plan first warns about each value
 still `REPLACE_ME`, then lists the same files, and ends
-`8 values are still REPLACE_ME; ingestron check fails until each is written.`:
+`8 places are still REPLACE_ME; ingestron check fails until each is written.`:
 it counts each place a value is written, where `init` counts names. Plan and
 apply still write the files, and `ingestron check` fails until each is
 written. Run `ingestron apply` to write them. If plan reports a problem

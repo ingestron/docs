@@ -15,7 +15,7 @@ steps:
       version: 22.x
   # An exact version: change it when you upgrade, as
   # https://docs.ingestron.io/docs/how-to/upgrade#choose-the-version-you-run says.
-  - script: npm install -g ingestron@2.3.0
+  - script: npm install -g ingestron@2.3.1
     displayName: Install Ingestron
   - script: ingestron check
     displayName: ingestron check

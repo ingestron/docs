@@ -39,8 +39,11 @@ const joined = (text: string) =>
   );
 
 /** The page's request command, run in a folder: its exit code and output. */
-const request = (page: string, cwd: string) =>
-  cli(cwd, command(commands(section(page, "## What each route asks for")), "request"));
+const request = (page: string, cwd: string, environment?: string) => {
+  const args = command(commands(section(page, "## What each route asks for")), "request");
+  if (environment) args[args.indexOf("--env") + 1] = environment;
+  return cli(cwd, args);
+};
 
 /** The `shop` project the request guide creates from the minimal starter, with its own commands. */
 function shop(page: string): string {
@@ -124,17 +127,16 @@ describe("how-to/ask-the-platform-team", () => {
     expect(values).toContain("`.env.dev`");
   });
 
-  it("is only the title and one line when the definitions have problems, and exits with 1", () => {
+  it("lists the errors when the definitions have problems, as the page shows, and exits with 1", () => {
     const problems = section(page, "## When the definitions have problems");
-    const cwd = shop(page);
-    const connection = join(cwd, "connections/shop.yaml");
-    writeFileSync(
-      connection,
-      readFileSync(connection, "utf8").replace("connector: files", "connector: nothing"),
-    );
-    const broken = request(page, cwd);
+    // The page's example: an environment the project does not declare. Its block holds a
+    // fenced block, so it is fenced with four backticks.
+    const shown = /^````text\n([\s\S]*?)^````$/m.exec(problems)?.[1];
+    expect(shown, "the four-backtick text block").toBeDefined();
+    expect(problems).toContain("For an environment the project does not declare:");
+    const broken = request(page, shop(page), "nope");
     expect(broken.code).toBe(1);
-    expect(broken.output.trim()).toBe(fences(problems, "text")[0]!.trim());
+    expect(broken.output.trim()).toBe(shown!.trim());
     expect(problems).toContain("exits with `1`");
   });
 });
@@ -324,7 +326,7 @@ describe("how-to/upgrade", () => {
 
   it("pins the exact bundle these pages describe, as the templates install it", () => {
     // The ingestron bundle these pages describe: the installed cli's version.
-    const bundle = "2.3.0";
+    const bundle = "2.3.1";
     const choose = section(page, "## Choose the version you run");
     const version = JSON.parse(
       readFileSync(join(process.cwd(), "node_modules/@ingestron/cli/package.json"), "utf8"),

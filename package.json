@@ -23,9 +23,9 @@
     "sync:vscode": "node scripts/sync-vscode-commands.mjs"
   },
   "dependencies": {
-    "@ingestron/authoring": "^2.3.0",
-    "@ingestron/cli": "^2.3.0",
-    "@ingestron/core": "^1.1.0",
+    "@ingestron/authoring": "^2.3.1",
+    "@ingestron/cli": "^2.3.1",
+    "@ingestron/core": "^1.1.1",
     "@ingestron/definitions": "^1.13.0",
     "@ingestron/pack-adf": "^2.3.0",
     "@ingestron/pack-databricks": "^2.3.0",

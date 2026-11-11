@@ -192,17 +192,27 @@ how to supply them in CI.
 
 ## When the definitions have problems
 
-Any other error stops the request. The request is then only its title and
-one line, and the command exits with `1`:
+Any other error stops the request. The request is then its title, a note and
+each error, written as `ingestron plan` writes a problem, and the command
+exits with `1`. For an environment the project does not declare:
+
+````text
+# Platform request (nope)
+
+The definitions have problems; fix them first:
 
 ```text
-# Platform request (dev)
-
-The definitions have problems; fix them first.
+project.yaml:7:3  error  UNKNOWN_ENVIRONMENT
+  Environment "nope" is not declared in project.yaml.
+  Declared environments: dev.
 ```
+````
 
-Run `ingestron plan` to see the problems. Unset variables alone never do
-this: with nothing else wrong, the command exits with `0`.
+The request reads the value of each variable that is set, so it can find an
+error that `ingestron plan` does not: a value the deploying pipeline supplies,
+written in your environment, that its setting does not accept. Unset variables
+alone never stop the request: with nothing else wrong, the command exits with
+`0`.
 
 ## Next
 
