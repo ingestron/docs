@@ -9,6 +9,7 @@ import type { TOCItemType } from "fumadocs-core/toc";
 import { parse } from "yaml";
 import { exampleFiles, listExamples, readExampleFile } from "./examples";
 import { connectorEntries, packName, type ConnectorEntry } from "./reference";
+import { connectorRecipes } from "./recipes";
 import { routeGuides } from "./routes";
 
 /** What a part of the page shows after its words. */
@@ -388,6 +389,18 @@ export function connectorSections(id: string): Section[] {
       items: [],
     },
     ...entries.flatMap((entry) => [connectSection(entry), readSection(id, entry)]),
+    ...(connectorRecipes(id).length > 0
+      ? [
+          {
+            id: "source-metadata",
+            title: "Source metadata",
+            before: [
+              `Ingestron never connects to ${title}. Someone who can reach it saves what its tables look like, their columns, types and key, and \`ingestron source import\` reads the file; see [Source metadata](/docs/reference/cli#source-metadata). \`ingestron source request\` prints this step for your project.`,
+            ],
+            items: [],
+          },
+        ]
+      : []),
     {
       id: "examples",
       title: "Examples",

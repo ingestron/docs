@@ -166,3 +166,23 @@ is `status: draft` with neither. Review the types, then add `primaryKey`,
 `required` and descriptions, and link it from a table with `contract`.
 [Add a source and its tables](/docs/how-to/add-a-source#add-a-table-from-a-source-you-already-read)
 drafts one and links it.
+
+## Draft from source metadata [#draft-from-source-metadata]
+
+When a source can tell you what its tables look like, draft the contract from
+that instead. `ingestron source request` prints what to ask of whoever can
+reach each source; `ingestron source import` reads the file they send into
+`sources/<connection>.yaml`; see
+[Source metadata](/docs/reference/cli#source-metadata). Then draft a contract
+for a flow's table, named as `<flow>.<table>`:
+
+```sh
+ingestron contract --from-metadata sales.orders
+```
+
+It writes `contracts/<connection>.<table>.yaml` with each column's name, type
+and whether it is required, and the key when the source states one. It never
+replaces a file that is there, and prints the `contract:` line to add to the
+flow. With `--needed` it drafts every table that needs a contract and names
+none. The draft is `status: draft`: review its types and required columns,
+then add descriptions, classifications and checks.

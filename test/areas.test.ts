@@ -86,6 +86,7 @@ const areas: Record<string, string[]> = {
     "/docs/reference/packs/duckdb",
     "/docs/reference/errors",
     "/docs/reference/cli",
+    "/docs/reference/recipes",
     "/docs/reference/templates",
     "/docs/reference/versions",
     "/docs/tools/vscode",
@@ -198,7 +199,7 @@ describe("page URLs", () => {
     const built = readFileSync(join(process.cwd(), "test/page-urls.txt"), "utf8")
       .trim()
       .split("\n");
-    expect(built).toHaveLength(137);
+    expect(built).toHaveLength(138);
     expect(
       source
         .getPages()

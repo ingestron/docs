@@ -127,6 +127,7 @@
 /docs/reference/packs/databricks
 /docs/reference/packs/duckdb
 /docs/reference/packs/synapse
+/docs/reference/recipes
 /docs/reference/templates
 /docs/reference/versions
 /docs/start/choose-a-route

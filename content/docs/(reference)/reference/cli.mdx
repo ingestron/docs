@@ -19,8 +19,9 @@ Run the command from the folder that holds `project.yaml`. It reads the
 project there and writes to `build` there. Four options adjust the run:
 
 - `--env dev` limits `compare` and `request` to one environment; repeat it
-  for more. `plan`, `apply` and `check` always work on every environment
-  together, and refuse it.
+  for more. `source` and `contract --from-metadata` take it once.
+  `plan`, `apply` and `check` always work on every environment together, and
+  refuse it.
 - `--definitions <folder>` reads a project that is not the current folder.
 - `--out <folder>` writes somewhere other than `build`.
 - `--no-diff` lists changed files without their line differences.
@@ -61,6 +62,46 @@ combined with `--template` or `--standard`. See
   then those only the public catalogue has. `--platform <id>` keeps one
   platform's. It always exits `0`. See
   [List them](/docs/how-to/choose-a-published-standard#list-them).
+
+## Source metadata [#source-metadata]
+
+Ingestron never connects to a source. `ingestron source` takes one of two
+commands, and each works on the project in `--definitions`:
+
+- `ingestron source request` prints what to ask of whoever can reach each
+  source: for every connection a flow reads, the query to run or the call to
+  make, who can do it, the access it needs and where to save the result. It
+  writes nothing. `--connection <id>` limits it to one connection, and
+  `--env` names the environment it resolves for. The recipe for each kind of
+  source is in [Source metadata recipes](/docs/reference/recipes).
+- `ingestron source import <connection> <file>` reads the file that was saved
+  into `sources/<connection>.yaml`, and adds that file to the imports of
+  `project.yaml` when it is not there. It keeps names and types, and never a
+  value from a row. `--dry-run` prints what the file would change and writes
+  nothing, and `--object <text>` names the table a file of one table
+  describes, when its path does not name it. It exits `1` when it refuses the
+  file, and writes nothing then.
+
+`ingestron contract --from-metadata <flow>.<table>` drafts a contract for each
+table named from the imported metadata, and with `--needed`, for every table
+that needs a contract and names none. It writes `contracts/<connection>.<table>.yaml`,
+never replaces a file that is there, and prints the `contract:` line to add to
+the flow. A draft says what to review: its types, which columns are required
+and its key.
+
+The document an import writes is in [Documents](/docs/reference/documents#source-metadata),
+and the codes `plan` reports about it are in
+[Errors](/docs/reference/errors), as the ones that start `SOURCE_`.
+
+## Project guide [#project-guide]
+
+`ingestron init --assistant <names>` and `ingestron assistant add <names>`
+write a project guide for coding assistants: `AGENTS.md`, which holds the
+guide, and for some names one more file that points to it. The guide is
+written from the project's own files, and `plan` and `apply` keep its
+Ingestron section current. `check` never looks at it. `assistant add` takes
+`--definitions` and `--out`, and exits `1` when there is no guide to write or
+a file could not be written.
 
 ## Output
 

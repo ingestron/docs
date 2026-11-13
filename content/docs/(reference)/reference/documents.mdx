@@ -1,6 +1,6 @@
 ---
 title: Documents
-description: Every field of project.yaml and the Standard, Platform, Connection, Flow and Transform documents.
+description: Every field of project.yaml and the Standard, Platform, Connection, Source metadata, Flow, Transform and data contract documents.
 ---
 
 Each document starts with `apiVersion: ingestron.io/v1`, its `kind` and an
@@ -62,6 +62,29 @@ for `principals`.
 See [Connectors](/docs/connectors) and [Reachability](/docs/start/choose-a-route#reachability).
 A connection's `timezone` is the zone its timestamps are converted from; see
 [Cleanse data in the right layer](/docs/how-to/cleanse-data#add-the-columns-to-cleanse).
+
+A connection's `metadata` says which [recipe](/docs/reference/recipes) gets
+its source metadata: `from` names the recipe and `with` gives its inputs. A
+connection with no `metadata` uses its connector's default recipe, if it has
+one.
+
+## Source metadata [#source-metadata]
+
+A `SourceMetadata` document says what the tables of one connection look like
+at the source: each table's columns, their types and its key. Nothing in it
+is a promise, so it has no checks, descriptions or classifications.
+`ingestron source import` writes it, as `sources/<connection>.yaml`, from a
+file someone who can reach the source saved; see
+[Source metadata](/docs/reference/cli#source-metadata). A connection has one
+document.
+
+A flow table that names no `contract` takes its columns and key from its
+entry here. A table that does name one is compared with its entry, and
+a change at the source is reported before the data stops landing; see
+[`SOURCE_COLUMN_GONE`](/docs/reference/errors#SOURCE_COLUMN_GONE) and the
+codes that start `SOURCE_`.
+
+<DocumentFields kind="SourceMetadata" />
 
 ## Flow
 

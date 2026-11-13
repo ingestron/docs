@@ -20,6 +20,7 @@ import { ConnectorSettings } from "./connector-settings";
 import { ExamplesList } from "./examples-list";
 import { Inline } from "./inline";
 import { NativeReadSettings } from "./native-read-settings";
+import { ConnectorRecipes } from "./recipes";
 import { SettingsSections } from "./settings-sections";
 
 /** Words only one connector needs, placed in one of its page's slots.
@@ -55,6 +56,7 @@ export function ConnectorPage({ id, children }: { id: string; children?: ReactNo
           </Heading>
           <Paragraphs texts={section.before} />
           {section.id === "routes" && <ConnectorFacts id={id} />}
+          {section.id === "source-metadata" && <ConnectorRecipes id={id} />}
           {section.id === "examples" && <ExamplesList connector={id} />}
           {section.items.map((item) =>
             "slot" in item ? (

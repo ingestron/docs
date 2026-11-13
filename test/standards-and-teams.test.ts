@@ -190,7 +190,8 @@ describe("how-to/share-a-template", () => {
       .replace(standard![1]!, platformRepo)
       .split(" ")
       .slice(1);
-    // The page's command as written: init asks nothing.
+    // The page's command as written: init asks nothing about the template's values, only,
+    // last and in a terminal, which assistant files to write.
     const asked: string[] = [];
     let output = "";
     const code = run(args, {
@@ -200,7 +201,10 @@ describe("how-to/share-a-template", () => {
     });
     const created = { code, output };
     expect(created.code, created.output).toBe(0);
-    expect(asked, "init asks nothing").toEqual([]);
+    expect(
+      asked.filter((question) => !question.includes("assistant files")),
+      "init asks nothing else",
+    ).toEqual([]);
     // The template's value is still REPLACE_ME, and init says so.
     expect(created.output).toContain(
       "1 value is still REPLACE_ME: README.md lists each one and where to find it.",

@@ -207,6 +207,16 @@ for what those files are for.
 
 To grow the project later, see [Add a source and its tables](/docs/how-to/add-a-source).
 
+## Add a guide for coding assistants [#project-guide]
+
+`ingestron init --assistant <names>` writes a project guide as the project is
+created, and `ingestron assistant add <names>` adds it to a project you
+already have. The guide is `AGENTS.md`, written from the project's own files:
+what the project is, what it may change and which commands to run.
+`ingestron plan` and `ingestron apply` keep its Ingestron section current. The
+names the commands take are in
+[the command line reference](/docs/reference/cli#project-guide).
+
 ## Review and generate
 
 From the project folder, run `ingestron plan --no-diff`, or use

@@ -100,6 +100,7 @@ it("opens with one learning path, then areas by the reader's job, with no index 
     "packs",
     "errors",
     "cli",
+    "recipes",
     "templates",
     "versions",
   ]);
