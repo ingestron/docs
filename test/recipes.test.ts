@@ -146,7 +146,7 @@ describe("connector pages", () => {
     expect(byConnector.mysql).toEqual(["mysql:named"]);
     expect(byConnector.rest).toEqual(["openapi:fits"]);
     expect(byConnector["dynamics-365"]).toEqual(["dataverse:fits"]);
-    expect(byConnector.odata).toEqual(["odata:named", "sap-odata:fits"]);
+    expect(byConnector.odata).toEqual(["odata:named"]);
     expect(byConnector["sap-ecc"]).toEqual([]);
     for (const id of ["sqlserver", "mysql", "files", "rest"]) {
       const page = html(createElement(ConnectorPage, { id }));

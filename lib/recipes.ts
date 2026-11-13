@@ -47,7 +47,6 @@ export interface ConnectorRecipe {
  */
 export const recipesThatFit: Readonly<Record<string, readonly string[]>> = {
   "dynamics-365": ["dataverse"],
-  odata: ["sap-odata"],
   rest: ["openapi"],
 };
 
