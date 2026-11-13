@@ -92,7 +92,7 @@ small file that sends their assistant to it:
 `CLAUDE.md` holds two lines:
 
 {/* prettier-ignore */}
-```markdown kind="writes" title="CLAUDE.md"
+```markdown kind="plain" title="CLAUDE.md"
 <!-- Ingestron: the project guide is in AGENTS.md. -->
 @AGENTS.md
 ```
@@ -101,7 +101,7 @@ small file that sends their assistant to it:
 rules. It holds no fact about the project, so it never goes out of date:
 
 {/* prettier-ignore */}
-```markdown kind="writes" title=".github/copilot-instructions.md"
+```markdown kind="plain" title=".github/copilot-instructions.md"
 See [AGENTS.md](../AGENTS.md) for this Ingestron project.
 
 - Change the definitions, never the generated files: Ingestron reports a hand edit there as a conflict.

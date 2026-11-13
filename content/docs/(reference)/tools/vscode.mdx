@@ -191,6 +191,13 @@ It also fills in what the project already decides:
 Hover a pattern under `naming` to see the names it gives in the selected
 environment.
 
+<Screenshot
+  light="/images/vscode/new-file-light.png"
+  dark="/images/vscode/new-file-dark.png"
+  alt="A new flows/web.yaml filled from the Flow skeleton: apiVersion, kind: Flow, id: web, source: shop with the project's one connection, shop, offered, and a table web with object web and contract shop.web."
+  caption="A new, empty flow file filled from the skeleton: the id comes from the file name, and Tab moves to the source, offered from the project's connections."
+/>
+
 ### From the source metadata [#completion-from-source-metadata]
 
 Once a connection's [source metadata](/docs/how-to/describe-a-source) is
@@ -223,13 +230,6 @@ still empty and the name needs backticks, completion opens a double quote
 first, writing `` check: "`Order Date` ``, and you close the quote. A name
 holding `: ` or ` #` cannot be part of an unquoted `check` at all; put the
 check in double quotes before you choose such a name.
-
-<Screenshot
-  light="/images/vscode/new-file-light.png"
-  dark="/images/vscode/new-file-dark.png"
-  alt="A new flows/web.yaml filled from the Flow skeleton: apiVersion, kind: Flow, id: web, source: shop with the project's one connection, shop, offered, and a table web with object web and contract shop.web."
-  caption="A new, empty flow file filled from the skeleton: the id comes from the file name, and Tab moves to the source, offered from the project's connections."
-/>
 
 ## What each line becomes
 

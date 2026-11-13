@@ -136,10 +136,12 @@ describe("the kinds on the real pages", () => {
 
   it("carry a kind mark only where the rest cannot place the block", () => {
     const all = fences.filter((fence) => /(?:^|\s)kind=/.test(fence.meta));
-    // The files the project guide for coding assistants writes, outside build/: Ingestron's.
+    // The files the project guide for coding assistants writes, outside build/: the guide,
+    // whose section Ingestron keeps, and two small files that are the reader's from then on.
     const guide = all.filter((fence) => fence.page.endsWith("/assistants.mdx"));
-    expect(guide).toHaveLength(3);
-    for (const fence of guide) expect(fence.meta).toMatch(/^kind="writes" title="[^"]+\.md"$/);
+    expect(
+      guide.map((fence) => /^kind="([a-z]+)" title="[^"]+\.md"$/.exec(fence.meta)?.[1]),
+    ).toEqual(["plain", "plain", "writes"]);
     const marked = all.filter((fence) => !guide.includes(fence));
     // A payload a server returns; the source metadata an import writes outside build/; and a
     // contract Ingestron drafts that is the reader's to edit from then on, so neither a file

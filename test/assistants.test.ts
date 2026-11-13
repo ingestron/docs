@@ -28,7 +28,7 @@ function starter(args: string[]): { parent: string; output: string } {
 }
 
 /** The files the page shows Ingestron writing, by the titles of its blocks. */
-const titles = [...page.matchAll(/^```markdown kind="writes" title="([^"]+)"$/gm)].map(
+const titles = [...page.matchAll(/^```markdown kind="(?:writes|plain)" title="([^"]+)"$/gm)].map(
   (match) => match[1]!,
 );
 /** The small files that point an assistant at the guide: every file shown but the guide. */
@@ -37,7 +37,9 @@ expect(pointers).toHaveLength(2);
 
 /** The `markdown` block whose title is `file`, as the page shows it. */
 function written(file: string): string {
-  const found = [...page.matchAll(/^```markdown kind="writes" title="([^"]+)"\n([\s\S]*?)^```$/gm)]
+  const found = [
+    ...page.matchAll(/^```markdown kind="(?:writes|plain)" title="([^"]+)"\n([\s\S]*?)^```$/gm),
+  ]
     .filter((match) => match[1] === file)
     .map((match) => match[2]!);
   expect(found, file).toHaveLength(1);
