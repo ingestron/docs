@@ -308,7 +308,7 @@ one to the file adds it to the list.
   light="/images/vscode/project-view-light.png"
   dark="/images/vscode/project-view-dark.png"
   alt="The Ingestron tab beside retail's connections/shop.yaml in a workspace with three projects. The Project section lists erp folded, retail open and shop folded. Under retail, Environments shows dev with a check and selected, and prod with a circle, then Check, Plan, Apply, Compare environments, Prepare platform request and Show generated files. The Reference section is folded below."
-  caption="A workspace with three projects: retail, the project of the file in the editor, is open, with dev selected and prod beside it, and erp and shop are folded."
+  caption="A workspace with three projects: retail, the project of the file in the editor, is open, with dev selected and prod beside it, and erp and shop are folded. The picture leaves out Request source metadata and Import source metadata…, which come before Show generated files."
 />
 
 ## Reference beside the editor
@@ -417,9 +417,9 @@ one warning, `3 files could not be imported.`, with **Show reasons**.
 
 A connection's `metadata` names the recipe that says how to get its metadata;
 see [Source metadata recipes](/docs/reference/recipes). Three problems about
-recipes are shown in the editor only. `ingestron source` and
-`ingestron contract --from-metadata` stop with the same message instead, and
-`plan` does not read recipes.
+recipes are shown in the editor only. `ingestron source request` and
+`ingestron source import` stop with the same message instead; `plan` and
+`ingestron contract --from-metadata` do not read recipes.
 
 - **`SOURCE_RECIPE_UNKNOWN`**, at the connection's `metadata.from`:
   `The connection "<id>" names the recipe "<from>", which does not exist. Recipes: <ids>.`
@@ -461,15 +461,15 @@ Palette. Each acts on the project you started it from:
 <Screenshot
   light="/images/vscode/context-menu-light.png"
   dark="/images/vscode/context-menu-dark.png"
-  alt="In the Explorer, the projects folder holds erp, retail and shop, folded. The shop folder's menu ends with Check, Plan, Apply, Compare environments and Prepare platform request, after VS Code's own items."
-  caption="Right-click a project folder in the Explorer: Ingestron's commands come last."
+  alt="In the Explorer, the projects folder holds erp, retail and shop, folded. After VS Code's own items, the shop folder's menu shows Check, Plan, Apply, Compare environments and Prepare platform request."
+  caption="Right-click a project folder in the Explorer: Ingestron's commands come last. The picture shows the first five; the menu also has Request source metadata, Import source metadata… and Add assistant files."
 />
 
 <Screenshot
   light="/images/vscode/title-buttons-light.png"
   dark="/images/vscode/title-buttons-dark.png"
-  alt="The editor title bar of flows/shop.yaml shows the Plan button, a list icon, and the Apply button, a play icon. Its … menu is open and ends with Check, Compare environments and Prepare platform request."
-  caption="Plan (the list icon) and Apply (the play icon) are buttons in the editor title; Check, Compare environments and Prepare platform request are in the … menu."
+  alt="The editor title bar of flows/shop.yaml shows the Plan button, a list icon, and the Apply button, a play icon. Its … menu is open, showing Check, Compare environments and Prepare platform request after VS Code's own items."
+  caption="Plan (the list icon) and Apply (the play icon) are buttons in the editor title; Check, Compare environments and Prepare platform request are in the … menu, and so is Request source metadata, which the picture does not show."
 />
 
 <Screenshot
@@ -532,7 +532,7 @@ workspace, the message offers to open it or add it to the workspace. See
 
 **Ingestron: Add assistant files** writes the same files into a project you
 already have. The files, and how Plan and Apply keep the guide current, are
-in [Work with a coding assistant](/docs/tools/assistants).
+in [Work with an AI assistant](/docs/tools/assistants).
 
 ## Check files with the YAML extension [#check-files-with-the-yaml-extension]
 

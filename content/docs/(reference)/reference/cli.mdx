@@ -118,11 +118,11 @@ points to it:
 terminal, or with `--yes`, it asks nothing and writes nothing.
 
 The guide is written from the project's own files, and `plan` and `apply` keep
-its Ingestron section current. `check` never looks at it. See
-[Work with an AI assistant](/docs/tools/assistants).
+its Ingestron section current. `check` never looks at it.
 `assistant add` takes `--definitions`, the project's folder, and `--out`, its
 output folder, and needs `project.yaml` there. It exits `1` when there is no
-guide to write or a file could not be written.
+guide to write or a file could not be written. See
+[Work with an AI assistant](/docs/tools/assistants).
 
 ## Output
 
@@ -132,11 +132,11 @@ as `databricks → build/databricks (dev, prod)`; see
 
 ## Exit codes
 
-| Code | Means                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `0`  | Success. Warnings, such as a pack's notice, do not change it. A `source import --dry-run` that would write, and breaking changes in source metadata, also exit `0`.                                                                                                                                                                                                                                                                                   |
-| `1`  | Problems in the definitions, or output that is not up to date or in conflict. `check` also fails while a value is `REPLACE_ME`. `source` and `contract --from-metadata` also exit `1` on a refused file, an unknown connection, flow table or recipe, a recipe that breaks a rule (even one no connection uses), or definitions that cannot be loaded or have errors that stop the command.                                                           |
-| `2`  | A mistake in the command, such as an unknown option or `--env` given to `plan`, or a pack that cannot be loaded (`PACK_LOAD`). `source` without `request` or `import`, `source import` without a connection and a file, or with more, `--env` more than once on `source` or on `contract --from-metadata`, `--from-metadata` with neither a table nor `--needed`, or with both, and a flag given to a command it does not belong to are mistakes too. |
+| Code | Means                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0`  | Success. Warnings, such as a pack's notice, do not change it. A `source import --dry-run` that would write, and breaking changes in source metadata, also exit `0`.                                                                                                                                                                                                                                                                                                                                                        |
+| `1`  | Problems in the definitions, or output that is not up to date or in conflict. `check` also fails while a value is `REPLACE_ME`. `source` also exits `1` on a refused file, an unknown connection or recipe, a recipe that breaks a rule (even one no connection uses), or definitions that cannot be loaded or have errors that stop the command; `contract --from-metadata` on an unknown flow table, or definitions that cannot be loaded or have errors that stop it. `contract --from-metadata` does not read recipes. |
+| `2`  | A mistake in the command, such as an unknown option or `--env` given to `plan`, or a pack that cannot be loaded (`PACK_LOAD`). `source` without `request` or `import`, `source import` without a connection and a file, or with more, `--env` more than once on `source` or on `contract --from-metadata`, `--from-metadata` with neither a table nor `--needed`, or with both, and a flag given to a command it does not belong to are mistakes too.                                                                      |
 
 ## Editor schemas
 

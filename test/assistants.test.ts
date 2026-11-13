@@ -109,7 +109,9 @@ describe("tools/assistants", () => {
 
   it("prints the lines the page shows as plan and apply keep the section current", () => {
     const keep = section(page, "## Keep it current");
-    const [wouldChange, updated, edited] = fences(keep, "text").map((block) => block.trim());
+    const [wouldChange, updated, planEdited, edited] = fences(keep, "text").map((block) =>
+      block.trim(),
+    );
     const { parent } = starter(["init", "shop", "--template", "duckdb", "--yes"]);
     const cwd = join(parent, "shop");
     cli(cwd, ["assistant", "add", "agents"]);
@@ -131,6 +133,7 @@ describe("tools/assistants", () => {
       text(cwd, "AGENTS.md").replace("3. Work inside the standard.", "3. Always work inside it."),
     );
     const before = text(cwd, "AGENTS.md");
+    expect(cli(cwd, ["plan", "--no-diff"]).output.trimEnd().split("\n").at(-1)).toBe(planEdited);
     const again = cli(cwd, ["apply", "--no-diff"]);
     expect(again.code).toBe(0);
     expect(again.output.trimEnd().split("\n").at(-1)).toBe(edited);

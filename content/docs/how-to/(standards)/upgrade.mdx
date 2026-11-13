@@ -541,8 +541,8 @@ source as it is can do without a contract. It also adds
 
 - **A flow table's `contract` is optional.** A table without one takes its
   columns and key from the source metadata. A table that needs one, because
-  its layer cleanses, checks or quarantines, the platform manages its access,
-  it has its own `expectations` or it is an output of a data product, is
+  its layer cleanses, checks or quarantines, the platform manages its access
+  or it has its own `expectations`, is
   [`CONTRACT_NEEDED`](/docs/reference/errors#CONTRACT_NEEDED); one with
   neither a contract nor metadata is
   [`TABLE_NO_COLUMNS`](/docs/reference/errors#TABLE_NO_COLUMNS). The editor
@@ -568,7 +568,7 @@ For code that calls the packages:
 - `@ingestron/core` 1.2 adds the recipes (`sourceRecipes`,
   `installedSourceRecipes`, `readSourceRecipe` and `sourceOrigin`), the
   request (`sourceRequest`), the import (`importSource`) and drafting
-  (`draftContracts`). It reads the recipe catalog from
+  (`draftContracts`). It reads the recipe catalogue from
   `@ingestron/standards` 1.1.
 - `@ingestron/authoring` 2.4 adds `importSource`, `sourceRequest` and
   `sourceFileAt` to `ProjectSnapshot`, and `replaceFrom` to a `Suggestion`.

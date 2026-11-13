@@ -1,6 +1,6 @@
 ---
 title: Work with an AI assistant
-description: Give GitHub Copilot, Claude Code, Codex, Cursor or another coding assistant a guide to your project, written from its own files and kept current by plan and apply.
+description: Give your coding assistant a guide to your project, written from its own files and kept current by plan and apply.
 ---
 
 A coding assistant does better work in an Ingestron project when it knows the
@@ -178,7 +178,13 @@ AGENTS.md: updated the Ingestron section
 ```
 
 If someone edited the section by hand, `plan` and `apply` leave it as it is.
-`apply` says:
+`plan` says:
+
+```text
+AGENTS.md: the Ingestron section was edited by hand, so apply will not update it. Move your notes outside it, or delete both markers to keep it as your own.
+```
+
+and `apply`:
 
 ```text
 AGENTS.md: the Ingestron section was edited by hand, so it was not updated. Move your notes outside it, or delete both markers to keep it as your own.
@@ -247,6 +253,7 @@ assistant there.
 | `<file>: not a regular file, so nothing was written to it.`                 | The path is a link, a folder or something else that is not a file. The other files are still written. |
 | `<file>: could not be read (<code>), …` or `could not be written (<code>).` | The file system refused, with its error code, such as `EACCES`. The original is left as it was.       |
 | `No guide: project.yaml cannot be read.` or `… has no id.`                  | Nothing was written: fix `project.yaml` first.                                                        |
+| `No project.yaml in <folder>.`                                              | `assistant add` found no project in the folder; run it there, or give `--definitions`. It exits `1`.  |
 
 `assistant add` exits with `1` when there is no guide or a file was not
 written, and with `0` otherwise, an edited section included. The names and
