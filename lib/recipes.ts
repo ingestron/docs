@@ -27,16 +27,33 @@ export function recipePage(id: string): string {
   return `/docs/reference/recipes#${id}`;
 }
 
-/** How a connector comes to use a recipe: by default, or because a connection names it. */
+/**
+ * How a connector comes to use a recipe: by default, because a connection names it, or because
+ * the recipe fits a source the connector reads.
+ */
 export interface ConnectorRecipe {
   recipe: SourceRecipe;
-  /** `default`: a connection with no `metadata` uses it; `named`: the connection writes `metadata.from`. */
-  how: "default" | "named";
+  /**
+   * `default`: a connection with no `metadata` uses it; `named`: the recipe has the connector's
+   * id and a connection writes `metadata.from`; `fits`: the same, for a recipe of another id.
+   */
+  how: "default" | "named" | "fits";
 }
 
 /**
- * The recipes a connector's page shows: the one a connection with no `metadata` uses, and a
- * recipe that has the connector's id (written as `metadata.from`).
+ * Recipes that fit a connector's sources though they carry another id: the connectors read the
+ * kind of source the recipe asks about. This is the one place that says so; `sourceOrigin` knows
+ * only the defaults.
+ */
+export const recipesThatFit: Readonly<Record<string, readonly string[]>> = {
+  "dynamics-365": ["dataverse"],
+  odata: ["sap-odata"],
+  rest: ["openapi"],
+};
+
+/**
+ * The recipes a connector's page shows: the one a connection with no `metadata` uses, a recipe
+ * that has the connector's id, and the recipes that fit its sources (written as `metadata.from`).
  */
 export function connectorRecipes(connector: string): ConnectorRecipe[] {
   const all = new Map(recipes().map((recipe) => [recipe.id, recipe]));
@@ -45,7 +62,42 @@ export function connectorRecipes(connector: string): ConnectorRecipe[] {
   return [
     ...(byDefault ? [{ recipe: byDefault, how: "default" as const }] : []),
     ...(named && named !== byDefault ? [{ recipe: named, how: "named" as const }] : []),
+    ...(recipesThatFit[connector] ?? []).flatMap((id) => {
+      const recipe = all.get(id);
+      return recipe && recipe !== byDefault && recipe !== named
+        ? [{ recipe, how: "fits" as const }]
+        : [];
+    }),
   ];
+}
+
+/**
+ * What the request fills in where a recipe writes `{name}`, besides the recipe's own inputs
+ * (specification, "Placeholders").
+ */
+export const reservedPlaceholders: Readonly<Record<string, string>> = {
+  connection: "the connection's id",
+  object:
+    "one table's `object`, as its flow writes it; a step that holds it is written once for each table",
+  schemas: "the schemas the connection's flow tables read, each in single quotes",
+};
+
+/**
+ * Every `{name}` the installed recipes write in their text, with the recipes that write it. A
+ * name that is neither reserved nor an input of its recipe would be left as written by the
+ * request, so a test pins that there is none.
+ */
+export function placeholdersUsed(): Map<string, string[]> {
+  const found = new Map<string, string[]>();
+  for (const recipe of recipes()) {
+    const { who, access, run, call, save, how } = recipe.ask;
+    const text = [who, access, run, call, save, how]
+      .filter((item) => item !== undefined)
+      .join("\n");
+    for (const [, name] of text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g))
+      found.set(name!, [...new Set([...(found.get(name!) ?? []), recipe.id])]);
+  }
+  return found;
 }
 
 /** What a recipe's kind means, in words. */

@@ -22,13 +22,7 @@ recipe's inputs in `metadata.with`. Both are
 
 In a query, a call or a path, the request fills in what is in braces:
 
-- `{connection}` is the connection's id.
-- `{object}` is one table's `object`, as its flow writes it. A step that holds
-  it is written once for each table.
-- `{schemas}` is the schemas the connection's flow tables read, each in single
-  quotes.
-- `{database}`, `{service}` and the other input names are the values the
-  connection gives in `metadata.with`, or the input's default.
+<RecipePlaceholders />
 
 A placeholder the request cannot fill is left as written, and the request says
 what to write in its place.

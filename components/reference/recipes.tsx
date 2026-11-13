@@ -12,12 +12,15 @@ import {
   connectorRecipes,
   howBlocks,
   kindWords,
+  placeholdersUsed,
   readerWords,
   recipePage,
   recipes,
+  reservedPlaceholders,
   type ConnectorRecipe,
 } from "@/lib/recipes";
 import { connectorEntries, connectorIds } from "@/lib/reference";
+import { Inline } from "./inline";
 
 /** A connector's name, as the packs title it. */
 const connectorTitle = (id: string) => connectorEntries(id)[0]?.connector.title ?? id;
@@ -73,16 +76,7 @@ export function RecipeList() {
                     ))}
               </td>
               <td>
-                {usedBy(recipe)
-                  .filter((item) => item.how === "default")
-                  .map((item, index) => (
-                    <Fragment key={item.connector}>
-                      {index > 0 && ", "}
-                      <a href={`/docs/connectors/${item.connector}`}>
-                        {connectorTitle(item.connector)}
-                      </a>
-                    </Fragment>
-                  ))}
+                <DefaultFor recipe={recipe} />
               </td>
             </tr>
           ))}
@@ -90,6 +84,58 @@ export function RecipeList() {
       </table>
     </TableFrame>
   );
+}
+
+/** The connectors a recipe is the default for, linked, or "None". */
+function DefaultFor({ recipe }: { recipe: SourceRecipe }) {
+  const connectors = usedBy(recipe).filter((item) => item.how === "default");
+  if (connectors.length === 0) return "None";
+  return connectors.map((item, index) => (
+    <Fragment key={item.connector}>
+      {index > 0 && ", "}
+      <a href={`/docs/connectors/${item.connector}`}>{connectorTitle(item.connector)}</a>
+    </Fragment>
+  ));
+}
+
+/**
+ * What the request fills in where a recipe writes a name in braces: the reserved names the
+ * catalogue uses, and the recipes' own inputs.
+ * @example <RecipePlaceholders />
+ */
+export function RecipePlaceholders() {
+  const used = placeholdersUsed();
+  const unknown = [...used].filter(
+    ([name, ids]) =>
+      !(name in reservedPlaceholders) &&
+      ids.some((id) => !(name in recipes().find((recipe) => recipe.id === id)!.inputs)),
+  );
+  if (unknown.length > 0)
+    throw new Error(
+      `Recipes write placeholders that nothing fills: ${unknown.map(([name]) => name).join(", ")}.`,
+    );
+  return (
+    <ul>
+      {Object.entries(reservedPlaceholders)
+        .filter(([name]) => used.has(name))
+        .map(([name, meaning]) => (
+          <li key={name}>
+            <code>{`{${name}}`}</code> is <Inline text={meaning} />.
+          </li>
+        ))}
+      <li>
+        Any other name, such as <code>{`{${firstInput()}}`}</code>, is an input of the recipe: the
+        value the connection gives in <code>metadata.with</code>, or the input&rsquo;s default.
+      </li>
+    </ul>
+  );
+}
+
+/** The name of one recipe input, for an example. */
+function firstInput(): string {
+  const name = recipes().flatMap((recipe) => Object.keys(recipe.inputs))[0];
+  if (!name) throw new Error("No recipe has an input.");
+  return name;
 }
 
 /** The recipe's query or call, in a block that says it is not a command for the shell. */
@@ -186,6 +232,7 @@ function RecipeSection({ recipe }: { recipe: SourceRecipe }) {
                     {connectorTitle(item.connector)}
                   </a>
                   {item.how === "default" && " (by default)"}
+                  {item.how === "fits" && " (if the source fits)"}
                 </Fragment>
               ))}
             </dd>
@@ -194,11 +241,11 @@ function RecipeSection({ recipe }: { recipe: SourceRecipe }) {
       </dl>
       {(recipe.ask.run !== undefined || recipe.ask.call !== undefined) && <Step recipe={recipe} />}
       {recipe.ask.how &&
-        howBlocks(recipe.ask.how).map((block) =>
+        howBlocks(recipe.ask.how).map((block, index) =>
           block.command ? (
-            <HowCommand key={block.text} recipe={recipe} text={block.text} />
+            <HowCommand key={index} recipe={recipe} text={block.text} />
           ) : (
-            <p key={block.text}>{block.text}</p>
+            <p key={index}>{block.text}</p>
           ),
         )}
       {inputs.length > 0 && (
@@ -271,10 +318,16 @@ export function ConnectorRecipes({ id }: { id: string }) {
                 A connection with no <code>metadata</code> uses the{" "}
                 <a href={recipePage(recipe.id)}>{recipe.title}</a> recipe.
               </>
-            ) : (
+            ) : how === "named" ? (
               <>
                 Name the <a href={recipePage(recipe.id)}>{recipe.title}</a> recipe in the
                 connection&rsquo;s <code>metadata.from</code>: <code>{recipe.id}</code>.
+              </>
+            ) : (
+              <>
+                If the source is one the <a href={recipePage(recipe.id)}>{recipe.title}</a> recipe
+                describes, name it in the connection&rsquo;s <code>metadata.from</code>:{" "}
+                <code>{recipe.id}</code>.
               </>
             )}{" "}
             It asks someone to save <code>{recipe.ask.save}</code>.

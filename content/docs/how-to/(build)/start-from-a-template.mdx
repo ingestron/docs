@@ -48,9 +48,11 @@ ingestron init sales
 ```
 
 Choose the source category, connector, network reachability and route.
-When only one route is supported, Ingestron selects it. Nothing else is asked:
-the project's id is the folder's name, its environments are `dev` and `prod`,
-and its standard is the route's own.
+When only one route is supported, Ingestron selects it. In a terminal it then
+asks, last, which assistant files to write; press Enter for none, as
+[the project guide](#project-guide) below explains. Nothing else is asked: the
+project's id is the folder's name, its environments are `dev` and `prod`, and
+its standard is the route's own.
 
 To choose them with flags (`--via` is `databricks`, `adf-databricks`,
 `adf-synapse`, `adf-duckdb` or `adf-landing`; see
@@ -211,7 +213,10 @@ To grow the project later, see [Add a source and its tables](/docs/how-to/add-a-
 
 `ingestron init --assistant <names>` writes a project guide as the project is
 created, and `ingestron assistant add <names>` adds it to a project you
-already have. The guide is `AGENTS.md`, written from the project's own files:
+already have. Without `--assistant`, `init` asks which assistant files to
+write, last and only in a terminal; an empty answer is `none`, and `--yes`
+skips the question. Without a terminal, nothing is asked
+and nothing is written. The guide is `AGENTS.md`, written from the project's own files:
 what the project is, what it may change and which commands to run.
 `ingestron plan` and `ingestron apply` keep its Ingestron section current. The
 names the commands take are in

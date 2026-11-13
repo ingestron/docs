@@ -4,7 +4,6 @@
 // CLI, document and error references pick up the source metadata features from
 // the code, with no copy written by hand.
 import { readdirSync } from "node:fs";
-import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -15,9 +14,17 @@ import { ConnectorPage } from "../components/reference/connector-page";
 import { CliCommands } from "../components/reference/cli-commands";
 import { ErrorCodes, LoadingCodes } from "../components/reference/error-codes";
 import { FieldTable } from "../components/reference/document-fields";
-import { RecipeCatalog, RecipeList } from "../components/reference/recipes";
+import { RecipeCatalog, RecipeList, RecipePlaceholders } from "../components/reference/recipes";
 import { connectorIds } from "../lib/reference.js";
-import { connectorRecipes, howBlocks, recipesFolder, recipes } from "../lib/recipes.js";
+import {
+  connectorRecipes,
+  howBlocks,
+  placeholdersUsed,
+  recipesFolder,
+  recipes,
+  recipesThatFit,
+  reservedPlaceholders,
+} from "../lib/recipes.js";
 import { anchors, read } from "./pages.js";
 
 // The code blocks render asynchronously in the site; here each shows its code.
@@ -78,6 +85,29 @@ describe("the recipes page", () => {
     }
   });
 
+  it("explains every placeholder the recipes write, from the catalogue", () => {
+    const used = placeholdersUsed();
+    expect(used.size).toBeGreaterThan(3);
+    for (const [name, ids] of used)
+      for (const id of ids)
+        expect(
+          name in reservedPlaceholders ||
+            name in recipes().find((recipe) => recipe.id === id)!.inputs,
+          `{${name}} in ${id}`,
+        ).toBe(true);
+    const shown = html(createElement(RecipePlaceholders));
+    for (const name of Object.keys(reservedPlaceholders))
+      expect(shown.includes(`{${name}}`), name).toBe(used.has(name));
+    expect(read("reference/recipes.mdx")).toContain("<RecipePlaceholders />");
+  });
+
+  it('shows "None" for a recipe that is no connector\'s default', () => {
+    const listed = html(createElement(RecipeList));
+    const row = (id: string) => listed.split("<tr>").find((part) => part.includes(`#${id}"`))!;
+    expect(row("mysql")).toMatch(/<td>None<\/td><\/tr>/);
+    expect(row("sqlserver")).toContain('href="/docs/connectors/sqlserver"');
+  });
+
   it("splits a recipe's instructions into paragraphs and commands", () => {
     const blocks = howBlocks("Save it.\nThen run:\n\n    curl one\n    curl two\n\nDone.");
     expect(blocks).toEqual([
@@ -114,13 +144,27 @@ describe("connector pages", () => {
     expect(byConnector.kafka).toEqual(["schema-registry:default"]);
     expect(byConnector.files).toEqual(["sample:default"]);
     expect(byConnector.mysql).toEqual(["mysql:named"]);
-    expect(byConnector.rest).toEqual([]);
-    for (const id of ["sqlserver", "mysql", "files"]) {
+    expect(byConnector.rest).toEqual(["openapi:fits"]);
+    expect(byConnector["dynamics-365"]).toEqual(["dataverse:fits"]);
+    expect(byConnector.odata).toEqual(["odata:named", "sap-odata:fits"]);
+    expect(byConnector["sap-ecc"]).toEqual([]);
+    for (const id of ["sqlserver", "mysql", "files", "rest"]) {
       const page = html(createElement(ConnectorPage, { id }));
       expect(page, id).toContain('<h2 id="source-metadata"');
       expect(page.indexOf('id="source-metadata"'), id).toBeLessThan(page.indexOf('id="examples"'));
     }
-    expect(html(createElement(ConnectorPage, { id: "rest" }))).not.toContain("source-metadata");
+    expect(html(createElement(ConnectorPage, { id: "sap-ecc" }))).not.toContain("source-metadata");
+    expect(html(createElement(ConnectorPage, { id: "rest" }))).toContain(
+      "If the source is one the",
+    );
+  });
+
+  it("point only from connectors that exist to recipes that are installed", () => {
+    const ids = recipes().map((recipe) => recipe.id);
+    for (const [connector, fitting] of Object.entries(recipesThatFit)) {
+      expect(connectorIds(), connector).toContain(connector);
+      for (const id of fitting) expect(ids, `${connector}: ${id}`).toContain(id);
+    }
   });
 });
 
@@ -177,5 +221,3 @@ describe("the references", () => {
     }
   });
 });
-
-void join;
