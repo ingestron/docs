@@ -307,8 +307,8 @@ one to the file adds it to the list.
 <Screenshot
   light="/images/vscode/project-view-light.png"
   dark="/images/vscode/project-view-dark.png"
-  alt="The Ingestron tab beside retail's connections/shop.yaml in a workspace with three projects. The Project section lists erp folded, retail open and shop folded. Under retail, Environments shows dev with a check and selected, and prod with a circle, then Check, Plan, Apply, Compare environments, Prepare platform request and Show generated files. The Reference section is folded below."
-  caption="A workspace with three projects: retail, the project of the file in the editor, is open, with dev selected and prod beside it, and erp and shop are folded. The picture leaves out Request source metadata and Import source metadata…, which come before Show generated files."
+  alt="The Ingestron tab beside retail's connections/shop.yaml in a workspace with three projects. The Project section lists erp folded, retail open and shop folded. Under retail, Environments shows dev with a check and selected, and prod with a circle, then Check, Plan, Apply, Compare environments, Prepare platform request, Request source metadata, Import source metadata… and Show generated files. The Reference section is folded below."
+  caption="A workspace with three projects: retail, the project of the file in the editor, is open, with dev selected and prod beside it, and erp and shop are folded."
 />
 
 ## Reference beside the editor
@@ -398,7 +398,7 @@ it.
   and does not say which, it asks for the table's name.
 
 A file saved or copied under a project's `sources/` folder, where the request
-says, is imported as soon as it is saved, without the command. A hidden file,
+says, is imported once the save settles, without the command. A hidden file,
 such as an editor's swap file, is left alone, and so is a file over 50 MB,
 with a warning that names the command, which takes any size, and
 `ingestron source import`.
@@ -461,15 +461,15 @@ Palette. Each acts on the project you started it from:
 <Screenshot
   light="/images/vscode/context-menu-light.png"
   dark="/images/vscode/context-menu-dark.png"
-  alt="In the Explorer, the projects folder holds erp, retail and shop, folded. After VS Code's own items, the shop folder's menu shows Check, Plan, Apply, Compare environments and Prepare platform request."
-  caption="Right-click a project folder in the Explorer: Ingestron's commands come last. The picture shows the first five; the menu also has Request source metadata, Import source metadata… and Add assistant files."
+  alt="In the Explorer, the projects folder holds erp, retail and shop, folded. The shop folder's menu ends with Check, Plan, Apply, Compare environments, Prepare platform request, Request source metadata, Import source metadata… and Add assistant files, after VS Code's own items."
+  caption="Right-click a project folder in the Explorer: Ingestron's commands come last."
 />
 
 <Screenshot
   light="/images/vscode/title-buttons-light.png"
   dark="/images/vscode/title-buttons-dark.png"
-  alt="The editor title bar of flows/shop.yaml shows the Plan button, a list icon, and the Apply button, a play icon. Its … menu is open, showing Check, Compare environments and Prepare platform request after VS Code's own items."
-  caption="Plan (the list icon) and Apply (the play icon) are buttons in the editor title; Check, Compare environments and Prepare platform request are in the … menu, and so is Request source metadata, which the picture does not show."
+  alt="The editor title bar of flows/shop.yaml shows the Plan button, a list icon, and the Apply button, a play icon. Its … menu is open and ends with Check, Compare environments, Prepare platform request and Request source metadata."
+  caption="Plan (the list icon) and Apply (the play icon) are buttons in the editor title; Check, Compare environments, Prepare platform request and Request source metadata are in the … menu."
 />
 
 <Screenshot
