@@ -48,6 +48,10 @@ export interface ConnectorRecipe {
 export const recipesThatFit: Readonly<Record<string, readonly string[]>> = {
   "dynamics-365": ["dataverse"],
   rest: ["openapi"],
+  // The ADF SAP ECC connector reads OData services that SAP Gateway exposes: its linked service
+  // takes the service URL (https://learn.microsoft.com/en-us/azure/data-factory/connector-sap-ecc,
+  // read 2026-11-13).
+  "sap-ecc": ["sap-odata"],
 };
 
 /**

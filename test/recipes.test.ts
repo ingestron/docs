@@ -147,13 +147,16 @@ describe("connector pages", () => {
     expect(byConnector.rest).toEqual(["openapi:fits"]);
     expect(byConnector["dynamics-365"]).toEqual(["dataverse:fits"]);
     expect(byConnector.odata).toEqual(["odata:named"]);
-    expect(byConnector["sap-ecc"]).toEqual([]);
+    expect(byConnector["sap-ecc"]).toEqual(["sap-odata:fits"]);
+    expect(byConnector["sap-table"]).toEqual([]);
     for (const id of ["sqlserver", "mysql", "files", "rest"]) {
       const page = html(createElement(ConnectorPage, { id }));
       expect(page, id).toContain('<h2 id="source-metadata"');
       expect(page.indexOf('id="source-metadata"'), id).toBeLessThan(page.indexOf('id="examples"'));
     }
-    expect(html(createElement(ConnectorPage, { id: "sap-ecc" }))).not.toContain("source-metadata");
+    expect(html(createElement(ConnectorPage, { id: "sap-table" }))).not.toContain(
+      "source-metadata",
+    );
     expect(html(createElement(ConnectorPage, { id: "rest" }))).toContain(
       "If the source is one the",
     );
