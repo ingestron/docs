@@ -575,9 +575,11 @@ For code that calls the packages:
 
 ## What changed in a release
 
-Recent releases are commits whose message starts with the version, such as
-`2.0.0:`. Read the history of the command and of each pack
-your standard names:
+Each release is merged into `main` from a branch named for it, so the history
+shows it as a merge of `release/<version>`, such as
+`Merge pull request #33 from ingestron/release/2.3`. A patch release's commit
+starts with its version, such as `2.3.1:`. Read the history of the command and
+of each pack your standard names:
 
 - the command: [ingestron/ingestron](https://github.com/ingestron/ingestron/commits/main)
 - the packs: [pack-duckdb](https://github.com/ingestron/pack-duckdb/commits/main),
