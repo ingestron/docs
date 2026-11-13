@@ -86,6 +86,12 @@ layer, or an expectation's `drop` in a layer that does not `check`, is
 error that names the layers that do it. In a layer whose `does` leaves out
 `check`, every action is `warn`.
 
+A flow table in a layer that does `cleanse`, `check` or `quarantine` needs a
+contract, which says what to cleanse and check. In a `raw` layer, or one that
+only deduplicates, a flow table can take its columns from the source's
+metadata instead; see
+[Describe a source](/docs/how-to/describe-a-source#needs-a-contract).
+
 A layer without `does` asks nothing of its tables, so a project written before
 layers had duties generates the same files. Its flow tables still get the
 standard's `cleanse` defaults; a transform's table does not. Databricks checks

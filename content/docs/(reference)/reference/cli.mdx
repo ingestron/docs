@@ -19,8 +19,9 @@ Run the command from the folder that holds `project.yaml`. It reads the
 project there and writes to `build` there. Four options adjust the run:
 
 - `--env dev` limits `compare` and `request` to one environment; repeat it
-  for more. `plan`, `apply` and `check` always work on every environment
-  together, and refuse it.
+  for more. `source` and `contract --from-metadata` take it once.
+  `plan`, `apply` and `check` always work on every environment together, and
+  refuse it.
 - `--definitions <folder>` reads a project that is not the current folder.
 - `--out <folder>` writes somewhere other than `build`.
 - `--no-diff` lists changed files without their line differences.
@@ -62,6 +63,67 @@ combined with `--template` or `--standard`. See
   platform's. It always exits `0`. See
   [List them](/docs/how-to/choose-a-published-standard#list-them).
 
+## Source metadata [#source-metadata]
+
+Ingestron never connects to a source. `ingestron source` takes one of two
+commands, and each works on the project in `--definitions`.
+[Describe a source](/docs/how-to/describe-a-source) uses both, then drafts
+the contracts that are needed:
+
+- `ingestron source request` prints what to ask of whoever can reach each
+  source: for every connection a flow reads, the query to run or the call to
+  make, who can do it, the access it needs and where to save the result. It
+  writes nothing. `--connection <id>` limits it to one connection. The recipe
+  for each kind of source is in
+  [Source metadata recipes](/docs/reference/recipes).
+- `ingestron source import <connection> <file>` reads `<file>`, a path from
+  the current folder, and writes `sources/<connection>.yaml`, and adds that to
+  the imports of `project.yaml` when it is not there. It keeps names and
+  types, and never a value from a row. `--dry-run` prints what the file would
+  change and writes nothing, and `--object <text>` names the table a file of
+  one table describes, when its path does not name it.
+
+Both take `--env <name>` once. Without it they use the first environment
+`project.yaml` declares, and `default` when it declares none. An import with
+`--env` also records the environment as the document's `environment`; without
+it none is recorded.
+
+`ingestron contract --from-metadata <flow>.<table>` drafts a contract for each
+table named from the imported metadata, and with `--needed`, for every table
+that needs a contract and names none. It resolves for the environment `--env`
+names, or the first one. It writes `contracts/<connection>.<table>.yaml`,
+never replaces a file that is there, and prints the `contract:` line to add to
+the flow. A draft says what to review: its types, which columns are required
+and its key.
+
+The document an import writes is in [Documents](/docs/reference/documents#source-metadata),
+and the codes `plan` reports about it are in
+[Errors](/docs/reference/errors), as the ones that start `SOURCE_`.
+
+## Project guide [#project-guide]
+
+`ingestron init --assistant <names>` and `ingestron assistant add <names>`
+write a project guide for coding assistants. Every name writes `AGENTS.md`,
+which holds the guide, and `copilot` and `claude` write one more file that
+points to it:
+
+| Name                           | Files                                          |
+| ------------------------------ | ---------------------------------------------- |
+| `copilot`                      | `AGENTS.md`, `.github/copilot-instructions.md` |
+| `claude`                       | `AGENTS.md`, `CLAUDE.md`                       |
+| `codex`, `cursor` and `agents` | `AGENTS.md`                                    |
+
+`none` is the default and writes nothing. Without `--assistant` and without
+`--yes`, `init` asks last, in a terminal: an empty answer is `none`. Without a
+terminal, or with `--yes`, it asks nothing and writes nothing.
+
+The guide is written from the project's own files, and `plan` and `apply` keep
+its Ingestron section current. `check` never looks at it.
+`assistant add` takes `--definitions`, the project's folder, and `--out`, its
+output folder, and needs `project.yaml` there. It exits `1` when there is no
+guide to write or a file could not be written. See
+[Work with an AI assistant](/docs/tools/assistants).
+
 ## Output
 
 `plan` and `apply` print one block for each output folder under `--out`, such
@@ -70,11 +132,11 @@ as `databricks → build/databricks (dev, prod)`; see
 
 ## Exit codes
 
-| Code | Means                                                                                                                           |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `0`  | Success. Warnings, such as a pack's notice, do not change it.                                                                   |
-| `1`  | Problems in the definitions, or output that is not up to date or in conflict. `check` also fails while a value is `REPLACE_ME`. |
-| `2`  | A mistake in the command, such as an unknown option or `--env` given to `plan`, or a pack that cannot be loaded (`PACK_LOAD`).  |
+| Code | Means                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0`  | Success. Warnings, such as a pack's notice, do not change it. A `source import --dry-run` that would write, and breaking changes an import reports, also exit `0`.                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `1`  | Problems in the definitions, or output that is not up to date or in conflict. `check` also fails while a value is `REPLACE_ME`. `source` also exits `1` on a refused file, an unknown connection or recipe, a recipe that breaks a rule (even one no connection uses), or definitions that cannot be loaded or have errors that stop the command; `contract --from-metadata` on an unknown flow table, a table with no entry in the source metadata, a table that already names a contract, or definitions that cannot be loaded or have errors that stop it. `contract --from-metadata` does not read recipes. |
+| `2`  | A mistake in the command, such as an unknown option or `--env` given to `plan`, or a pack that cannot be loaded (`PACK_LOAD`). `source` without `request` or `import`, `source import` without a connection and a file, or with more, `--env` more than once on `source` or on `contract --from-metadata`, `--from-metadata` with neither a table nor `--needed`, or with both, and a flag given to a command it does not belong to are mistakes too.                                                                                                                                                           |
 
 ## Editor schemas
 

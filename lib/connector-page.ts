@@ -9,6 +9,7 @@ import type { TOCItemType } from "fumadocs-core/toc";
 import { parse } from "yaml";
 import { exampleFiles, listExamples, readExampleFile } from "./examples";
 import { connectorEntries, packName, type ConnectorEntry } from "./reference";
+import { connectorRecipes } from "./recipes";
 import { routeGuides } from "./routes";
 
 /** What a part of the page shows after its words. */
@@ -320,7 +321,7 @@ function readSection(id: string, entry: ConnectorEntry): Section {
         id: `${pack}-tables`,
         title: "Choose the tables",
         before: [
-          "The connection's `id` is the flow's `source`. Each entry under `tables` names a destination table and links its source `object` to a contract. The contract lists the columns and keys you expect. Replace the synthetic object and contract with yours before deploying.",
+          "The connection's `id` is the flow's `source`. Each entry under `tables` names a destination table and its source `object`, here with a contract that lists the columns and keys you expect. A table that copies the source as it is can leave out `contract` and take its columns from the [source metadata](/docs/how-to/describe-a-source) instead, [unless the platform manages its access](/docs/how-to/describe-a-source#needs-a-contract). Replace the synthetic object and contract with yours before deploying.",
         ],
         after: [],
       },
@@ -383,11 +384,23 @@ export function connectorSections(id: string): Section[] {
       id: "routes",
       title: "Routes",
       before: [
-        `These are the routes a project can take for ${title}, by the pack that reads the source. To compare them, see [Choose where your data goes](/docs/start/choose-a-route). Create it gives the command that starts a project on each route; \`init\` asks only how the source is reached, and writes \`REPLACE_ME\` for each value it cannot know, as [Start from a connection](/docs/how-to/start-from-a-template#start-from-a-connection) describes.`,
+        `These are the routes a project can take for ${title}, by the pack that reads the source. To compare them, see [Choose where your data goes](/docs/start/choose-a-route). Create it gives the command that starts a project on each route; \`init\` asks which source and how it is reached, and, in a terminal, which assistant files to write, and writes \`REPLACE_ME\` for each value it cannot know, as [Start from a connection](/docs/how-to/start-from-a-template#start-from-a-connection) describes.`,
       ],
       items: [],
     },
     ...entries.flatMap((entry) => [connectSection(entry), readSection(id, entry)]),
+    ...(connectorRecipes(id).length > 0
+      ? [
+          {
+            id: "source-metadata",
+            title: "Source metadata",
+            before: [
+              `Ingestron never connects to ${title}. Someone who can reach it saves what its tables look like, their columns, types and key, and \`ingestron source import\` reads the file. A table that copies the source as it is can then do without a contract, [unless the platform manages its access](/docs/how-to/describe-a-source#needs-a-contract). \`ingestron source request\` prints this step for your project; see [Describe a source](/docs/how-to/describe-a-source).`,
+            ],
+            items: [],
+          },
+        ]
+      : []),
     {
       id: "examples",
       title: "Examples",

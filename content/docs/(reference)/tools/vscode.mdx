@@ -1,6 +1,6 @@
 ---
 title: VS Code
-description: Write Ingestron projects in VS Code with problems as you type, navigation, completion and previews.
+description: Write Ingestron projects in VS Code with problems as you type, navigation, completion, previews and source metadata.
 ---
 
 The Ingestron extension works on any folder with a `project.yaml`. It uses the
@@ -101,7 +101,13 @@ When a problem has an obvious remedy, the light bulb beside it, or **⌘.**
 - each allowed value, and a missing field with its usual value;
 - for a method that cannot read a source, each method that can: for this
   flow, for every such source in the standard, or from a pack the standard
-  does not name yet, which adds the pack too.
+  does not name yet, which adds the pack too;
+- for a table that needs a contract (`CONTRACT_NEEDED`) and that the source
+  metadata describes, **Draft a contract from the source metadata**, which
+  writes the draft `ingestron contract --from-metadata` would, and names it
+  in the table's `contract`. When that file is there already, the fix is
+  **Use contracts/…**, which only names it. See
+  [Describe a source](/docs/how-to/describe-a-source#needs-a-contract).
 
 A fix may change several files; one undo reverts it. You choose the fix: each
 one means something different, such as one flow or the whole standard. The
@@ -192,6 +198,39 @@ environment.
   caption="A new, empty flow file filled from the skeleton: the id comes from the file name, and Tab moves to the source, offered from the project's connections."
 />
 
+### From the source metadata [#completion-from-source-metadata]
+
+Once a connection's [source metadata](/docs/how-to/describe-a-source) is
+imported, completion offers what it lists:
+
+- **A flow table's `object`** offers the tables of the metadata of the flow's
+  connection, each with how many columns it has and when it was captured.
+- **Column names** come from the table's metadata in an expectation's `check`,
+  in the table's `sequence` and `load.cursor`, in
+  `cleanse.deduplicate.order_by`, and as a new key under `cleanse.columns`,
+  where a column already written is not offered again. Outside a `check`, the
+  columns of the table's contract that the metadata does not list follow.
+  `sequence` and `load.cursor` written for the whole flow offer none, as they
+  apply to several tables.
+- **A contract's property names** come from the metadata of the flow tables
+  that use the contract; a property inside another offers the columns inside
+  that column.
+- **A connection's `metadata.from`** offers each recipe, with its title, and
+  a new key under `metadata.with` offers the recipe's inputs not yet written,
+  each with what it is. See [Source metadata recipes](/docs/reference/recipes).
+
+A column's name goes in as the text around it reads it, while the list shows
+the name as the source has it. In a `check`, which is Spark SQL, a name that is
+not a plain identifier, such as `Order Date`, or that is a reserved word, such
+as `select`, goes in backticks, `` `Order Date` ``. In YAML, a name that YAML
+would read as something else, such as `true` or `1`, goes in double quotes.
+
+YAML cannot start an unquoted value with a backtick. So when a `check:` is
+still empty and the name needs backticks, completion opens a double quote
+first, writing `` check: "`Order Date` ``, and you close the quote. A name
+holding `: ` or ` #` cannot be part of an unquoted `check` at all; put the
+check in double quotes before you choose such a name.
+
 ## What each line becomes
 
 For the environment in the status bar, the editor shows beside each line what
@@ -203,6 +242,10 @@ it resolves to:
   object shows the same files;
 - after a value with `${…}`, the value it resolves to. Secrets and environment
   variables are never shown.
+
+On the first line of a source metadata document, `sources/<connection>.yaml`,
+it shows `Written by ingestron source import. Do not edit: import again to
+replace it.`
 
 Turn these off with VS Code's `editor.inlayHints.enabled` and
 `editor.codeLens` settings.
@@ -217,6 +260,13 @@ setting the standard fixes, with the file and line. Hover a setting under
 [intent](/docs/reference/intent), each value with where it came from, such as
 `history`: `latest`, from the table's layer in the standard
 (`standard.yaml:18`).
+
+Hover a flow table that names no contract, on its key or its `object`, to see
+the columns the source metadata lists for it: each with the type the source
+gives it, the key's columns marked, and the columns inside a column below it,
+up to 50 lines. The hover ends with when and from which file they were
+captured. A table whose `object` holds an environment variable shows none,
+since which table it is depends on a value the editor does not show.
 
 Hover a value that is still `REPLACE_ME` to see the field it fills, what the
 field is, where to find the value, and a suggestion of what it looks like,
@@ -240,10 +290,11 @@ The **Ingestron** tab in the secondary side bar, on the right, opens with a
   problems, previews and the platform request show. Click an environment to
   select it, as in the status bar.
 - **Check**, **Plan**, **Apply**, **Compare environments**, **Prepare platform
-  request** and **Show generated files**. Click one to run it for the project.
-  Check, Plan and Apply work on every environment together; Prepare platform
-  request and Show generated files use the selected one. Each item's tooltip
-  says which.
+  request**, **Request source metadata**, **Import source metadata…** and
+  **Show generated files**. Click one to run it for the project. Check, Plan
+  and Apply work on every environment together; Prepare platform request,
+  Request source metadata and Show generated files use the selected one. Each
+  item's tooltip says which.
 
 With several projects, each has a row, named by its `id` and showing its folder
 in the workspace, that holds the same lists. Every row starts folded except
@@ -256,7 +307,7 @@ one to the file adds it to the list.
 <Screenshot
   light="/images/vscode/project-view-light.png"
   dark="/images/vscode/project-view-dark.png"
-  alt="The Ingestron tab beside retail's connections/shop.yaml in a workspace with three projects. The Project section lists erp folded, retail open and shop folded. Under retail, Environments shows dev with a check and selected, and prod with a circle, then Check, Plan, Apply, Compare environments, Prepare platform request and Show generated files. The Reference section is folded below."
+  alt="The Ingestron tab beside retail's connections/shop.yaml in a workspace with three projects. The Project section lists erp folded, retail open and shop folded. Under retail, Environments shows dev with a check and selected, and prod with a circle, then Check, Plan, Apply, Compare environments, Prepare platform request, Request source metadata, Import source metadata… and Show generated files. The Reference section is folded below."
   caption="A workspace with three projects: retail, the project of the file in the editor, is open, with dev selected and prod beside it, and erp and shop are folded."
 />
 
@@ -325,6 +376,64 @@ pack needs on the platform and the SQL to run once, such as Databricks'
 `prerequisites/<environment>.sql`. Nothing is sent or saved until you do so. See
 [Ask the platform team](/docs/how-to/ask-the-platform-team).
 
+## Describe a source [#source-metadata]
+
+Ingestron never connects to a source, so someone who can reach it sends the
+names and types of its tables as a file. Two commands, and saving a file,
+cover that; [Describe a source](/docs/how-to/describe-a-source) walks through
+it.
+
+- **Ingestron: Request source metadata** writes what to ask for, for the
+  environment in the status bar: who to ask, the query to run or the call to
+  make, filled in for your project, and where to save the result. With more
+  than one connection, choose one, or **All connections**. The request opens
+  as an unsaved Markdown document, ready to send; nothing is written to the
+  project.
+- **Ingestron: Import source metadata…** reads a file into
+  `sources/<connection>.yaml`. Run it on a project, and choose the file; or
+  right-click the file in the Explorer, such as a CSV someone sent. A file
+  outside every project is imported into the project of the file in the
+  editor. When the file's place does not name a connection, it uses the
+  project's only one, or asks which; and when the file describes one table
+  and does not say which, it asks for the table's name.
+
+A file saved or copied under a project's `sources/` folder, where the request
+says, is imported once the save settles, without the command. A hidden file,
+such as an editor's swap file, is left alone, and so is a file over 50 MB,
+with a warning that names the command, which takes any size, and
+`ingestron source import`.
+
+An import records the environment in the status bar, and is one edit of the
+project's files, which one undo reverts. A notification gives the first line
+of what changed, such as `sources/erp.yaml: 3 added, 0 changed, 0 removed.`,
+with how many changes break something, and **Show all changes** for the rest.
+Files imported together give one notification, such as
+`Imported 5 files: 7 tables changed, 1 breaking.`, whose **Show all changes**
+opens one document with a section for each file. A file the import refuses
+gives a warning with the reasons, and nothing of it is written; several give
+one warning, `3 files could not be imported.`, with **Show reasons**.
+
+### Problems with a recipe [#recipe-problems]
+
+A connection's `metadata` names the recipe that says how to get its metadata;
+see [Source metadata recipes](/docs/reference/recipes). Three problems about
+recipes are shown in the editor only. `ingestron source request` and
+`ingestron source import` stop with the same message instead; `plan` and
+`ingestron contract --from-metadata` do not read recipes.
+
+- **`SOURCE_RECIPE_UNKNOWN`**, at the connection's `metadata.from`:
+  `The connection "<id>" names the recipe "<from>", which does not exist. Recipes: <ids>.`
+  Name one of the recipes it lists, or add your own as `recipes/<id>.yaml`;
+  see [Use your own recipe](/docs/reference/recipes#your-own).
+- **`SOURCE_RECIPE_INPUT`**, at a key under the connection's `metadata.with`:
+  `The recipe "<id>" takes no input "<name>". Its inputs: <names>.` Rename
+  the key to one of the inputs it lists, or remove it.
+- **`SOURCE_RECIPE_BROKEN`**, on the first line of a project's own
+  `recipes/<id>.yaml`: the recipe breaks a rule, and the message, which
+  starts with the file's name, says which. Correct the file as it says; see
+  [Use your own recipe](/docs/reference/recipes#your-own). While a recipe is broken, no other recipe problem
+  is shown, and completion offers no recipes.
+
 ## Plan, apply and check
 
 **Ingestron: Plan**, **Ingestron: Apply** and **Ingestron: Check** run the
@@ -338,26 +447,29 @@ Palette. Each acts on the project you started it from:
 
 - **Right-click** a project folder, or a YAML file in a project, in the
   Explorer for **Ingestron: Check**, **Plan**, **Apply**, **Compare
-  environments** and **Prepare platform request**. The files in `build/` do not
-  have the menu.
+  environments**, **Prepare platform request**, **Request source metadata**
+  and **Add assistant files**. A project folder also has **Import source
+  metadata…**, as does any file that is not one of a project's definitions.
+  The files in `build/` do not have the menu.
 - **Editor title buttons**: with a YAML file of a project, or a preview of
   generated files, open, **Plan** and **Apply** are buttons in the editor's
-  title bar. **Check**, **Compare environments** and **Prepare platform
-  request** are under the **…** menu beside them.
+  title bar. **Check**, **Compare environments**, **Prepare platform
+  request** and **Request source metadata** are under the **…** menu beside
+  them.
 - **The Project view** lists the same actions; see [Project view](#project-view).
 
 <Screenshot
   light="/images/vscode/context-menu-light.png"
   dark="/images/vscode/context-menu-dark.png"
-  alt="In the Explorer, the projects folder holds erp, retail and shop, folded. The shop folder's menu ends with Check, Plan, Apply, Compare environments and Prepare platform request, after VS Code's own items."
+  alt="In the Explorer, the projects folder holds erp, retail and shop, folded. The shop folder's menu ends with Check, Plan, Apply, Compare environments, Prepare platform request, Request source metadata, Import source metadata… and Add assistant files, after VS Code's own items."
   caption="Right-click a project folder in the Explorer: Ingestron's commands come last."
 />
 
 <Screenshot
   light="/images/vscode/title-buttons-light.png"
   dark="/images/vscode/title-buttons-dark.png"
-  alt="The editor title bar of flows/shop.yaml shows the Plan button, a list icon, and the Apply button, a play icon. Its … menu is open and ends with Check, Compare environments and Prepare platform request."
-  caption="Plan (the list icon) and Apply (the play icon) are buttons in the editor title; Check, Compare environments and Prepare platform request are in the … menu."
+  alt="The editor title bar of flows/shop.yaml shows the Plan button, a list icon, and the Apply button, a play icon. Its … menu is open and ends with Check, Compare environments, Prepare platform request and Request source metadata."
+  caption="Plan (the list icon) and Apply (the play icon) are buttons in the editor title; Check, Compare environments, Prepare platform request and Request source metadata are in the … menu."
 />
 
 <Screenshot
@@ -407,7 +519,9 @@ standard.
   as `ingestron init --kit`; see
   [Start from a published standard](/docs/how-to/start-from-a-published-standard).
 
-Nothing else is asked. The destination folder comes last, and its name is the
+It then offers a list of coding assistants to write files for, which you may
+skip: press Enter with nothing ticked for none. Nothing else is asked. The
+destination folder comes last, and its name is the
 project's id; the environments are `dev` and `prod`, or the starter's or the
 published standard's, and the standard is the route's, the starter's or the
 published one. The new `README.md` opens in a
@@ -415,6 +529,10 @@ preview, and a message says how many values are still `REPLACE_ME`: the
 README lists each with where to find it. When the folder is outside the
 workspace, the message offers to open it or add it to the workspace. See
 [Create a project](/docs/how-to/start-from-a-template).
+
+**Ingestron: Add assistant files** writes the same files into a project you
+already have. The files, and how Plan and Apply keep the guide current, are
+in [Work with an AI assistant](/docs/tools/assistants).
 
 ## Check files with the YAML extension [#check-files-with-the-yaml-extension]
 

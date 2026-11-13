@@ -1,6 +1,6 @@
 ---
 title: Upgrade Ingestron and its packs
-description: Choose the version every project runs, see what an upgrade changes with plan, move CI and your team together, and what changed from 1.x to 2.3.
+description: Choose the version every project runs, see what an upgrade changes with plan, move CI and your team together, and what changed from 1.x to 2.4.
 ---
 
 The packs come inside the `ingestron` command: each release of the command
@@ -46,7 +46,7 @@ choose to upgrade. The [CI templates](/docs/how-to/check-in-ci) and the
 [deployment templates](/docs/how-to/deploy-through-environments) do:
 
 ```sh
-npm install -g ingestron@2.3.1
+npm install -g ingestron@2.4.0
 ```
 
 `npm ls -g ingestron` shows the version a computer has installed.
@@ -95,7 +95,7 @@ next; see [Deploy through environments](/docs/how-to/deploy-through-environments
 
 ### The standard and the folders
 
-1. Install `ingestron@2.3.1` and plan. Every pack is version 2, so a standard that
+1. Install `ingestron@2.4.0` and plan. Every pack is version 2, so a standard that
    names `databricks@1`, `adf@1`, `synapse@1` or `duckdb@1` stops with
    `PACK_VERSION`, once for all the environments that have it:
 
@@ -135,7 +135,7 @@ next; see [Deploy through environments](/docs/how-to/deploy-through-environments
    [`DEPLOY_VALUE`](/docs/reference/errors#DEPLOY_VALUE): write it in
    `project.yaml` for each environment. See
    [Supplied when deploying](/docs/concepts/yaml-references#supplied-when-deploying).
-5. Change CI: the check templates install `ingestron@2.3.1`, and the deploy
+5. Change CI: the check templates install `ingestron@2.4.0`, and the deploy
    pipelines deploy `build/<pack>/` by target, parameter file or script, as
    [Deploy through environments](/docs/how-to/deploy-through-environments)
    shows.
@@ -531,11 +531,55 @@ files are the same:
   such as `mode` and `sequence_by`, after the others, each with the intent
   that replaces it.
 
+## Upgrade to 2.4 [#upgrade-to-2-4]
+
+2.4 generates the same files as 2.3 for a project that changes nothing. It
+adds [source metadata](/docs/how-to/describe-a-source): what each source table
+looks like, imported from a file its owners send, so a table that copies the
+source as it is can do without a contract. It also adds
+[a guide for coding assistants](/docs/tools/assistants). What you may notice:
+
+- **A flow table's `contract` is optional.** A table without one takes its
+  columns and key from the source metadata. A table that needs one, because
+  its layer cleanses, checks or quarantines, the platform manages its access
+  or it has its own `expectations`, is
+  [`CONTRACT_NEEDED`](/docs/reference/errors#CONTRACT_NEEDED); one with
+  neither a contract nor metadata is
+  [`TABLE_NO_COLUMNS`](/docs/reference/errors#TABLE_NO_COLUMNS). The editor
+  no longer marks a missing `contract` as a schema error. Every table of a
+  2.3 project names a contract, so none of these is new to it.
+- **`init` asks one more question,** in a terminal, last: which coding
+  assistants to write files for. An empty answer writes none, and
+  `--assistant` or `--yes` answers it.
+- **Words.** The packs' setting descriptions and some messages say "the
+  table's columns" where they said "the contract's", since the columns can now
+  come from the source metadata. Databricks' `lakeflow_connect.columns` value
+  `contract` is now described as "Only the table's columns."
+- **VS Code 2.3** adds **Request source metadata**, **Import source
+  metadata…** and **Add assistant files**, imports a file saved under
+  `sources/`, and completes recipes and column names; see
+  [VS Code](/docs/tools/vscode#source-metadata).
+
+For code that calls the packages:
+
+- `@ingestron/definitions` 1.14 adds the `SourceMetadata` document and its
+  types, `Contract.origin`, and the `sourceTables` option of resolving, which
+  lists each flow table with its entry in the metadata.
+- `@ingestron/core` 1.2 adds the recipes (`sourceRecipes`,
+  `installedSourceRecipes`, `readSourceRecipe` and `sourceOrigin`), the
+  request (`sourceRequest`), the import (`importSource`) and drafting
+  (`draftContracts`). It reads the recipe catalogue from
+  `@ingestron/standards` 1.1.
+- `@ingestron/authoring` 2.4 adds `importSource`, `sourceRequest` and
+  `sourceFileAt` to `ProjectSnapshot`, and `replaceFrom` to a `Suggestion`.
+
 ## What changed in a release
 
-Recent releases are commits whose message starts with the version, such as
-`2.0.0:`. Read the history of the command and of each pack
-your standard names:
+Each release is merged into `main` from a branch named for it, so the history
+shows it as a merge of `release/<version>`, such as
+`Merge pull request #33 from ingestron/release/2.3`. A patch release's commit
+starts with its version, such as `2.3.1:`. Read the history of the command and
+of each pack your standard names:
 
 - the command: [ingestron/ingestron](https://github.com/ingestron/ingestron/commits/main)
 - the packs: [pack-duckdb](https://github.com/ingestron/pack-duckdb/commits/main),

@@ -1,4 +1,4 @@
 {
   "title": "Reference",
-  "pages": ["documents", "intent", "packs", "errors", "cli", "templates", "versions"]
+  "pages": ["documents", "intent", "packs", "errors", "cli", "recipes", "templates", "versions"]
 }

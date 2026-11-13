@@ -8,11 +8,14 @@ selects environments and lists the files to load. A definition only participates
 when an `imports` pattern includes it.
 
 <FlowDiagram
-  title="A flow connects source data to its contract"
+  title="A flow turns source objects into project tables"
   steps={[
     { title: "Connection", detail: "Where the source is and how to access it" },
     { title: "Flow", detail: "Which source objects become project tables" },
-    { title: "Data contract", detail: "Expected columns, types and keys" },
+    {
+      title: "Columns",
+      detail: "From the table's data contract, or else from the source metadata",
+    },
   ]}
 />
 
@@ -22,16 +25,17 @@ to produce another table when the selected packs support it.
 
 ## What each file owns
 
-| Document       | Responsibility                                                                 |
-| -------------- | ------------------------------------------------------------------------------ |
-| `project.yaml` | Project ID, imports, shared values and environment overrides                   |
-| `Standard`     | Packs, allowed methods, defaults, naming and fixed policy                      |
-| `Platform`     | Shared infrastructure and operational configuration supported by the packs     |
-| `Connection`   | Source connector, reachability and access settings                             |
-| `Flow`         | Source objects, destination table definitions and ingestion choices            |
-| `DataContract` | Expected columns, logical types, keys and other supported contract information |
-| `Transform`    | Declared input tables and code that produces another table                     |
-| `DataProduct`  | Who owns a set of published tables, their purpose and support, in ODPS         |
+| Document         | Responsibility                                                                 |
+| ---------------- | ------------------------------------------------------------------------------ |
+| `project.yaml`   | Project ID, imports, shared values and environment overrides                   |
+| `Standard`       | Packs, allowed methods, defaults, naming and fixed policy                      |
+| `Platform`       | Shared infrastructure and operational configuration supported by the packs     |
+| `Connection`     | Source connector, reachability and access settings                             |
+| `SourceMetadata` | What one connection's tables look like at the source, as an import wrote it    |
+| `Flow`           | Source objects, destination table definitions and ingestion choices            |
+| `DataContract`   | Expected columns, logical types, keys and other supported contract information |
+| `Transform`      | Declared input tables and code that produces another table                     |
+| `DataProduct`    | Who owns a set of published tables, their purpose and support, in ODPS         |
 
 A data product is an Open Data Product Standard file, usually in `products/`,
 whose output ports name the contracts it publishes; see
@@ -42,9 +46,15 @@ their method IDs. Capabilities still depend on the selected packs.
 
 ## Link definitions by ID
 
-A flow's `source` names a Connection ID. Each table's `contract` names its data
-contract; `object` identifies the source object. These are different identities.
-A transform's `inputs` names tables produced by the project.
+A flow's `source` names a Connection ID. Each table's `object` identifies the
+source object, and its `contract`, when it has one, names its data contract.
+These are different identities. A table without a `contract` takes its columns
+from the connection's source metadata, `sources/<connection>.yaml`, by its
+`object`; a contract is needed only where a person must say what the source
+cannot, such as who may read the table. See
+[Describe a source](/docs/how-to/describe-a-source). A transform's `inputs`
+names tables produced by the project, and a transform always names its
+contract.
 
 <Example name="minimal" file="flows/orders.yaml" />
 
@@ -65,7 +75,7 @@ not rename the others.
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Project and definition IDs | `id` in the project or document                                                                              |
 | Project table name         | A flow table's key or a transform's `id`                                                                     |
-| Contract link              | The table's `contract`, identifying a data contract                                                          |
+| Contract link              | The table's `contract`, when it has one, identifying a data contract                                         |
 | Platform resource name     | The pack's default patterns, or `naming` in the standard or platform; for ADF, the method's `resource_names` |
 
 [Name tables and resources](/docs/how-to/name-things-your-way) shows how the

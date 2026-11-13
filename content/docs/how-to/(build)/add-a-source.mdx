@@ -109,7 +109,10 @@ Each source is a connection, in `connections/`, and the flows that read it, in
    [YAML references and placeholders](/docs/concepts/yaml-references).
 
 2. Write a flow whose `source` is the connection's `id`, with a table for each
-   object, as in `flows/orders.yaml` above. Give each table a contract.
+   object, as in `flows/orders.yaml` above. A table takes its columns from its
+   contract, or, without one, from the source's metadata, which you import from
+   a file someone who can reach the source saves; see
+   [Describe a source](/docs/how-to/describe-a-source).
 
 3. Plan. The plan checks that a method of your standard's packs reads the
    connector, and says what is missing. For example, a flow that reads a

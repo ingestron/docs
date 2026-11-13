@@ -48,9 +48,11 @@ ingestron init sales
 ```
 
 Choose the source category, connector, network reachability and route.
-When only one route is supported, Ingestron selects it. Nothing else is asked:
-the project's id is the folder's name, its environments are `dev` and `prod`,
-and its standard is the route's own.
+When only one route is supported, Ingestron selects it. In a terminal it then
+asks, last, which assistant files to write; press Enter for none, as
+[the project guide](#project-guide) below explains. Nothing else is asked: the
+project's id is the folder's name, its environments are `dev` and `prod`, and
+its standard is the route's own.
 
 To choose them with flags (`--via` is `databricks`, `adf-databricks`,
 `adf-synapse`, `adf-duckdb` or `adf-landing`; see
@@ -189,6 +191,10 @@ Then make the rest yours:
    contracts README.md names are examples. See
    [Describe a table with a contract](/docs/how-to/write-a-contract), and the
    **Read with …** section of the connector's page for its reading options.
+   A table that copies the source as it is can do without a contract,
+   [unless the platform manages its access](/docs/how-to/describe-a-source#needs-a-contract): import the source's
+   metadata instead, and draft the contracts that are needed from it; see
+   [Describe a source](/docs/how-to/describe-a-source).
 3. Check the environments, platform and standard. Use the connector reference
    and [Azure Data Factory](/docs/platforms/adf) for ADF infrastructure, and
    [ADF resource names](/docs/how-to/name-things-your-way#adf-resource-names)
@@ -206,6 +212,21 @@ Microsoft's build writes. See
 for what those files are for.
 
 To grow the project later, see [Add a source and its tables](/docs/how-to/add-a-source).
+
+## Add a guide for coding assistants [#project-guide]
+
+`ingestron init --assistant <names>` writes a project guide as the project is
+created, and `ingestron assistant add <names>` adds it to a project you
+already have. Without `--assistant`, `init` asks which assistant files to
+write, last and only in a terminal; an empty answer is `none`, and `--yes`
+skips the question. Without a terminal, nothing is asked
+and nothing is written. The guide is `AGENTS.md`, written from the project's own files:
+what the project is, what it may change and which commands to run, and, when
+the project has connections, how to
+[prepare a source's columns file](/docs/how-to/describe-a-source#assistant).
+`ingestron plan` and `ingestron apply` keep its Ingestron section current.
+[Work with an AI assistant](/docs/tools/assistants) lists the files each
+assistant gets, and what the guide says.
 
 ## Review and generate
 

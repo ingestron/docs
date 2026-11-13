@@ -29,6 +29,7 @@ const areas: Record<string, string[]> = {
   "Build a project": [
     "/docs/how-to/start-from-a-template",
     "/docs/how-to/add-a-source",
+    "/docs/how-to/describe-a-source",
     "/docs/how-to/write-a-contract",
     "/docs/how-to/write-a-transform",
     "/docs/how-to/keep-a-table-current",
@@ -86,9 +87,11 @@ const areas: Record<string, string[]> = {
     "/docs/reference/packs/duckdb",
     "/docs/reference/errors",
     "/docs/reference/cli",
+    "/docs/reference/recipes",
     "/docs/reference/templates",
     "/docs/reference/versions",
     "/docs/tools/vscode",
+    "/docs/tools/assistants",
     "/docs/troubleshooting",
   ],
 };
@@ -198,7 +201,7 @@ describe("page URLs", () => {
     const built = readFileSync(join(process.cwd(), "test/page-urls.txt"), "utf8")
       .trim()
       .split("\n");
-    expect(built).toHaveLength(137);
+    expect(built).toHaveLength(140);
     expect(
       source
         .getPages()

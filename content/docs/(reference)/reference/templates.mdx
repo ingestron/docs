@@ -4,7 +4,7 @@ description: The built-in starters and how to create a project from one, the tem
 ---
 
 A template is a project folder with a `template.yaml`. `ingestron init` copies
-the folder into a new project, writes its `README.md`, and asks nothing. A
+the folder into a new project, writes its `README.md`, and asks nothing about its values. A
 starter is a template that ships with Ingestron: a complete project for one
 common situation, with `REPLACE_ME` where you write your own values. See [Share templates and standards](/docs/how-to/share-a-template)
 to make a template of your own. A
@@ -49,7 +49,7 @@ Each question:
 | `ask`     | What the value is                                                     |
 | `default` | The value written, unless `--set <value>=<text>` gives another        |
 
-The built-in starters have no questions: they write `REPLACE_ME`, with a
+The built-in starters ask no question about their values: they write `REPLACE_ME`, with a
 comment, where a value is yours to give.
 
 Any other field is an error, so a misspelt one is found at once. Your editor

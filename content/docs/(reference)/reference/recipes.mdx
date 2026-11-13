@@ -1,0 +1,39 @@
+---
+title: Source metadata recipes
+description: How to get the tables, columns and types of each kind of source. Who to ask, what to run or call, what to save, and the documentation each recipe comes from.
+---
+
+Ingestron never connects to a source. Someone who can reach it runs a query,
+calls an API or exports a file, and `ingestron source import` reads the file
+into the connection's [source metadata](/docs/reference/documents#source-metadata).
+A recipe says how to get that file for one kind of source.
+`ingestron source request` prints each connection's recipe filled in for your
+project, ready to send to whoever can reach the source; see
+[Describe a source](/docs/how-to/describe-a-source).
+
+<RecipeList />
+
+A connection with no `metadata` uses the recipe its connector is listed for
+above; any other connection names its recipe in `metadata.from`, and gives the
+recipe's inputs in `metadata.with`. Both are
+[fields of a connection](/docs/reference/documents#connection-metadata).
+
+## What each recipe asks for [#recipes]
+
+In a query, a call or a path, the request fills in what is in braces:
+
+<RecipePlaceholders />
+
+A placeholder the request cannot fill is left as written, and the request says
+what to write in its place.
+
+<RecipeCatalog />
+
+## Use your own recipe [#your-own]
+
+A file `recipes/<id>.yaml` in your project is a recipe too, and replaces the
+installed recipe of the same id, so a team can correct a query without waiting
+for a release. Every recipe in the project is read whole, so one that breaks a
+rule stops `ingestron source request` and `ingestron source import`, whichever
+connection uses it. VS Code shows it as a problem at its file; see
+[Problems with a recipe](/docs/tools/vscode#recipe-problems).

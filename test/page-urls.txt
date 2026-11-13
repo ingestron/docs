@@ -96,6 +96,7 @@
 /docs/how-to/configure-a-standard
 /docs/how-to/define-a-data-product
 /docs/how-to/deploy-through-environments
+/docs/how-to/describe-a-source
 /docs/how-to/grant-access
 /docs/how-to/keep-a-table-current
 /docs/how-to/kits/databricks-lakehouse-streaming
@@ -127,11 +128,13 @@
 /docs/reference/packs/databricks
 /docs/reference/packs/duckdb
 /docs/reference/packs/synapse
+/docs/reference/recipes
 /docs/reference/templates
 /docs/reference/versions
 /docs/start/choose-a-route
 /docs/start/first-project
 /docs/start/how-it-works
 /docs/start/install
+/docs/tools/assistants
 /docs/tools/vscode
 /docs/troubleshooting

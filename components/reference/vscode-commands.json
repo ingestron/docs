@@ -58,5 +58,20 @@
     "command": "ingestron.draftContract",
     "title": "Draft contract from sample",
     "category": "Ingestron"
+  },
+  {
+    "command": "ingestron.requestSourceMetadata",
+    "title": "Request source metadata",
+    "category": "Ingestron"
+  },
+  {
+    "command": "ingestron.importSourceMetadata",
+    "title": "Import source metadata…",
+    "category": "Ingestron"
+  },
+  {
+    "command": "ingestron.addAssistantFiles",
+    "title": "Add assistant files",
+    "category": "Ingestron"
   }
 ]

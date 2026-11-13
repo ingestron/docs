@@ -338,6 +338,86 @@ not in [Errors](/docs/reference/errors), because only the editor checks for it.
 `imports` (`Import "transforms/finance/*.yaml" in project.yaml`), or add one
 yourself. Then plan again.
 
+## Source metadata
+
+### A table has no columns
+
+**Symptom:** [`TABLE_NO_COLUMNS`](/docs/reference/errors#TABLE_NO_COLUMNS):
+
+```text
+flows/orders.yaml:6:11  error  TABLE_NO_COLUMNS
+  "orders" has no contract and no source metadata, so it has no columns.
+  Import the source's metadata (ingestron source request says how), or name a contract.
+```
+
+**Cause:** a flow table with no `contract` takes its columns from the
+connection's source metadata, `sources/<connection>.yaml`, and that has no
+table matching its `object`, or the project has none.
+
+**Fix:** run `ingestron source request`, save what it asks for and import it,
+as [Describe a source](/docs/how-to/describe-a-source#request) shows. Check
+that the table's `object` names the table as the metadata does. Or name a
+contract with `contract`.
+
+### A table needs a contract [#contract-needed]
+
+**Symptom:** [`CONTRACT_NEEDED`](/docs/reference/errors#CONTRACT_NEEDED):
+
+```text
+flows/orders.yaml:7:5  error  CONTRACT_NEEDED
+  "orders" needs a contract: it has its own expectations.
+  Name a contract for the table with `contract`.
+```
+
+**Cause:** the table names no contract, but a person must say something about
+it that the source cannot. The message gives the reason:
+
+- its layer's `does` lists `cleanse`, `check` or `quarantine`;
+- access is managed for it: the standard governs its access, and the
+  platform manages grants or masks for its pack, unless its layer sets
+  `access: { contract: false }`;
+- as here, it has its own `expectations`.
+
+A table that is an output of a data product needs a contract too, since the
+product's output port names the contract its table uses. A port whose
+contract no table uses is
+[`PRODUCT_CONTRACT_UNUSED`](/docs/reference/errors#PRODUCT_CONTRACT_UNUSED)
+instead.
+
+**Fix:** name a contract for it. When the source metadata has the table, the
+hint gives the command that drafts one,
+`ingestron contract --from-metadata <flow>.<table>`, and VS Code offers the
+same as a quick fix; see
+[When a table needs a contract](/docs/how-to/describe-a-source#needs-a-contract).
+
+### A change at the source fails the plan [#source-changed]
+
+**Symptom:** after an import, `plan` and `check` fail with a code that starts
+`SOURCE_`, such as
+[`SOURCE_COLUMN_GONE`](/docs/reference/errors#SOURCE_COLUMN_GONE):
+
+```text
+flows/orders.yaml:6:43  error  SOURCE_COLUMN_GONE
+  Column "ordered_at" of contract "shop.orders" is not in the source metadata for "orders.csv".
+  Remove the column from the contract, or import the source's metadata again if the column is still there.
+```
+
+**Cause:** the table's contract and its source metadata disagree in a way
+that would break a load: a column gone
+([`SOURCE_COLUMN_GONE`](/docs/reference/errors#SOURCE_COLUMN_GONE)), a type
+that no longer fits
+([`SOURCE_TYPE_CHANGED`](/docs/reference/errors#SOURCE_TYPE_CHANGED)), a
+required column that can now be null
+([`SOURCE_NULLABLE`](/docs/reference/errors#SOURCE_NULLABLE)), another key
+([`SOURCE_KEY_CHANGED`](/docs/reference/errors#SOURCE_KEY_CHANGED)), or a table
+a catalog import does not list
+([`SOURCE_TABLE_GONE`](/docs/reference/errors#SOURCE_TABLE_GONE)).
+
+**Fix:** change the contract to what the source has now, or, if the import
+was wrong or old, import the source's metadata again. To make these warnings
+you can accept instead of errors, set `sources: { breaking: warn }`; see
+[When the source changes](/docs/how-to/describe-a-source#changes).
+
 ## Environment variables and `.env`
 
 ### A variable is not set

@@ -75,7 +75,9 @@ command that creates each.
 ingestron init sales --connector sqlserver --connectivity private --via adf-databricks
 ```
 
-Without `--yes`, `init` asks only for a choice the flags leave out. It writes
+Without `--yes`, `init` asks for each choice the flags leave out, and, in a
+terminal, last, which assistant files to write; `--assistant` answers that
+question. It writes
 `REPLACE_ME` for each value it cannot know, such as the server, and its
 `README.md` lists them. Add `--standard <path or Git URL>` to use your organisation's
 standard. For DuckDB on a laptop, use `--template duckdb` instead, as in

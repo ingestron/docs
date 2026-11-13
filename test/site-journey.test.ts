@@ -42,6 +42,7 @@ it("opens with one learning path, then areas by the reader's job, with no index 
   expect(JSON.parse(read("how-to/(build)/meta.json")).pages).toEqual([
     "start-from-a-template",
     "add-a-source",
+    "describe-a-source",
     "write-a-contract",
     "write-a-transform",
     "keep-a-table-current",
@@ -100,10 +101,11 @@ it("opens with one learning path, then areas by the reader's job, with no index 
     "packs",
     "errors",
     "cli",
+    "recipes",
     "templates",
     "versions",
   ]);
-  expect(JSON.parse(read("tools/meta.json")).pages).toEqual(["vscode"]);
+  expect(JSON.parse(read("tools/meta.json")).pages).toEqual(["vscode", "assistants"]);
   // The reference, tools and examples indexes are gone, and their URLs land on a page.
   for (const [section, first] of [
     ["reference", "reference/documents"],

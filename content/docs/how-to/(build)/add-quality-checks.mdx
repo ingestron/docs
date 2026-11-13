@@ -83,6 +83,12 @@ error, [`METHOD_CHECK`](/docs/reference/errors#METHOD_CHECK).
 In the example, `bronze` does `check` and `quarantine`, so every engine checks
 the readings there.
 
+A flow table in a layer that does `cleanse`, `check` or `quarantine`, or with
+`expectations` of its own, needs a contract: its rules are what the layer
+applies. Elsewhere a table can take its columns from the source's metadata,
+with no checks; see
+[When a table needs a contract](/docs/how-to/describe-a-source#needs-a-contract).
+
 ## What each engine does [#engines]
 
 Every engine writes the checks into the files it generates, as plain SQL. What

@@ -1,0 +1,260 @@
+---
+title: Work with an AI assistant
+description: Give your coding assistant a guide to your project, written from its own files and kept current by plan and apply.
+---
+
+A coding assistant does better work in an Ingestron project when it knows the
+project's rules: change the definitions and never the generated files, plan
+before applying, work inside the standard, and never write a secret.
+Ingestron writes those rules, with the facts of your project, into
+`AGENTS.md`, the guide file that Codex, Cursor and many other assistants read,
+and points GitHub Copilot and Claude Code at it with one small file each. It
+writes them on your computer from the project's own files. It calls no
+service, reads no secret, and works with whichever assistant you already use.
+
+## Add the guide [#add]
+
+<ToolSteps>
+<Tool name="CLI">
+
+Name the assistants when you create the project, with `--assistant`. From the
+parent folder, run:
+
+```sh
+ingestron init shop --template duckdb --assistant copilot,claude --yes
+```
+
+Each file it writes prints a line after the project's own:
+
+```text
+Created shop from the template duckdb (12 files).
+AGENTS.md: written
+CLAUDE.md: written
+.github/copilot-instructions.md: written
+```
+
+Without `--assistant` and `--yes`, `init` asks last, in a terminal:
+
+```text
+AI assistant files (copilot, claude, codex, cursor, agents or none) [none]:
+```
+
+An empty answer writes none. Without a terminal, `init` asks nothing, and
+writes the guide only when `--assistant` names the assistants.
+
+For a project you already have, run from its folder:
+
+```sh
+ingestron assistant add agents
+```
+
+```text
+AGENTS.md: written
+```
+
+`assistant add` takes the same names, separated by commas or spaces, and
+`--definitions` when the project is in another folder. Run again, it prints
+`AGENTS.md: up to date`.
+
+</Tool>
+<Tool name="VS Code">
+
+**Ingestron: New project** asks, after what to start from and before the
+folder, **New project: AI assistant files (optional)**. Tick any of **GitHub
+Copilot**, **Claude Code**, **Codex**, **Cursor** and **Another tool that
+reads AGENTS.md**, or press Enter with nothing ticked for none.
+
+For a project you already have, run **Ingestron: Add assistant files** from
+the Command Palette, or right-click the project's folder, or one of its files,
+in the Explorer. Tick one or more. The Ingestron output panel lists each file,
+and a notification offers **Open AGENTS.md**. If a file could not be written,
+a warning says so, and the output panel says why.
+
+</Tool>
+</ToolSteps>
+
+Commit the files with the project, so the whole team's assistants read the
+same guide. Ingestron does not add them to `.gitignore`.
+
+## The files for each assistant [#files]
+
+Every name writes `AGENTS.md`, which holds the guide. Two write one more,
+small file that sends their assistant to it:
+
+| Name      | In VS Code                        | Files                                          | Why                                                                                   |
+| --------- | --------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `copilot` | GitHub Copilot                    | `AGENTS.md`, `.github/copilot-instructions.md` | Some Copilot features read `.github/copilot-instructions.md` and not `AGENTS.md`.     |
+| `claude`  | Claude Code                       | `AGENTS.md`, `CLAUDE.md`                       | `CLAUDE.md` imports `AGENTS.md`, so the guide is read whatever else the folder holds. |
+| `codex`   | Codex                             | `AGENTS.md`                                    | Codex reads `AGENTS.md`.                                                              |
+| `cursor`  | Cursor                            | `AGENTS.md`                                    | Cursor reads `AGENTS.md`.                                                             |
+| `agents`  | Another tool that reads AGENTS.md | `AGENTS.md`                                    | Any other assistant that reads `AGENTS.md`.                                           |
+
+`CLAUDE.md` holds two lines:
+
+{/* prettier-ignore */}
+```markdown kind="plain" title="CLAUDE.md"
+<!-- Ingestron: the project guide is in AGENTS.md. -->
+@AGENTS.md
+```
+
+`.github/copilot-instructions.md` links to the guide and repeats three of its
+rules. It holds no fact about the project, so it never goes out of date:
+
+{/* prettier-ignore */}
+```markdown kind="plain" title=".github/copilot-instructions.md"
+See [AGENTS.md](../AGENTS.md) for this Ingestron project.
+
+- Change the definitions, never the generated files: Ingestron reports a hand edit there as a conflict.
+- After a change, follow AGENTS.md: run its plan command, fix every problem it reports, and show the user the plan before applying. Its check command must then pass.
+- Never write a password, token, key or connection string in any file. Use `${secret:name}` for a credential.
+```
+
+When a file is already there, Ingestron adds to it and keeps what it holds:
+the guide's section goes at the end of `AGENTS.md`, and the lines above at the
+end of `CLAUDE.md` or `.github/copilot-instructions.md`, each only when the
+file lacks it. Nothing else is written: no rules, prompts or skills folders.
+
+## What the guide says [#guide]
+
+The guide names no assistant, so one text serves them all. For the DuckDB
+starter it starts:
+
+{/* prettier-ignore */}
+```markdown kind="writes" title="AGENTS.md"
+<!-- ingestron:begin guide 1. Ingestron writes this section and `ingestron apply` keeps it current. Write your own notes outside it, or delete both markers to make it yours. -->
+# Working on this Ingestron project
+
+This folder holds Ingestron definitions: YAML that generates the files the data platform deploys. Ingestron runs on this computer; it never connects to a source or a cloud.
+
+## This project
+
+- Project `shop`. Environments: `dev` (`project.yaml`).
+- Standard `defaults` in `standard.yaml`. Packs: `duckdb@2`.
+- Definitions: the files `project.yaml` imports: `standard.yaml`, `platform.yaml`, `connections/*.yaml`, `flows/*.yaml`, `transforms/*.yaml`, `contracts/*.yaml`.
+- Generated, one folder per pack: `build/duckdb/` (a folder per environment).
+```
+
+Then come:
+
+- **Rules:** change the definitions, never `build/`; run `ingestron plan`, fix
+  every problem, and show you the plan before `ingestron apply`; work inside
+  the standard, with the methods it allows and the settings it fixes, and
+  never edit it to clear a problem; ask you for each `REPLACE_ME` value; look
+  settings up in these docs or the editor schemas; never write a secret; how
+  this project's `${envvar:…}` values are supplied, and never to read or
+  commit `.env` files; and that environments differ only in values.
+- **Source metadata,** when the project has a connection; see
+  [below](#source-metadata).
+- **Commands:** `plan`, `apply`, `check`, `compare`, `request` and `contract`,
+  each with what it does, and the two `source` commands when the project has
+  a connection.
+
+Ingestron reads the facts from `project.yaml` and the files it imports,
+without resolving them, so a project with problems still gets a guide. It
+never reads a `.env` file, and no value of a secret or an environment
+variable appears in any file it writes. With `--out`, the guide names that
+folder in place of `build/`, and each `plan`, `apply` and `check` it writes
+carries the same `--out`.
+
+## Keep it current [#keep-current]
+
+The guide is the section between the two marker lines. Ingestron owns it; the
+rest of `AGENTS.md` is yours, for your own notes. The end marker records a
+hash of the section as written, so Ingestron can tell whether anyone has
+changed it since.
+
+When the facts change, such as an environment added to `project.yaml`, a pack
+or a fixed setting in the standard, `ingestron plan` says so, after
+everything else it prints:
+
+```text
+AGENTS.md: the Ingestron section would change
+```
+
+`ingestron apply` rewrites the section, and only the section:
+
+```text
+AGENTS.md: updated the Ingestron section
+```
+
+If someone edited the section by hand, `plan` and `apply` leave it as it is.
+`plan` says:
+
+```text
+AGENTS.md: the Ingestron section was edited by hand, so apply will not update it. Move your notes outside it, or delete both markers to keep it as your own.
+```
+
+and `apply`:
+
+```text
+AGENTS.md: the Ingestron section was edited by hand, so it was not updated. Move your notes outside it, or delete both markers to keep it as your own.
+```
+
+Move your notes outside the markers, and `apply` keeps the section current
+again. If the guide's own text was changed, delete the section, markers and
+all, and run `ingestron assistant add agents` to write it afresh. To keep the
+edited text as your own instead, delete both marker lines: `plan` and `apply`
+then leave the file alone.
+
+The guide never changes the exit code of `plan` or `apply`, and
+`ingestron check` never looks at it, so neither a build nor CI fails over it.
+`CLAUDE.md` and `.github/copilot-instructions.md` hold no facts, so they are
+never rewritten.
+
+## Source metadata [#source-metadata]
+
+When the project has a connection, the guide gains a **Source metadata** part.
+It names the connections and tells the assistant:
+
+- each connection's tables are described in `sources/<connection>.yaml`, which
+  `ingestron source import` writes, and that file is never edited by hand;
+- `ingestron source request` says what to run or export at each source;
+- a flow table needs a contract only where a person must say something the
+  source cannot, and `ingestron contract --from-metadata --needed` drafts the
+  missing ones for you to review.
+
+It also tells the assistant how to turn material no reader takes, such as a
+vendor's data dictionary, a spreadsheet, a PDF or a description in an email,
+into a columns file, `sources/<connection>.assistant.csv`. The file has the
+eight fields of the columns file, keeps every table and column the material
+shows, writes a type the assistant is unsure of as `string`, never invents a
+key and never copies a value from a row. The assistant checks the file with
+`ingestron source import <connection> sources/<connection>.assistant.csv --dry-run`
+before it says it is done.
+
+Then you import the file, as any other; in VS Code, a file saved under
+`sources/` is imported as soon as it is saved. Once the guide has this part,
+the source request offers the assistant's columns file as one of the ways to
+describe a source. Ingestron trusts it no more than a sample; see
+[A coding assistant's columns file](/docs/how-to/describe-a-source#assistant).
+
+## Keep the project at the root [#root]
+
+Ingestron writes the files in the project's folder, next to `project.yaml`.
+Assistants look for them from where they start, and some read them only at
+the root of the repository, or of the folder open in the editor. So the files
+work best when the project's folder is that root. If the project is a folder
+inside a larger repository, open that folder in the editor, or start the
+assistant there.
+
+## What each line means [#lines]
+
+`init --assistant` and `assistant add` print one line for each file:
+
+| Line                                                                        | Means                                                                                                 |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `<file>: written`                                                           | The file was new, or empty.                                                                           |
+| `<file>: up to date`                                                        | The file already had what would be written.                                                           |
+| `AGENTS.md: added the Ingestron section`                                    | `AGENTS.md` was yours, with no section; the section was added at the end.                             |
+| `AGENTS.md: updated the Ingestron section`                                  | The section was out of date, and was rewritten.                                                       |
+| `CLAUDE.md: added @AGENTS.md`                                               | `CLAUDE.md` was there without the import, which was added at the end.                                 |
+| `.github/copilot-instructions.md: added the link to AGENTS.md`              | The file was there without the link; the lines above were added at the end.                           |
+| `AGENTS.md: the Ingestron section was edited by hand, …`                    | Nothing was written to `AGENTS.md`; see [Keep it current](#keep-current). The other files still are.  |
+| `<file>: not a regular file, so nothing was written to it.`                 | The path is a link, a folder or something else that is not a file. The other files are still written. |
+| `<file>: could not be read (<code>), …` or `could not be written (<code>).` | The file system refused, with its error code, such as `EACCES`. The original is left as it was.       |
+| `No guide: project.yaml cannot be read.` or `… has no id.`                  | Nothing was written: fix `project.yaml` first.                                                        |
+| `No project.yaml in <folder>.`                                              | `assistant add` found no project in the folder; run it there, or give `--definitions`. It exits `1`.  |
+
+`assistant add` exits with `1` when there is no guide or a file was not
+written, and with `0` otherwise, an edited section included. The names and
+options are in [the command line reference](/docs/reference/cli#project-guide).

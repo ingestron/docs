@@ -37,6 +37,7 @@ import {
   ZonesNotApplied,
 } from "@/components/reference/pack-intent";
 import { KitFacts, KitFile, KitIntent, KitList } from "@/components/reference/kits";
+import { RecipeCatalog, RecipeList, RecipePlaceholders } from "@/components/reference/recipes";
 import { ErrorCodes, LoadingCodes } from "@/components/reference/error-codes";
 import { ExtensionCommands } from "@/components/reference/extension-commands";
 import { ExamplesList } from "@/components/reference/examples-list";
@@ -106,6 +107,9 @@ export function getMDXComponents(components?: MDXComponents) {
     KitFacts,
     KitFile,
     KitIntent,
+    RecipeList,
+    RecipePlaceholders,
+    RecipeCatalog,
     CliCommands,
     BuiltInTemplates,
     ProjectSources,
