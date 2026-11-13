@@ -128,7 +128,9 @@ Ingestron never connects to your sources. It writes a request saying what to
 run or export at each one, and reads the names and types of the columns from
 the file that comes back, never the rows. A table that copies a source as it
 is takes its columns from there, so only the tables your team makes promises
-about, such as who may read them, need a contract, and Ingestron drafts those. A change at the source
+about, such as who may read them,
+[need a contract](/docs/how-to/describe-a-source#needs-a-contract), and
+Ingestron drafts those. A change at the source
 shows up in the plan before it breaks a load. See
 [Describe a source](/docs/how-to/describe-a-source).
 
@@ -140,6 +142,14 @@ repository with `--standard`. A template is a project folder and a standard is
 one YAML file, so you can keep them in any Git repository your team, or anyone
 else, can clone. The packs are open source under Apache-2.0. See
 [Share templates and standards](/docs/how-to/share-a-template).
+
+### A guide for your coding assistant
+
+`ingestron init --assistant` writes `AGENTS.md`, which tells the coding
+assistant you use how to work in the project: change the definitions and
+never the generated files, show you the plan before applying, and stay
+inside the standard. `plan` and `apply` keep it current as the project
+changes. See [Work with a coding assistant](/docs/tools/assistants).
 
 ## Where your data can go
 

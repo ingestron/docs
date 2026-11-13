@@ -370,9 +370,19 @@ flows/orders.yaml:7:5  error  CONTRACT_NEEDED
 ```
 
 **Cause:** the table names no contract, but a person must say something about
-it that the source cannot: its layer cleanses or checks rows, the platform
-manages who may read it, or, as here, it has its own `expectations`. The
-message gives the reason.
+it that the source cannot. The message gives the reason:
+
+- its layer's `does` lists `cleanse`, `check` or `quarantine`;
+- access is managed for it: the standard governs its access, and the
+  platform manages grants or masks for its pack, unless its layer sets
+  `access: { contract: false }`;
+- as here, it has its own `expectations`.
+
+A table that is an output of a data product needs a contract too, since the
+product's output port names the contract its table uses. A port whose
+contract no table uses is
+[`PRODUCT_CONTRACT_UNUSED`](/docs/reference/errors#PRODUCT_CONTRACT_UNUSED)
+instead.
 
 **Fix:** name a contract for it. When the source metadata has the table, the
 hint gives the command that drafts one,

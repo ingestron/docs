@@ -135,5 +135,6 @@
 /docs/start/first-project
 /docs/start/how-it-works
 /docs/start/install
+/docs/tools/assistants
 /docs/tools/vscode
 /docs/troubleshooting

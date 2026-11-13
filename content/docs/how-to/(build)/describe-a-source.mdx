@@ -270,9 +270,9 @@ the columns file as `sources/<connection>.assistant.csv`, keep every table and
 column the material shows, write a type it is unsure of as `string`, never
 invent a key, never copy a value from a row, and check the file with
 `ingestron source import <connection> <file> --dry-run` before it says it is
-done. The source request then offers this way too. The names `add` takes, and
-`init --assistant`, are in
-[the command line reference](/docs/reference/cli#project-guide).
+done. The source request then offers this way too. Which files each
+assistant needs, and how `plan` and `apply` keep the guide current, are in
+[Work with a coding assistant](/docs/tools/assistants).
 
 Ingestron trusts an assistant's columns file no more than a sample: its tables
 are compared by column names only, and a contract drafted from them carries no
