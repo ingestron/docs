@@ -321,7 +321,7 @@ function readSection(id: string, entry: ConnectorEntry): Section {
         id: `${pack}-tables`,
         title: "Choose the tables",
         before: [
-          "The connection's `id` is the flow's `source`. Each entry under `tables` names a destination table and its source `object`, here with a contract that lists the columns and keys you expect. A table that copies the source as it is can leave out `contract` and take its columns from the [source metadata](/docs/how-to/describe-a-source) instead. Replace the synthetic object and contract with yours before deploying.",
+          "The connection's `id` is the flow's `source`. Each entry under `tables` names a destination table and its source `object`, here with a contract that lists the columns and keys you expect. A table that copies the source as it is can leave out `contract` and take its columns from the [source metadata](/docs/how-to/describe-a-source) instead, [unless the platform manages its access](/docs/how-to/describe-a-source#needs-a-contract). Replace the synthetic object and contract with yours before deploying.",
         ],
         after: [],
       },
@@ -395,7 +395,7 @@ export function connectorSections(id: string): Section[] {
             id: "source-metadata",
             title: "Source metadata",
             before: [
-              `Ingestron never connects to ${title}. Someone who can reach it saves what its tables look like, their columns, types and key, and \`ingestron source import\` reads the file. A table that copies the source as it is then needs no contract. \`ingestron source request\` prints this step for your project; see [Describe a source](/docs/how-to/describe-a-source).`,
+              `Ingestron never connects to ${title}. Someone who can reach it saves what its tables look like, their columns, types and key, and \`ingestron source import\` reads the file. A table that copies the source as it is can then do without a contract, [unless the platform manages its access](/docs/how-to/describe-a-source#needs-a-contract). \`ingestron source request\` prints this step for your project; see [Describe a source](/docs/how-to/describe-a-source).`,
             ],
             items: [],
           },

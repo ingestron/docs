@@ -12,17 +12,16 @@ A table takes its columns, their types and its key from one of two places:
 - **A contract:** what your team promises about the table; see
   [Describe a table with a contract](/docs/how-to/write-a-contract).
 
-A raw copy of a source can do without a contract: its columns are what the
-source has.
-A contract is needed only where a person must say what the source cannot; see
+A raw copy of a source can do without a contract, since its columns are what
+the source has, unless the platform manages who may read it. A contract is
+needed only where a person must say what the source cannot; see
 [When a table needs a contract](#needs-a-contract). Where a table has both,
 Ingestron compares them, so a change at the source shows up in `plan` before
 the data stops landing.
 
 Ingestron never connects to a source. Someone who can reach it runs a query,
-calls an API or exports a file, and Ingestron reads that file. It reads only
-the names and types of the columns, never the rows, and writes no value from a
-row.
+calls an API or exports a file, and Ingestron reads that file. It keeps only
+the names and types of the columns, and writes no value from a row.
 
 To follow along, create a project that loads two tables of a SQL Server ERP
 with Databricks, and generate its files:
@@ -232,9 +231,11 @@ is imported as this table:
 
 - **A record inside a record** is a column of `logicalType: object`, with its
   keys as its fields, when the keys are names rather than data. With several
-  records in the sample, at least one key must be in every one of them, and a
-  key found in only one is left out: one record cannot show that `tier` is a
-  name and not a value. A later sample that has it twice adds it.
+  records in the sample, the nested record must be in at least two of them,
+  and at least one key must be in every one it is in; a nested record found
+  in only one record is an `object` with no fields. A key found in only one
+  is left out: one record cannot show that `tier` is a name and not a value.
+  A later sample that has it twice adds it.
 - **Keys that look like data,** such as dates, numbers or UUIDs, keys with
   characters other than letters, digits, spaces and `_ $ . -`, or more than 100
   different keys, make the column an `object` with no fields, as
@@ -324,13 +325,15 @@ what changed, such as `sources/erp.yaml: 3 added, 0 changed, 0 removed.`, with
 **Show all changes** for the rest. Files saved together give one
 notification. A file the import refuses gives a warning with the reasons, and
 nothing is written. The import is an edit of `sources/<connection>.yaml` you
-can undo, and it records the environment selected in the status bar.
+can undo. It records the environment selected in the status bar, else the
+project's first, so the document it writes has `environment: dev`, which the
+command writes only with `--env`.
 
 To import a file kept somewhere else, right-click it in the Explorer and choose
 **Ingestron: Import source metadata…**, or run it from the Command Palette
-and choose the file. It asks for the connection when the file's path does not
-name one, and for the table when the file describes one table and its path
-does not name it.
+and choose the file. When the file's path does not name a connection and the
+project has more than one, it asks which; and it asks for the table when the
+file describes one table and its path does not name it.
 
 </Tool>
 </ToolSteps>
@@ -411,8 +414,10 @@ Plan:
 ingestron plan
 ```
 
-The table takes its columns and key from the metadata, and the managed
-ingestion pipeline gets them:
+The plan first notes, as information (`SOURCE_COLUMN_NEW`), that the
+source's customers table has a column, `email`, which the customers contract
+does not take. The table takes its columns and key from the metadata, and the
+managed ingestion pipeline gets them. The plan ends:
 
 ```text
 databricks → build/databricks (dev, prod)
@@ -460,7 +465,10 @@ cannot:
 - its [layer](/docs/concepts/layers) does `cleanse`, `check` or `quarantine`;
 - it is an output of a [data product](/docs/how-to/define-a-data-product);
 - the platform manages grants or masks for it, so a contract must say who may
-  read it and which columns are sensitive; see
+  read it and which columns are sensitive, unless its layer sets
+  `access: { contract: false }`, as the bronze layer of
+  [Streaming lakehouse on Databricks](/docs/how-to/kits/databricks-lakehouse-streaming)
+  does; see
   [Grant access, mask columns and filter rows](/docs/how-to/grant-access);
 - it has its own `expectations`.
 
@@ -506,7 +514,10 @@ contract from the source metadata**. It writes the draft and adds the
 </ToolSteps>
 
 The draft carries the source's types, which columns cannot be null, and its
-key, for you to review:
+key, for you to review. `status: draft` is plain ODCS and changes nothing in
+Ingestron. A decimal's precision and scale are not carried, since ODCS 3.1
+has no field for them, so `amount` is a `number`; give it a `physicalType`,
+such as `DECIMAL(18,2)`, if the table needs the exact type:
 
 ```yaml kind="plain" title="contracts/erp.payments.yaml"
 # Drafted from "ERP.dbo.Payments" in sources/erp.yaml (catalog, captured 2026-11-13).
@@ -587,9 +598,11 @@ table a catalog import does not list is reported only once the connection has
 tables from a catalog, since only a catalog describes the whole source. Every
 code that starts `SOURCE_` is in [Errors](/docs/reference/errors).
 
-A breaking difference fails `plan` and `check` by default. To make each a
-warning instead, set `sources` in the standard, or in `platform.yaml`, which
-wins and stays when you move to a newer published standard:
+A breaking difference fails `plan` and `check` by default:
+`sources: { breaking: fail }`. To make each a warning instead, set `breaking`
+to `warn`, in the standard or in `platform.yaml`, which wins and stays when
+you move to a newer published standard; see
+[`sources.breaking`](/docs/reference/documents#platform-sources-breaking):
 
 ```yaml
 sources: { breaking: warn }

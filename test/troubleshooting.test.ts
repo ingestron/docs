@@ -376,6 +376,68 @@ describe("2.0", () => {
   }, 30_000);
 });
 
+describe("source metadata", () => {
+  it("quotes a table with no columns, and its fix: a contract, or metadata for the table", () => {
+    const project = copy("duckdb");
+    edit(project, "flows/orders.yaml", (text) => text.replace(", contract: shop.orders", ""));
+    const failed = cli(project, ["plan", "--no-diff"]);
+    expect(failed.code).toBe(1);
+    quotes("A table has no columns", failed.output);
+    // The source's metadata for the table gives it its columns.
+    writeFileSync(join(project, "orders.csv"), readFileSync(join(project, "samples/orders.csv")));
+    const imported = cli(project, [
+      "source",
+      "import",
+      "shop",
+      "orders.csv",
+      "--object",
+      "orders.csv",
+    ]);
+    expect(imported.code, imported.output).toBe(0);
+    expect(cli(project, ["plan", "--no-diff"]).code).toBe(0);
+  }, 30_000);
+
+  it("quotes a table that needs a contract, and naming one fixes it", () => {
+    const project = copy("duckdb");
+    edit(project, "flows/orders.yaml", (text) =>
+      text.replace(
+        "  orders: { object: orders.csv, contract: shop.orders }",
+        "  orders:\n    object: orders.csv\n    expectations:\n      - { name: positive_amount, check: amount > 0 }",
+      ),
+    );
+    const failed = cli(project, ["plan", "--no-diff"]);
+    expect(failed.code).toBe(1);
+    quotes("A table needs a contract [#contract-needed]", failed.output);
+    edit(project, "flows/orders.yaml", (text) =>
+      text.replace(
+        "    object: orders.csv\n",
+        "    object: orders.csv\n    contract: shop.orders\n",
+      ),
+    );
+    expect(cli(project, ["plan", "--no-diff"]).output).not.toContain("CONTRACT_NEEDED");
+  }, 30_000);
+
+  it("quotes a column gone at the source, and a warning once breaking changes warn", () => {
+    const project = copy("duckdb");
+    writeFileSync(join(project, "orders.csv"), "order_id,customer,amount\n1,Ana,10.5\n");
+    expect(
+      cli(project, ["source", "import", "shop", "orders.csv", "--object", "orders.csv"]).code,
+    ).toBe(0);
+    for (const command of [["plan", "--no-diff"], ["check"]]) {
+      const failed = cli(project, command);
+      expect(failed.code).toBe(1);
+      quotes("A change at the source fails the plan [#source-changed]", failed.output);
+    }
+    edit(project, "platform.yaml", (text) => `${text}sources: { breaking: warn }\n`);
+    const warned = cli(project, ["plan", "--no-diff"]);
+    expect(warned.code).toBe(0);
+    expect(warned.output).toContain("warning  SOURCE_COLUMN_GONE");
+    expect(entry("A change at the source fails the plan [#source-changed]")).toContain(
+      "`sources: { breaking: warn }`",
+    );
+  }, 30_000);
+});
+
 describe("environment variables and .env", () => {
   const unset = () => {
     const project = copy("duckdb");

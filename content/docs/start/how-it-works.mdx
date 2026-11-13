@@ -30,12 +30,13 @@ deploying belongs to your platform's tools and your release pipeline.
 - **Flows:** which tables to read from a connection, and how to keep them.
 - **Contracts:** what you promise about a table: its columns, types, keys and
   checks, in the Open Data Contract Standard (ODCS). A table that copies a
-  source as it is needs none.
+  source as it is can do without one,
+  [unless the platform manages its access](/docs/how-to/describe-a-source#needs-a-contract).
 - **Source metadata,** which you import rather than write: what each source
-  table looks like, from a file that someone who can reach the source saves. A table without a
-  contract takes its columns from it, and a table with one is compared with
-  it, so a change at the source shows up before it breaks a load; see
-  [Describe a source](/docs/how-to/describe-a-source).
+  table looks like, from a file that someone who can reach the source saves.
+  A table without a contract takes its columns from it, and a table with one
+  is compared with it, so a change at the source shows up before it breaks a
+  load; see [Describe a source](/docs/how-to/describe-a-source).
 - **Transforms:** SQL (or PySpark on Databricks) that builds a table from
   others.
 - **One standard:** the packs the project uses, and your organisation's rules.
