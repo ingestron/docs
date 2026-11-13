@@ -165,8 +165,11 @@ of its schema entries is a table.
 
 Any source can export a few rows. Save each table's sample where the request
 says, `sources/<connection>/<object>.<csv|json|jsonl|parquet>`, such as
-`sources/erp/ERP.dbo.Customers.csv`: the path names the table. Saved anywhere
-else, a sample is imported with `--object`, which names its table.
+`sources/erp/ERP.dbo.Customers.csv`: the path names the table. A table whose
+name ends with the extension already keeps it once: a flow that reads
+`orders.csv` from `shop` is asked for `sources/shop/orders.csv`, and that file
+is imported as `orders.csv`. Saved anywhere else, a sample is imported with
+`--object`, which names its table.
 
 A sample's values are read only to find each column's type, and then dropped:
 the metadata holds names and types, and no value. Even so, a CSV or JSON
