@@ -9,32 +9,32 @@ importers:
   .:
     dependencies:
       '@ingestron/authoring':
-        specifier: ^2.3.1
-        version: 2.3.1
+        specifier: ^2.4.0
+        version: 2.4.0
       '@ingestron/cli':
-        specifier: ^2.3.1
-        version: 2.3.1
+        specifier: ^2.4.0
+        version: 2.4.0
       '@ingestron/core':
-        specifier: ^1.1.1
-        version: 1.1.1
+        specifier: ^1.2.0
+        version: 1.2.0
       '@ingestron/definitions':
-        specifier: ^1.13.0
-        version: 1.13.0
+        specifier: ^1.14.0
+        version: 1.14.0
       '@ingestron/pack-adf':
-        specifier: ^2.3.0
-        version: 2.3.0(@ingestron/definitions@1.13.0)
+        specifier: ^2.4.0
+        version: 2.4.0(@ingestron/definitions@1.14.0)
       '@ingestron/pack-databricks':
-        specifier: ^2.3.0
-        version: 2.3.0(@ingestron/definitions@1.13.0)
+        specifier: ^2.4.0
+        version: 2.4.0(@ingestron/definitions@1.14.0)
       '@ingestron/pack-duckdb':
-        specifier: ^2.2.0
-        version: 2.2.0(@ingestron/definitions@1.13.0)
+        specifier: ^2.3.0
+        version: 2.3.0(@ingestron/definitions@1.14.0)
       '@ingestron/pack-synapse':
-        specifier: ^2.2.0
-        version: 2.2.0(@ingestron/definitions@1.13.0)
+        specifier: ^2.3.0
+        version: 2.3.0(@ingestron/definitions@1.14.0)
       '@ingestron/standards':
-        specifier: ^1.0.0
-        version: 1.0.0
+        specifier: ^1.1.0
+        version: 1.1.0
       fflate:
         specifier: 0.8.2
         version: 0.8.2
@@ -789,12 +789,12 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@ingestron/authoring@2.3.1':
-    resolution: {integrity: sha512-Z5yYloIYlyvbjGB4d961HVIdd8erWqjwYX/5of+bxu6jrWHJBdm3b/dVJV/H0l6bgydyVOpaP1NVFUCuJULDOQ==}
+  '@ingestron/authoring@2.4.0':
+    resolution: {integrity: sha512-iVKQ1PRhDsqel2rwsTJ4xB4st/BygjH3vksm5K1fZbvDFdK3IZ2h+SjnusXIeLM0ngA9f7x0EBuPINxwNNAvjQ==}
     engines: {node: '>=22.13.0'}
 
-  '@ingestron/cli@2.3.1':
-    resolution: {integrity: sha512-24CUipuWMChcmwF2Ez20vWEndyF6suIz1eRikesoSA1cTiPt8Zxn7V8axHi8ZbWGSHGLcya3N8B/viNCfUcovw==}
+  '@ingestron/cli@2.4.0':
+    resolution: {integrity: sha512-x0gDnj2D7wonhOyt2TSfK6Y+WIq+bHIMFi+5qoaB0fDMa5hXs9tr9e6S2QCZrNIOYjnaP4kVLscWE9a2BwN+RQ==}
     engines: {node: '>=22.13.0'}
     hasBin: true
 
@@ -802,44 +802,44 @@ packages:
     resolution: {integrity: sha512-ybWLmq4xf4RARirY24MxqwzAyS0KDMLMuoWVW71zRxaCXzclDeuKjNx8UYt6Kfhcqwy6aXty2zhJQhj/7LMmbQ==}
     engines: {node: '>=22.13.0'}
 
-  '@ingestron/core@1.1.1':
-    resolution: {integrity: sha512-srMNFH2s0vKkMs6BsK9AcKgi3M12301QGIkwguOzJtQoRr2jWt7yR2Cy7JodkxNtZeVg1oy4zG86b3c3aZJGHg==}
+  '@ingestron/core@1.2.0':
+    resolution: {integrity: sha512-7Xrs3rrd8QuX8f4HGGLltXYAlblqe+rlp8gFLxRHKrKIe/p4kwpSHcGU0vb6Mt5muHKzI31LgU2TB+PbU7QmyA==}
     engines: {node: '>=22.13.0'}
 
-  '@ingestron/definitions@1.13.0':
-    resolution: {integrity: sha512-/hqZ10uvdlZtVWcyKEB1aPc9rx0WZhjJ3dmG8v3cbcgoAg1maDOT4z54fZpA+7eQY4Yxjj4XWBuwzSRtcjWACQ==}
+  '@ingestron/definitions@1.14.0':
+    resolution: {integrity: sha512-Js7tLXptes3tkeeR3rPX0fyBlOMiYQc/QduwBpnH+u9X3HAM+YMX/ZU3JjJ3OYL2YW8Rp+Sl4De+pg6IG4nKoA==}
     engines: {node: '>=22.13.0'}
 
   '@ingestron/generate@1.1.0':
     resolution: {integrity: sha512-Ouhps0spdV4ueubGYbx2ZGenTkAyA8YvuhuDpHi19uX33RfxlM5ILRSUwnZhg91lPcmJmxYrHnGyfuU98bp2Vw==}
     engines: {node: '>=22.13.0'}
 
-  '@ingestron/pack-adf@2.3.0':
-    resolution: {integrity: sha512-bMW32GInQ5L1KZb5F/tVDA0iJ/UtczH16n+pzOCFJoKILPr1uu2JIuGWRW4SWlERAHhcCq1/8B7SwBkeWz4CvQ==}
+  '@ingestron/pack-adf@2.4.0':
+    resolution: {integrity: sha512-VeQlcsDSXpp9sAXYDfIR8G49HqmrVdKJ+4PMjxVnakUipiL+md1h4FR+lh7pO0URBfRWp4zLYFb3sxv0XmqWdg==}
     engines: {node: '>=22.13.0'}
     peerDependencies:
-      '@ingestron/definitions': ^1.13.0
+      '@ingestron/definitions': ^1.14.0
 
-  '@ingestron/pack-databricks@2.3.0':
-    resolution: {integrity: sha512-LZ0+l/dGBWvxTKcOQgvvMWI10HNdWb2XAIab2CMlEMUrXt4ITMDMfsjCx8HfSdUbsWE/t6vnNozHOO+8ZBDczQ==}
+  '@ingestron/pack-databricks@2.4.0':
+    resolution: {integrity: sha512-cp3i2mWWFIWnLe5ZsWbGy0/hawwfajkxms2bdgurbK23j3v3VK9g7PaUmr5dgnXGebjNYhkYbIFAbsh9EZvtZw==}
     engines: {node: '>=22.13.0'}
     peerDependencies:
-      '@ingestron/definitions': ^1.13.0
+      '@ingestron/definitions': ^1.14.0
 
-  '@ingestron/pack-duckdb@2.2.0':
-    resolution: {integrity: sha512-x/C90ZTerzT2anRPRNlTy3hdmU+l+7cYCv5TaLoz/gbj5ZiiTXn75fxZE8WSV5tRaZC2qL+wpBvw+/YaU3vIkQ==}
+  '@ingestron/pack-duckdb@2.3.0':
+    resolution: {integrity: sha512-REdhncxcoECTr7MMqyO+nXwkoCcIuFEPcEgQGn8OqAQKi3nf4vanN9ll+C7WQEy1ddEa70s1c4R8wOISRZbYUg==}
     engines: {node: '>=22.13.0'}
     peerDependencies:
-      '@ingestron/definitions': ^1.13.0
+      '@ingestron/definitions': ^1.14.0
 
-  '@ingestron/pack-synapse@2.2.0':
-    resolution: {integrity: sha512-6Xrfg+BZ+oh1nEmMbhou0X6mc5cxtYP3DuEuLqJa8vPs8q+nFaCo6B4XERbclyb+lBIzuu0WVXfcrlUQbdAAgA==}
+  '@ingestron/pack-synapse@2.3.0':
+    resolution: {integrity: sha512-i+NnGY6MyfqPSPki8RmspNxT5QOE8oOcgJ353X0Fsk0hhz4dBoEoVBrIDK+MphdonEcXvv0J2GzOOneXAcuO3A==}
     engines: {node: '>=22.13.0'}
     peerDependencies:
-      '@ingestron/definitions': ^1.13.0
+      '@ingestron/definitions': ^1.14.0
 
-  '@ingestron/standards@1.0.0':
-    resolution: {integrity: sha512-QXO4JfaWKZ5fdqYo3uxaPTk+zRLbFLT+++6Tvj+7zFdVBxt7U/SJKC4B8hYgTVQ8k0XjeCHsv4j6ePImNp92MA==}
+  '@ingestron/standards@1.1.0':
+    resolution: {integrity: sha512-yYQk2WmuSENBD7p/ZGFjz5D4dSzwLM7iojz1+qm7sCZqI4ucSeA972j/mfE+J9C1FWKigXOONWU44XLdjFYDLg==}
     engines: {node: '>=22.13.0'}
 
   '@jridgewell/gen-mapping@0.3.13':
@@ -2012,6 +2012,9 @@ packages:
   html-void-elements@3.0.0:
     resolution: {integrity: sha512-bEqo66MRXsUGxWHV5IP0PUiAWwoEjba4VCzg0LjFJBpchPaTfyfCKTG6bc5F8ucKec3q5y6qOdGyYTSBEvhCrg==}
 
+  hyparquet@1.31.5:
+    resolution: {integrity: sha512-KPVfaxW8xOiO2/4fjeiBfFNEXhGVw9tfcb9ha2iNZdJ3J/yBjEwIeAnTyyuhllFFTb9YO9wg0DfRAOnm6KCvBg==}
+
   inline-style-parser@0.2.7:
     resolution: {integrity: sha512-Nb2ctOyNR8DqQoR0OwRG95uNWIC0C1lCgf5Naz5H6Ji72KZ8OcFZLz2P5sNgwlyoJ8Yif11oMuYs5pBQa86csA==}
 
@@ -2685,6 +2688,10 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
+  txml@6.0.3:
+    resolution: {integrity: sha512-LpgQIn4huTMpHdBqo9zUYj0lxksvh5epthFh/DoZ4FAd868kkuz31rAzrs41MOPneAWfuSCbBa0+lwxT4p/ZQg==}
+    engines: {node: '>=18.0.0'}
+
   typescript@6.0.3:
     resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
     engines: {node: '>=14.17'}
@@ -3334,19 +3341,19 @@ snapshots:
   '@img/sharp-win32-x64@0.35.5':
     optional: true
 
-  '@ingestron/authoring@2.3.1':
+  '@ingestron/authoring@2.4.0':
     dependencies:
       '@ingestron/config': 1.7.0
-      '@ingestron/core': 1.1.1
-      '@ingestron/definitions': 1.13.0
+      '@ingestron/core': 1.2.0
+      '@ingestron/definitions': 1.14.0
       '@ingestron/generate': 1.1.0
       yaml: 2.9.1
 
-  '@ingestron/cli@2.3.1':
+  '@ingestron/cli@2.4.0':
     dependencies:
       '@ingestron/config': 1.7.0
-      '@ingestron/core': 1.1.1
-      '@ingestron/definitions': 1.13.0
+      '@ingestron/core': 1.2.0
+      '@ingestron/definitions': 1.14.0
       '@ingestron/generate': 1.1.0
       yaml: 2.9.1
 
@@ -3355,19 +3362,21 @@ snapshots:
       ajv: 8.20.0
       yaml: 2.9.1
 
-  '@ingestron/core@1.1.1':
+  '@ingestron/core@1.2.0':
     dependencies:
       '@ingestron/config': 1.7.0
-      '@ingestron/definitions': 1.13.0
+      '@ingestron/definitions': 1.14.0
       '@ingestron/generate': 1.1.0
-      '@ingestron/pack-adf': 2.3.0(@ingestron/definitions@1.13.0)
-      '@ingestron/pack-databricks': 2.3.0(@ingestron/definitions@1.13.0)
-      '@ingestron/pack-duckdb': 2.2.0(@ingestron/definitions@1.13.0)
-      '@ingestron/pack-synapse': 2.2.0(@ingestron/definitions@1.13.0)
-      '@ingestron/standards': 1.0.0
+      '@ingestron/pack-adf': 2.4.0(@ingestron/definitions@1.14.0)
+      '@ingestron/pack-databricks': 2.4.0(@ingestron/definitions@1.14.0)
+      '@ingestron/pack-duckdb': 2.3.0(@ingestron/definitions@1.14.0)
+      '@ingestron/pack-synapse': 2.3.0(@ingestron/definitions@1.14.0)
+      '@ingestron/standards': 1.1.0
+      hyparquet: 1.31.5
+      txml: 6.0.3
       yaml: 2.9.1
 
-  '@ingestron/definitions@1.13.0':
+  '@ingestron/definitions@1.14.0':
     dependencies:
       '@ingestron/config': 1.7.0
       ajv: 8.20.0
@@ -3376,25 +3385,25 @@ snapshots:
 
   '@ingestron/generate@1.1.0': {}
 
-  '@ingestron/pack-adf@2.3.0(@ingestron/definitions@1.13.0)':
+  '@ingestron/pack-adf@2.4.0(@ingestron/definitions@1.14.0)':
     dependencies:
-      '@ingestron/definitions': 1.13.0
+      '@ingestron/definitions': 1.14.0
 
-  '@ingestron/pack-databricks@2.3.0(@ingestron/definitions@1.13.0)':
+  '@ingestron/pack-databricks@2.4.0(@ingestron/definitions@1.14.0)':
     dependencies:
-      '@ingestron/definitions': 1.13.0
+      '@ingestron/definitions': 1.14.0
       liquidjs: 10.30.0
       yaml: 2.9.1
 
-  '@ingestron/pack-duckdb@2.2.0(@ingestron/definitions@1.13.0)':
+  '@ingestron/pack-duckdb@2.3.0(@ingestron/definitions@1.14.0)':
     dependencies:
-      '@ingestron/definitions': 1.13.0
+      '@ingestron/definitions': 1.14.0
 
-  '@ingestron/pack-synapse@2.2.0(@ingestron/definitions@1.13.0)':
+  '@ingestron/pack-synapse@2.3.0(@ingestron/definitions@1.14.0)':
     dependencies:
-      '@ingestron/definitions': 1.13.0
+      '@ingestron/definitions': 1.14.0
 
-  '@ingestron/standards@1.0.0': {}
+  '@ingestron/standards@1.1.0': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
@@ -4525,6 +4534,8 @@ snapshots:
 
   html-void-elements@3.0.0: {}
 
+  hyparquet@1.31.5: {}
+
   inline-style-parser@0.2.7: {}
 
   inline-style-parser@0.2.9: {}
@@ -5516,6 +5527,8 @@ snapshots:
       esbuild: 0.28.2
     optionalDependencies:
       fsevents: 2.3.3
+
+  txml@6.0.3: {}
 
   typescript@6.0.3: {}
 
