@@ -122,6 +122,16 @@ every one, and `ingestron check` fails the CI build. See
 start from a [published standard](/docs/how-to/choose-a-published-standard):
 one written for your platform, checked against its documentation and dated.
 
+### Contracts only where you promise something
+
+Ingestron never connects to your sources. It writes a request saying what to
+run or export at each one, and reads the names and types of the columns from
+the file that comes back, never the rows. A table that copies a source as it
+is takes its columns from there, so only the tables your team makes promises
+about need a contract, and Ingestron drafts those. A change at the source
+shows up in the plan before it breaks a load. See
+[Describe a source](/docs/how-to/describe-a-source).
+
 ### Reuse your team's work
 
 Start a project from a template your team keeps in Git with

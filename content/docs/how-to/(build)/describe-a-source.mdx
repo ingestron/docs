@@ -1,0 +1,609 @@
+---
+title: Describe a source
+description: Get each source table's columns, types and key into the project without connecting to the source, see what changed at the source, and draft the contracts that are needed.
+---
+
+A table takes its columns, their types and its key from one of two places:
+
+- **Source metadata:** what the source says its tables look like, kept in
+  `sources/<connection>.yaml`. It is an observation, never a promise: a table
+  that takes its columns from it gets no checks, descriptions or
+  classifications.
+- **A contract:** what your team promises about the table; see
+  [Describe a table with a contract](/docs/how-to/write-a-contract).
+
+A raw copy of a source can do without a contract: its columns are what the
+source has.
+A contract is needed only where a person must say what the source cannot; see
+[When a table needs a contract](#needs-a-contract). Where a table has both,
+Ingestron compares them, so a change at the source shows up in `plan` before
+the data stops landing.
+
+Ingestron never connects to a source. Someone who can reach it runs a query,
+calls an API or exports a file, and Ingestron reads that file. It reads only
+the names and types of the columns, never the rows, and writes no value from a
+row.
+
+To follow along, create a project that loads two tables of a SQL Server ERP
+with Databricks, and generate its files:
+
+```sh
+ingestron init sales --connector sqlserver --connectivity public --via databricks --yes \
+  --set source_uc_connection=erp_sqlserver --set customers_object=ERP.dbo.Customers \
+  --set invoices_object=ERP.dbo.Invoices
+cd sales
+ingestron apply
+```
+
+Its connection is `erp`, and its flow, `flows/erp.yaml`, loads the tables
+`customers` and `invoices`, each with a contract.
+
+## Ask for the metadata [#request]
+
+A connection's recipe says how to get its kind of source's metadata. A SQL
+Server connection uses the `sqlserver` recipe, a query of the database's
+catalog. The recipe needs the database's name, so give it in the connection.
+Add this to `connections/erp.yaml`:
+
+```yaml
+metadata:
+  from: sqlserver
+  with: { database: ERP }
+```
+
+`from` names the recipe, and `with` gives its inputs.
+[Source metadata recipes](/docs/reference/recipes) lists every recipe, its
+inputs and the connectors that use it by default. A connector with no recipe of
+its own, or a connection that reads the files another tool lands, names the
+recipe of the system the data comes from: a `files` connection whose files ADF
+copies from Oracle names `oracle`, for example.
+
+Then write the request to send to whoever can reach the source:
+
+<ToolSteps>
+<Tool name="CLI">
+
+From the project's folder, run:
+
+```sh
+ingestron source request
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: Request source metadata** from the Command Palette, or
+right-click the project's folder in the Explorer. With more than one
+connection, choose one, or **All connections**. The request opens as an
+unsaved Markdown document, ready to send.
+
+</Tool>
+</ToolSteps>
+
+It starts:
+
+```text
+# Source request: sales (dev)
+
+Ingestron needs to know what each source table looks like: its columns, their types and its key. Only names and types are needed, never rows of real data. Save each file where this request says.
+
+## erp
+
+- Who: Someone who can run queries in the ERP database on the SQL Server, Azure SQL Database or Azure SQL Managed Instance that holds the tables
+- Access: SQL Server shows a login only the metadata of objects it owns or has some permission on, so the login needs VIEW DEFINITION on the ERP database. Without it, the result leaves tables out and says nothing.
+- Recipe: SQL Server (`sqlserver`)
+```
+
+For each connection a flow reads, the request gives the recipe's step: the
+query to run or the URL to call, filled in for your project, how to save the
+result and where. The query covers whole schemas, `dbo` here, not only the
+tables the flows name, so a table you add later is already described. Under
+**If that cannot be done** it lists the other ways to describe the source,
+below. It ends with the command that imports each file. A connection whose
+tables are all described already is listed with when each was captured,
+instead of being asked again.
+
+## Save what comes back [#save]
+
+Each way of describing a source is saved under `sources/`, in a file whose name
+says how to read it. Each way below is a fallback for the one above it, so
+use the first that works for your source:
+
+| Way                                             | Save it as                                                  | Recorded as |
+| ----------------------------------------------- | ----------------------------------------------------------- | ----------- |
+| [The recipe's query or call](#catalog)          | where the request says                                      | `catalog`   |
+| [A document the source publishes](#document)    | where the request says, or `sources/<connection>.odcs.yaml` | `document`  |
+| [A sample of each table](#sample)               | `sources/<connection>/<object>.<csv\|json\|jsonl\|parquet>` | `sample`    |
+| [The columns file](#columns-file)               | `sources/<connection>.columns.csv`                          | `columns`   |
+| [A coding assistant's columns file](#assistant) | `sources/<connection>.assistant.csv`                        | `assistant` |
+
+Each table in the metadata records how it was described, so a reviewer can see
+where its columns came from.
+
+### The recipe's query or call [#catalog]
+
+A catalog query lists every table and column the database holds, your own
+custom ones included, with their types, whether each can be null, and the
+primary key. An application's metadata API, such as Salesforce's `describe` or
+Dataverse's `$metadata`, does the same for its objects, and a schema registry
+for a Kafka topic.
+
+Here the ERP's database administrator runs the query and saves the result as
+`sources/erp.catalog.csv`, one row for each column:
+
+```csv
+table_catalog,table_schema,table_name,column_name,ordinal_position,data_type,is_nullable,primary_key_position
+ERP,dbo,Customers,customer_id,1,int,NO,1
+ERP,dbo,Customers,name,2,nvarchar(200),YES,
+ERP,dbo,Customers,country,3,nchar(2),YES,
+ERP,dbo,Customers,email,4,nvarchar(320),YES,
+ERP,dbo,Invoices,invoice_id,1,int,NO,1
+ERP,dbo,Invoices,customer_id,2,int,NO,
+ERP,dbo,Invoices,amount,3,"decimal(18,2)",YES,
+ERP,dbo,Invoices,status,4,nvarchar(20),YES,
+ERP,dbo,Payments,payment_id,1,int,NO,1
+ERP,dbo,Payments,invoice_id,2,int,NO,
+ERP,dbo,Payments,paid_on,3,date,NO,
+ERP,dbo,Payments,amount,4,"decimal(18,2)",NO,
+```
+
+The recipe maps each source type, such as `nvarchar(200)`, to a logical type,
+such as `string` with a `maxLength` of 200. A type no rule knows is read as
+`string`, with a note naming it. To correct a recipe's query for your
+source, keep your own copy as `recipes/<id>.yaml` in the project; see
+[Use your own recipe](/docs/reference/recipes#your-own).
+
+### A document the source publishes [#document]
+
+Many applications publish a description of their data. Ingestron reads OData
+CSDL (an OData service's `$metadata`), OpenAPI, JSON Schema and Avro. The
+`odata` and `openapi` recipes ask for the download, and the request says where
+to save it. A data contract (ODCS)
+from the source's own team is saved as `sources/<connection>.odcs.yaml`; each
+of its schema entries is a table.
+
+### A sample of each table [#sample]
+
+Any source can export a few rows. Save each table's sample where the request
+says, `sources/<connection>/<object>.<csv|json|jsonl|parquet>`, such as
+`sources/erp/ERP.dbo.Customers.csv`: the path names the table. Saved anywhere
+else, a sample is imported with `--object`, which names its table.
+
+A sample's values are read only to find each column's type, and then dropped:
+the metadata holds names and types, and no value. Even so, a CSV or JSON
+sample should hold synthetic or non-sensitive rows. A Parquet file is read
+from its schema alone, never its rows. A sample cannot show which columns form
+the key, so its tables have none, and a CSV or JSON sample cannot show which
+columns must have a value, so none of its columns is required.
+
+A JSON sample can hold records inside records, as an API response or a JSON
+export does. Ingestron reads the nesting from the data. For example, this
+sample, saved as `sources/erp/ERP.dbo.Orders.json`:
+
+```json
+[
+  {
+    "order_id": 1001,
+    "placed_at": "2026-11-02T09:15:00Z",
+    "customer": { "id": 7, "name": "Ana" },
+    "lines": [
+      { "sku": "A-1", "qty": 2 },
+      { "sku": "B-4", "qty": 1, "gift": true }
+    ],
+    "totals_by_day": { "2026-11-02": 40.5 }
+  },
+  {
+    "order_id": 1002,
+    "placed_at": "2026-11-03T10:00:00Z",
+    "customer": { "id": 9, "name": "Ben", "tier": "gold" },
+    "lines": [{ "sku": "C-2", "qty": 5 }],
+    "totals_by_day": { "2026-11-03": 12 }
+  }
+]
+```
+
+is imported as this table:
+
+{/* prettier-ignore */}
+```yaml kind="writes" title="sources/erp.yaml"
+  - object: ERP.dbo.Orders
+    captured: { at: 2026-11-13T09:30:00Z, from: sample, recipe: sqlserver, file: sources/erp/ERP.dbo.Orders.json }
+    columns:
+      - { name: order_id, logicalType: integer, required: false }
+      - { name: placed_at, logicalType: timestamp, required: false }
+      - name: customer
+        logicalType: object
+        required: false
+        properties:
+          - { name: id, logicalType: integer, required: false }
+          - { name: name, logicalType: string, required: false }
+      - name: lines
+        logicalType: array
+        required: false
+        items:
+          name: items
+          logicalType: object
+          required: false
+          properties:
+            - { name: sku, logicalType: string, required: false }
+            - { name: qty, logicalType: integer, required: false }
+      - { name: totals_by_day, logicalType: object, required: false }
+```
+
+- **A record inside a record** is a column of `logicalType: object`, with its
+  keys as its fields, when the keys are names rather than data. With several
+  records in the sample, at least one key must be in every one of them, and a
+  key found in only one is left out: one record cannot show that `tier` is a
+  name and not a value. A later sample that has it twice adds it.
+- **Keys that look like data,** such as dates, numbers or UUIDs, keys with
+  characters other than letters, digits, spaces and `_ $ . -`, or more than 100
+  different keys, make the column an `object` with no fields, as
+  `totals_by_day` is. Its keys are never written, since they are values.
+- **A list** is a column of `logicalType: array`, whose elements are read
+  together as its `items`. So `gift`, found in one element only, is left out
+  of `lines`.
+
+### The columns file [#columns-file]
+
+When nothing above works, write the columns file: the same eight fields as
+the catalog query's result, `table_catalog`, `table_schema`, `table_name`,
+`column_name`, `ordinal_position`, `data_type`, `is_nullable` (`YES` or `NO`)
+and `primary_key_position` (empty when the column is not in the key), one row
+for each column. A script, a catalog export or a spreadsheet can make it. Save
+it as `sources/<connection>.columns.csv`. A file with any other field is
+refused, naming the fields it lacks, so a query that returned rows instead of
+columns is never imported.
+
+### A coding assistant's columns file [#assistant]
+
+Some sources come with nothing a reader takes: a vendor's data dictionary, a
+spreadsheet, a PDF, inconsistent API responses. A coding assistant can turn
+those into a columns file. Give the project a guide for assistants:
+
+```sh
+ingestron assistant add agents
+```
+
+It writes `AGENTS.md`, whose source metadata section tells an assistant to save
+the columns file as `sources/<connection>.assistant.csv`, keep every table and
+column the material shows, write a type it is unsure of as `string`, never
+invent a key, never copy a value from a row, and check the file with
+`ingestron source import <connection> <file> --dry-run` before it says it is
+done. The source request then offers this way too. The names `add` takes, and
+`init --assistant`, are in
+[the command line reference](/docs/reference/cli#project-guide).
+
+Ingestron trusts an assistant's columns file no more than a sample: its tables
+are compared by column names only, and a contract drafted from them carries no
+key.
+
+## Import it [#import]
+
+<ToolSteps>
+<Tool name="CLI">
+
+Check what the file would change, without writing anything:
+
+```sh
+ingestron source import erp sources/erp.catalog.csv --dry-run
+```
+
+```text
+sources/erp.yaml: 3 added, 0 changed, 0 removed.
+Compatible:
+  ERP.dbo.Customers: added
+  ERP.dbo.Invoices: added
+  ERP.dbo.Payments: added
+Nothing was written (--dry-run).
+```
+
+Then import it:
+
+```sh
+ingestron source import erp sources/erp.catalog.csv
+```
+
+```text
+sources/erp.yaml: 3 added, 0 changed, 0 removed.
+Compatible:
+  ERP.dbo.Customers: added
+  ERP.dbo.Invoices: added
+  ERP.dbo.Payments: added
+Wrote sources/erp.yaml.
+Added sources/erp.yaml to the imports of project.yaml.
+```
+
+A file it cannot read is refused with the reasons, and nothing is written.
+
+</Tool>
+<Tool name="VS Code">
+
+Save the file where the request says. A file saved under `sources/` is
+imported as soon as it is saved, and a notification gives the first line of
+what changed, such as `sources/erp.yaml: 3 added, 0 changed, 0 removed.`, with
+**Show all changes** for the rest. Files saved together give one
+notification. A file the import refuses gives a warning with the reasons, and
+nothing is written. The import is an edit of `sources/<connection>.yaml` you
+can undo, and it records the environment selected in the status bar.
+
+To import a file kept somewhere else, right-click it in the Explorer and choose
+**Ingestron: Import source metadata…**, or run it from the Command Palette
+and choose the file. It asks for the connection when the file's path does not
+name one, and for the table when the file describes one table and its path
+does not name it.
+
+</Tool>
+</ToolSteps>
+
+The import writes `sources/erp.yaml`: each table, where and when it was
+captured, and its columns:
+
+{/* prettier-ignore */}
+```yaml kind="writes" title="sources/erp.yaml"
+# Written by ingestron source import. Do not edit: import again to replace it.
+apiVersion: ingestron.io/v1
+kind: SourceMetadata
+id: erp
+connection: erp
+names: { parts: 3, caseSensitive: false }
+tables:
+  - object: ERP.dbo.Customers
+    captured: { at: 2026-11-13T09:30:00Z, from: catalog, recipe: sqlserver, file: sources/erp.catalog.csv }
+    columns:
+      - { name: customer_id, sourceType: int, logicalType: integer, required: true, primaryKeyPosition: 1 }
+      - { name: name, sourceType: nvarchar(200), logicalType: string, logicalTypeOptions: { maxLength: 200 }, required: false }
+      - { name: country, sourceType: nchar(2), logicalType: string, logicalTypeOptions: { maxLength: 2 }, required: false }
+      - { name: email, sourceType: nvarchar(320), logicalType: string, logicalTypeOptions: { maxLength: 320 }, required: false }
+  - object: ERP.dbo.Invoices
+    captured: { at: 2026-11-13T09:30:00Z, from: catalog, recipe: sqlserver, file: sources/erp.catalog.csv }
+    columns:
+      - { name: invoice_id, sourceType: int, logicalType: integer, required: true, primaryKeyPosition: 1 }
+      - { name: customer_id, sourceType: int, logicalType: integer, required: true }
+      - { name: amount, sourceType: "decimal(18,2)", logicalType: number, logicalTypeOptions: { precision: 18, scale: 2 }, required: false }
+      - { name: status, sourceType: nvarchar(20), logicalType: string, logicalTypeOptions: { maxLength: 20 }, required: false }
+  - object: ERP.dbo.Payments
+    captured: { at: 2026-11-13T09:30:00Z, from: catalog, recipe: sqlserver, file: sources/erp.catalog.csv }
+    columns:
+      - { name: payment_id, sourceType: int, logicalType: integer, required: true, primaryKeyPosition: 1 }
+      - { name: invoice_id, sourceType: int, logicalType: integer, required: true }
+      - { name: paid_on, sourceType: date, logicalType: date, required: true }
+      - { name: amount, sourceType: "decimal(18,2)", logicalType: number, logicalTypeOptions: { precision: 18, scale: 2 }, required: true }
+```
+
+Never edit it: import again to replace it. A catalog import replaces every
+table an earlier catalog import wrote, so a table dropped at the source
+disappears. Any other import adds its tables, or replaces the same ones.
+[Source metadata](/docs/reference/documents#source-metadata) lists its fields.
+
+Ask for the metadata again, and the request lists what the flows read instead
+of asking:
+
+```sh
+ingestron source request
+```
+
+```text
+## erp
+
+Every table its flows read is in sources/erp.yaml:
+
+- `ERP.dbo.Customers`: catalog, captured 2026-11-13
+- `ERP.dbo.Invoices`: catalog, captured 2026-11-13
+```
+
+The metadata holds names and types only. Whether to keep the files you saved
+under `sources/` in Git is your team's choice; keep a sample out of Git if its
+rows are real.
+
+## Load a table without a contract [#without-a-contract]
+
+The catalog listed `Payments`, which no flow reads yet. Add it to
+`flows/erp.yaml`, under `tables`, with no contract:
+
+{/* prettier-ignore */}
+```yaml
+  payments: { object: ERP.dbo.Payments }
+```
+
+Plan:
+
+```sh
+ingestron plan
+```
+
+The table takes its columns and key from the metadata, and the managed
+ingestion pipeline gets them:
+
+```text
+databricks → build/databricks (dev, prod)
+update    resources/sales_erp_ingestion.pipeline.yml
+          @@ -42,2 +42,18 @@
+                           primary_keys:
+                             - invoice_id
+          +          - table:
+          +              source_catalog: ERP
+          +              source_schema: dbo
+          +              source_table: Payments
+          +              destination_catalog: ${var.catalog}
+          +              destination_schema: bronze
+          +              destination_table: payments
+          +              table_configuration:
+          +                scd_type: SCD_TYPE_1
+          +                include_columns:
+          +                  - payment_id
+          +                  - invoice_id
+          +                  - paid_on
+          +                  - amount
+          +                primary_keys:
+          +                  - payment_id
+
+6 files: 1 update, 5 unchanged. Ready to apply.
+```
+
+Apply it. Such a table's columns can all be null, whatever the source says,
+and get no checks: only a contract makes a promise. Its key is the source's
+primary key, which `history: latest` and `full` use.
+
+A flow table's `object` is matched with the metadata's tables part by part,
+from the right, with or without case as the recipe says. A part written as a
+reference, such as `${values.erp_db}.dbo.Payments`, matches any database, so
+`dev` and `prod` databases with different names share one metadata file. A table with
+neither a contract nor metadata has no columns, and `plan` reports
+[`TABLE_NO_COLUMNS`](/docs/reference/errors#TABLE_NO_COLUMNS), whose hint
+names the source request.
+
+## When a table needs a contract [#needs-a-contract]
+
+A flow table needs a contract when a person must say something the source
+cannot:
+
+- its [layer](/docs/concepts/layers) does `cleanse`, `check` or `quarantine`;
+- it is an output of a [data product](/docs/how-to/define-a-data-product);
+- the platform manages grants or masks for it, so a contract must say who may
+  read it and which columns are sensitive; see
+  [Grant access, mask columns and filter rows](/docs/how-to/grant-access);
+- it has its own `expectations`.
+
+For example, turn on grants in `platform.yaml`:
+
+```yaml
+databricks:
+  manage: { grants: true }
+```
+
+Plan again, and the payments table needs a contract:
+
+```text
+flows/erp.yaml:15:13  error  CONTRACT_NEEDED
+  "payments" needs a contract: access is managed for it on databricks.
+  Draft one from the source metadata with `ingestron contract --from-metadata erp.payments`, then name it with `contract`.
+```
+
+Draft the contract from the metadata. `ingestron contract --from-metadata`
+drafts the tables you name, each as `<flow>.<table>`, such as `erp.payments`,
+or, with `--needed`, every table that needs a contract and names none:
+
+<ToolSteps>
+<Tool name="CLI">
+
+```sh
+ingestron contract --from-metadata --needed
+```
+
+```text
+Wrote contracts/erp.payments.yaml.
+Add to erp.payments: contract: erp.payments
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Open the problem's light bulb in `flows/erp.yaml` and choose **Draft a
+contract from the source metadata**. It writes the draft and adds the
+`contract:` line.
+
+</Tool>
+</ToolSteps>
+
+The draft carries the source's types, which columns cannot be null, and its
+key, for you to review:
+
+```yaml kind="plain" title="contracts/erp.payments.yaml"
+# Drafted from "ERP.dbo.Payments" in sources/erp.yaml (catalog, captured 2026-11-13).
+# Review the types, required columns and key, then add descriptions, classifications and checks.
+apiVersion: v3.1.0
+kind: DataContract
+id: erp.payments
+version: 0.1.0
+status: draft
+schema:
+  - name: payments
+    logicalType: object
+    properties:
+      - name: payment_id
+        logicalType: integer
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+      - name: invoice_id
+        logicalType: integer
+        required: true
+      - name: paid_on
+        logicalType: date
+        required: true
+      - name: amount
+        logicalType: number
+        required: true
+```
+
+A table drafted from a sample or an assistant's file has no key; add it. A
+file that is already there is never replaced: the command skips it and says so.
+The contract is yours now: add the roles, classifications and descriptions
+that only your team can give; see
+[Describe a table with a contract](/docs/how-to/write-a-contract). Name it in
+the flow, as the command printed:
+
+{/* prettier-ignore */}
+```yaml
+  payments: { object: ERP.dbo.Payments, contract: erp.payments }
+```
+
+## When the source changes [#changes]
+
+Import each new result the same way. Say the ERP team drops the invoices'
+`status` and adds `due_on`. The next catalog result, saved over
+`sources/erp.catalog.csv`, imports as:
+
+```text
+sources/erp.yaml: 0 added, 1 changed, 0 removed.
+Breaking:
+  ERP.dbo.Invoices: column "status" is gone
+Compatible:
+  ERP.dbo.Invoices: column "due_on" is new
+Wrote sources/erp.yaml.
+```
+
+A change is **breaking** when a table that reads the source could fail: a
+column gone, a type that no longer fits, a required column that can now be
+null, a different key, or, from a catalog, a table gone. It is
+**compatible** when nothing that reads the source breaks: a new table or
+column, or a type whose values all fit the type it is compared with, such as
+`integer` where the contract, or the import before, says `number`.
+
+`plan` and `check` compare each table that has a contract with its metadata.
+The contract for `invoices` still has `status`, so the plan fails:
+
+```text
+flows/erp.yaml:13:15  error  SOURCE_COLUMN_GONE
+  Column "status" of contract "erp.invoices" is not in the source metadata for "ERP.dbo.Invoices".
+  Remove the column from the contract, or import the source's metadata again if the column is still there.
+```
+
+A compatible difference is information, such as `SOURCE_COLUMN_NEW` for
+`due_on`: the contract does not take a column until you add it. A table
+without a contract is not compared, since its columns are the metadata's. A
+table from a sample or an assistant's file is compared by column names only. A
+table a catalog import does not list is reported only once the connection has
+tables from a catalog, since only a catalog describes the whole source. Every
+code that starts `SOURCE_` is in [Errors](/docs/reference/errors).
+
+A breaking difference fails `plan` and `check` by default. To make each a
+warning instead, set `sources` in the standard, or in `platform.yaml`, which
+wins and stays when you move to a newer published standard:
+
+```yaml
+sources: { breaking: warn }
+```
+
+A warning can then be accepted in `platform.yaml`, for one column of one
+table, with the reason; see [Accept a warning](/docs/how-to/accept-a-warning):
+
+```yaml
+accept:
+  - code: SOURCE_COLUMN_GONE
+    about: { table: invoices, feature: status }
+    reason: The ERP no longer has an invoice status; the contract keeps it until customer_balances stops reading it.
+```
+
+The plan then says `1 accepted warning (platform.yaml)`, and generates as
+before.

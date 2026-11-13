@@ -5,6 +5,7 @@
   "pages": [
     "start-from-a-template",
     "add-a-source",
+    "describe-a-source",
     "write-a-contract",
     "write-a-transform",
     "keep-a-table-current",

@@ -1,6 +1,6 @@
 ---
 title: Describe a table with a contract
-description: Write a table's columns, types, keys and rules in a data contract, or draft one from a sample file.
+description: Write a table's columns, types, keys and rules in a data contract, or draft one from a sample file or from the source's metadata.
 ---
 
 A contract says what a table holds: its columns, their types, which columns
@@ -8,6 +8,14 @@ make the key and which must always have a value. Ingestron reads it to type
 the table's columns, to keep rows by their key and to check them. Contracts
 use the [Open Data Contract Standard](https://bitol-io.github.io/open-data-contract-standard/)
 (ODCS) v3.1.0 unchanged, so other tools can read them too.
+
+A flow table needs a contract only where a person must say what the source
+cannot: when its layer cleanses or checks rows, when it is a data product's
+output, when the platform manages its grants or masks, or when it has its own
+`expectations`. Any other flow table can take its columns and key from the
+source's metadata instead; see
+[Describe a source](/docs/how-to/describe-a-source#needs-a-contract). A
+transform always names a contract.
 
 Each contract is a file in `contracts/`. This one, from the
 [DuckDB starter](/docs/start/first-project), describes the orders table:
@@ -169,20 +177,15 @@ drafts one and links it.
 
 ## Draft from source metadata [#draft-from-source-metadata]
 
-When a source can tell you what its tables look like, draft the contract from
-that instead. `ingestron source request` prints what to ask of whoever can
-reach each source; `ingestron source import` reads the file they send into
-`sources/<connection>.yaml`; see
-[Source metadata](/docs/reference/cli#source-metadata). Then draft a contract
-for a flow's table, named as `<flow>.<table>`:
+Once the project has the source's metadata, draft a flow table's contract
+from it, with each column's type, whether it can be null and the source's key:
 
 ```sh
-ingestron contract --from-metadata sales.orders
+ingestron contract --from-metadata erp.payments
 ```
 
-It writes `contracts/<connection>.<table>.yaml` with each column's name, type
-and whether it is required, and the key when the source states one. It never
-replaces a file that is there, and prints the `contract:` line to add to the
-flow. With `--needed` it drafts every table that needs a contract and names
-none. The draft is `status: draft`: review its types and required columns,
-then add descriptions, classifications and checks.
+`erp.payments` is the flow's id and the table's key. `--needed` instead
+drafts every table that needs a contract and names none. Each draft is
+`contracts/<connection>.<table>.yaml`, never replacing a file that is there.
+[Describe a source](/docs/how-to/describe-a-source) gets the metadata and
+drafts one, step by step.

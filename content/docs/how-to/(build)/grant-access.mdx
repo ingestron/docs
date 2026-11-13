@@ -4,7 +4,9 @@ description: Say who may read each table, hide sensitive columns and filter rows
 ---
 
 Who may read a table belongs with its contract, and how sensitive columns
-and rows are hidden belongs in the standard. Ingestron turns both into the
+and rows are hidden belongs in the standard. So a flow table needs a contract
+wherever the platform manages its grants or masks; see
+[When a table needs a contract](/docs/how-to/describe-a-source#needs-a-contract). Ingestron turns both into the
 `GRANT`, `REVOKE` and policy statements the generated files run, so access
 changes in a pull request, as the tables do. Each part is off until the
 platform turns it on, and an engine that cannot apply one says so.

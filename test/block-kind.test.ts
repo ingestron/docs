@@ -116,8 +116,11 @@ describe("the kinds on the real pages", () => {
         expect(line.trimStart().startsWith("$ "), `${page}: ${line}`).toBe(false);
   });
 
-  it("make every YAML, CSV and dotenv fence a file the reader writes", () => {
-    for (const fence of fences.filter((found) => ["yaml", "csv", "dotenv"].includes(found.lang)))
+  it("make every unmarked YAML, CSV and dotenv fence a file the reader writes", () => {
+    for (const fence of fences.filter(
+      (found) =>
+        ["yaml", "csv", "dotenv"].includes(found.lang) && !/(?:^|\s)kind=/.test(found.meta),
+    ))
       expect(fence.kind, `${fence.page}: ${fence.lang}`).toBe("write");
   });
 
@@ -133,8 +136,14 @@ describe("the kinds on the real pages", () => {
 
   it("carry a kind mark only where the rest cannot place the block", () => {
     const marked = fences.filter((fence) => /(?:^|\s)kind=/.test(fence.meta));
+    // A payload a server returns; the source metadata an import writes outside build/; and a
+    // contract Ingestron drafts that is the reader's to edit from then on, so neither a file
+    // the reader writes nor a generated one.
     expect(marked.map((fence) => [fence.page.split("/").pop(), fence.meta])).toEqual([
       ["rest.mdx", 'kind="plain"'],
+      ["describe-a-source.mdx", 'kind="writes" title="sources/erp.yaml"'],
+      ["describe-a-source.mdx", 'kind="writes" title="sources/erp.yaml"'],
+      ["describe-a-source.mdx", 'kind="plain" title="contracts/erp.payments.yaml"'],
     ]);
   });
 });
