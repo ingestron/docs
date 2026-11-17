@@ -352,6 +352,17 @@ can undo. It records the environment selected in the status bar, else the
 project's first, so the document it writes has `environment: dev`, which the
 command writes only with `--env`.
 
+<Only on="databricks">
+
+<Clip
+  light="/images/vscode/source-import-databricks-light.mp4"
+  dark="/images/vscode/source-import-databricks-dark.mp4"
+  alt="sources/erp.catalog.csv is open with the catalogue's thirteen lines, unsaved. It is saved, and a notification says sources/erp.yaml: 3 added, 0 changed, 0 removed., with Show all changes. Clicking Show all changes opens a read-only tab: sources/erp.yaml: 3 added, 0 changed, 0 removed., then Compatible:, then ERP.dbo.Customers, ERP.dbo.Invoices and ERP.dbo.Payments, each added."
+  caption="Save the file under sources/: it is imported, and Show all changes opens the summary in a read-only tab."
+/>
+
+</Only>
+
 To import a file kept somewhere else, right-click it in the Explorer and choose
 **Ingestron: Import source metadata…**, or run it from the Command Palette
 and choose the file. When the file's path does not name a connection and the
