@@ -1,0 +1,6 @@
+{
+  "title": "Reference",
+  "description": "Problems you may meet on DuckDB, with their causes and fixes.",
+  "root": true,
+  "pages": ["troubleshooting"]
+}

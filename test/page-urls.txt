@@ -103,6 +103,7 @@
 /docs/how-to/kits/duckdb-local-medallion
 /docs/how-to/name-things-your-way
 /docs/how-to/plan-and-generate
+/docs/how-to/run-a-flow-on-its-own-triggers
 /docs/how-to/share-a-template
 /docs/how-to/start-from-a-published-standard
 /docs/how-to/start-from-a-template

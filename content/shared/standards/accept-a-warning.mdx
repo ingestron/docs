@@ -1,0 +1,317 @@
+Some warnings stay true however you write the definitions: the engine cannot
+do what a table asks, or the platform team does it another way. Once you have
+looked at one and decided to live with it, accept it in `platform.yaml`, with
+the reason. It then leaves the problem lists, and the run says how many were
+accepted. Nothing generated changes.
+
+<Only on="synapse">
+
+This guide uses [your first project](/docs/synapse/first-project), with a check
+added to its orders table in `flows/orders.yaml`:
+
+```yaml
+expectations:
+  - { name: positive_amount, check: amount > 0, action: fail }
+```
+
+A view cannot stop a load, so plan warns:
+
+```text
+flows/orders.yaml:12:61  warning  NOT_APPLIED
+  The fail action isn't applied on synapse: a view can't stop a load; checks.sql checks this rule and raises an error when it runs.
+```
+
+</Only>
+
+<Only on="databricks">
+
+This guide uses the `retail-filled` example from
+[Databricks](/docs/databricks#create-it), with the customers' `email` column
+classified in `contracts/customers.yaml`:
+
+```yaml
+- { name: email, logicalType: string, classification: confidential, required: true }
+```
+
+The platform leaves tags off, so plan warns:
+
+```text
+contracts/customers.yaml:12:61  warning  CAPABILITY_OFF
+  classification in contract "shop.customers" is not applied: the platform has Tags off.
+```
+
+</Only>
+
+<Only on="adf">
+
+This guide uses [your first project](/docs/adf/first-project), whose server
+only a self-hosted integration runtime reaches, so plan prints a reminder on
+every run:
+
+```text
+(project)  warning  PACK_NOTICE
+  Integration runtime `ir-shop` (self-hosted): the deployment writes it by name and type, as Data Factory Studio does; where it creates it, register a node, with network access and any required source drivers, before the copies run.
+```
+
+</Only>
+
+<Only on="duckdb">
+
+This guide uses [your first project](/docs/duckdb/first-project). Its orders
+contract requires a value, and `bronze` keeps raw rows, so plan warns:
+
+```text
+contracts/orders.yaml:11:59  warning  NOT_APPLIED
+  The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.
+```
+
+</Only>
+
+## Accept or fix [#when]
+
+Accept a warning only when the definitions are right and the warning will stay:
+
+- **Accept** when the engine cannot do it and you have something else in
+  place<Only on="synapse">, such as `checks.sql` run from CI after each landing</Only>; when the
+  platform team does the work its own way<Only on="databricks">, such as tags applied with
+  Terraform while `databricks.manage.tags` is off
+  ([`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF))</Only>; or when a table
+  can go without the feature.
+- **Fix** it when the definitions can change: a duty the layer's `does` should
+  list, a setting that has moved, a value that is still `REPLACE_ME`. The
+  warning's hint says how; see [Not applied here](/docs/~/not-applied#what-to-do).
+
+Only a warning can be accepted. An error stops the run until it is fixed.
+
+## Accept one warning [#accept]
+
+Add an `accept` list at the top level of `platform.yaml`. Each entry gives the
+warning's `code`, narrows it with `about`, and says why in `reason`:
+
+<Only on="synapse">
+
+```yaml
+accept:
+  - code: NOT_APPLIED
+    about: { feature: fail, table: orders }
+    reason: checks.sql runs from CI after each landing and pages the on-call team.
+```
+
+</Only>
+
+<Only on="databricks">
+
+```yaml
+accept:
+  - code: CAPABILITY_OFF
+    about: { feature: tags }
+    reason: The platform team tags classified columns with Terraform.
+```
+
+</Only>
+
+<Only on="adf">
+
+```yaml
+accept:
+  - code: PACK_NOTICE
+    reason: ir-shop is registered on two nodes in the office network, which reach the server.
+```
+
+</Only>
+
+<Only on="duckdb">
+
+```yaml
+accept:
+  - code: NOT_APPLIED
+    about: { feature: notNull, table: orders }
+    reason: bronze keeps each order as it arrived; the silver table checks the orders it reads.
+```
+
+</Only>
+
+Plan again:
+
+```sh
+ingestron plan --no-diff
+```
+
+The warning has gone, and before the files plan counts it:
+
+```text
+1 accepted warning (platform.yaml)
+```
+
+An entry that no longer matches any warning is
+[`ACCEPT_UNUSED`](/docs/reference/errors#ACCEPT_UNUSED), so the list never
+outlives the warnings it was written for.
+
+## Accept it in some environments only [#per-environment]
+
+<Only on="adf">
+
+`PACK_NOTICE` is about the whole project, not one environment, so only the
+list in `platform.yaml` accepts it: a list an environment gives does not. For
+a warning that is about an environment, write `accept: ${values.accept}` in
+`platform.yaml`, and give each environment its list under `values` in
+`project.yaml`, with `accept: []` in the project's own `values`.
+
+</Only>
+
+<Only on="synapse databricks duckdb">
+
+To accept a warning in one environment, write the list as a value that each
+environment gives. In `platform.yaml`, replace the list with:
+
+```yaml
+accept: ${values.accept}
+```
+
+and give the list in `project.yaml`, empty unless an environment says
+otherwise. Here `prod` accepts it:
+
+</Only>
+
+<Only on="synapse">
+
+```yaml
+  prod:
+    values:
+      accept:
+        - code: NOT_APPLIED
+          about: { feature: fail, table: orders }
+          reason: checks.sql runs from CI after each landing and pages the on-call team.
+values:
+  accept: [] # no environment accepts a warning unless it says so
+```
+
+</Only>
+
+<Only on="databricks">
+
+```yaml
+values:
+  accept: [] # no environment accepts a warning unless it says so
+environments:
+  prod:
+    values:
+      accept:
+        - code: CAPABILITY_OFF
+          about: { feature: tags }
+          reason: The platform team tags classified columns with Terraform.
+```
+
+</Only>
+
+<Only on="duckdb">
+
+```yaml
+environments:
+  dev: {}
+  prod:
+    values:
+      accept:
+        - code: NOT_APPLIED
+          about: { feature: notNull, table: orders }
+          reason: bronze keeps each order as it arrived; the silver table checks the orders it reads.
+values:
+  accept: [] # no environment accepts a warning unless it says so
+```
+
+</Only>
+
+<Only on="synapse databricks duckdb">
+
+An environment's list replaces the one in `values`, whole. Plan again, and
+`dev` still shows the warning, while `prod` counts it as accepted:
+
+</Only>
+
+<Only on="synapse">
+
+```text
+Not applied on this platform
+dev:
+flows/orders.yaml:12:61  warning  NOT_APPLIED
+  The fail action isn't applied on synapse: a view can't stop a load; checks.sql checks this rule and raises an error when it runs.
+1 accepted warning (platform.yaml)
+```
+
+</Only>
+
+<Only on="databricks">
+
+```text
+dev: warnings
+contracts/customers.yaml:12:61  warning  CAPABILITY_OFF
+  classification in contract "shop.customers" is not applied: the platform has Tags off.
+1 accepted warning (platform.yaml)
+```
+
+</Only>
+
+<Only on="duckdb">
+
+```text
+Not applied on this platform
+dev:
+contracts/orders.yaml:11:59  warning  NOT_APPLIED
+  The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.
+1 accepted warning (platform.yaml)
+```
+
+</Only>
+
+## Say which warnings [#about]
+
+An entry accepts every warning with its `code` that matches each key of its
+`about`:
+
+- `file`: a pattern for the file the warning is in, relative to the project
+  folder, as `imports` writes them: `*` stays within a folder and `**` crosses
+  folders, such as `flows/legacy/**`.
+- `table`: the table the warning is about, by its name.
+- `feature`: what is not applied or is off. For `NOT_APPLIED`, a rule kind
+  (`notNull`, `pattern`, …), an action (`warn`, `drop`, `fail`),
+  `table-checks`, `expectations`, `quarantine`, a cleansing operation such as
+  `cleanse.trim` or `deduplicate`, an intent value such as `history=full`, or
+  a contract field's path; for `CAPABILITY_OFF`, the capability, such as
+  `tags` or `checks`. For a role, a grant mode, a mask or a row filter, both
+  codes use `grants`, `write`, `exact`, `masks` or `filters`, such as
+  `about: { feature: grants }` for roles the engine cannot grant; see
+  [Accept a gap](/docs/~/grant-access#accept-a-gap).
+
+Without `about`, an entry accepts every warning with that code, so narrow it to
+what you have looked at. A warning that several entries match is accepted by
+the first. [Documents](/docs/reference/documents#platform-accept) lists the
+fields.
+
+An entry whose `code` cannot be accepted is
+[`ACCEPT_CODE`](/docs/reference/errors#ACCEPT_CODE), an error: a code that is
+only ever an error, one that is no longer reported, such as
+`CONTRACT_FIELD_UNUSED`, or `ACCEPT_CODE` and `ACCEPT_UNUSED` themselves. Each
+code on the [errors page](/docs/reference/errors) says how it is reported.
+
+A few warnings come only from a pack building the files, such as
+[`PACK_NOTICE`](/docs/reference/errors#PACK_NOTICE) and
+[`SECRET_NAME_DIFFERS`](/docs/reference/errors#SECRET_NAME_DIFFERS). An entry
+for one of these is matched, and judged unused, only once the packs have built
+the files, by `plan`, `apply` and `check`; the editor, which builds nothing,
+never reports it unused.
+
+## What accepting does not change [#what-still-shows]
+
+- **The files.** Accepting changes nothing generated, and a warning never
+  changed an exit code: `check` passes in CI with or without the list.
+- **The count.** `check`, `plan` and `apply` end their problems with
+  `<n> accepted warnings (platform.yaml)`, so an accepted warning is never
+  hidden entirely.
+- **The editor.** VS Code leaves accepted warnings out of the Problems panel.
+- **The passport.** A [data product's passport](/docs/~/define-a-data-product#read-the-passport)
+  still says `Not enforced` for an accepted `NOT_APPLIED` or
+  `CAPABILITY_OFF`: accepting a warning does not make the check run, or grant
+  the role.
+
+Review the list as you would the definitions: in a pull request, with its
+reasons.

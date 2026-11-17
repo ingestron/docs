@@ -1,0 +1,4 @@
+# A guide: a small project that shows one idea; the docs embed it.
+title: Define data products on Databricks
+summary: "The data products example on Databricks: two products, their governance, and a passport each."
+order: 19

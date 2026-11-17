@@ -1,0 +1,1452 @@
+<Only on="synapse">
+
+In this tutorial you create a Synapse project for one Azure SQL Database
+table, and let Ingestron write what Synapse runs: a workspace pipeline that
+copies the table into storage, and a serverless SQL view that reads the copy.
+Everything happens on your computer. Ingestron never connects to the database
+or to Azure, and nothing is deployed.
+
+Start in any folder where you can create a new one, such as your home folder.
+
+## Before you start
+
+You need Node.js 22.13 or later. Install Ingestron from npm:
+
+```sh
+npm install -g ingestron
+```
+
+`ingestron --help` should then list its commands. If the shell says the
+command is not found, see
+[Troubleshooting](/docs/troubleshooting#ingestron-command-not-found). To use
+VS Code instead, see [Install the command and the extension](/docs/~/install).
+
+## 1. Create the project
+
+<ToolSteps>
+<Tool name="CLI">
+
+```sh
+ingestron init shop --platform synapse --set storage_account=stshoplanding --set key_vault=kv-shop --yes
+cd shop
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Create an empty folder named `shop`. Run **Ingestron: New project**, choose
+**Azure Synapse**, then **A new standard for Azure Synapse**, and select the
+`shop` folder. In `project.yaml`, write `stshoplanding` and `kv-shop` in place
+of the two `REPLACE_ME` values in each environment.
+
+</Tool>
+</ToolSteps>
+
+`storage_account` is the storage account the copies land in, and `key_vault`
+the Key Vault that holds the database's password. Both names are made up;
+write your own before you deploy. Ingestron prints:
+
+```text
+Created shop from synapse (5 files).
+Platform and standard created. Review target settings, then add a connection and a flow.
+```
+
+`standard.yaml` says the Synapse pack copies each table in full once a day and
+shows it as a view; `platform.yaml` holds the landing folder and the Key
+Vault; `project.yaml` has two environments, `dev` and `prod`. `README.md`
+lists what is left to do.
+
+## 2. Add the database
+
+```sh
+ingestron connection add sales --connector azure-sql-database --connectivity public
+```
+
+`connections/sales.yaml` has `REPLACE_ME` for the server and the account that
+reads it. Write them in:
+
+```yaml title="connections/sales.yaml"
+apiVersion: ingestron.io/v1
+kind: Connection
+id: sales
+connector: azure-sql-database
+connectivity: public
+settings:
+  server: sql-shop.database.windows.net
+  user: reader
+  password: ${secret:sales-password}
+```
+
+`${secret:sales-password}` names a secret in the Key Vault: the password
+itself never goes in the project. In VS Code, **Ingestron: Add connection**
+asks for the same values.
+
+## 3. Add the table
+
+```sh
+ingestron flow add orders --connection sales --object sales.dbo.orders
+```
+
+`flows/orders.yaml` now copies `sales.dbo.orders` into a table named
+`orders`. Ingestron also needs the table's columns. Save a few of its rows as
+`samples/orders.csv`:
+
+```csv title="samples/orders.csv"
+order_id,customer,amount,ordered_at
+1,acme,120.50,2026-11-02
+2,globex,75.00,2026-11-03
+```
+
+Draft a contract from them:
+
+```sh
+ingestron contract samples/orders.csv --name orders
+```
+
+`contracts/orders.yaml` lists the four columns with the types the rows
+suggest. Name it in the flow's last line:
+
+```yaml title="flows/orders.yaml"
+apiVersion: ingestron.io/v1
+kind: Flow
+id: orders
+source: sales
+ingest:
+  uses: synapse-copy
+tables:
+  orders:
+    object: sales.dbo.orders
+    contract: orders
+```
+
+Without a contract, plan stops with `TABLE_NO_COLUMNS`. A table can take its
+columns from the database's own description instead; see
+[Describe a source](/docs/~/describe-a-source).
+
+## 4. Plan
+
+```sh
+ingestron plan --no-diff
+```
+
+```text
+synapse → build/synapse (dev, prod)
+create    environments/dev.sql
+create    environments/prod.sql
+create    queries/dev/pl_shop_sales/copy_orders.sql
+create    queries/prod/pl_shop_sales/copy_orders.sql
+create    views.sql
+create    workspace/dev/dataset/ds_shop_landing.json
+create    workspace/dev/dataset/ds_shop_sales_sales.json
+create    workspace/dev/linkedService/ls_shop_keyvault.json
+create    workspace/dev/linkedService/ls_shop_landing.json
+create    workspace/dev/linkedService/ls_shop_sales_sales.json
+create    workspace/dev/pipeline/pl_shop_sales.json
+create    workspace/dev/trigger/tr_shop_sales.json
+create    workspace/prod/dataset/ds_shop_landing.json
+create    workspace/prod/dataset/ds_shop_sales_sales.json
+create    workspace/prod/linkedService/ls_shop_keyvault.json
+create    workspace/prod/linkedService/ls_shop_landing.json
+create    workspace/prod/linkedService/ls_shop_sales_sales.json
+create    workspace/prod/pipeline/pl_shop_sales.json
+create    workspace/prod/trigger/tr_shop_sales.json
+
+19 files: 19 create. Ready to apply.
+```
+
+Each environment gets its own pipeline, datasets, linked services and
+stopped trigger under `workspace/<environment>/`, laid out as the workspace's
+Git integration expects. `views.sql` is the same for both environments;
+`environments/<environment>.sql` sets each one's database and runs it.
+
+## 5. Apply and read what you wrote
+
+```sh
+ingestron apply
+```
+
+Open the `shop` folder in [VS Code](/docs/tools/vscode) and the Explorer shows the
+files you wrote. In a flow, **Generated files (N)** above each table lists
+the files generated for it, and its full name follows it:
+
+<Screenshot
+  light="/images/vscode/first-project-synapse-light.png"
+  dark="/images/vscode/first-project-synapse-dark.png"
+  alt="The Explorer lists the shop project, with build/synapse open: environments, queries and workspace, with dev and prod under workspace, then .generated.json and views.sql, then the project's folders and files. Beside it, flows/orders.yaml copies sales.dbo.orders with synapse-copy; above the orders table, Generated files (5), and after it, → shop_dev.bronze.orders."
+  caption="The shop project after apply: the generated files under build/synapse, and the orders table labelled with its five files and its name in dev."
+/>
+
+The view reads the Parquet file the pipeline copies, with each column's type
+from the contract:
+
+```sql title="build/synapse/views.sql"
+-- Generated by Ingestron for shop: Synapse serverless SQL views. Do not edit.
+-- It switches to each view's database and creates or alters each view, so it can run again.
+
+USE [$(database)];
+GO
+
+IF SCHEMA_ID(N'bronze') IS NULL EXEC(N'CREATE SCHEMA [bronze]');
+GO
+CREATE OR ALTER VIEW [bronze].[orders] AS
+SELECT *
+FROM OPENROWSET(
+  BULK 'shop/sales.dbo.orders/sales.dbo.orders.parquet',
+  DATA_SOURCE = 'landing',
+  FORMAT = 'PARQUET'
+) WITH (
+  [order_id] BIGINT,
+  [customer] VARCHAR(8000) COLLATE Latin1_General_100_BIN2_UTF8,
+  [amount] FLOAT,
+  [ordered_at] DATE
+) AS [rows];
+GO
+```
+
+The query the pipeline sends to the database is beside it, to review:
+
+```sql title="build/synapse/queries/dev/pl_shop_sales/copy_orders.sql"
+-- Source query embedded in workspace/dev/pipeline/pl_shop_sales.json. Review only.
+SELECT
+  [order_id],
+  [customer],
+  [amount],
+  [ordered_at]
+FROM [dbo].[orders];
+```
+
+`ingestron check` now prints `synapse: up to date`. Run it in CI, and a pull
+request fails whenever the committed files are not what the definitions
+generate; see [Check generated files in CI](/docs/~/check-in-ci).
+
+## 6. See what Azure needs
+
+```sh
+ingestron request --env prod
+```
+
+prints what must exist in Azure before the files can run, as Markdown to send
+to whoever manages the workspace. It starts:
+
+```text
+# Platform request: shop (prod)
+
+## Shared infrastructure
+
+- `synapse-copy` `landing`: `abfss://landing@stshoplanding.dfs.core.windows.net/shop`
+- `synapse-copy` `key_vault`: `https://kv-shop.vault.azure.net`
+- `synapse-copy` `integration_runtime`: `AutoResolveIntegrationRuntime`
+- `synapse-copy` `runtime_kind`: `azure`
+- `synapse-copy` `paused`: `true`
+- `synapse-view` `data_source`: `landing`
+- `synapse-view` `data_source_location`: `abfss://landing@stshoplanding.dfs.core.windows.net`
+
+## Synapse serverless database
+
+- Create the serverless SQL database `shop_prod`; the views live in it.
+```
+
+and goes on to the external data source, the report users' permissions and
+the workspace's access to storage and the Key Vault; see
+[Ask the platform team](/docs/~/ask-the-platform-team).
+
+## Clean up
+
+Delete the `shop` folder. Nothing else was created. Ingestron stays installed
+for your next project; `npm uninstall -g ingestron` removes it.
+
+## Next
+
+<DocLinks
+  label="Next steps"
+  items={[
+    {
+      title: "Deploy to Synapse",
+      href: "/docs/synapse/deploy",
+      description:
+        "Put the pipelines and views into each environment's workspace, by hand or from CI.",
+    },
+    {
+      title: "Describe a source",
+      href: "/docs/~/describe-a-source",
+      description: "Take each table's columns from the database's metadata instead of a sample.",
+    },
+    {
+      title: "How Ingestron works",
+      href: "/docs/~/how-it-works",
+      description: "What you write, what Ingestron writes, and what runs on Synapse.",
+    },
+  ]}
+/>
+
+</Only>
+
+<Only on="databricks">
+
+In this tutorial you create a small Databricks project from the **Minimal**
+starter, and let Ingestron write the bundle Databricks deploys: a pipeline
+that reads order files from a Unity Catalog volume into a streaming table.
+Everything happens on your computer. Ingestron never connects to Databricks,
+and nothing is deployed.
+
+Start in any folder where you can create a new one, such as your home folder.
+
+## Before you start
+
+You need Node.js 22.13 or later. Install Ingestron from npm:
+
+```sh
+npm install -g ingestron
+```
+
+`ingestron --help` should then list its commands. If the shell says the
+command is not found, see
+[Troubleshooting](/docs/troubleshooting#ingestron-command-not-found). To use
+VS Code instead, see [Install the command and the extension](/docs/~/install).
+
+## 1. Create the project
+
+<ToolSteps>
+<Tool name="CLI">
+
+```sh
+ingestron init shop --template minimal --set landing=/Volumes/main/landing/shop --yes
+cd shop
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Create an empty folder named `shop`. Run **Ingestron: New project**, choose
+**Try a sample project**, then **Minimal project**, and select the `shop`
+folder. In `project.yaml`, write `/Volumes/main/landing/shop` in place of
+`REPLACE_ME`.
+
+</Tool>
+</ToolSteps>
+
+`landing` is the Unity Catalog volume the order files arrive in; write your
+own before you deploy. Ingestron creates the project and plans it at once:
+
+```text
+Created shop from the template minimal (7 files).
+databricks → shop/build/databricks (dev)
+create    databricks.yml
+create    resources/shop.pipeline.yml
+create    src/shop/bronze/orders.sql
+
+3 files: 3 create. Ready to apply.
+Nothing to replace: the project runs as written.
+```
+
+## 2. Read the definitions
+
+`standard.yaml` names the Databricks pack, and everything it does not say
+comes from the pack's defaults. The connection says where the files are:
+
+```yaml title="connections/shop.yaml" kind="plain"
+apiVersion: ingestron.io/v1
+kind: Connection
+id: shop
+connector: files
+connectivity: public
+settings:
+  path: ${values.landing}
+```
+
+The flow reads the `orders` folder into a table, with the columns its
+contract lists:
+
+```yaml title="flows/orders.yaml" kind="plain"
+apiVersion: ingestron.io/v1
+kind: Flow
+id: orders
+source: shop
+tables:
+  orders: { object: orders, contract: shop.orders }
+```
+
+```yaml title="contracts/orders.yaml" kind="plain"
+apiVersion: v3.1.0
+kind: DataContract
+id: shop.orders
+version: 1.0.0
+status: active
+schema:
+  - name: orders
+    logicalType: object
+    description: One row per order.
+    properties:
+      - { name: id, logicalType: integer, required: true, primaryKey: true }
+      - { name: customer_id, logicalType: integer }
+      - { name: total, logicalType: number, physicalType: "DECIMAL(18,2)" }
+      - { name: ordered_at, logicalType: timestamp }
+```
+
+## 3. Apply and read what you wrote
+
+```sh
+ingestron apply
+```
+
+Open the `shop` folder in [VS Code](/docs/tools/vscode) and the Explorer shows the
+files you wrote. In a flow, **Generated files (N)** above each table lists
+the files generated for it, and its full name follows it:
+
+<Screenshot
+  light="/images/vscode/first-project-databricks-light.png"
+  dark="/images/vscode/first-project-databricks-dark.png"
+  alt="The Explorer lists the shop project, with build/databricks open: resources, src, .generated.json and databricks.yml, then the project's folders and files. Beside it, flows/orders.yaml; above the orders table, Generated files (1), and after it, → dev.bronze.orders."
+  caption="The shop project after apply: the bundle under build/databricks, and the orders table labelled with its file and its name in dev."
+/>
+
+The table reads each new file once, casts the columns to the contract's
+types, and checks that `id` is never empty:
+
+```sql title="build/databricks/src/shop/bronze/orders.sql"
+-- Generated by Ingestron from flows/orders.yaml (table orders). Do not edit: change the definitions and generate again.
+CREATE OR REFRESH STREAMING TABLE `bronze`.`orders` (
+  CONSTRAINT `id_not_null` EXPECT (`id` IS NOT NULL)
+)
+COMMENT 'One row per order.'
+CLUSTER BY AUTO
+AS SELECT
+  *
+FROM STREAM read_files(
+  '/Volumes/main/landing/shop/orders',
+  format => 'parquet',
+  schemaHints => '`id` BIGINT, `customer_id` BIGINT, `total` DECIMAL(18,2), `ordered_at` TIMESTAMP',
+  schemaEvolutionMode => 'addNewColumns'
+);
+```
+
+`databricks.yml` makes the folder one bundle, with a `dev` target, and
+`resources/shop.pipeline.yml` the serverless pipeline that runs the SQL in the
+`dev` catalog. `ingestron check` now prints `databricks: up to date`. Run it
+in CI, and a pull request fails whenever the committed files are not what the
+definitions generate; see [Check generated files in CI](/docs/~/check-in-ci).
+
+## Clean up
+
+Delete the `shop` folder. Nothing else was created. Ingestron stays installed
+for your next project; `npm uninstall -g ingestron` removes it.
+
+## Next
+
+<DocLinks
+  label="Next steps"
+  items={[
+    {
+      title: "Deploy the Databricks bundle",
+      href: "/docs/databricks/deploy",
+      description: "Validate and deploy the bundle with the Databricks CLI, by hand or from CI.",
+    },
+    {
+      title: "Add a source",
+      href: "/docs/~/add-a-source",
+      description: "Read another source into the same project.",
+    },
+    {
+      title: "How Ingestron works",
+      href: "/docs/~/how-it-works",
+      description: "What you write, what Ingestron writes, and what runs on Databricks.",
+    },
+  ]}
+/>
+
+</Only>
+
+<Only on="adf">
+
+In this tutorial you create an Azure Data Factory project for one table in a
+SQL Server that only your network reaches, and let Ingestron write the
+factory that copies it into landing storage. Everything happens on your
+computer. Ingestron never connects to the server or to Azure, and nothing is
+deployed.
+
+Start in any folder where you can create a new one, such as your home folder.
+
+## Before you start
+
+You need Node.js 22.13 or later. Install Ingestron from npm:
+
+```sh
+npm install -g ingestron
+```
+
+`ingestron --help` should then list its commands. If the shell says the
+command is not found, see
+[Troubleshooting](/docs/troubleshooting#ingestron-command-not-found). To use
+VS Code instead, see [Install the command and the extension](/docs/~/install).
+
+## 1. Create the project
+
+<ToolSteps>
+<Tool name="CLI">
+
+```sh
+ingestron init shop --platform adf-landing --set storage_account=stshoplanding --set key_vault=kv-shop --set integration_runtime=ir-shop --yes
+cd shop
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Create an empty folder named `shop`. Run **Ingestron: New project**, choose
+**Azure Data Factory**, then **A new standard for Azure Data Factory**, and
+select the `shop` folder. Write `stshoplanding` and `kv-shop` in place of the
+`REPLACE_ME` values in `project.yaml`, and `ir-shop` in `platform.yaml`.
+
+</Tool>
+</ToolSteps>
+
+`storage_account` is the storage account the copies land in, `key_vault` the
+Key Vault that holds the server's password, and `integration_runtime` the
+self-hosted integration runtime that reaches the server. All three names are
+made up; write your own before you deploy. Ingestron prints:
+
+```text
+Created shop from adf-landing (5 files).
+Platform and standard created. Review target settings, then add a connection and a flow.
+```
+
+`standard.yaml` says the ADF pack copies each table once a day and ends at the
+landed files; `platform.yaml` holds the landing folder, the Key Vault and the
+runtime; `project.yaml` has two environments, `dev` and `prod`. `README.md`
+lists what is left to do.
+
+## 2. Add the server
+
+```sh
+ingestron connection add sales --connector sqlserver --connectivity private
+```
+
+`private` means only the self-hosted runtime reaches it. `connections/sales.yaml`
+has `REPLACE_ME` for the server and the account that reads it. Write them in:
+
+```yaml title="connections/sales.yaml"
+apiVersion: ingestron.io/v1
+kind: Connection
+id: sales
+connector: sqlserver
+connectivity: private
+settings:
+  server: sql-shop.corp.example
+  user: reader
+  password: ${secret:sales-password}
+```
+
+`${secret:sales-password}` names a secret in the Key Vault: the password
+itself never goes in the project. In VS Code, **Ingestron: Add connection**
+asks for the same values.
+
+## 3. Add the table
+
+```sh
+ingestron flow add orders --connection sales --object sales.dbo.orders
+```
+
+`flows/orders.yaml` now copies `sales.dbo.orders`. Ingestron also needs the
+table's columns. Save a few of its rows as `samples/orders.csv`:
+
+```csv title="samples/orders.csv"
+order_id,customer,amount,ordered_at
+1,acme,120.50,2026-11-02
+2,globex,75.00,2026-11-03
+```
+
+Draft a contract from them:
+
+```sh
+ingestron contract samples/orders.csv --name orders
+```
+
+`contracts/orders.yaml` lists the four columns with the types the rows
+suggest. Name it in the flow's last line:
+
+```yaml title="flows/orders.yaml"
+apiVersion: ingestron.io/v1
+kind: Flow
+id: orders
+source: sales
+ingest:
+  uses: adf-copy
+tables:
+  orders:
+    object: sales.dbo.orders
+    contract: orders
+```
+
+Without a contract, plan stops with `TABLE_NO_COLUMNS`. A table can take its
+columns from the server's own description instead; see
+[Describe a source](/docs/~/describe-a-source).
+
+## 4. Plan
+
+```sh
+ingestron plan --no-diff
+```
+
+```text
+adf: warnings
+(project)  warning  PACK_NOTICE
+  Integration runtime `ir-shop` (self-hosted): the deployment writes it by name and type, as Data Factory Studio does; where it creates it, register a node, with network access and any required source drivers, before the copies run.
+adf → build/adf (dev, prod)
+create    factory/arm-template-parameters-definition.json
+create    factory/dataset/ds_shop_landing.json
+create    factory/dataset/ds_shop_sales_sales.json
+create    factory/integrationRuntime/ir-shop.json
+create    factory/linkedService/ls_shop_keyvault.json
+create    factory/linkedService/ls_shop_landing.json
+create    factory/linkedService/ls_shop_sales_sales.json
+create    factory/pipeline/pl_shop_sales.json
+create    factory/trigger/tr_shop_sales.json
+create    parameters/dev.json
+create    parameters/prod.json
+
+11 files: 11 create. Ready to apply.
+```
+
+The notice is a reminder, not a problem: a self-hosted runtime needs a node
+registered on a machine that reaches the server before any copy runs. One
+factory serves every environment; `parameters/<environment>.json` holds what
+differs.
+
+## 5. Apply and read what you wrote
+
+```sh
+ingestron apply
+```
+
+Open the `shop` folder in [VS Code](/docs/tools/vscode) and the Explorer shows the
+files you wrote. In a flow, **Generated files (N)** above each table lists
+the files generated for it, and its full name follows it:
+
+<Screenshot
+  light="/images/vscode/first-project-adf-light.png"
+  dark="/images/vscode/first-project-adf-dark.png"
+  alt="The Explorer lists the shop project, with build/adf open: factory, parameters and .generated.json, then the project's folders and files. Beside it, flows/orders.yaml copies sales.dbo.orders with adf-copy; above the orders table, Generated files (1), and after it, the landing path in storage account stshoplanding."
+  caption="The shop project after apply: the factory under build/adf, and the orders table labelled with its file and where it lands."
+/>
+
+The trigger starts a window once a day, stopped until you start it, and hands
+each window's start and end to the pipeline:
+
+```json title="build/adf/factory/trigger/tr_shop_sales.json"
+{
+	"name": "tr_shop_sales",
+	"properties": {
+		"type": "TumblingWindowTrigger",
+		"runtimeState": "Stopped",
+		"typeProperties": {
+			"frequency": "Hour",
+			"interval": 24,
+```
+
+`ingestron check` now prints `adf: up to date` after the notice. Run it in
+CI, and a pull request fails whenever the committed files are not what the
+definitions generate; see [Check generated files in CI](/docs/~/check-in-ci).
+
+## 6. See what Azure needs
+
+```sh
+ingestron request --env prod
+```
+
+prints what must exist in Azure before the factory can run, as Markdown to
+send to whoever manages it: the runtime and its node, the landing storage, the
+Key Vault and the secrets to create. See
+[Ask the platform team](/docs/~/ask-the-platform-team).
+
+## Clean up
+
+Delete the `shop` folder. Nothing else was created. Ingestron stays installed
+for your next project; `npm uninstall -g ingestron` removes it.
+
+## Next
+
+<DocLinks
+  label="Next steps"
+  items={[
+    {
+      title: "Deploy the factory",
+      href: "/docs/adf/deploy",
+      description: "Build the ARM template once and deploy it to each environment's factory.",
+    },
+    {
+      title: "Shape ADF pipelines",
+      href: "/docs/adf/pipelines",
+      description: "Time windows, incremental copies and how tables share a pipeline.",
+    },
+    {
+      title: "How Ingestron works",
+      href: "/docs/~/how-it-works",
+      description: "What you write, what Ingestron writes, and what runs in Azure.",
+    },
+  ]}
+/>
+
+</Only>
+
+<Only on="adf-databricks">
+
+In this tutorial you create a project for one table in a SQL Server that only
+your network reaches. Azure Data Factory copies the table into landing
+storage, and a Databricks pipeline reads the landed files into a table.
+
+</Only>
+<Only on="adf-synapse">
+
+In this tutorial you create a project for one table in a SQL Server that only
+your network reaches. Azure Data Factory copies the table into landing
+storage, and Synapse serverless SQL shows the landed files as a view.
+
+</Only>
+<Only on="adf-duckdb">
+
+In this tutorial you create a project for one table in a SQL Server that only
+your network reaches. Azure Data Factory copies the table into landing
+storage, and DuckDB builds a table from the landed files in Azure.
+
+</Only>
+<Only on="adf-databricks adf-synapse adf-duckdb">
+
+Everything happens on your computer. Ingestron never connects to the server or
+to Azure, and nothing is deployed.
+
+Start in any folder where you can create a new one, such as your home folder.
+
+## Before you start
+
+You need Node.js 22.13 or later. Install Ingestron from npm:
+
+```sh
+npm install -g ingestron
+```
+
+`ingestron --help` should then list its commands. If the shell says the
+command is not found, see
+[Troubleshooting](/docs/troubleshooting#ingestron-command-not-found).
+
+## 1. Create the project
+
+VS Code's **New project** starts a project for one platform, so create this one
+in a terminal, such as VS Code's own. Each `--set` writes a value Ingestron
+cannot know: the server, the login that reads it, the table, the storage
+account, the Key Vault and the self-hosted integration runtime. All of them are
+made up; write your own before you deploy.
+
+</Only>
+<Only on="adf-databricks">
+
+```sh
+ingestron init shop --connector sqlserver --connectivity private --via adf-databricks --set source_server=sql-shop.corp.example --set source_user=reader --set sqlserver_records_object=sales.dbo.orders --set storage_account=stshoplanding --set key_vault=kv-shop --set integration_runtime=ir-shop --yes
+cd shop
+```
+
+</Only>
+<Only on="adf-synapse">
+
+```sh
+ingestron init shop --connector sqlserver --connectivity private --via adf-synapse --set source_server=sql-shop.corp.example --set source_user=reader --set sqlserver_records_object=sales.dbo.orders --set storage_account=stshoplanding --set key_vault=kv-shop --set integration_runtime=ir-shop --yes
+cd shop
+```
+
+</Only>
+<Only on="adf-duckdb">
+
+```sh
+ingestron init shop --connector sqlserver --connectivity private --via adf-duckdb --set source_server=sql-shop.corp.example --set source_user=reader --set sqlserver_records_object=sales.dbo.orders --set storage_account=stshoplanding --set key_vault=kv-shop --set integration_runtime=ir-shop --yes
+cd shop
+```
+
+</Only>
+<Only on="adf-databricks adf-synapse adf-duckdb">
+
+`init` writes the project, plans it, and ends with
+`Nothing to replace: the project runs as written.` The table is
+`sqlserver_records`, copied from `sales.dbo.orders`, and its contract,
+`contracts/records.yaml`, is an example: change its columns to your table's.
+
+`standard.yaml` lists both packs: the ADF pack copies the table, and the other
+names and keeps it. It has the factory copy the table once a day, in windows
+that start at midnight UTC on the day you create the project.
+
+## 2. Plan
+
+```sh
+ingestron plan --no-diff
+```
+
+</Only>
+<Only on="adf-databricks">
+
+```text
+adf: warnings
+(project)  warning  PACK_NOTICE
+databricks → build/databricks (dev, prod)
+create    databricks.yml
+create    resources/shop.pipeline.yml
+create    resources/shop_refresh.job.yml
+create    src/shop/bronze/sqlserver_records.sql
+
+4 files: 4 create. Ready to apply.
+adf → build/adf (dev, prod)
+create    factory/pipeline/pl_shop_sqlserver_sales.json
+create    factory/trigger/tr_shop_sqlserver_sales.json
+create    parameters/dev.json
+create    parameters/prod.json
+
+11 files: 11 create. Ready to apply.
+```
+
+Databricks gets one bundle for both environments, with the pipeline and a job
+that refreshes it; the factory gets the copy pipeline, its trigger and a
+parameter file per environment.
+
+</Only>
+<Only on="adf-synapse">
+
+```text
+adf: warnings
+(project)  warning  PACK_NOTICE
+synapse → build/synapse (dev, prod)
+create    environments/dev.sql
+create    environments/prod.sql
+create    views.sql
+
+3 files: 3 create. Ready to apply.
+adf → build/adf (dev, prod)
+create    factory/pipeline/pl_shop_sqlserver_sales.json
+create    factory/trigger/tr_shop_sqlserver_sales.json
+create    parameters/dev.json
+create    parameters/prod.json
+
+11 files: 11 create. Ready to apply.
+```
+
+Synapse gets one script of views for both environments and each environment's
+values; the factory gets the copy pipeline, its trigger and a parameter file
+per environment.
+
+</Only>
+<Only on="adf-duckdb">
+
+```text
+adf: warnings
+(project)  warning  PACK_NOTICE
+duckdb → build/duckdb (dev, prod)
+create    dev/README.md
+create    dev/run.sql
+create    dev/tables/bronze.sqlserver_records.sql
+create    prod/README.md
+create    prod/run.sql
+create    prod/tables/bronze.sqlserver_records.sql
+
+6 files: 6 create. Ready to apply.
+adf → build/adf (dev, prod)
+create    factory/pipeline/pl_shop_sqlserver_sales.json
+create    factory/trigger/tr_shop_sqlserver_sales.json
+create    parameters/dev.json
+create    parameters/prod.json
+
+11 files: 11 create. Ready to apply.
+```
+
+DuckDB gets a folder of SQL for each environment; the factory gets the copy
+pipeline, its trigger and a parameter file per environment.
+
+</Only>
+<Only on="adf-databricks adf-synapse adf-duckdb">
+
+The notice is a reminder, not a problem: a self-hosted runtime needs a node
+registered on a machine that reaches the server before any copy runs.
+
+## 3. Apply and read what you wrote
+
+```sh
+ingestron apply
+```
+
+</Only>
+<Only on="adf-databricks">
+
+The table reads each new file once from the folder the factory lands it in:
+
+```sql title="build/databricks/src/shop/bronze/sqlserver_records.sql"
+-- Generated by Ingestron from flows/sqlserver.yaml (table sqlserver_records). Do not edit: change the definitions and generate again.
+CREATE OR REFRESH STREAMING TABLE `bronze`.`sqlserver_records`
+CLUSTER BY AUTO
+AS SELECT
+  *
+FROM STREAM read_files(
+  'abfss://landing@stshoplanding.dfs.core.windows.net/shop/sales.dbo.orders',
+  format => 'parquet'
+);
+```
+
+`platform.yaml` has Databricks refresh the pipeline every hour at half past,
+so it reads the files the factory lands.
+
+</Only>
+<Only on="adf-synapse">
+
+The view reads the file the factory lands, with each column typed from the
+contract:
+
+```sql title="build/synapse/views.sql"
+-- Generated by Ingestron for shop: Synapse serverless SQL views. Do not edit.
+-- It switches to each view's database and creates or alters each view, so it can run again.
+
+USE [$(database)];
+GO
+
+IF SCHEMA_ID(N'bronze') IS NULL EXEC(N'CREATE SCHEMA [bronze]');
+GO
+CREATE OR ALTER VIEW [bronze].[sqlserver_records] AS
+SELECT *
+FROM OPENROWSET(
+  BULK 'shop/sales.dbo.orders/sales.dbo.orders.parquet',
+  DATA_SOURCE = 'landing',
+  FORMAT = 'PARQUET'
+) WITH (
+  [invoice_id] BIGINT,
+  [amount] FLOAT,
+  [modified_at] DATETIME2(7)
+) AS [rows];
+GO
+```
+
+Nothing runs after each load: Synapse reads the file each time someone queries
+the view.
+
+</Only>
+<Only on="adf-duckdb">
+
+`run.sql` builds the table from the file the factory lands, with each column
+typed from the contract:
+
+```sql title="build/duckdb/dev/run.sql"
+-- Generated by Ingestron for shop (dev): DuckDB SQL. Run it from the project folder.
+-- Run with -bail, such as duckdb -bail ingestron.duckdb -c ".read run.sql", so a run that fails while building publishes nothing.
+
+BEGIN TRANSACTION;
+
+CREATE SCHEMA IF NOT EXISTS "bronze";
+CREATE OR REPLACE TABLE "bronze"."sqlserver_records" AS
+SELECT
+  CAST("invoice_id" AS BIGINT) AS "invoice_id",
+  CAST("amount" AS DOUBLE) AS "amount",
+  CAST("modified_at" AS TIMESTAMP) AS "modified_at"
+FROM read_parquet('abfss://landing@stshoplanding.dfs.core.windows.net/shop/sales.dbo.orders/sales.dbo.orders.parquet');
+```
+
+It reads and writes `abfss://` paths, so it runs in Azure, in a Container
+Apps job that the factory starts after each load.
+[Load with Azure Data Factory](/docs/adf-duckdb/load-with-adf) sets that up.
+
+</Only>
+<Only on="adf-databricks adf-synapse adf-duckdb">
+
+Now check that the files match the definitions:
+
+```sh
+ingestron check
+```
+
+</Only>
+<Only on="adf-databricks">
+
+```text
+databricks: up to date
+adf: up to date
+```
+
+</Only>
+<Only on="adf-synapse">
+
+```text
+synapse: up to date
+adf: up to date
+```
+
+</Only>
+<Only on="adf-duckdb">
+
+```text
+duckdb: up to date
+adf: up to date
+```
+
+</Only>
+<Only on="adf-databricks adf-synapse adf-duckdb">
+
+Run it in CI, and a pull request fails whenever the committed files are not
+what the definitions generate.
+
+## 4. See what Azure needs
+
+```sh
+ingestron request --env prod
+```
+
+prints, as Markdown to send to whoever manages Azure, what must exist before
+the factory and the tables can run: the runtime and its node, the landing
+storage, the Key Vault and its secret, and what the tables' platform needs.
+
+## Clean up
+
+Delete the `shop` folder. Nothing else was created. Ingestron stays installed
+for your next project; `npm uninstall -g ingestron` removes it.
+
+## Next
+
+- [Load with Azure Data Factory](/docs/~/load-with-adf): what each part
+  writes, and the settings that shape it.
+- [Deploy both](/docs/~/deploy): the factory first, then the tables.
+
+</Only>
+
+<Only on="duckdb">
+
+In this tutorial you create a small project from YAML, let Ingestron write the
+SQL for it, and run that SQL with DuckDB on your own machine. At the end you
+have a DuckDB database with two tables, `bronze.orders` and
+`silver.customer_totals`, each also published as a Parquet file. You need no
+cloud account and no source, and nothing is deployed.
+
+Start in any folder where you can create a new one, such as your home folder.
+
+## Before you start
+
+- **Node.js 22.13 or later.**
+- **The [DuckDB command line](https://duckdb.org/docs/installation/).** The
+  SQL Ingestron writes for DuckDB is tested with DuckDB <DuckdbTested />.
+
+Install Ingestron from npm:
+
+```sh
+npm install -g ingestron
+```
+
+`ingestron --help` should then list its commands. If the shell says the
+command is not found, see
+[Troubleshooting](/docs/troubleshooting#ingestron-command-not-found). To use
+VS Code instead, see [Install the command and the extension](/docs/~/install).
+
+## 1. Create the project
+
+<ToolSteps>
+<Tool name="CLI">
+
+```sh
+ingestron init shop --template duckdb --yes
+cd shop
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Create an empty folder named `shop`. Run **Ingestron: New project**, choose
+**Try a sample project**, then **DuckDB on a laptop**, and select the `shop` folder,
+whose name becomes the project's id. The new `README.md` opens in a preview.
+Open the folder in VS Code.
+
+<Screenshot
+  light="/images/vscode/new-project-starter-duckdb-light.png"
+  dark="/images/vscode/new-project-starter-duckdb-dark.png"
+  alt="The New project: sample project picker with duckdb typed in its search box. The one match is DuckDB on a laptop, duckdb: sample orders loaded into a local DuckDB database, a SQL transform over them, and both tables."
+  caption="Type duckdb to find the sample among the others."
+/>
+
+</Tool>
+</ToolSteps>
+
+`init` copies the starter into `shop` and prints
+`Created shop from the template duckdb (12 files).`, followed by the plan in
+the next step, and ends with `Nothing to replace: the project runs as written.`
+`--yes` takes the starter's defaults for anything not given as a flag. Among
+the files is `README.md`, which says how to run the project and what, in a
+project for a cloud platform, is still to fill in; this one runs as it is. The
+remaining steps run in the `shop` folder.
+
+## 2. Plan
+
+<ToolSteps>
+<Tool name="CLI">
+
+```sh
+ingestron plan
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: Plan**. The output appears in the **Ingestron** output panel.
+
+</Tool>
+</ToolSteps>
+
+You should see:
+
+```text
+Not applied on this platform
+dev:
+contracts/orders.yaml:11:59  warning  NOT_APPLIED
+  The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.
+  Add `check` to the layer's `does` to apply it here.
+duckdb → build/duckdb (dev)
+create    dev/README.md
+create    dev/run.sql
+create    dev/tables/bronze.orders.sql
+create    dev/tables/silver.customer_totals.sql
+
+4 files: 4 create. Ready to apply.
+```
+
+Each platform's files go to one folder, here `build/duckdb/`, with a folder
+for each environment that DuckDB runs: `dev` is the project's one environment.
+Plan writes nothing: it shows what `apply` would write.
+
+The warning above is about the contract you meet in step 5. It says every
+order has an `order_id` (`required: true`), and DuckDB checks rows only in a
+layer whose `does` says it checks them. This starter's layers say nothing
+about what they do, so DuckDB builds the tables without that check, and every
+command says so. A warning never stops a run.
+[Not applied here](/docs/~/not-applied) explains these warnings, and
+[Cleanse data in the right layer](/docs/~/cleanse-data) starts from a
+standard whose layers check their rows.
+
+## 3. Apply
+
+<ToolSteps>
+<Tool name="CLI">
+
+```sh
+ingestron apply
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: Apply**. The Explorer then shows the files in `build/duckdb/dev/`.
+In a flow, **Generated files (N)** above each table lists the files
+generated for it, and its full name follows it:
+
+<Screenshot
+  light="/images/vscode/first-project-duckdb-light.png"
+  dark="/images/vscode/first-project-duckdb-dark.png"
+  alt="The Explorer lists the shop project, with build/duckdb/dev open: tables/bronze.orders.sql, tables/silver.customer_totals.sql, README.md and run.sql, with .generated.json in build/duckdb, then the project's folders and files. Beside it, flows/orders.yaml; above the orders table, Generated files (1), and after it, → shop.bronze.orders."
+  caption="The shop project after Apply: the generated files under build/duckdb/dev, and the orders flow labelled with what it becomes."
+/>
+
+</Tool>
+</ToolSteps>
+
+```text
+Not applied on this platform
+dev:
+contracts/orders.yaml:11:59  warning  NOT_APPLIED
+  The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.
+  Add `check` to the layer's `does` to apply it here.
+duckdb → build/duckdb (dev)
+create    dev/README.md
+create    dev/run.sql
+create    dev/tables/bronze.orders.sql
+create    dev/tables/silver.customer_totals.sql
+
+4 files: 4 create. Ready to apply.
+Applied.
+```
+
+`build/duckdb/dev/` now holds the four files, and `build/duckdb/` holds
+`.generated.json`, which records each file as it was generated.
+
+## 4. Build the tables
+
+Run DuckDB in the `shop` folder (in VS Code, open a terminal there):
+
+```sh
+duckdb -bail ingestron.duckdb -c ".read build/duckdb/dev/run.sql"
+duckdb ingestron.duckdb -c "SELECT * FROM silver.customer_totals ORDER BY customer"
+```
+
+The first line runs the generated SQL and prints nothing when it succeeds. The
+second shows the totals it built from the five sample orders:
+
+```text
+┌──────────┬────────┬────────┐
+│ customer │ orders │ total  │
+│ varchar  │ int64  │ double │
+├──────────┼────────┼────────┤
+│ Ana      │      2 │  65.75 │
+│ Ben      │      2 │   42.0 │
+│ Chen     │      1 │   8.75 │
+└──────────┴────────┴────────┘
+```
+
+`run.sql` also published both tables as Parquet, which Power BI and other
+tools read as files:
+
+```sh
+ls published
+```
+
+```text
+bronze.orders.parquet  silver.customer_totals.parquet
+```
+
+`run.sql` builds both tables in one transaction, so if a statement fails,
+neither table changes. `-bail` then stops DuckDB before it publishes anything.
+If you pipe `run.sql` into DuckDB without `-bail`, it can go on to the `COPY`
+statements and publish the tables as they were before the run. Running `run.sql` again is safe: it
+rebuilds both tables and replaces both files. The project's `.gitignore` keeps
+`ingestron.duckdb` and the Parquet files out of Git, because they are data
+built from the files.
+
+## 5. Read what you wrote
+
+The project is a handful of short YAML files. `standard.yaml` chooses the
+DuckDB pack, the part of Ingestron that writes DuckDB SQL, and says the source
+files are CSV:
+
+<Example name="duckdb" file="standard.yaml" />
+
+`platform.yaml` says where this machine publishes each table:
+
+<Example name="duckdb" file="platform.yaml" />
+
+The connection is the source: a folder of files beside the project.
+
+<Example name="duckdb" file="connections/shop.yaml" />
+
+The flow reads `orders.csv` from that connection into the table `orders`,
+described by a contract:
+
+<Example name="duckdb" file="flows/orders.yaml" />
+
+The contract is an [Open Data Contract Standard](https://bitol-io.github.io/open-data-contract-standard/)
+file. It names the columns and their types, and those columns are what the
+table gets:
+
+<Example name="duckdb" file="contracts/orders.yaml" />
+
+A table that copies a source as it is can do without a contract, and take its
+columns from what the source says it has, unless the platform manages its
+access; see [When a table needs a contract](/docs/~/describe-a-source#needs-a-contract).
+
+The transform builds `customer_totals` from `orders` with SQL. Its own
+contract, `contracts/customer_totals.yaml`, types the result:
+
+<Example name="duckdb" file="transforms/customer_totals.yaml" />
+
+From those files Ingestron wrote `run.sql`. It is plain DuckDB SQL: every
+column cast to its contract's type, both tables built in one transaction, and
+published only once both are built. Nothing in it calls Ingestron.
+
+<Example name="duckdb" file="build/duckdb/dev/run.sql" />
+
+The [definition model](/docs/concepts/definitions) explains how the files link
+to each other.
+
+## Add a column
+
+Add a `channel` column. First add this line at the end of
+`contracts/orders.yaml`, under the other columns, with the same indentation:
+
+{/* prettier-ignore */}
+```yaml
+      - { name: channel, logicalType: string }
+```
+
+Then replace `samples/orders.csv` with orders that have a channel:
+
+```csv
+order_id,customer,amount,ordered_at,channel
+1,Ana,25.50,2026-10-01,web
+2,Ben,12.00,2026-10-01,store
+3,Ana,40.25,2026-10-02,web
+4,Chen,8.75,2026-10-03,web
+5,Ben,30.00,2026-10-03,store
+```
+
+Plan again:
+
+```sh
+ingestron plan
+```
+
+Plan shows each changed line: the `channel` column is read, cast and
+published. A reviewer sees the same change in a pull request.
+
+```text
+Not applied on this platform
+dev:
+contracts/orders.yaml:11:59  warning  NOT_APPLIED
+  The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.
+  Add `check` to the layer's `does` to apply it here.
+duckdb → build/duckdb (dev)
+update    dev/run.sql
+          @@ -10,5 +10,6 @@
+             CAST("customer" AS VARCHAR) AS "customer",
+             CAST("amount" AS DOUBLE) AS "amount",
+          -  CAST("ordered_at" AS DATE) AS "ordered_at"
+          +  CAST("ordered_at" AS DATE) AS "ordered_at",
+          +  CAST("channel" AS VARCHAR) AS "channel"
+           FROM read_csv('./samples/orders.csv', header = true, delim = ',');
+
+          @@ -33,5 +34,6 @@
+               "customer",
+               "amount",
+          -    "ordered_at"
+          +    "ordered_at",
+          +    "channel"
+             FROM "bronze"."orders"
+           )
+update    dev/tables/bronze.orders.sql
+          @@ -6,5 +6,6 @@
+             CAST("customer" AS VARCHAR) AS "customer",
+             CAST("amount" AS DOUBLE) AS "amount",
+          -  CAST("ordered_at" AS DATE) AS "ordered_at"
+          +  CAST("ordered_at" AS DATE) AS "ordered_at",
+          +  CAST("channel" AS VARCHAR) AS "channel"
+           FROM read_csv('./samples/orders.csv', header = true, delim = ',');
+
+          @@ -14,5 +15,6 @@
+               "customer",
+               "amount",
+          -    "ordered_at"
+          +    "ordered_at",
+          +    "channel"
+             FROM "bronze"."orders"
+           )
+
+4 files: 2 update, 2 unchanged. Ready to apply.
+```
+
+The contract decides the columns: a new column in the CSV alone changes
+nothing until the contract names it. Apply, and build the tables again:
+
+```sh
+ingestron apply
+duckdb -bail ingestron.duckdb -c ".read build/duckdb/dev/run.sql"
+duckdb ingestron.duckdb -c "SELECT * FROM bronze.orders ORDER BY order_id"
+```
+
+```text
+┌──────────┬──────────┬────────┬────────────┬─────────┐
+│ order_id │ customer │ amount │ ordered_at │ channel │
+│  int64   │ varchar  │ double │    date    │ varchar │
+├──────────┼──────────┼────────┼────────────┼─────────┤
+│        1 │ Ana      │   25.5 │ 2026-10-01 │ web     │
+│        2 │ Ben      │   12.0 │ 2026-10-01 │ store   │
+│        3 │ Ana      │  40.25 │ 2026-10-02 │ web     │
+│        4 │ Chen     │   8.75 │ 2026-10-03 │ web     │
+│        5 │ Ben      │   30.0 │ 2026-10-03 │ store   │
+└──────────┴──────────┴────────┴────────────┴─────────┘
+```
+
+## Break it on purpose
+
+Two mistakes show how Ingestron protects your work.
+
+### Edit a generated file
+
+Add the line `-- my change` at the end of `build/duckdb/dev/run.sql`, save it, and
+plan:
+
+```sh
+ingestron plan
+```
+
+```text
+Not applied on this platform
+dev:
+contracts/orders.yaml:11:59  warning  NOT_APPLIED
+  The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.
+  Add `check` to the layer's `does` to apply it here.
+duckdb → build/duckdb (dev)
+conflict  dev/run.sql
+          Changed by hand since it was generated. Move the change into the definitions, or delete the file to generate it again.
+
+4 files: 3 unchanged, 1 conflict. Resolve the conflicts before applying.
+```
+
+Plan exits with an error, and `apply` refuses in the same way, so your edit is
+never overwritten. A change belongs in the definitions, where the next plan
+shows it to a reviewer. To undo it, delete the file and apply:
+
+```sh
+rm build/duckdb/dev/run.sql
+ingestron apply
+```
+
+```text
+Not applied on this platform
+dev:
+contracts/orders.yaml:11:59  warning  NOT_APPLIED
+  The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.
+  Add `check` to the layer's `does` to apply it here.
+duckdb → build/duckdb (dev)
+create    dev/run.sql
+
+4 files: 1 create, 3 unchanged. Ready to apply.
+Applied.
+```
+
+[Generated files and ownership](/docs/concepts/generated-files) explains how Ingestron
+tracks what it wrote.
+
+### Name a connection that does not exist
+
+In `flows/orders.yaml`, change `source: shop` to `source: shops`, save it, and
+plan:
+
+```sh
+ingestron plan
+```
+
+```text
+dev: the definitions have problems
+flows/orders.yaml:4:9  error  BROKEN_LINK
+  "shops" is not the id of a Connection document.
+  Known Connection ids: shop.
+  Fix: Change to "shop".
+```
+
+Each problem names the file, line and column, the
+[error code](/docs/reference/errors#BROKEN_LINK) and a fix, and nothing is
+written. VS Code underlines the value as you type and offers
+**Change to "shop"** as a quick fix. Change it back, and plan reports
+`4 files: 4 unchanged. Up to date.`
+
+## Clean up
+
+Delete the `shop` folder. Nothing else was created: no account, no service and
+no file outside the folder. Ingestron stays installed for your next project;
+`npm uninstall -g ingestron` removes it.
+
+## Next
+
+<DocLinks
+  label="Next steps"
+  items={[
+    {
+      title: "How Ingestron works",
+      href: "/docs/~/how-it-works",
+      description: "What you write, what Ingestron writes, and what runs on your platform.",
+    },
+    {
+      title: "Compare the platforms",
+      href: "/docs/concepts/choose-a-platform",
+      description: "What each platform does with your data, and the routes a source can take.",
+    },
+    {
+      title: "Add a table to this project",
+      href: "/docs/duckdb/add-a-source",
+      description: "A customers file beside the orders: its contract, its flow table and the plan.",
+    },
+  ]}
+/>
+
+</Only>

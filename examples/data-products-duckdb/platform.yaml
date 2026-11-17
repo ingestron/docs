@@ -1,0 +1,10 @@
+apiVersion: ingestron.io/v1
+kind: Platform
+id: laptop
+settings:
+  duckdb-table:
+    published: ./published # each table as <schema>.<table>.parquet
+accept: # warnings the platform team has looked at, and why it lives with them
+  - code: NOT_APPLIED
+    about: { feature: grants }
+    reason: DuckDB has no access control. Who may read the published files is set where they are kept.

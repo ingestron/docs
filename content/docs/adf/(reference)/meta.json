@@ -1,0 +1,6 @@
+{
+  "title": "Reference",
+  "description": "Problems you may meet on Azure Data Factory, with their causes and fixes.",
+  "root": true,
+  "pages": ["troubleshooting"]
+}

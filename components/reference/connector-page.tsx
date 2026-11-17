@@ -15,6 +15,7 @@ import {
   type Part,
   type Section,
 } from "@/lib/connector-page";
+import type { Platform } from "@/lib/platforms";
 import { ConnectorFacts } from "./connector-facts";
 import { ConnectorSettings } from "./connector-settings";
 import { ExamplesList } from "./examples-list";
@@ -30,10 +31,19 @@ export function ConnectorNote({ children }: { at: string; children?: ReactNode }
   return <>{children}</>;
 }
 
-/** One connector's page: its routes, how to connect and read with each pack, and examples.
- * @example <ConnectorPage id="sqlserver" />
+/** One connector's page: its routes, how to connect and read with each pack, and examples;
+ * with `platform`, that platform's copy, with only its routes and packs.
+ * @example <ConnectorPage id="sqlserver" platform="synapse" />
  */
-export function ConnectorPage({ id, children }: { id: string; children?: ReactNode }) {
+export function ConnectorPage({
+  id,
+  platform,
+  children,
+}: {
+  id: string;
+  platform?: Platform["id"];
+  children?: ReactNode;
+}) {
   const notes = Children.toArray(children).map((child) => {
     const at = isValidElement<{ at?: string }>(child) ? child.props.at : undefined;
     if (!at)
@@ -45,7 +55,7 @@ export function ConnectorPage({ id, children }: { id: string; children?: ReactNo
   if (unknown.length > 0)
     throw new Error(`connectors/${id}: no slot ${unknown.join(", ")} on this page.`);
   const slot = (name: string) => notes.filter((note) => note.at === name).map((note) => note.child);
-  const sections = connectorSections(id);
+  const sections = connectorSections(id, platform);
   const first = sections.find((section) => section.entry)!;
   return (
     <>
@@ -55,9 +65,9 @@ export function ConnectorPage({ id, children }: { id: string; children?: ReactNo
             {section.title}
           </Heading>
           <Paragraphs texts={section.before} />
-          {section.id === "routes" && <ConnectorFacts id={id} />}
+          {section.id === "routes" && <ConnectorFacts id={id} platform={platform} />}
           {section.id === "source-metadata" && <ConnectorRecipes id={id} />}
-          {section.id === "examples" && <ExamplesList connector={id} />}
+          {section.id === "examples" && <ExamplesList connector={id} platform={platform} />}
           {section.items.map((item) =>
             "slot" in item ? (
               <div key={item.slot}>{slot(item.slot)}</div>
@@ -146,8 +156,8 @@ function Shown({
     case "watermarks":
       return (
         <>
-          <Example name={watermarkExample} file="standard.yaml" />
-          <Example name={watermarkExample} file="flows/erp.yaml" />
+          <Example name={part.example ?? watermarkExample} file="standard.yaml" />
+          <Example name={part.example ?? watermarkExample} file="flows/erp.yaml" />
         </>
       );
     case "settings":

@@ -1,0 +1,16 @@
+{
+  "title": "Connectors",
+  "description": "The sources Databricks can load, and how each one is read.",
+  "root": true,
+  "pages": [
+    "index",
+    "[Business applications](/docs/databricks/connectors#business-applications)",
+    "salesforce",
+    "[Databases and analytics](/docs/databricks/connectors#databases-and-analytics)",
+    "sqlserver",
+    "[Files and storage](/docs/databricks/connectors#files-and-storage)",
+    "files",
+    "[Streaming](/docs/databricks/connectors#streaming)",
+    "kafka"
+  ]
+}

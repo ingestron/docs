@@ -1,0 +1,22 @@
+apiVersion: ingestron.io/v1
+kind: Standard
+id: erp
+packs: [adf@2] # the factory copies each table into landing storage
+store:
+  default: none # the landed files are the result
+ingest:
+  settings:
+    adf-copy:
+      layout: snapshot # one file per table, replaced by each run
+      # The default trigger, for a flow that writes none; these flows write their own
+      every: { frequency: Hour, interval: 1 }
+      start: 2026-12-01T00:00:00Z
+operations:
+  # Flows write their own triggers; without this, the standard keeps one schedule
+  schedule: { per: flow }
+  triggers:
+    types: [schedule, tumbling-window]
+    timezone: Europe/London # the zone flows' triggers and these hours are read in
+    environments:
+      # Dev has no limit. In prod no run may start while the source's backup runs
+      prod: { hours: { from: "02:45", to: "02:15" } }

@@ -1,0 +1,4 @@
+# A guide: a small project that shows one idea; the docs embed it.
+title: Private SQL Server into landing storage
+summary: A factory copies an ERP's changed rows through a self-hosted runtime into landing storage, for dev and prod.
+order: 22

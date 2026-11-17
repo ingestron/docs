@@ -9,12 +9,12 @@ defaults, rendered from the pack itself.
 
 ## Available packs
 
-| Pack                                                              | Responsibilities                                         | Generated output, for every environment                                                                     |
-| ----------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| [Databricks](/docs/reference/packs/databricks) (`databricks@2`)   | Supported direct ingestion, transforms and storage       | [One bundle with a target per environment](/docs/platforms/databricks#what-you-get), in `build/databricks/` |
-| [Azure Data Factory](/docs/reference/packs/adf) (`adf@2`)         | Native copying from supported sources to landing storage | [One factory with a parameter file per environment](/docs/platforms/adf#what-you-get), in `build/adf/`      |
-| [Synapse serverless](/docs/reference/packs/synapse) (`synapse@2`) | SQL views over landed files and transforms               | [`views.sql` with a script per environment](/docs/platforms/synapse#what-you-get), in `build/synapse/`      |
-| [DuckDB](/docs/reference/packs/duckdb) (`duckdb@2`)               | Tables, transforms and local runs, published as Parquet  | [`run.sql` and each table's SQL](/docs/platforms/duckdb#what-you-get), in `build/duckdb/<environment>/`     |
+| Pack                                                              | Responsibilities                                         | Generated output, for every environment                                                           |
+| ----------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| [Databricks](/docs/reference/packs/databricks) (`databricks@2`)   | Supported direct ingestion, transforms and storage       | [One bundle with a target per environment](/docs/databricks#what-you-get), in `build/databricks/` |
+| [Azure Data Factory](/docs/reference/packs/adf) (`adf@2`)         | Native copying from supported sources to landing storage | [One factory with a parameter file per environment](/docs/adf#what-you-get), in `build/adf/`      |
+| [Synapse serverless](/docs/reference/packs/synapse) (`synapse@2`) | SQL views over landed files and transforms               | [`views.sql` with a script per environment](/docs/synapse#what-you-get), in `build/synapse/`      |
+| [DuckDB](/docs/reference/packs/duckdb) (`duckdb@2`)               | Tables, transforms and local runs, published as Parquet  | [`run.sql` and each table's SQL](/docs/duckdb#what-you-get), in `build/duckdb/<environment>/`     |
 
 Connector-specific access and ingestion requirements are in
 [Connectors](/docs/connectors).
@@ -26,7 +26,7 @@ work together in the combinations the routes offer.
 
 ## Which packs a project uses
 
-[Choose where your data goes](/docs/start/choose-a-route) lists the packs
+[Compare the platforms](/docs/concepts/choose-a-platform) lists the packs
 each route needs, and what runs after each load. How a standard selects methods,
 and how Ingestron checks that they fit together, is in
 [Standards, packs and methods](/docs/concepts/standards-and-packs).

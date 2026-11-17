@@ -1,0 +1,308 @@
+A table's checks come from its contract and from its flow or transform. Each
+check has an action: count the rows that fail it, leave them out, or stop. The
+engine that keeps the table runs the checks, in the layers whose `does` says
+they check.
+
+This guide uses an example with one contract's checks on a readings table.
+
+<Only on="databricks">The table is a Databricks streaming table.</Only>
+<Only on="synapse">The table is a Synapse view over the landed files.</Only>
+<Only on="duckdb">The table is a DuckDB table.</Only>
+
+<Example name="quality-~" file="project.yaml" />
+
+## Write the rules
+
+The contract says what every row must hold. Each required column, each limit
+in a column's `logicalTypeOptions`, and each `quality` rule that allows no
+failing row becomes a check of each row:
+
+<Example name="quality-~" file="contracts/readings.yaml" />
+
+That gives four checks: `sensor_id_not_null` and `read_at_not_null` from
+`required: true`, `sensor_id_pattern` from the `pattern` option, and
+`known_unit`. A check is named by the rule's `name`, else after the column and
+the option or metric. The table's own rule, `has_readings`, compares a count
+over all rows, so it is a **table check**, counted once the table is built;
+see [Rules about the data](/docs/~/write-a-contract#rules-about-the-data).
+
+A flow table or a transform adds checks of its own, `expectations`, each a SQL
+condition the rows must meet:
+
+<Example name="quality-~" file="flows/readings.yaml" />
+
+An expectation is written in the SQL of the engine that keeps the table. This
+one reads the same in each engine's SQL; the contract's rules are written for
+the engine by its pack.
+
+## Choose what a failing row does
+
+`action` says what happens to a row that fails a check:
+
+| `action` | Effect                                          |
+| -------- | ----------------------------------------------- |
+| `warn`   | keep the row and count it                       |
+| `drop`   | leave the row out and count it                  |
+| `fail`   | stop: the update or the run fails, and says why |
+
+Without an `action`, the standard decides: `quality.required` for a required
+column, `quality.default` for every other check, `warn` unless they say
+otherwise. A layer written as an object can give its own `quality`, which wins
+for its tables. A table check fails with the default action when it is
+`fail`, and otherwise warns, since no row can be left out once the table is
+built.
+
+<Example name="quality-~" file="standard.yaml" />
+
+## Say which layers check [#layers]
+
+A layer's `does` says what it does with its rows; see
+[What a layer does](/docs/concepts/layers#what-a-layer-does):
+
+- A layer whose `does` lists `check` runs its tables' checks, each with its
+  action.
+- `does: raw` keeps every row as it arrived. Its checks only count: every
+  action there is `warn`.
+- A list without `check`, such as `[cleanse]`, makes every action `warn` too.
+  An expectation that asks for `drop` or `fail` there is
+  [`LAYER_RESPONSIBILITY`](/docs/reference/errors#LAYER_RESPONSIBILITY), an
+  error.
+
+<Only on="databricks">
+
+Databricks counts the checks in a layer that lists no `check`, and checks the
+tables of a layer without `does` as it always has.
+
+</Only>
+
+<Only on="synapse duckdb">
+
+Checks run only in a layer whose `does` lists `check` or is `raw`. Anywhere
+else each contract rule is
+[`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED), with the hint to add
+`check` to the layer's `does`.
+
+</Only>
+
+<Only on="duckdb">
+
+A flow's own `expectations` there are an error,
+[`METHOD_CHECK`](/docs/reference/errors#METHOD_CHECK).
+
+</Only>
+
+In the example, `bronze` does `check` and `quarantine`, so every engine checks
+the readings there.
+
+A flow table in a layer that does `cleanse`, `check` or `quarantine`, or with
+`expectations` of its own, needs a contract: its rules are what the layer
+applies. Elsewhere a table can take its columns from the source's metadata,
+with no checks; see
+[When a table needs a contract](/docs/~/describe-a-source#needs-a-contract).
+
+## What each engine does [#engines]
+
+Every engine writes the checks into the files it generates, as plain SQL. What
+it can apply differs:
+
+<Only on="databricks">
+
+<QualityEngines packs={["databricks"]} />
+
+</Only>
+
+<Only on="synapse">
+
+<QualityEngines packs={["synapse"]} />
+
+</Only>
+
+<Only on="duckdb">
+
+<QualityEngines packs={["duckdb"]} />
+
+</Only>
+
+What an engine cannot apply is a
+[not applied here](/docs/~/not-applied) warning at the line that asks
+for it.
+
+<Only on="synapse">
+
+Plan the example:
+
+<ToolSteps>
+<Tool name="CLI">
+
+```sh
+ingestron plan --no-diff
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: Plan** from the Command Palette (⇧⌘P on macOS, Ctrl+Shift+P
+elsewhere). The output is in the Ingestron output panel. Each warning is also
+marked at its line as you type, and listed in the Problems panel, for the
+environment selected in the status bar, here `dev`:
+
+<Screenshot
+  light="/images/vscode/quality-warnings-synapse-light.png"
+  dark="/images/vscode/quality-warnings-synapse-dark.png"
+  alt="The Problems panel with 4 problems, all ingestron(NOT_APPLIED). Under contracts/readings.yaml, at line 14, column 40: The pattern rule isn't applied on synapse. Under flows/readings.yaml, at line 11, column 87: The fail action isn't applied on synapse. Under standard.yaml, at line 12, column 15: Quarantine isn't applied on synapse; at line 13, column 12: quality.results: true isn't applied on synapse. Each message is cut short at the panel's edge."
+  caption="The four warnings in the Problems panel, each at its file and line. Hover one, or read the plan below, for the whole message."
+/>
+
+</Tool>
+</ToolSteps>
+
+The plan lists them first:
+
+```text
+Not applied on this platform
+dev:
+contracts/readings.yaml:14:40  warning  NOT_APPLIED
+  The pattern rule isn't applied on synapse: serverless T-SQL has no regular expressions.
+flows/readings.yaml:11:87  warning  NOT_APPLIED
+  The fail action isn't applied on synapse: a view can't stop a load; checks.sql checks this rule and raises an error when it runs.
+standard.yaml:12:15  warning  NOT_APPLIED
+  Quarantine isn't applied on synapse: a view keeps no rows to quarantine; checks.sql returns how many rows each drop check leaves out instead.
+standard.yaml:13:12  warning  NOT_APPLIED
+  quality.results: true isn't applied on synapse: a view keeps no results; checks.sql returns each check's counts instead when it runs.
+```
+
+Each is a warning: the files are still written. Remove what an engine cannot
+apply, or keep it and, once you have decided to live with it,
+[accept the warning](/docs/~/accept-a-warning).
+
+</Only>
+
+<Only on="databricks duckdb">
+
+Each is a warning: the files are still written. Remove what the engine cannot
+apply, or keep it and, once you have decided to live with it,
+[accept the warning](/docs/~/accept-a-warning).
+
+</Only>
+
+<Only on="databricks">
+
+### On Databricks [#databricks]
+
+Each check is a constraint on the table: `EXPECT` for `warn`,
+`ON VIOLATION DROP ROW` for `drop` and `ON VIOLATION FAIL UPDATE` for `fail`.
+The pipeline's update shows how many rows failed each one:
+
+<Example
+  name="quality-~"
+  file="build/databricks/src/iot/bronze/readings.sql"
+  from="CREATE OR REFRESH STREAMING TABLE `bronze`.`readings`"
+  to="FROM STREAM(`readings_checked`);"
+/>
+
+Table checks run in a task after each refresh, `tasks/iot/apply_contract.py`,
+only when the platform turns on `databricks.manage.checks`, as the example's
+platform does:
+
+<Example name="quality-~" file="platform.yaml" />
+
+Without it, each table check is
+[`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF), a warning whose fix
+turns it on. A table that Lakeflow Connect writes is written as the source
+gives it: its row checks, their actions and quarantine are `NOT_APPLIED`
+there, and the hint says to check the table in a transform in the next layer.
+Its table checks still run in the task after each refresh, and the event log
+still keeps the results.
+
+</Only>
+
+<Only on="duckdb">
+
+### On DuckDB [#duckdb]
+
+`run.sql` counts every check before it builds the table, in the run's one
+transaction. The DuckDB command line prints each check's failing rows, a
+`drop` check's rows are not inserted, and a failing `fail` check stops the run
+before anything is published. Table checks are counted once the table is
+built, with nothing to turn on in the platform:
+
+<Example
+  name="quality-~"
+  file="build/duckdb/dev/run.sql"
+  from='CREATE OR REPLACE TEMP TABLE "ingestron_checked" AS SELECT'
+  to="SELECT error(format('The check"
+/>
+
+</Only>
+
+<Only on="synapse">
+
+### On Synapse serverless [#synapse]
+
+A view keeps no rows, so the checks are split in two. The view leaves out the
+rows a `drop` check fails each time it is queried:
+
+<Example
+  name="quality-~"
+  file="build/synapse/views.sql"
+  from="CREATE OR ALTER VIEW [bronze].[readings] AS"
+  to="AND ([read_at] IS NOT NULL);"
+/>
+
+`build/synapse/checks.sql` counts every check, the rows the view leaves out
+included, returns one row per check, and raises an error when a `fail` check
+fails. It checks nothing unless something runs it after each load: run it with
+sqlcmd, from a pipeline's Script activity, or in CI; see
+[Synapse serverless views](/docs/synapse/deploy#operate).
+
+<Example name="quality-~" file="build/synapse/checks.sql" />
+
+</Only>
+
+## Keep the rows a check leaves out [#quarantine]
+
+`quality.quarantine: true` keeps the rows a `drop` check leaves out in a table
+of their own, `<table>_quarantine`, with a column `_failed_checks` naming the
+checks each row failed. Written in the standard, it reaches the tables of the
+layers whose `does` lists `quarantine`. Written on a layer, a flow table or a
+transform, that layer's `does` must list `quarantine`
+([`LAYER_RESPONSIBILITY`](/docs/reference/errors#LAYER_RESPONSIBILITY)), and a
+table with no `drop` check has nothing to keep
+([`QUARANTINE_UNUSED`](/docs/reference/errors#QUARANTINE_UNUSED)).
+
+<Only on="databricks">
+  Databricks builds `readings_quarantine` beside the table, from the same rows, read once.
+</Only>
+<Only on="duckdb">
+  DuckDB rebuilds `bronze.readings_quarantine` each run, or adds to it for an `append` table, and
+  does not publish it.
+</Only>
+<Only on="synapse">A Synapse view has no rows to keep, so quarantine is not applied there.</Only>
+
+## Keep the results [#results]
+
+`quality.results: true` keeps each check's outcome where it can be queried:
+
+<Only on="databricks">
+
+On Databricks, they are in the pipeline's event log, published as a table.
+
+</Only>
+
+<Only on="duckdb">
+
+On DuckDB, they are in `<schema>._ingestron_checks` in the run's database, a row per
+check and run, with the run's id, the time, the action, the failing rows and
+whether it passed. In Azure the database lasts only for that run, so read
+the job's log instead.
+
+</Only>
+
+<Only on="synapse">
+
+On Synapse, nothing keeps them. Each run of `checks.sql` returns them.
+
+</Only>
+
+A [data product's passport](/docs/~/define-a-data-product#read-the-passport)
+says for each table what checks it, when, and where its results are.

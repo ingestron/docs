@@ -1,0 +1,4 @@
+# A guide: a small project that shows one idea; the docs embed it.
+title: DuckDB environments
+summary: dev and prod from one set of definitions on one machine, each publishing its tables to its own folder.
+order: 18

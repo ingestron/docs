@@ -1,0 +1,13 @@
+# A web shop's orders and customers: DuckDB builds the tables from the exports,
+# published as two governed data products with a passport each.
+id: shop
+environments:
+  dev: {}
+imports:
+  - standard.yaml
+  - platform.yaml
+  - connections/*.yaml
+  - flows/*.yaml
+  - transforms/*.yaml
+  - contracts/*.yaml
+  - products/*.yaml

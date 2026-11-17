@@ -1,6 +1,6 @@
-# ADF copies the ERP's tables into storage, and Synapse serverless SQL shows
-# them to reports as views, with a transform as a view too: nothing runs after
-# a load, and nothing is stored but the files.
+# The workspace pipelines copy the ERP's tables into storage, and Synapse
+# serverless SQL shows them to reports as views, with a transform as a view too:
+# nothing runs after a load, and nothing is stored but the files.
 id: sales
 environments:
   dev: {}

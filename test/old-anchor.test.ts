@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import { describe, expect, it } from "vitest";
 import { OldAnchor } from "../components/old-anchor";
-import { anchors, read } from "./pages.js";
+import { anchors, read, movedPlatformPages } from "./pages.js";
 
 describe("an old anchor", () => {
   it("is an empty, hidden target with the old id", () => {
@@ -67,7 +67,8 @@ const before: Record<string, string[]> = {
 describe("the restructured platform pages", () => {
   const sections = ["what-you-get", "on-the-platform", "settings", "next"];
   it.each(Object.keys(before))("%s keeps every anchor it had", (page) => {
-    const text = read(`platforms/${page}.mdx`);
+    // A page split in two keeps its anchors across its parts.
+    const text = movedPlatformPages[page]!.map(read).join("\n");
     const ids = new Set([
       ...anchors(text).keys(),
       ...[...text.matchAll(/<OldAnchor id="([^"]+)" \/>/g)].map((match) => match[1]!),
@@ -88,8 +89,9 @@ describe("the restructured platform pages", () => {
       "limits",
       "next",
     ];
-    for (const page of Object.keys(before)) {
-      const text = read(`platforms/${page}.mdx`);
+    for (const file of Object.keys(before).flatMap((page) => movedPlatformPages[page]!)) {
+      const page = file;
+      const text = read(file);
       const top = [...text.matchAll(/^## .*?(?: \[#([^\]]+)\])?$/gm)].map(
         (match) => match[1] ?? "next",
       );

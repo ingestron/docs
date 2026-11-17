@@ -9,7 +9,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { cli, commands, fences, read, section } from "./pages.js";
 
-const page = read("how-to/cleanse-data.mdx");
+const page = read("duckdb/cleanse-data.mdx");
 const prose = (text: string) => text.replace(/\s+/g, " ");
 const duckdb = spawnSync("duckdb", ["--version"], { encoding: "utf8" }).status === 0;
 const withDuckdb = duckdb ? "" : " (skipped: the duckdb command line is not on the PATH)";
@@ -126,5 +126,49 @@ describe("how-to/cleanse-data", () => {
     expect(plan.code).toBe(0);
     expect(plan.output).toContain("warning  DEDUPLICATE_MODE");
     expect(plan.output).toContain('Deduplicate is redundant for "orders_clean"');
+  });
+});
+
+describe("on Databricks", () => {
+  const page = read("databricks/cleanse-data.mdx");
+
+  it("cleanses the column in the flow's silver table, as the page shows, in the SQL it shows", () => {
+    const [init, cd] = commands(section(page, "## Create the project"));
+    expect(init).toMatch(/^ingestron init shop --kit databricks\/lakehouse-streaming@/);
+    expect(cd).toBe("cd shop");
+    const parent = mkdtempSync(join(tmpdir(), "docs-cleanse-dbx-"));
+    expect(cli(parent, words(init!).slice(1)).code).toBe(0);
+    const cwd = join(parent, "shop");
+    const steps = section(page, "## Add a column to cleanse");
+    const [column, cleanse] = fences(steps, "yaml");
+    change(
+      join(cwd, "contracts/orders.yaml"),
+      "      - { name: op, logicalType: string }\n",
+      `      - { name: op, logicalType: string }\n${column}`,
+    );
+    change(join(cwd, "flows/orders.yaml"), "    expectations:\n", `${cleanse}    expectations:\n`);
+    const run = section(page, "## Plan, apply and read the SQL");
+    const plan = cli(cwd, ["plan", "--no-diff"]);
+    expect(plan.code).toBe(0);
+    for (const line of fences(run, "text")[0]!.trim().split("\n"))
+      expect(plan.output, line).toContain(line);
+    expect(cli(cwd, ["apply"]).code).toBe(0);
+    const sql = readFileSync(join(cwd, "build/databricks/src/shop/silver/orders.sql"), "utf8");
+    expect(sql).toContain(fences(run, "sql")[0]!.trim());
+    expect(sql).toContain("nullif(trim(`op`), '') AS `op`");
+  });
+
+  it("refuses cleansing in bronze with the error the page shows", () => {
+    const [init] = commands(section(page, "## Create the project"));
+    const parent = mkdtempSync(join(tmpdir(), "docs-cleanse-dbx-"));
+    cli(parent, words(init!).slice(1));
+    const cwd = join(parent, "shop");
+    const steps = section(page, "## Ask a layer for a duty it does not do");
+    const file = join(cwd, "flows/customers.yaml");
+    writeFileSync(file, `${readFileSync(file, "utf8")}${fences(steps, "yaml")[0]!}`);
+    const plan = cli(cwd, ["plan", "--no-diff"]);
+    expect(plan.code).not.toBe(0);
+    for (const line of fences(steps, "text")[0]!.trim().split("\n"))
+      expect(plan.output, line).toContain(line);
   });
 });

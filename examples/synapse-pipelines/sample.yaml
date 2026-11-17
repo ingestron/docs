@@ -1,0 +1,3 @@
+title: Copy Azure SQL with Synapse
+summary: Synapse workspace pipelines land full Parquet snapshots for serverless SQL views.
+order: 9

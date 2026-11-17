@@ -1,0 +1,59 @@
+---
+title: Load with Azure Data Factory
+description: Let Azure Data Factory copy the sources into landing storage, and serve the files as Synapse serverless SQL views.
+---
+
+When the source is not Azure SQL Database, or a factory already copies your
+sources, Azure Data Factory lands the files and Synapse serverless SQL shows
+them as views. Nothing runs or is stored after each load: Synapse reads the
+files each time a report queries a view.
+
+<RouteFacts id="adf-synapse" />
+
+The factory is the same as on [Azure Data Factory](/docs/adf): its runtime,
+Key Vault, schedules and pipelines are described there. The views are the
+same as on [Azure Synapse](/docs/synapse#what-you-get).
+
+## Create it [#create-it]
+
+<ToolSteps>
+<Tool name="CLI">
+
+From a parent folder:
+
+```sh
+ingestron init sales --connector sqlserver --via adf-synapse --yes
+cd sales
+```
+
+</Tool>
+<Tool name="VS Code">
+
+New project starts a Synapse project with workspace pipelines. To have Azure
+Data Factory load the files, create the project in a terminal with the command
+on the CLI tab, then open its folder in VS Code.
+
+</Tool>
+</ToolSteps>
+
+`init` writes `REPLACE_ME`, with a comment, for each value it cannot know,
+such as the server, the tables and the storage account, and `README.md` lists
+them; see [Write the values it cannot know](/docs/synapse/create-a-project#write-the-values).
+For another source, choose it from the [connector catalogue](/docs/~/connectors);
+its page lists the routes it supports. The files on this page come from a
+finished project, which you can download:
+
+<ExampleDownload name="synapse-views" />
+
+## Deploy [#deploy]
+
+Deploy the factory first, as in [Deploy the factory](/docs/adf/deploy#deploy),
+then run the views script, as in [Deploy to Synapse](/docs/synapse/deploy#deploy).
+The request lists what both need: see
+[Ask the platform team](/docs/synapse/ask-the-platform-team).
+
+## Next
+
+- [Shape ADF pipelines](/docs/adf/pipelines): schedules, retries and landing paths.
+- [Keep a table current](/docs/synapse/keep-a-table-current): what a view keeps, and when to keep a table instead.
+- [Deploy through environments](/docs/synapse/deploy-through-environments).

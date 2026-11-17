@@ -1,0 +1,47 @@
+apiVersion: ingestron.io/v1
+kind: Flow
+id: erp
+source: erp
+# When a row last changed: each copy reads the rows past it,
+# and the tables keep the latest row of each key by it
+load: { cursor: modified_at }
+sequence: modified_at
+ingest:
+  # Pipeline parameters of this flow. Each needs a default, for runs started by hand
+  parameters:
+    min_date: { type: date, default: "2020-01-01" }
+  triggers:
+    # Each hour, the rows changed in the hour before; ADF runs each window once
+    - name: hourly
+      type: tumbling-window
+      every: { frequency: Hour, interval: 1 }
+      start: 2026-12-01T00:00:00Z
+      # Wait five minutes after the window closes, for late rows
+      delay: 5m
+      # Say that ADF may run every window since `start` again when this is deployed
+      backfill: true
+    # Sundays at 03:00 (Europe/London, the standard's time zone): copy the
+    # tables again in full, invoices only from min_date, and merge them by key
+    - name: weekly-reload
+      type: schedule
+      every: { frequency: Week, interval: 1 }
+      start: 2026-12-01T00:00:00Z
+      at: { weekdays: [Sunday], hours: [3], minutes: [0] }
+      parameters:
+        load: full
+        min_date:
+          expression: "@formatDateTime(addDays(trigger().scheduledTime, -30), 'yyyy-MM-dd')"
+tables:
+  customers:
+    # The source table: its database and schema, database.schema.Customers
+    object: erp.dbo.Customers
+    contract: erp.customers
+  invoices:
+    # The source table: its database and schema, database.schema.Invoices
+    object: erp.dbo.Invoices
+    contract: erp.invoices
+    load: { cursor: updated_at }
+    sequence: updated_at
+    ingest:
+      # Written as plain SQL, so each run's value is escaped as a date
+      filter: invoice_date >= {{ parameters.min_date }}

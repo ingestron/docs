@@ -1,0 +1,342 @@
+---
+title: Release notes
+description: What each Ingestron release since 2.0 changes in the files it generates and in the definitions, and what to do about it.
+---
+
+Upgrade on purpose, in a pull request, as
+[Upgrade Ingestron and its packs](/docs/how-to/upgrade) describes. Coming
+from 1.x, read [Upgrade from 1.x to 2.0](/docs/how-to/upgrade#upgrade-to-2)
+first.
+
+## Ingestron 2.1 [#upgrade-to-2-1]
+
+2.1 changes `init`, what `check` finds, and Hive connections on Azure Data
+Factory:
+
+- `init` asks only what picks the project: the starter, or the connector,
+  connectivity and route. It writes `REPLACE_ME`, with a comment, for each
+  value it cannot know, writes `README.md` with where to find each one, and
+  `--set <name>=<value>` writes one as the project is created; see
+  [Create a project](/docs/how-to/start-from-a-template#write-the-values).
+  A script that answered `init`'s questions on standard input gives `--set`
+  instead.
+- A value still `REPLACE_ME` is a [`REPLACE_ME`](/docs/reference/errors#REPLACE_ME)
+  warning in `plan` and `apply`, and an error in `check`. Projects created
+  before 2.1 have none.
+- `ingestron request` opens with **Values to replace**, and its **Values to
+  provide** says the deploying pipeline supplies each value under the name
+  given.
+- VS Code's **New project** asks no name, environments or standard, and
+  opens the new `README.md`.
+- On Azure Data Factory, a [Hive](/docs/connectors/hive) connection's
+  `transport` now decides how it signs in. `Binary` connects anonymously: the
+  linked service is written with `authenticationType: Anonymous` and no user
+  or password, and a `Binary` connection that gives `user` or `password` is
+  refused. `SASL` and `HTTP` sign in with a user and password, and need both.
+  In a 2.0 project, on `Binary`, remove `user` and `password`, or set
+  `transport` to the one your server uses; on `SASL` or `HTTP`, give both,
+  with the password as a secret such as `${secret:hive-password}`. Then run
+  `ingestron plan` to see the linked service change.
+- For code that calls the packages: `@ingestron/definitions` 1.11 adds the
+  `REPLACE_ME` code and the `replaceMe` resolve option, which `check` sets to
+  `error`; and the CLI's `Io` gains an optional `now()`, the day `init`
+  writes.
+
+## Ingestron 2.2 [#upgrade-to-2-2]
+
+2.2 generates, prints and checks exactly what 2.1 does, and the VS Code
+extension works as before. Only code that calls the packages changes:
+
+- `@ingestron/core` 1.0 is the API the command is built on.
+  `@ingestron/cli` now exports only `run`, `commands` and `flags`. Import
+  everything else it exported in 2.1, such as `generatedOutputs`,
+  `projectRoutes`, `platformRequest` and `packs`, from `@ingestron/core`,
+  under the same names. The
+  [`@ingestron/core` README](https://github.com/ingestron/ingestron/tree/main/packages/core)
+  describes them.
+- In `@ingestron/authoring`, open a project with `ProjectSnapshot.open(folder)`
+  in place of `openProject`, and call the snapshot's methods. Each function
+  that took the project first is now a method with the same name:
+  `problems(project, "dev")` becomes `snapshot.problems("dev")`. Three are
+  renamed: `projectSymbols` is `symbols`, `compareEnvironments` is `compare`
+  and `platformRequest` is `request`. The
+  [`@ingestron/authoring` README](https://github.com/ingestron/ingestron/tree/main/packages/authoring)
+  shows an example.
+
+## Ingestron 2.3 [#upgrade-to-2-3]
+
+2.3 generates the same files as 2.2 for a project that changes nothing,
+apart from a data product's passport, whose Quality and Who may use it
+sections are rewritten, and one fix on Databricks (below). It adds
+[intent](/docs/reference/intent),
+[published standards](/docs/how-to/choose-a-published-standard), layers that
+say what they do, checks on every engine, cleansing, accepted warnings, and
+grants, masks and row filters. It asks for some settings to be written in
+their new places, and some warnings have new codes:
+
+- **Settings that are intent.** `streaming-table`'s `mode`, `sequence_by`,
+  `delete_when` and `cluster_by`, `duckdb-table`'s `mode` and `sequence_by`,
+  and `adf-copy`'s `mode` and `watermark_column` mean the same as
+  [intent](/docs/reference/intent#settings-that-are-intent), such as
+  `history: latest` for `mode: upsert`. They still work, and `plan` reports
+  each as [`SETTING_MOVED`](/docs/reference/errors#SETTING_MOVED), a warning.
+  In a flow's or a flow table's `with`, its fix writes the intent and removes
+  the setting; anywhere else, such as the standard, write the intent by hand.
+- **The `databricks:` section.** The platform's `workspace`, `mode`, `run_as`,
+  `compute`, `permissions`, `manage` and `grants` now go under `databricks:`,
+  and `notifications.on_failure` becomes an email alert in `alerts`. At the
+  top they still work, with a
+  [`PLATFORM_FIELD_MOVED`](/docs/reference/errors#PLATFORM_FIELD_MOVED)
+  warning whose fix moves each; one written in both places with different
+  values is [`BAD_SETTING`](/docs/reference/errors#BAD_SETTING). See
+  [the `databricks:` section](/docs/reference/packs/databricks#platform).
+- **What each pack applies.** A value of intent the table's pack does not
+  apply is [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED), and with the
+  standard's `features: ga`, one that needs a feature in preview is
+  [`PREVIEW_FEATURE`](/docs/reference/errors#PREVIEW_FEATURE). Projects
+  written before 2.3 declare no intent, so they get neither.
+- **Published standards.** `ingestron init --kit` starts a project from one,
+  `ingestron standard install` moves a project to another version, and
+  `ingestron standard list` lists them; in VS Code, **New project** offers
+  the published standards for the platform you choose. Hover a `REPLACE_ME` to see where to find its
+  value.
+- **Quality and cleansing.** A layer can say what it does with its rows,
+  `does`; a table can cleanse its columns, keep one row per key, convert time
+  zones, and keep the rows a `drop` check leaves out; and a transform with one
+  input can leave out `code`. See
+  [What a layer does](/docs/concepts/layers#what-a-layer-does),
+  [Check data quality](/docs/how-to/add-quality-checks) and
+  [Cleanse data in the right layer](/docs/how-to/cleanse-data). All of it is
+  optional.
+- **DuckDB and Synapse check rows where a layer says so.** They run a table's
+  checks only in a layer whose `does` lists `check`, and count them, each as
+  `warn`, in a `raw` one. In a layer without `does` their files are what they
+  were, and each contract rule they do not run is a new warning,
+  [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED), with the hint to add
+  `check` to the layer's `does`. Expect these on the first plan with 2.3; see
+  [Not applied here](/docs/concepts/not-applied).
+- **Table checks on DuckDB and Synapse need nothing turned on.** Where a layer
+  checks, they count table checks and `unique` in their own run, whatever
+  `manage.checks` says. Only Databricks needs `databricks.manage.checks`.
+- **New codes for old warnings.**
+  - `CONTRACT_FIELD_UNUSED` is no longer reported. A contract field the pack
+    that keeps a table does not apply yet is `NOT_APPLIED` instead, judged for
+    each table against that pack, not against every pack of the standard.
+  - `QUALITY_RULE_NOT_CHECKED` for a check an engine cannot run, such as one
+    on a table that ends at the landed files, is `NOT_APPLIED`. It stays for a
+    rule no engine can check as written, such as a `custom` rule.
+  - A rule that counts over all rows while `databricks.manage.checks` is off
+    was `QUALITY_RULE_NOT_CHECKED`; it is
+    [`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF), with the fix
+    that turns checks on.
+  - A flow's `expectations` on a table that Lakeflow Connect writes were an
+    error; each is `NOT_APPLIED`, and so is each required column there.
+
+  A script that looks for an old code should look for the new one.
+
+- **Accepted warnings.** A warning you have decided to live with can be
+  accepted in `platform.yaml`, with the reason; see
+  [Accept a warning](/docs/how-to/accept-a-warning). An entry for
+  `CONTRACT_FIELD_UNUSED` is [`ACCEPT_CODE`](/docs/reference/errors#ACCEPT_CODE),
+  an error: accept `NOT_APPLIED` instead.
+- **Grants, masks and row filters.** A contract's `roles`, and a layer's
+  `access`, can be granted on each table; the standard's `governance` can
+  make grants exact, mask columns by their classification, and filter rows.
+  Databricks applies them after each refresh, with `databricks.manage.grants`,
+  `masks` and `filters`; Synapse grants each view, with
+  `synapse.manage.grants`. `principals` in `platform.yaml` says who each role
+  is. Each switch is off by default, so the files do not change until you
+  turn one on. See
+  [Grant access, mask columns and filter rows](/docs/how-to/grant-access).
+- **New warnings for roles.** A project whose contracts name `roles` gets a
+  warning for each role on the first plan with 2.3, and the same files:
+  - on Databricks or Synapse,
+    [`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF), whose fix
+    turns on `databricks.manage.grants` or `synapse.manage.grants`;
+  - on DuckDB, [`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED): DuckDB
+    has no access control.
+
+  Masks and row filters, which only a standard written for 2.3 can give,
+  warn for each classified column they mask and each filter:
+  `CAPABILITY_OFF` on Databricks, and `NOT_APPLIED` on Synapse and DuckDB,
+  which cannot mask or filter.
+  Turn the capability on, or accept the warning with
+  `about: { feature: grants }` (or `write`, `exact`, `masks` or `filters`)
+  and the reason; see [Accept a gap](/docs/how-to/grant-access#accept-a-gap).
+  Either way, the passport's Who may use it says which roles are granted
+  and which are not enforced, and why.
+
+- **A role's `access` is checked where it is granted.** A role whose
+  `access` is neither `read` nor `write` is
+  [`ROLE_ACCESS`](/docs/reference/errors#ROLE_ACCESS), an error, only on a
+  table where its grant would be applied. A project that does not turn grants
+  on gets no new error.
+- **Tag keys Unity Catalog refuses.** With `databricks.manage.tags` on, a
+  contract tag key, or the classification's tag key, holding
+  `* < > % & ? \`, a control character, or a space at either end is now
+  [`PACK_CHECK`](/docs/reference/errors#PACK_CHECK), an error, as `. , - = / :`
+  already were. Unity Catalog refused such a key when the task ran; now
+  `plan` says so first. Rename the tag.
+- **A Databricks `run_as` user name with a dot.** `prerequisites/<environment>.sql`
+  wrote a `run_as` `user_name` such as `first.last@example.com` as two names,
+  `` `first`.`last@example.com` ``, which is not the user. It is now one
+  name, `` `first.last@example.com` ``, so that file changes for such a
+  project. A service principal's application ID has no dot, and is written as
+  before.
+- **A classified column that already has the tag key.** On Databricks, a
+  column whose contract `tags` already hold the classification's tag key, and
+  that has a `classification` too, was tagged with the key twice. The apply
+  task now sets it once, from the `classification`, so that task changes for
+  such a project.
+- **`ingestron request` lists each pack's switches.** A Synapse switch is read
+  from the platform's `synapse:` section and listed as
+  `synapse.manage.grants`; Databricks' list is unchanged. A name holding a
+  backtick is written as code with two backticks around it.
+
+To move a project to the new places, plan with 2.3.0, apply each fix (in
+VS Code, **Fix all** applies one kind at once), and plan again: the plan should
+list no change to the generated files, other than the passports. Then read
+what it lists under `Not applied on this platform`, and decide for each
+whether to give the layer a duty, change the definitions or accept it.
+
+For code that calls the packages:
+
+- `@ingestron/definitions` 1.13 adds intent: `intentPaths`, `intentUseOf` and
+  `intentCoverageGaps`; a pack's `intent`, and a method's `intent`,
+  `intentDefaults` and `aliases`; each table's `intent` and `intentOrigins`;
+  a pack's `platformSection` and `platformSectionReference`; and `find` and
+  `suggest` on each `FieldInfo`.
+- It also adds quality and cleansing: an expectation's `rule` (`RowRule`); a
+  table's `does`, `cleanse` (`TableCleanse` and `ColumnCleanse`), `timezone`,
+  `quality`, `qualityOrigins`, `quarantine` and `notApplied`; a coverage
+  entry's `onlyWhere` and `zonesNotApplied`; a diagnostic's `subject`; a
+  result's `accepted` and `acceptAtBuild`, and `acceptsWarning`; and
+  `severities` and `origin` in each code's help (`CodeHelp`).
+  `CONTRACT_FIELD_UNUSED` stays in `DefinitionCode`, no longer reported.
+- It also adds access: each table's `access` (`TableAccess`, with
+  `AccessGrant`, `ColumnMask`, `RowFilter` and `FilterMatch`), a serve step's
+  `notApplied`, the platform's `principals`, the `grants`, `masks` and
+  `filters` capabilities, `classificationTag` and `defaultClassificationTag`,
+  and the codes `ROLE_ACCESS`, `MASK_TYPE`, `FILTER_MATCH`, `FILTER_MULTIPLE`,
+  `MASK_NEEDS_RUN_AS`, `MASK_FUNCTIONS`, `POLICY_LIMIT` and
+  `POLICY_PRINCIPALS`.
+- `@ingestron/config` adds `matchesImport`, the one rule `imports` and an
+  accepted warning's `file` follow, and `@ingestron/core`'s `Report` gains
+  `accepted`.
+- `@ingestron/core` 1.1 adds published standards: `installedKits`,
+  `readKit`, `parseKitSpec` and `kitSchema`.
+- `@ingestron/authoring` 2.3 adds `ProjectSnapshot.replaceMeHelp`, what a
+  `REPLACE_ME` stands for, and lists a table's intent in its hover.
+
+Release 2.3.1 changes only what the command and the editor say; the generated
+files are the same:
+
+- When an error stops `ingestron request`, the request lists each error, as
+  `ingestron plan` writes it, after its note. See
+  [When the definitions have problems](/docs/how-to/ask-the-platform-team#when-the-definitions-have-problems).
+- `plan` and `apply` count the places still `REPLACE_ME`:
+  `8 places are still REPLACE_ME; …`. `init` counts the README's rows, one
+  per value, so a value written for each environment is one row there and
+  one place per environment here.
+- In VS Code 2.2.1, completion offers a method's settings that are now intent,
+  such as `mode` and `sequence_by`, after the others, each with the intent
+  that replaces it.
+
+## Ingestron 2.4 [#upgrade-to-2-4]
+
+2.4 generates the same files as 2.3 for a project that changes nothing. It
+adds [source metadata](/docs/how-to/describe-a-source): what each source table
+looks like, imported from a file its owners send, so a table that copies the
+source as it is can do without a contract. It also adds
+[a guide for coding assistants](/docs/tools/assistants). What you may notice:
+
+- **A flow table's `contract` is optional.** A table without one takes its
+  columns and key from the source metadata. A table that needs one, because
+  its layer cleanses, checks or quarantines, the platform manages its access
+  or it has its own `expectations`, is
+  [`CONTRACT_NEEDED`](/docs/reference/errors#CONTRACT_NEEDED); one with
+  neither a contract nor metadata is
+  [`TABLE_NO_COLUMNS`](/docs/reference/errors#TABLE_NO_COLUMNS). The editor
+  no longer marks a missing `contract` as a schema error. Every table of a
+  2.3 project names a contract, so none of these is new to it.
+- **`init` asks one more question,** in a terminal, last: which coding
+  assistants to write files for. An empty answer writes none, and
+  `--assistant` or `--yes` answers it.
+- **Words.** The packs' setting descriptions and some messages say "the
+  table's columns" where they said "the contract's", since the columns can now
+  come from the source metadata. Databricks' `lakeflow_connect.columns` value
+  `contract` is now described as "Only the table's columns."
+- **VS Code 2.3** adds **Request source metadata**, **Import source
+  metadata…** and **Add assistant files**, imports a file saved under
+  `sources/`, and completes recipes and column names; see
+  [VS Code](/docs/tools/vscode#source-metadata).
+
+For code that calls the packages:
+
+- `@ingestron/definitions` 1.14 adds the `SourceMetadata` document and its
+  types, `Contract.origin`, and the `sourceTables` option of resolving, which
+  lists each flow table with its entry in the metadata.
+- `@ingestron/core` 1.2 adds the recipes (`sourceRecipes`,
+  `installedSourceRecipes`, `readSourceRecipe` and `sourceOrigin`), the
+  request (`sourceRequest`), the import (`importSource`) and drafting
+  (`draftContracts`). It reads the recipe catalogue from
+  `@ingestron/standards` 1.1.
+- `@ingestron/authoring` 2.4 adds `importSource`, `sourceRequest` and
+  `sourceFileAt` to `ProjectSnapshot`, and `replaceFrom` to a `Suggestion`.
+
+## Ingestron 2.5 [#upgrade-to-2-5]
+
+2.5 lets a project start from the standard and the platform, before any
+source. For a project that changes nothing, the only difference in the files
+it generates is how the SQL is laid out. What you may notice:
+
+- **Start from the standard and the platform.**
+  `ingestron init <id> --platform <synapse|databricks|adf-landing|duckdb>`
+  creates a project with a standard and target settings and no source. `--standard <file>` uses your
+  team's standard, and `--kit <id@version> --empty` a published one without
+  its example. A new project imports only the files it has; the first
+  connection, flow or contract adds its folder. See
+  [Create a project](/docs/how-to/start-from-a-template).
+- **Values built from values.** A value may refer to another, such as
+  `${values.landing_catalog}`; see
+  [YAML references](/docs/concepts/yaml-references#project-values-and-environments).
+  A loop of references is
+  [`VALUE_CYCLE`](/docs/reference/errors#VALUE_CYCLE), which replaces
+  `VALUES_SELF_REFERENCE`.
+- **A flow's own triggers** on Azure Data Factory and Synapse:
+  `ingest.triggers` (schedules and tumbling windows) and `ingest.parameters`,
+  as the standard allows; see
+  [Run a flow on its own triggers](/docs/adf/run-a-flow-on-its-own-triggers).
+  A flow that writes none keeps its default trigger. Trigger time zones use
+  the Windows names from the Unicode CLDR.
+- **Synapse workspace pipelines** copy Azure SQL tables as full snapshots.
+- **Column types from the source metadata.** With Synapse as the standard's
+  first pack, `money` becomes `DECIMAL(19,4)` and `smallmoney`
+  `DECIMAL(10,4)`, and a contract drafted from the metadata keeps such a type
+  as `physicalType`; see [Column types](/docs/synapse#column-types). The
+  SQL Server recipe in `@ingestron/standards` 1.2 gives `money` and
+  `smallmoney` their precision and scale.
+- **Generated SQL** lists each column on its own line on Databricks and
+  DuckDB, and in Synapse's checks. The first `plan` after upgrading shows
+  those files as updated; what they do is unchanged.
+- **Databricks:** a project with no flow yet plans without a problem, and
+  `init --platform databricks` writes `workspace` under `databricks:`.
+- **VS Code 2.4:** **New project** asks where the project runs, which
+  standard and which assistant files; **Add connection** and **Add flow** are
+  in the Project view; each table has one **Generated files** lens, and
+  **Draft contract** beside it when the table has imported metadata; requests
+  open in named, read-only tabs. See [VS Code](/docs/tools/vscode).
+- **Known gap:** in an output folder with no earlier build, a Data Factory
+  tumbling-window trigger whose start is in the past is refused.
+
+For code that calls the packages:
+
+- `@ingestron/config` 1.8: `VALUE_CYCLE` replaces `VALUES_SELF_REFERENCE` in
+  `DiagnosticCode`.
+- `@ingestron/definitions` 1.15 adds a flow's `triggers` and `parameters`,
+  and a source table's `types`: the columns whose metadata type differs from
+  their logical type's.
+- `@ingestron/core` 1.3 adds the platform starters, and reads the recipe
+  catalogue from `@ingestron/standards` 1.2.
+- `@ingestron/authoring` 2.5 adds `replaceTo` to a `Suggestion`: completion
+  inside `${…}` replaces the whole name.

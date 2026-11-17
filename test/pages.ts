@@ -1,17 +1,47 @@
 // Helpers for tests that run a page as it shows itself: they read its sections,
 // code blocks and commands, run the CLI in a copy of a sample, and merge the
 // page's YAML fragments into it the way a reader adds them.
-import { cpSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { run } from "@ingestron/cli";
 import { expect } from "vitest";
 import { parse, stringify } from "yaml";
 import { exampleFolder } from "../lib/examples.js";
-import { contentFile, contentFolder } from "../lib/content-files.js";
+import { contentFile, contentFolder, sharedFolder } from "../lib/content-files.js";
+import { pageText } from "../lib/platform-text.js";
+import { movedPages, sharedPageNamed, sharedPages } from "../lib/platforms.js";
 
-/** A page's source, by its path under content/docs without folder groups, such as `how-to/add-a-source.mdx`. */
-export const read = (path: string) => readFileSync(join(contentFolder, contentFile(path)), "utf8");
+/**
+ * A page's text, by its path under content/docs without folder groups, such as
+ * `concepts/layers.mdx`; a platform page as its platform shows it, includes
+ * expanded. A shared page's source, every platform's text, is under content/:
+ * `shared/guides/add-a-source.mdx`, or by its name, `shared/add-a-source.mdx`;
+ * so is a shared page read by its old URL, `how-to/configure-a-standard.mdx`.
+ */
+export const read = (path: string) => {
+  if (path.startsWith("shared/")) {
+    const direct = join(contentFolder, "..", path);
+    if (existsSync(direct)) return readFileSync(direct, "utf8");
+    const key = sharedPageNamed(path.slice("shared/".length).replace(/\.mdx$/, ""));
+    if (!key) throw new Error(`No shared page ${path}.`);
+    return readFileSync(join(sharedFolder, `${key}.mdx`), "utf8");
+  }
+  // A shared page by its old URL: the first platform copy's front matter, then
+  // the shared source with every platform's text.
+  const moved = movedPages[path.replace(/\.mdx$/, "")];
+  if (moved) {
+    const stub = join(
+      contentFolder,
+      sharedPages[moved]!.platforms[0]!,
+      `(${sharedPages[moved]!.section})`,
+      `${moved.split("/").at(-1)}.mdx`,
+    );
+    const front = /^---\n[\s\S]*?\n---\n/.exec(readFileSync(stub, "utf8"))![0];
+    return `${front}\n${readFileSync(join(sharedFolder, `${moved}.mdx`), "utf8")}`;
+  }
+  return pageText(join(contentFolder, contentFile(path)));
+};
 
 export /** The page's heading anchors: `[#id]` where given, else the heading's slug. */
 function anchors(text: string): Map<string, string> {
@@ -141,3 +171,20 @@ export function requestUses(text: string): { name: string; env: string; sections
     };
   });
 }
+
+/** Where each page of the old Platforms area is now: its file, then any page it was split into. */
+export const movedPlatformPages: Record<string, string[]> = {
+  synapse: ["synapse/index.mdx", "synapse/deploy.mdx", "adf-synapse/load-with-adf.mdx"],
+  databricks: ["databricks/index.mdx"],
+  "databricks-deploy": ["databricks/deploy.mdx"],
+  adf: ["adf/index.mdx"],
+  "adf-deploy": ["adf/deploy.mdx"],
+  "adf-pipelines": ["adf/pipelines.mdx"],
+  "landing-only": ["adf/land-files-only.mdx"],
+  // DuckDB's cloud-project sections moved to the DuckDB combination's guide.
+  duckdb: ["duckdb/index.mdx", "adf-duckdb/load-with-adf.mdx"],
+  "duckdb-in-azure": ["adf-duckdb/load-with-adf.mdx", "adf-duckdb/deploy.mdx"],
+};
+
+/** An old Platforms page's file now, by its old name, such as `landing-only`. */
+export const platformFile = (old: string) => movedPlatformPages[old]![0]!;

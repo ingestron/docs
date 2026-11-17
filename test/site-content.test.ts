@@ -46,15 +46,15 @@ describe("search", () => {
   });
 
   it("indexes native connection fields on the connector's page, under its ADF fields", () => {
-    expect(text("/docs/connectors/snowflake")).toContain('"adf-connection-private_key"');
-    expect(text("/docs/connectors/snowflake")).toContain("private_key");
-    expect(text("/docs/connectors/rest")).toContain('"adf-connection-auth_headers"');
-    expect(text("/docs/connectors/rest")).toContain("auth_headers");
+    expect(text("/docs/adf/connectors/snowflake")).toContain('"adf-connection-private_key"');
+    expect(text("/docs/adf/connectors/snowflake")).toContain("private_key");
+    expect(text("/docs/adf/connectors/rest")).toContain('"adf-connection-auth_headers"');
+    expect(text("/docs/adf/connectors/rest")).toContain("auth_headers");
   });
 
   it("indexes the catalogue's categories", () => {
-    expect(text("/docs/connectors")).toContain('"databases-and-analytics"');
-    expect(text("/docs/connectors")).toContain("SQL Server");
+    expect(text("/docs/adf/connectors")).toContain('"databases-and-analytics"');
+    expect(text("/docs/adf/connectors")).toContain("SQL Server");
   });
 
   it("adds nothing to other pages", () => {

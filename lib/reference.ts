@@ -20,6 +20,7 @@ import { duckdb } from "@ingestron/pack-duckdb";
 import { synapse } from "@ingestron/pack-synapse";
 import { parse } from "yaml";
 import { contentFile, contentFolder } from "./content-files";
+import { platformById, type Platform } from "./platforms";
 
 /** The packs the CLI provides, in the order a standard usually lists them. */
 export const packs: Pack[] = [databricks, adf, synapse, duckdb];
@@ -101,6 +102,23 @@ export interface ConnectorEntry {
 export function connectorIds(): string[] {
   const ids = packs.flatMap((pack) => pack.connectors?.map((item) => item.id) ?? []);
   return [...new Set(ids)].sort();
+}
+
+/** Every pack a platform's routes use: the packs that read sources and the packs they hand over to. */
+export function platformUsedPacks(id: Platform["id"]): Set<string> {
+  // A route no source takes, such as DuckDB's own, uses its own pack.
+  const taken = new Set(allRoutes().map((route) => route.via));
+  return new Set(
+    platformById(id).routes.flatMap((via) => (taken.has(via) ? routePacks(via) : [via])),
+  );
+}
+
+/** The sources one of a platform's routes loads, in New project's order. */
+export function connectorsFor(id: Platform["id"]): string[] {
+  const routes = platformById(id).routes;
+  return projectSources()
+    .map((source) => source.id)
+    .filter((source) => projectRoutes(source).some((route) => routes.includes(route.via)));
 }
 
 /** How each pack reads one connector, in pack order. */

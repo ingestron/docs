@@ -1,0 +1,338 @@
+A standard is one file, `standard.yaml`, that says how your organisation
+builds data projects: the packs, names, layers and column types, default
+settings, the settings no project may change, and what every data product
+must declare. Each project holds a copy. VS Code marks a definition that
+breaks it as you type, `ingestron plan` reports it, `ingestron check` fails
+in CI, and nothing is generated until it is fixed.
+
+To make every project follow your rules:
+
+1. Write the standard and try it on a project.
+2. Start each project from it, from a file or a Git repository.
+3. Keep projects to it: `ingestron check` in each project's CI, and a review
+   of changes to the copy.
+4. Answer each project's [platform request](/docs/~/ask-the-platform-team),
+   and [upgrade](/docs/~/upgrade) on purpose.
+
+<Only on="databricks duckdb">
+
+To start from a standard that is already written and checked for your
+platform, [choose a published standard](/docs/~/choose-a-published-standard):
+once a project has it, it is your copy, and this page applies to it.
+
+</Only>
+
+<Only on="synapse adf">
+
+There is no published standard for your platform yet: start from the one
+`ingestron init --platform` writes for a new project, as this page shows.
+
+</Only>
+
+## What a standard holds [#what-a-standard-holds]
+
+<Only on="databricks">
+
+This is Acme's standard. Its naming, types and storage choices belong to
+Acme; the way defaults and fixed settings work is the same for every pack.
+
+<Example name="standards-and-conventions" file="standard.yaml" />
+
+From top to bottom:
+
+- **Packs:** the packs every project uses, each with its major version. The
+  first gives the defaults. See
+  [Standards, packs and methods](/docs/concepts/standards-and-packs).
+- **Naming:** one `acme` catalog; a schema per environment and layer, such
+  as `prod_raw`; flow tables prefixed with their source, such as
+  `web__visits`; the pipeline keeps the pack's name, the project's id. See
+  [Name tables and resources](/docs/~/name-things-your-way).
+- **Layers:** `raw`, `curated` and `published` instead of the default ones.
+  See [Layers](/docs/concepts/layers).
+- **Types:** numbers become `DECIMAL(38,6)` unless a contract says
+  otherwise. See [Give each column a type](/docs/~/write-a-contract#give-each-column-a-type).
+- **Ingest settings:** unexpected columns in files are kept aside in a
+  rescue column instead of changing the table.
+- **Store:** only streaming tables are allowed (`allowed`); each one gets two
+  table properties (`settings`); clustering is fixed to automatic (`fixed`).
+
+</Only>
+
+<Only on="synapse">
+
+This is a small Synapse standard, from the `synapse-pipelines` example:
+
+<Example name="synapse-pipelines" file="standard.yaml" />
+
+- **Packs:** the packs every project uses, each with its major version. See
+  [Standards, packs and methods](/docs/concepts/standards-and-packs).
+- **Layers:** one, `bronze`, which keeps rows as they arrived. See
+  [Layers](/docs/concepts/layers).
+- **Store:** every table is a serverless SQL view over its landed files.
+
+Names, types, defaults and fixed settings go in the same file; see
+[Name tables and resources](/docs/~/name-things-your-way) and
+[Which setting wins](/docs/concepts/settings).
+
+</Only>
+
+<Only on="adf">
+
+This is a small Data Factory standard, from the
+[Land files only](/docs/adf/land-files-only) example:
+
+<Example name="landing-only" file="standard.yaml" />
+
+- **Packs:** the packs every project uses, each with its major version. See
+  [Standards, packs and methods](/docs/concepts/standards-and-packs).
+- **Store:** `none`, so every flow ends at the files the factory lands.
+- **Ingest settings:** each copy lands one file per table, replaced by each
+  daily load, in windows from `start`.
+
+Names, defaults and fixed settings go in the same file; see
+[Name tables and resources](/docs/~/name-things-your-way) and
+[Which setting wins](/docs/concepts/settings).
+
+</Only>
+
+<Only on="duckdb">
+
+This is the [local medallion](/docs/duckdb/local-medallion) published
+standard:
+
+<KitFile id="duckdb/local-medallion" file="standard.yaml" />
+
+Its layers, what each does with its rows, and its cleansing defaults are
+explained in [Cleanse data in the right layer](/docs/duckdb/cleanse-data#what-each-layer-does).
+Names, types, defaults and fixed settings go in the same file; see
+[Name tables and resources](/docs/~/name-things-your-way) and
+[Which setting wins](/docs/concepts/settings).
+
+</Only>
+
+A standard can also choose methods with `when` rules (see
+[How a method is chosen](/docs/concepts/standards-and-packs#how-a-method-is-chosen)),
+set what happens to rows that fail a check (`quality`), and require
+[governance of data products](#require-governance-of-data-products).
+[Which setting wins](/docs/concepts/settings) explains what happens when a project
+sets one too.
+
+It can also say how tables are loaded, kept and run, in
+[intent](/docs/reference/intent) that every pack reads: what each layer keeps
+(`history`) and does with its rows (`does`), columns that record when and
+where each row came from (`audit`), how text and timestamps are cleansed
+(`cleanse`), how files and rows are loaded (`load`), how runs are retried and
+who is told and which triggers flows may write (`operations`, see [Run a flow on its own triggers](/docs/~/run-a-flow-on-its-own-triggers)), and whether platform features in preview may be
+used (`features`). See [What a layer does](/docs/concepts/layers#what-a-layer-does)
+and [Cleanse data in the right layer](/docs/~/cleanse-data).<Only on="databricks duckdb"> The
+[published standards](/docs/~/choose-a-published-standard) are complete
+examples.</Only>
+
+## Put settings with their owner
+
+| Responsibility                  | Definition location                            |
+| ------------------------------- | ---------------------------------------------- |
+| Shared policy and defaults      | Standard, under the relevant action and method |
+| Shared infrastructure           | Platform, under `settings.<method>`            |
+| Source access                   | Connection `settings`                          |
+| Extraction choices              | Flow `ingest.with`                             |
+| One table's overrides           | The table's `ingest.with` or `store.with`      |
+| Reusable and environment values | Project `values` and environment overrides     |
+
+The [YAML reference syntax](/docs/concepts/yaml-references) connects reusable
+values to these settings. The method reference identifies required fields and
+their intended location.
+
+<Only on="databricks">
+
+## Try it on a project [#try-it-on-a-project]
+
+<ExampleDownload name="standards-and-conventions" /> and unzip it; run the commands from its folder.
+
+### Generate
+
+<ToolSteps>
+<Tool name="CLI">
+
+```sh
+ingestron apply --no-diff
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: Apply** from the Command Palette (⇧⌘P on macOS, Ctrl+Shift+P elsewhere). The output is in the Ingestron output panel. Problems show in the Problems panel as you type, before you plan.
+
+</Tool>
+</ToolSteps>
+
+Open a generated table in `build/databricks/src/` and find each rule from the
+standard in it: the names, the types, the properties and the clustering. The
+schema differs between environments, so the table names it as a value each
+target of `build/databricks/databricks.yml` sets.
+
+### Break a rule
+
+At the end of `flows/web.yaml`, add a store setting the standard fixes, as
+in the download's `exercises/fixed-setting.yaml`:
+
+<Example name="standards-and-conventions" file="exercises/fixed-setting.yaml" />
+
+Plan again:
+
+```sh
+ingestron plan
+```
+
+```text
+dev, prod: the definitions have problems
+flows/web.yaml:10:23  error  FIXED_SETTING
+  The standard fixes "cluster_by" to "auto".
+  Remove this setting, or change the standard.
+  Fix: Remove this setting.
+```
+
+Each environment is checked and reported. The line and column point at the
+value you added. Remove it; in VS Code, the quick fix **Remove this setting**
+does it for you. See [`FIXED_SETTING`](/docs/reference/errors#FIXED_SETTING).
+
+</Only>
+
+## Start each project from it
+
+A new project takes your standard in place of the one its starter or route
+comes with. `init` copies it into the project as `standard.yaml`, with a first
+line saying where it came from, and checks every environment before it writes
+anything.
+
+<ToolSteps>
+<Tool name="CLI">
+
+Pass `--standard` with a path or a Git URL. A relative path is resolved from
+your shell's current folder:
+
+<Only on="synapse">
+
+```sh
+ingestron init sales --connector azure-sql-database --connectivity public --via synapse \
+  --standard ../platform/standard.yaml --yes
+```
+
+</Only>
+
+<Only on="databricks">
+
+```sh
+ingestron init sales --connector sqlserver --connectivity public --via databricks \
+  --standard ../platform/standard.yaml --yes
+```
+
+</Only>
+
+<Only on="adf">
+
+```sh
+ingestron init sales --connector sqlserver --connectivity private --via adf-landing \
+  --standard ../platform/standard.yaml --yes
+```
+
+</Only>
+
+<Only on="duckdb">
+
+```sh
+ingestron init sales --template duckdb --standard ../platform/standard.yaml --yes
+```
+
+</Only>
+
+The new `sales/standard.yaml` starts with `# From ../platform/standard.yaml`.
+To take it from a Git repository instead, see
+[Share templates and standards](/docs/~/share-a-template#share-a-standard).
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: New project**, choose the platform, then **Your team's
+standard file** and select your `standard.yaml`. Its fixed settings stay fixed.
+
+<Only on="databricks">
+
+<Screenshot
+  light="/images/vscode/new-project-standard-databricks-light.png"
+  dark="/images/vscode/new-project-standard-databricks-dark.png"
+  alt="The picker New project: Databricks standard, asking Which standard should it follow? Its choices: A new standard for Databricks, Recommended, a reviewable standard with this platform's defaults; Streaming lakehouse on Databricks, databricks/lakehouse-streaming@2026-11-10, a published standard; and Your team's standard file, highlighted: keep an existing standard.yaml; its fixed settings stay fixed."
+  caption="Choose Your team's standard file, then select your standard.yaml."
+/>
+
+</Only>
+
+<Only on="synapse">
+
+<Screenshot
+  light="/images/vscode/new-project-standard-synapse-light.png"
+  dark="/images/vscode/new-project-standard-synapse-dark.png"
+  alt="The picker New project: Azure Synapse standard, asking Which standard should it follow? Its choices: A new standard for Azure Synapse, Recommended, a reviewable standard with this platform's defaults; and Your team's standard file, highlighted: keep an existing standard.yaml; its fixed settings stay fixed."
+  caption="Choose Your team's standard file, then select your standard.yaml."
+/>
+
+</Only>
+
+<Only on="adf">
+
+<Screenshot
+  light="/images/vscode/new-project-standard-adf-light.png"
+  dark="/images/vscode/new-project-standard-adf-dark.png"
+  alt="The picker New project: Azure Data Factory standard, asking Which standard should it follow? Its choices: A new standard for Azure Data Factory, Recommended, a reviewable standard with this platform's defaults; and Your team's standard file, highlighted: keep an existing standard.yaml; its fixed settings stay fixed."
+  caption="Choose Your team's standard file, then select your standard.yaml."
+/>
+
+</Only>
+
+<Only on="duckdb">
+
+<Screenshot
+  light="/images/vscode/new-project-standard-duckdb-light.png"
+  dark="/images/vscode/new-project-standard-duckdb-dark.png"
+  alt="The picker New project: DuckDB standard, asking Which standard should it follow? Its choices: A new standard for DuckDB, Recommended, a reviewable standard with this platform's defaults; Local medallion on DuckDB, duckdb/local-medallion@2026-11-10, a published standard; and Your team's standard file, highlighted: keep an existing standard.yaml; its fixed settings stay fixed."
+  caption="Choose Your team's standard file, then select your standard.yaml."
+/>
+
+</Only>
+
+</Tool>
+</ToolSteps>
+
+The copy does not follow the original. To give a project a newer version,
+replace its `standard.yaml` in a pull request and plan: the plan shows every
+generated file the change affects.
+
+## Keep projects to it
+
+- **In CI.** A definition that breaks the standard, such as a fixed setting
+  changed or a method it does not allow, stops `ingestron check`, so the pull
+  request fails. Add the check to every project as in
+  [Check generated files in CI](/docs/~/check-in-ci).
+- **In review.** The copy is a file in the project's repository, so a project
+  can change it, and its `platform.yaml` can
+  [change its names](/docs/~/name-things-your-way#one-project-names).
+  Ask for the platform team's review of changes to both files, for example
+  with your Git host's code owners.
+
+## Require governance of data products
+
+A `governance` section makes every data product state its owner and purpose,
+classify each column it publishes, and say who may use sensitive data. A
+product that breaks a rule stops generation, so the pull request fails. See
+[Define a data product](/docs/~/define-a-data-product).
+
+The same section says how access is generated for every table: whether
+grants are exact, how each classification is masked, and which rows each
+reader sees. A layer can also say who reads its tables. See
+[Grant access, mask columns and filter rows](/docs/~/grant-access).
+
+## Next
+
+- What each project needs from you: [Ask the platform team](/docs/~/ask-the-platform-team).
+- Keep the standard in Git: [Share templates and standards](/docs/~/share-a-template).
+- Move to a newer Ingestron together: [Upgrade Ingestron and its packs](/docs/~/upgrade).

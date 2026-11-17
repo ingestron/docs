@@ -29,7 +29,7 @@ vi.mock("@/components/example", () => ({
 vi.setConfig({ testTimeout: 30_000 });
 
 const source = (id: string) =>
-  readFileSync(join(process.cwd(), "content/docs/connectors", `${id}.mdx`), "utf8");
+  readFileSync(join(process.cwd(), "content/shared/connectors", `${id}.mdx`), "utf8");
 const page = (id: string) => renderToStaticMarkup(createElement(ConnectorPage, { id }));
 const ids = (html: string) => [...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]!);
 /** The custom ids of the notes' headings, written `### Title [#id]`. */
@@ -45,7 +45,7 @@ const section = (html: string, id: string) => {
 describe("connector pages", () => {
   it("give every connector any pack reads a page, with settings for each pack and an example", () => {
     for (const id of connectorIds()) {
-      expect(existsSync(join(process.cwd(), "content/docs/connectors", `${id}.mdx`)), id).toBe(
+      expect(existsSync(join(process.cwd(), "content/shared/connectors", `${id}.mdx`)), id).toBe(
         true,
       );
       const html = page(id);
@@ -131,7 +131,7 @@ describe("connector pages", () => {
   it("place each note in a slot its page has; headed notes have ids and sit between parts", () => {
     for (const id of connectorIds()) {
       const text = source(id);
-      expect(text, id).toMatch(new RegExp(`<ConnectorPage id="${id}"( /)?>`));
+      expect(text, id).toMatch(new RegExp(`<ConnectorPage id="${id}" platform="~"( /)?>`));
       const slots = connectorSlots(id);
       for (const [, at] of text.matchAll(/<ConnectorNote at="([^"]+)">/g))
         expect(slots, `${id}: slot ${at}`).toContain(at);

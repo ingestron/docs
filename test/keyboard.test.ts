@@ -11,7 +11,7 @@ import { RouteComparison } from "../components/reference/route-comparison";
 import { RouteTable } from "../components/reference/route-table";
 import { SettingsTable } from "../components/reference/settings-table";
 import { MarkdownTable, TableFrame } from "../components/table-frame";
-import { areaTabs } from "../lib/areas";
+import { siteTabs } from "../lib/areas";
 import { outside, tabCurrent, type ElementLike } from "../lib/keyboard";
 import { codeName, rehypeFrameNames, tableName } from "../lib/rehype-frame-names";
 import { tree as pageTree } from "./tree.js";
@@ -72,7 +72,7 @@ describe("the phone menu", () => {
 });
 
 describe("the area tabs", () => {
-  const tabs = areaTabs(pageTree).map(({ url, urls }) => ({
+  const tabs = siteTabs(pageTree, "synapse").map(({ url, urls }) => ({
     url,
     urls: [...(urls ?? [])],
   }));
@@ -84,11 +84,16 @@ describe("the area tabs", () => {
     );
 
   it("marks the tab the page opens as the page, and its area's other pages as current", () => {
-    expect(current("/docs/start/first-project")).toEqual({ "/docs/start/first-project": "page" });
-    expect(current("/docs/start/how-it-works")).toEqual({ "/docs/start/first-project": "true" });
+    expect(current("/docs/synapse")).toEqual({ "/docs/synapse": "page" });
+    expect(current("/docs/synapse/how-it-works")).toEqual({ "/docs/synapse": "true" });
+    expect(current("/docs/synapse/troubleshooting")).toEqual({
+      "/docs/reference/documents": "true",
+    });
     expect(current("/docs/reference/packs/adf")).toEqual({ "/docs/reference/documents": "true" });
-    expect(current("/docs/connectors")).toEqual({ "/docs/connectors": "page" });
-    expect(current("/docs/connectors/sqlserver/")).toEqual({ "/docs/connectors": "true" });
+    expect(current("/docs/synapse/connectors")).toEqual({ "/docs/synapse/connectors": "page" });
+    expect(current("/docs/synapse/connectors/azure-sql-database/")).toEqual({
+      "/docs/synapse/connectors": "true",
+    });
     expect(current("/docs")).toEqual({});
   });
 

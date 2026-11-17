@@ -1,0 +1,8 @@
+apiVersion: ingestron.io/v1
+kind: Connection
+id: shop
+description: The web shop's exports, in a Unity Catalog volume.
+connector: files
+connectivity: public
+settings:
+  path: /Volumes/main/landing/shop

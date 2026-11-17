@@ -1,0 +1,6 @@
+{
+  "title": "Get started",
+  "description": "What Ingestron writes for Databricks, how to install it, and a first project.",
+  "root": true,
+  "pages": ["index", "install", "first-project", "how-it-works"]
+}

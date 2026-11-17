@@ -7,7 +7,10 @@ import vscodeCommands from "../components/reference/vscode-commands.json";
 import { describe, expect, it } from "vitest";
 
 const content = join(process.cwd(), "content/docs");
-const guides = pages(content).filter((path) => !path.includes("/reference/"));
+// The guides several platforms share are written once, in content/shared.
+const guides = [...pages(content), ...pages(join(process.cwd(), "content/shared"))].filter(
+  (path) => !path.includes("/reference/"),
+);
 const text = guides.map((path) => readFileSync(path, "utf8")).join("\n");
 
 describe("command docs", () => {

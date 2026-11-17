@@ -35,9 +35,9 @@ export function kitById(id: string): Kit {
   return kit;
 }
 
-/** A kit's page: `/docs/how-to/kits/duckdb-local-medallion` for `duckdb/local-medallion`. */
+/** A kit's page: `/docs/duckdb/local-medallion` for `duckdb/local-medallion`. */
 export function kitPage(id: string): string {
-  return `/docs/how-to/kits/${id.replace("/", "-")}`;
+  return `/docs/${id}`;
 }
 
 /** A file of a kit, as it is in the package. */

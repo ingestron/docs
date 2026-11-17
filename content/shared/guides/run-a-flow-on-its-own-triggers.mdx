@@ -1,0 +1,327 @@
+Use this when one flow needs more than the project's single schedule: an
+hourly copy of the rows that changed, and a full reload on Sundays, for
+example. The flow writes the triggers and the values they pass to its
+pipeline. Your standard says whether flows may, which kinds of trigger are
+allowed, and the hours runs may start in.
+
+<Only on="adf adf-databricks">
+
+A flow that writes no triggers keeps the default trigger the method's `every`
+and `start` settings describe: a tumbling window.
+
+</Only>
+
+<Only on="adf">
+
+The example lands a snapshot of each table, `layout: snapshot`, replaced by
+each run.
+
+</Only>
+
+<Only on="adf-databricks">
+
+The example copies the rows changed in each window, and Databricks keeps the
+current row of each key.
+
+</Only>
+
+<Only on="synapse">
+
+The workspace pipelines copy Azure SQL tables as full snapshots. A flow that
+writes no triggers keeps the default trigger the method's `every` and `start`
+settings describe: a schedule trigger in UTC. A flow's own triggers can be
+schedules or tumbling windows; the copies stay full snapshots, so
+`load: incremental` is refused.
+
+</Only>
+
+<ExampleDownload name="flow-triggers-~" />
+
+## Let flows write triggers [#standard]
+
+The standard decides. With the default, `schedule: { per: project }`, a flow
+that writes `triggers` is refused with
+[`TRIGGER_NOT_ALLOWED`](/docs/reference/errors#TRIGGER_NOT_ALLOWED). So is a
+standard whose `operations.trigger` is anything but `schedule`, the default,
+because schedule and tumbling-window triggers are both time-based. Turn it on
+with `per: flow`, and set the rules for every trigger:
+
+<Example name="flow-triggers-~" file="standard.yaml" pick="operations" />
+
+- `types` lists the kinds of trigger a flow may write: `schedule`,
+  `tumbling-window`, or both (the default).
+- `timezone` is the zone flows' triggers and these hours are read in, when a
+  trigger names none. Without it, the zone is UTC.
+- `hours` is when a run may start. It may cross midnight, and an
+  environment's entry replaces the common one. Here `dev` has no limit and
+  `prod` allows no start between 02:15 and 02:45, while the source's backup
+  runs. `hours: any` removes a common limit in one environment.
+
+`fixed.operations.triggers` makes any of these unchangeable, as for other
+settings. Every field is in the [Standard document](/docs/reference/documents#standard).
+
+A flow that writes no triggers still gets the default trigger, and the rules
+judge it too.
+
+<Only on="adf-databricks">
+
+With `packs: [databricks@2, adf@2]`, Data Factory applies `schedule: flow`:
+each `operations` value is judged by the first pack that applies it.
+
+</Only>
+
+## Write the triggers [#flow]
+
+Triggers go under the flow's `ingest`, beside `uses` and `with`:
+
+<Example name="flow-triggers-~" file="flows/erp.yaml" />
+
+<Only on="adf-databricks">
+
+- **`hourly`** is a tumbling window: consecutive hourly windows, each run once
+  by ADF, with its retries and re-runs. `start` is the first window's start,
+  and `delay` waits after a window closes. A window passes its bounds to the
+  pipeline, and the incremental copy reads the rows changed in it.
+- **`weekly-reload`** is a schedule trigger. `at` refines the recurrence: here
+  Sundays at 03:00 in `Europe/London`, the standard's zone. It sets the
+  built-in parameter `load: full`, so the run copies every row of `customers`,
+  not a window, and the rows of `invoices` that its `filter` keeps. A full run
+  lands its files and the store merges them by key; rows deleted at the source
+  stay in the target.
+- **`min_date`** is a parameter the flow declares, with a `default` for runs
+  started by hand. The weekly trigger gives it an ADF expression, written as
+  `{ expression: "…" }`; a plain value is a literal.
+
+</Only>
+
+<Only on="adf synapse">
+
+- **`hourly`** is a tumbling window: consecutive hourly windows, each run
+  once, with its retries and re-runs. `start` is the first window's start,
+  and `delay` waits after a window closes. Each run lands a new snapshot of
+  each table.
+- **`weekly-reload`** is a schedule trigger. `at` refines the recurrence: here
+  Sundays at 03:00 in `Europe/London`, the standard's zone. It gives
+  `min_date` a value, which the invoices' `filter` reads.
+- **`min_date`** is a parameter the flow declares, with a `default` for runs
+  started by hand. The weekly trigger gives it an expression, written as
+  `{ expression: "…" }`; a plain value is a literal.
+
+</Only>
+
+A flow's triggers are written on its `ingest`, so all its tables share them.
+At most one trigger of a pipeline may be a tumbling window, because two over
+one incremental copy would load each window twice.
+
+Run `ingestron apply`:
+
+<ToolSteps>
+<Tool name="CLI">
+
+```sh
+ingestron apply --no-diff
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: Apply** from the Command Palette (⇧⌘P on macOS, Ctrl+Shift+P elsewhere). The output is in the Ingestron output panel.
+
+</Tool>
+</ToolSteps>
+
+A flow that writes triggers or parameters gets a pipeline of its own, with one
+trigger file for each trigger:
+
+<Only on="adf adf-databricks">
+
+<BuildTree name="flow-triggers-~" folder="build/adf/factory" />
+
+The tumbling window passes the window it is given:
+
+<Example
+  name="flow-triggers-~"
+  file="build/adf/factory/trigger/tr_erp_erp_erp_hourly_h1.json"
+  pick="properties.typeProperties"
+/>
+
+The schedule passes the values it sets, after a window that is the time it ran:
+
+<Example
+  name="flow-triggers-~"
+  file="build/adf/factory/trigger/tr_erp_erp_erp_weekly-reload.json"
+  pick="properties.pipelines"
+/>
+
+Triggers start only in `prod` or `production`, as every trigger does; see
+[Retry and pause](/docs/adf/pipelines#retry-and-pause). A trigger
+that writes `paused: true` stays stopped everywhere, for example one you start
+by hand.
+
+</Only>
+
+<Only on="synapse">
+
+<BuildTree name="flow-triggers-~" folder="build/synapse/workspace/dev" />
+
+The tumbling window passes the window it is given:
+
+<Example
+  name="flow-triggers-~"
+  file="build/synapse/workspace/dev/trigger/tr_erp_erp_erp_hourly_h1.json"
+  pick="properties.typeProperties"
+/>
+
+A trigger that writes `paused: true` stays stopped everywhere, for example one
+you start by hand.
+
+</Only>
+
+## Read a parameter in the source query [#filter]
+
+A table's `ingest.filter` is a condition in the source's SQL that limits the
+rows it reads. It may hold `{{ parameters.<name> }}` for a parameter the flow
+declares, or for `windowStart`, `windowEnd` or `load`:
+
+<Example name="flow-triggers-~" file="flows/erp.yaml" pick="tables.invoices.ingest" />
+
+The pipeline's query reads the parameter when the run starts, as a typed,
+escaped value: a date is read as a date, text has its quotes doubled, a number
+is a number. A value typed by hand when a run is started can therefore not
+change the query. The filter joins the window's condition with `AND`, and on a
+full run it is the only condition:
+
+<Only on="adf adf-databricks">
+
+<Example
+  name="flow-triggers-~"
+  file="build/adf/factory/pipeline/pl_erp_erp_erp.json"
+  pick="properties.activities[1].typeProperties.source.sqlReaderQuery.value"
+/>
+
+</Only>
+
+<Only on="synapse">
+
+<Example name="flow-triggers-~" file="build/synapse/queries/dev/pl_erp_erp_erp/copy_invoices.sql" />
+
+</Only>
+
+Because the value is put in as SQL, write the reference in plain SQL code, not
+inside quotes, a quoted name or a comment. To match part of a value, join it:
+`name LIKE '%' + {{ parameters.p }} + '%'`, not `name LIKE '%{{ parameters.p }}%'`.
+Otherwise the filter is
+[`TRIGGER_PARAMETER`](/docs/reference/errors#TRIGGER_PARAMETER). Only<Only on="adf adf-databricks"> `adf-copy`</Only><Only on="synapse"> `synapse-copy`</Only>
+filters; any other method reports
+[`FILTER_NOT_SUPPORTED`](/docs/reference/errors#FILTER_NOT_SUPPORTED).
+
+<Only on="adf adf-databricks">
+
+A parameter can also name landed files, with `{parameters.<name>}` in the
+method's `path`, and a column, with the audit value `run.parameters.<name>`.
+See [Name landing files by a parameter](/docs/adf/pipelines#parameters-in-paths)
+and [Add audit columns](/docs/adf/pipelines#add-audit-columns).
+
+</Only>
+
+Parameter types are `string`, `int`, `float`, `bool`, `date` (`YYYY-MM-DD`) and
+`datetime` (ISO 8601). Names are lower case letters, digits and underscores,
+and `windowStart`, `windowEnd`, `load` and `tables` are reserved.
+
+## See the standard's rules work [#rules]
+
+In `flows/erp.yaml`, move the weekly reload into the backup window, by
+changing `at` to `{ weekdays: [Sunday], hours: [2], minutes: [30] }`, and plan:
+
+```sh
+ingestron plan
+```
+
+<Only on="adf-databricks">
+
+```text
+prod: the definitions have problems
+flows/erp.yaml:25:7  error  TRIGGER_HOURS
+  "weekly-reload" starts a run at 02:30 (Europe/London), outside the hours the standard allows here: 02:45–02:15.
+  Start its runs inside those hours, or ask for the standard's `operations.triggers.hours` to allow them.
+```
+
+</Only>
+
+<Only on="adf synapse">
+
+```text
+prod: the definitions have problems
+flows/erp.yaml:21:7  error  TRIGGER_HOURS
+  "weekly-reload" starts a run at 02:30 (Europe/London), outside the hours the standard allows here: 02:45–02:15.
+  Start its runs inside those hours, or ask for the standard's `operations.triggers.hours` to allow them.
+```
+
+</Only>
+
+Ingestron finds every start the trigger can make over its whole cycle, in the
+trigger's zone and the hours' zone, on both sides of a daylight saving change,
+so a start outside the hours is never missed. A schedule it cannot check
+within 200,000 starts is refused too. See
+[`TRIGGER_HOURS`](/docs/reference/errors#TRIGGER_HOURS). Restore `hours: [3]`.
+
+## Why a table needs a key [#key]
+
+A table is incremental when its `load.mode` is `incremental`. Every trigger on
+an incremental table, and every trigger that sets `load: full` on any table,
+can read the same rows more than once: windows are run again, lookbacks
+overlap, and a reload copies everything. So that table must have a primary key,
+in its contract or its source metadata, and a store that merges by it, such as
+`history: latest`. A table that ends at the landed files has no store. Without
+a key or a merging store, the trigger reports
+[`TRIGGER_KEY`](/docs/reference/errors#TRIGGER_KEY), naming the table. A table
+with `layout: snapshot` is exempt, because each run replaces it. A tumbling
+window on a table that is not incremental needs no key.
+
+## Schedule an incremental table
+
+A schedule trigger gives no window of its own. On an incremental table it needs
+either `load: full`, or a `lookback`, a duration such as `2h`: each run reads
+the rows changed from that long before its start, so runs overlap on purpose
+and the store merges the overlap. The lookback must be at least the longest gap
+between two runs, so that one missed run is covered; otherwise it is
+[`TRIGGER_LOOKBACK`](/docs/reference/errors#TRIGGER_LOOKBACK). The query and
+the `run.window_start` and `run.window_end` audit values work as for a window.
+On a full run both are the time it ran.
+
+## Move a window's start, or confirm a backfill [#backfill]
+
+When you deploy a tumbling window, it runs every window from its `start` to
+now. A flow's tumbling window that is new to the project, and starts in the
+past, stops `plan` with
+[`FIRST_WRITE`](/docs/reference/errors#FIRST_WRITE), saying how many windows
+would run again. Either move `start` to now or later, or write
+`backfill: true` to run them, as the example does. Once the folder has been
+applied, the trigger is no longer new.
+
+<Only on="adf adf-databricks">
+
+Data Factory cannot edit a published window's frequency or interval. Ingestron
+puts both in the trigger's name (`…_hourly_h1` is hourly, every 1), so
+changing either writes a new trigger, which is new for this rule too.
+
+</Only>
+
+<Only on="synapse">
+
+<OldAnchor id="synapse" />
+
+</Only>
+
+## Next
+
+<Only on="adf adf-databricks">
+
+- [Shape ADF pipelines](/docs/adf/pipelines): retries, audit columns
+  and landing paths.
+
+</Only>
+
+- [Set your organisation's standard](/docs/~/configure-a-standard): where
+  the rules above are set.
+- [Errors](/docs/reference/errors): every code on this page.

@@ -1,0 +1,4 @@
+# A guide: a small project that shows one idea; the docs embed it.
+title: Check data quality on Databricks
+summary: "One contract's checks on a readings table, run by a Databricks pipeline."
+order: 25

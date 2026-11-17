@@ -1,0 +1,70 @@
+You can work with Ingestron from the command line, from VS Code, or both. They
+read the same project files and write the same output, so you can switch at any
+time. Neither needs a cloud account to generate the examples.
+
+## Set up your interface
+
+<ToolSteps>
+<Tool name="CLI">
+
+You need Node.js 22.13 or later.
+
+```sh
+npm install -g ingestron
+ingestron --help
+```
+
+Help should list the available commands. Every page runs the command as
+`ingestron`. If the shell says it is not found, see
+[Troubleshooting](/docs/troubleshooting#ingestron-command-not-found). To pin
+the version a team runs, see
+[Upgrade Ingestron and its packs](/docs/~/upgrade#choose-the-version-you-run).
+The [command line reference](/docs/reference/cli) lists every option.
+
+</Tool>
+<Tool name="VS Code">
+
+You need VS Code 1.104 or later. Install
+[Ingestron from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ingestron.ingestron-vscode),
+or open the Extensions view, search for `@id:ingestron.ingestron-vscode` and
+select **Install**.
+
+If the `code` command is available in your terminal, you can also run:
+
+```sh
+code --install-extension ingestron.ingestron-vscode
+```
+
+After installation, the Command Palette should include **Ingestron: New
+project**. Run it to create a project, or open a folder that holds a
+`project.yaml`. The extension includes the Ingestron packages it uses; you do
+not need to install the CLI separately to use its editor features. See
+[VS Code](/docs/tools/vscode) for the available commands and views.
+
+</Tool>
+</ToolSteps>
+
+## Build from source
+
+To change the CLI or its libraries, build them from
+[ingestron/ingestron](https://github.com/ingestron/ingestron). You need Node.js
+22.13 or later and pnpm 10:
+
+```sh
+git clone https://github.com/ingestron/ingestron.git
+cd ingestron
+pnpm install
+pnpm --filter "@ingestron/cli..." build
+alias ingestron="node $PWD/packages/cli/dist/main.js"
+```
+
+The platform packs, the extension and this site each have their own
+repository in the [ingestron organisation](https://github.com/ingestron).
+To build the extension and install a local VSIX, follow the
+[extension contributor guide](https://github.com/ingestron/vscode/blob/main/CONTRIBUTING.md).
+
+## Verify the workflow
+
+[Run your first project on your laptop](/docs/~/first-project) to confirm that your tool
+can create definitions and write local output. Configure source access and
+platform deployment only when you are ready to run that output.

@@ -73,5 +73,20 @@
     "command": "ingestron.addAssistantFiles",
     "title": "Add assistant files",
     "category": "Ingestron"
+  },
+  {
+    "command": "ingestron.addConnection",
+    "title": "Add connection",
+    "category": "Ingestron"
+  },
+  {
+    "command": "ingestron.addFlow",
+    "title": "Add flow",
+    "category": "Ingestron"
+  },
+  {
+    "command": "ingestron.draftContractFromMetadata",
+    "title": "Draft contract from metadata",
+    "category": "Ingestron"
   }
 ]

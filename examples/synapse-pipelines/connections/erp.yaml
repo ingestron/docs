@@ -1,0 +1,9 @@
+apiVersion: ingestron.io/v1
+kind: Connection
+id: erp
+connector: azure-sql-database
+connectivity: public
+settings:
+  server: sales-demo.database.windows.net
+  user: ingest_reader
+  password: ${secret:source-password}

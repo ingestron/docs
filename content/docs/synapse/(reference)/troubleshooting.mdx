@@ -1,0 +1,67 @@
+---
+title: Troubleshooting
+description: Find a problem on Azure Synapse by what you see, then its cause and fix.
+---
+
+Problems with the views script, the workspace pipelines and reading the landed files. For the command, definitions, source metadata and the editor, see
+[Troubleshooting](/docs/troubleshooting).
+
+## A view's SQL starts with WITH
+
+**Symptom:**
+
+```text
+transforms/customer_totals.yaml:3:5  error  METHOD_CHECK
+  "synapse-sql" for table "customer_totals": a view's SQL cannot start with WITH; write the common table expression as a subquery.
+```
+
+**Cause:** a transform's SQL sits inside `CREATE VIEW`, so it cannot open with
+a common table expression.
+
+**Fix:** write the expression as a subquery in `FROM`. A transform's SQL also
+names only the tables listed in `inputs`; the message
+`the SQL names {{ tables.customers }}, which is not in inputs` means one is missing.
+See [What each engine makes of it](/docs/synapse/write-a-transform#what-each-engine-makes-of-it).
+
+## A view reads files outside the data source
+
+**Symptom:**
+
+```text
+flows/erp.yaml:6:14  error  METHOD_CHECK
+  "synapse-view" for table "customers": abfss://landing@saleslakedev.dfs.core.windows.net/erp/erp.dbo.Customers/erp.dbo.Customers.parquet is not under the data source landing (abfss://other@saleslakedev.dfs.core.windows.net).
+```
+
+**Cause:** the landed files are not under `data_source_location` in the
+platform, so the external data source cannot reach them.
+
+**Fix:** set `data_source_location` to a folder above every landing folder, or
+point the landing folder inside it. See
+[Settings that shape it](/docs/synapse#settings).
+
+## Running the views fails the first time [#running-viewssql-fails-the-first-time]
+
+**Symptom:** `sqlcmd -i environments/<environment>.sql` fails in Synapse for a
+new environment, although `apply` succeeded.
+
+**Cause:** Ingestron writes the views but creates nothing in Synapse. The
+serverless database, a master key, the credential, the external data source and
+the workspace's read access to the storage must exist first.
+
+**Fix:** run `ingestron request --env dev`. Its **Synapse serverless database**,
+**External data source** and **Report users** sections list each statement and
+permission, with this project's names. Ask the team that owns the workspace to
+create them, then run the environment's script again.
+
+## sqlcmd cannot find views.sql
+
+**Symptom:** `sqlcmd -i environments/<environment>.sql` stops at once, saying
+it cannot open `views.sql`, or Synapse Studio reports an error at the first
+`$(…)` in `views.sql`.
+
+**Cause:** sqlcmd reads the `:r views.sql` line from the folder it starts in,
+not from the script's folder. `views.sql` holds sqlcmd variables, which only
+sqlcmd replaces, so Synapse Studio cannot run it.
+
+**Fix:** run sqlcmd from `build/synapse`, with the environment's script. See
+[Deploy](/docs/synapse/deploy#deploy).

@@ -1,0 +1,16 @@
+{
+  "title": "Standards",
+  "description": "One standard for every Databricks project: your own, or a published one, shared from Git.",
+  "root": true,
+  "pages": [
+    "configure-a-standard",
+    "choose-a-published-standard",
+    "lakehouse-streaming",
+    "start-from-a-published-standard",
+    "upgrade-a-standard",
+    "name-things-your-way",
+    "accept-a-warning",
+    "share-a-template",
+    "upgrade"
+  ]
+}

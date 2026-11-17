@@ -1,0 +1,10 @@
+apiVersion: ingestron.io/v1
+kind: Connection
+id: gateway
+description: The database the sensor gateways write their readings to.
+connector: azure-sql-database
+connectivity: public
+settings:
+  server: iot-sql.database.windows.net
+  user: ingest_reader
+  password: ${secret:gateway-password}

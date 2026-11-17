@@ -1,0 +1,58 @@
+---
+title: Data Factory into Databricks
+description: Azure Data Factory copies each source into landing storage, and Databricks pipelines read the landed files into tables, from one project.
+---
+
+Use this combination when Databricks cannot reach a source, such as a database
+on a private network, or when a factory already copies your sources. Azure
+Data Factory copies each table into ADLS Gen2 landing storage through an
+integration runtime, on its schedule. Databricks pipelines then read each new
+landed file into a streaming table, on theirs.
+
+<RouteFacts id="adf-databricks" />
+
+To try it on your computer first, follow
+[Your first project](/docs/adf-databricks/first-project).
+
+## What each part writes [#what-you-get]
+
+One project, with one standard that lists both packs, writes two sets of
+files:
+
+- **The factory**, in `build/adf`: the integration runtime, linked services
+  for the Key Vault, the source and the landing storage, datasets for the
+  source and the landing storage, the copy pipeline and its trigger, and a
+  parameter file for each environment.
+- **The bundle**, in `build/databricks`: a pipeline with a streaming table for
+  each landed table, a job that refreshes it, and a target for each
+  environment.
+
+Each table lands in its own folder under the landing path, and the table's SQL
+reads that folder with Auto Loader, so each new file is read once:
+
+<Example name="private-sql-server-filled" file="build/databricks/src/erp/bronze/customers.sql" />
+
+## What it looks like in Databricks [#on-the-platform]
+
+<Screenshot
+  src="/images/platforms/databricks/dbx-01-northwind-pipeline.png"
+  label="Databricks"
+  checked="2026-11-02"
+  alt="The northwind pipeline's graph: the streaming tables orders, order_details, customers and products, and the materialised view daily_sales, 798 records, built from orders and order_details."
+  caption="The demo's Northwind pipeline: a streaming table for each table Data Factory landed, and daily_sales built from orders and order_details."
+/>
+
+## The rest is each platform's
+
+Everything else works as it does on each platform alone:
+
+- **Data Factory:** [the factory's settings](/docs/adf#runtime-and-key-vault),
+  [schedules, retries and landing paths](/docs/adf/pipelines), and
+  [a flow's own triggers](/docs/adf/run-a-flow-on-its-own-triggers).
+- **Databricks:** [keep a table current](/docs/databricks/keep-a-table-current),
+  [write a transform](/docs/databricks/write-a-transform),
+  [check data quality](/docs/databricks/add-quality-checks) and
+  [grant access](/docs/databricks/grant-access).
+- **Standards:** the standard lists both packs, so each pack's rules apply to
+  its files; see [Databricks standards](/docs/databricks/configure-a-standard)
+  and [Data Factory standards](/docs/adf/configure-a-standard).

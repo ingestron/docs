@@ -1,0 +1,5 @@
+{
+  "title": "Data Factory into Databricks",
+  "description": "A factory copies each source into landing storage; Databricks pipelines load the tables.",
+  "pages": ["(start)", "(guides)", "connectors"]
+}

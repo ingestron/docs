@@ -8,12 +8,14 @@ import { exampleFiles, listExamples } from "../lib/examples.js";
 import { connectorEntries, connectorIds } from "../lib/reference.js";
 
 const catalogueExamples = listExamples();
-const pages = join(process.cwd(), "content/docs/connectors");
+const pages = join(process.cwd(), "content/shared/connectors");
 
 describe("connector coverage", () => {
   for (const id of connectorIds()) {
     it(`${id} has a page and an example for each pack that reads it`, () => {
-      expect(existsSync(join(pages, `${id}.mdx`)), `content/docs/connectors/${id}.mdx`).toBe(true);
+      expect(existsSync(join(pages, `${id}.mdx`)), `content/shared/connectors/${id}.mdx`).toBe(
+        true,
+      );
       const examples = catalogueExamples.filter((example) => example.facts.connectors.includes(id));
       expect(examples.length, `a sample that reads ${id}`).toBeGreaterThan(0);
       for (const { pack } of connectorEntries(id)) {

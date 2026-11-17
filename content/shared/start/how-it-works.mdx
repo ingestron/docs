@@ -1,0 +1,170 @@
+An Ingestron project is a folder of YAML files. Ingestron reads them, applies
+your standard, and writes the files your platform runs. You review those files
+like any other change, then deploy them with your platform's own tools.
+
+<FlowDiagram
+  title="From YAML to your platform"
+  steps={[
+    { title: "Define", detail: "You write the project's YAML, in VS Code or any editor" },
+    {
+      title: "Resolve",
+      detail: "Ingestron fills in values, applies the standard and chooses each method",
+    },
+    { title: "Generate", detail: "Plan shows what would change; apply writes the files" },
+    { title: "Review", detail: "Your team reviews the YAML and the files in a pull request" },
+    { title: "Deploy", detail: "You or your pipeline deploy with the platform's own tools" },
+  ]}
+/>
+
+Ingestron takes part in the middle three steps. Defining is yours, and
+deploying belongs to your platform's tools and your release pipeline.
+
+## What you write
+
+- **Connections:** where a source is and how it is reached.
+- **Flows:** which tables to read from a connection, and how to keep them.
+- **Contracts:** what you promise about a table: its columns, types, keys and
+  checks, in the Open Data Contract Standard (ODCS). A table that copies a
+  source as it is can do without one,
+  [unless the platform manages its access](/docs/~/describe-a-source#needs-a-contract).
+- **Source metadata,** which you import rather than write: what each source
+  table looks like, from a file that someone who can reach the source saves.
+  A table without a contract takes its columns from it, and a table with one
+  is compared with it, so a change at the source shows up before it breaks a
+  load; see [Describe a source](/docs/~/describe-a-source).
+
+- **One standard:** the packs the project uses, and your organisation's rules.
+- **Optionally,** a platform document with each environment's shared
+  infrastructure, and data products in the Open Data Product Standard (ODPS),
+  which say who owns a set of tables.
+
+<Only on="synapse databricks duckdb">
+
+You also write **transforms**: SQL<Only on="databricks"> or PySpark</Only>
+that builds a table from others.
+
+</Only>
+
+A pack is the part of Ingestron that turns these files into files for one
+platform. [Definitions and how they link](/docs/concepts/definitions)
+describes each document.
+
+## What Ingestron writes
+
+Ingestron writes a folder under `build/` for each pack the project uses, with
+every environment's files in it, laid out as the platform's CI/CD tools
+expect:
+
+<Only on="synapse">
+
+- **[Synapse](/docs/synapse#what-you-get):** the workspace's linked services,
+  datasets, pipeline and trigger, `views.sql`, and a script for each
+  environment that sets its values.
+
+</Only>
+
+<Only on="databricks">
+
+- **[Databricks](/docs/databricks#what-you-get):** one bundle, with a target
+  per environment in `databricks.yml`, pipeline and job YAML, and SQL or Python
+  for each table.
+
+</Only>
+
+<Only on="adf">
+
+- **[Azure Data Factory](/docs/adf#what-you-get):** one factory's linked
+  service, dataset, pipeline and trigger JSON, and a parameter file per
+  environment.
+
+</Only>
+
+<Only on="duckdb">
+
+- **[DuckDB](/docs/duckdb#what-you-get):** for each environment, `run.sql`,
+  and each table's SQL on its own.
+
+</Only>
+
+- **Data products:** for each environment, a passport for each product, in
+  Markdown: who owns it, its columns, who may use it and its lineage.
+
+Only what differs between environments varies, so a reviewer sees the
+difference between dev and prod in one place, and a deployment pipeline
+promotes the same files from one environment to the next; see
+[Deploy through environments](/docs/~/deploy-through-environments).
+
+Each folder also holds `.generated.json`, which records every file as it was
+generated. That is what lets Ingestron generate again without losing your
+edits: a file changed by hand is reported as a conflict and never overwritten.
+See [Generated files and ownership](/docs/concepts/generated-files).
+
+## Files you can read, review and keep
+
+- **Every value is resolved when Ingestron generates.** The files hold the
+  final names, paths and types, with each environment's values in its target,
+  parameter file or script. A value you choose to supply when deploying is
+  named there, for your pipeline to set. Nothing in them is filled in by
+  Ingestron later.
+- **The files are readable, and reviewed.** They are committed with the YAML
+  that produced them, so a pull request shows both;
+  [your first project](/docs/~/first-project) shows its files.
+- **They can't drift.** `ingestron check` in CI fails when the committed files
+  are not what the definitions generate today. See
+  [Check generated files in CI](/docs/~/check-in-ci).
+
+## No dependency once deployed
+
+The files run with your platform's own tools alone. Nothing in them calls
+Ingestron or needs it installed.
+
+If you stop using Ingestron, you keep the files, and you edit them yourself
+from then on; see
+[Nothing of Ingestron at run time](/docs/concepts/generated-files#nothing-of-ingestron-at-run-time).
+
+## Standards at platform and project level
+
+- **One standard per project.** A platform team keeps its standard in Git, and
+  `ingestron init <name> --standard <path or Git URL>` copies it into a new
+  project. A later change to the original is not copied for you. See
+  [Set your organisation's standard](/docs/~/configure-a-standard).
+- **What it holds:** the packs, and naming patterns, layers and column types.
+  `settings` gives defaults, `allowed` limits the methods a project may use,
+  `fixed` holds settings no project may change, and `governance` says what
+  every data product must declare, and how columns are masked and rows
+  filtered; see
+  [Grant access, mask columns and filter rows](/docs/~/grant-access).
+  [Intent](/docs/reference/intent) says how
+  tables are loaded, kept and run, in words every pack reads.
+- **Or a published one.** `ingestron init <name> --kit <name>@<version>`
+  starts a project from a standard written for one platform, checked and
+  dated, with a small project that builds; see
+  [Choose a published standard](/docs/~/choose-a-published-standard).
+- **The project overrides only what the standard leaves open.** A flow that
+  changes a fixed setting reports `FIXED_SETTING`, and nothing is generated.
+  [Which setting wins](/docs/concepts/settings) explains the order.
+
+## Reuse
+
+- **Starters, templates and standards are folders and files in Git.**
+  `ingestron init <name> --template <git url>` starts a project from a
+  template your team keeps; see [Share templates and standards](/docs/~/share-a-template).
+- **Adopt one source at a time,** beside what you already run. `plan` and
+  `apply` write only to the output folders, `build/` by default, so Ingestron
+  owns only the files it generated; see
+  [Start beside what you already run](/docs/~/add-a-source#start-beside-what-you-already-run).
+
+## What it never does
+
+- It doesn't connect to your sources or your cloud. Its only network calls
+  use your own `git`: to fetch a template, a standard or a published standard
+  from a Git URL you give it, or a published standard that is not installed,
+  and to list the published standards' versions.
+- It doesn't deploy anything. Your platform's tools do.
+- It doesn't read secret values. A `${secret:…}` reference carries only the
+  secret's name; see [YAML references](/docs/concepts/yaml-references#reference-a-secret).
+- It doesn't send telemetry. The VS Code extension makes no network calls of
+  its own, and reads and writes only the files in your workspace.
+- It doesn't overwrite a file someone edited. It reports a conflict instead.
+
+Next, [create a project](/docs/~/create-a-project).

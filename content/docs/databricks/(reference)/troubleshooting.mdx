@@ -1,0 +1,62 @@
+---
+title: Troubleshooting
+description: Find a problem on Databricks by what you see, then its cause and fix.
+---
+
+Problems with the bundle, its pipelines and the refresh job. For the command, definitions, source metadata and the editor, see
+[Troubleshooting](/docs/troubleshooting).
+
+## A change mode needs a key or a sequence column
+
+**Symptom:**
+
+```text
+flows/crm.yaml:9:5  error  METHOD_CHECK
+  "streaming-table" for table "accounts": mode upsert needs "sequence_by".
+```
+
+or `mode upsert needs primary key columns in the contract`.
+
+**Cause:** `history: latest` or `full`, which the method writes as
+`mode: upsert` or `mode: history`, keeps a table current by key, in the order
+of a column.
+
+**Fix:** set `sequence` on the flow or the table to the column that orders a
+key's changes, and mark the key columns `primaryKey: true` in the contract.
+See [Keep a table current](/docs/databricks/keep-a-table-current).
+
+## Databricks rejects the bundle
+
+**Symptom:** `databricks bundle validate` or `deploy` fails.
+
+**Check:** read Databricks' own message; Ingestron does not produce it. If a
+schema is missing, the schemas are not created yet: ask the team that owns
+them, or see
+[Let the bundle create the schemas](/docs/databricks#create-the-schemas).
+A Lakeflow Connect pipeline refers to a Unity Catalog connection, which
+Ingestron does not create.
+
+**Fix:** when the platform sets `databricks.manage.schemas`, an administrator runs the
+generated `prerequisites/<environment>.sql` once before the first deploy: it grants
+`USE CATALOG` and `CREATE SCHEMA` on each catalog to the identity the pipelines
+run as, and the same must be given to the identity that deploys when it
+differs. Run `ingestron request` for everything else the platform team
+provides.
+
+## The refresh job does not run in development
+
+**Symptom:** the job and the pipelines are deployed, and nothing refreshes on
+its schedule in `dev`.
+
+**Cause:** schedules run only in `prod` and `production`
+([platform defaults](/docs/reference/packs/databricks#platform-configuration)).
+`dev` is in development mode, which pauses every schedule, and another
+environment's target in `databricks.yml` sets
+`presets: { trigger_pause_status: PAUSED }`.
+
+**Fix:** unpause it in Databricks, or set `paused: false` in the platform's
+`schedule` and generate again: the job then says `pause_status: UNPAUSED` in
+every environment. See
+[Refresh on a schedule](/docs/databricks#schedule).
+
+Every code is explained in [Errors](/docs/reference/errors).

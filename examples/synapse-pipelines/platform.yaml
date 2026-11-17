@@ -1,0 +1,13 @@
+apiVersion: ingestron.io/v1
+kind: Platform
+id: azure
+settings:
+  synapse-copy:
+    landing: ${values.landing}
+    key_vault: ${values.key_vault}
+    integration_runtime: AutoResolveIntegrationRuntime
+    start: 2026-11-14T00:00:00Z
+    paused: true
+  synapse-view:
+    data_source: landing
+    data_source_location: ${values.storage}

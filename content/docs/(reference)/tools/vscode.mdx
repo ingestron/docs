@@ -26,8 +26,8 @@ in the workspace.
 <Screenshot
   light="/images/vscode/environment-light.png"
   dark="/images/vscode/environment-dark.png"
-  alt="The environment picker, titled Environment for problems, previews and the platform request, lists dev and prod over the first lines of retail's project.yaml."
-  caption="Ingestron: Select environment lists the project's environments, dev and prod: the one you choose is the one for problems, previews and the platform request."
+  alt="The environment picker, titled Environment for problems, previews and the platform request, lists dev, development, and prod, production."
+  caption="Ingestron: Select environment lists the project's environments, dev and prod, each with its mode: the one you choose is the one for problems, previews and the platform request."
 />
 
 ## Get started
@@ -36,6 +36,20 @@ in the workspace.
 project to generated files and a request for your platform team. Each step
 is ticked when you do it, such as when the workspace has a flow, or after
 **Ingestron: Apply** runs.
+
+Run **Ingestron: New project**: it asks where the project runs, a platform or
+a sample to try, then which standard, a new one for that platform, one of its
+published standards, or your team's file, then which assistant files to
+write, if any. Review the target settings and
+environments first. Then use
+**Add connection** and **Add flow** in the Project panel or Command Palette.
+Connection creation offers metadata request/import without creating a flow;
+flow creation selects an existing connection and source objects. Existing
+standards and definitions are preserved. A new project imports only the
+files it has, such as `standard.yaml` and `platform.yaml`; the first connection,
+flow or contract adds its folder to `imports` and says so. These actions save
+each file they change, unless it had unsaved changes: that file stays unsaved,
+and the message names it. See [Create a project](/docs/how-to/start-from-a-template).
 
 ## Problems as you type
 
@@ -67,7 +81,7 @@ Ingestron cannot read is a warning (`ENV_FILE_LINE`) at that line. See
 <Screenshot
   light="/images/vscode/envvar-info-light.png"
   dark="/images/vscode/envvar-info-dark.png"
-  alt="In project.yaml, landing: ${envvar:LANDING_PATH} has a blue wavy underline. Its hover says LANDING_PATH is supplied when deploying, as BUNDLE_VAR_landing_path (databricks); plan does not read it, so it needs no .env.dev entry; code ENVVAR_MISSING."
+  alt="In project.yaml, landing: ${envvar:LANDING_PATH} has a blue wavy underline. Its hover says LANDING_PATH is supplied when deploying, as BUNDLE_VAR_landing_path (databricks); plan does not read it, so it needs no .env.dev entry; code ENVVAR_MISSING, with View Problem and Fix."
   caption="A variable that is set nowhere is marked as information, ENVVAR_MISSING: in this Databricks project, its hover names BUNDLE_VAR_landing_path, which the deploying pipeline sets."
 />
 
@@ -116,8 +130,15 @@ CLI prints the first fix under the problem, as `Fix: …`.
 <Screenshot
   light="/images/vscode/quick-fix-light.png"
   dark="/images/vscode/quick-fix-dark.png"
-  alt="The Quick Fix menu under source: shops offers Change to “shop” and Create Connection “shops”."
+  alt="The Quick Fix menu under source: shops offers Change to “shop” and Create Connection “shops”, then VS Code's own Fix and Explain."
   caption="The quick fixes for the broken link: the closest id, or a new connection with that id."
+/>
+
+<Clip
+  light="/images/vscode/quick-fix-clip-light.mp4"
+  dark="/images/vscode/quick-fix-clip-dark.mp4"
+  alt="flows/orders.yaml with source: shops underlined and one problem. The light bulb opens the Quick Fix menu; Change to “shop” is chosen. The line now reads source: shop, the table shows Generated files (1) and → dev.bronze.orders, and the Problems panel says No problems have been detected in the workspace."
+  caption="The quick fix in use: Change to “shop” corrects the link, and the problem goes."
 />
 
 When the same problem has a fix in several places, the menu also offers
@@ -158,7 +179,8 @@ the standard or platform reaches every table that uses the method.
 Completion offers what fits where you type: fields from the document's
 schema, allowed values and examples, the ids of connections and contracts,
 table names in `inputs`, the forms a reference
-takes after `${` and value names after `${values.`, the names a naming pattern can use inside `{{ }}`, the methods
+takes after `${` and value names after `${values.` (in `project.yaml`, every value but
+the one you are writing; after `${values.cluster.`, the names inside `cluster`), the names a naming pattern can use inside `{{ }}`, the methods
 for `uses`, and, under `with`, the settings of the method that table uses
 in the environment in the status bar, with their defaults. This works in a
 new file too, before it has ever been valid.
@@ -237,9 +259,12 @@ For the environment in the status bar, the editor shows beside each line what
 it resolves to:
 
 - after a flow table or a transform, the table's full name;
-- above it, the methods that build it, with how each was chosen on hover, and
-  each file generated for it, which opens that file read-only. A contract
-  object shows the same files;
+- above it, **Generated files (N)** opens a picker of the assets generated for
+  that table. Their full paths stay in the picker; hover on the link for the
+  method choices. A contract object shows the same action;
+- a metadata-based flow table also offers **Draft contract**, even when the
+  standard does not require one. It creates an ODCS draft and adds its
+  `contract:` reference as one undoable change. Review the draft before use;
 - after a value with `${…}`, the value it resolves to. Secrets and environment
   variables are never shown.
 
@@ -273,6 +298,23 @@ field is, where to find the value, and a suggestion of what it looks like,
 such as `<application id>`. A value in `project.yaml`'s `values` is explained
 by the field that reads it.
 
+Hover a flow's trigger, anywhere under `ingest.triggers`, to see when it next
+starts in the selected environment, in the trigger's own time zone, such as
+`Next starts in prod (Europe/London): Sun 6 Dec 03:00, Sun 13 Dec 03:00, Sun 20 Dec 03:00.`
+A start outside the standard's hours is not hidden: the Problems panel reports
+it as [`TRIGGER_HOURS`](/docs/reference/errors#TRIGGER_HOURS). See
+[Run a flow on its own triggers](/docs/how-to/run-a-flow-on-its-own-triggers).
+
+Hover a `${values.…}` reference to see its value in the selected environment
+and where it is set: under `values`, or under that environment's `values`. A
+value built from other values also shows how it is written, such as
+`/Volumes/${values.landing_catalog}/finance/files`.
+
+Completion leaves out a method's settings that are now intent, such as `mode`,
+except under the standard's `fixed`. One already written still works, with
+[`SETTING_MOVED`](/docs/reference/errors#SETTING_MOVED); hover it to see the
+intent to write instead, such as `load.mode`.
+
 Hover any field or setting to see what it is, what each allowed value means,
 its default, an example and where it is usually set; hover a value for that
 value's meaning. Each ends with a **Reference** link to its entry in these
@@ -287,8 +329,10 @@ The **Ingestron** tab in the secondary side bar, on the right, opens with a
 **Project** section. For a workspace with one project it lists:
 
 - **Environments**, each with a circle, or a check and **selected** on the one
-  problems, previews and the platform request show. Click an environment to
-  select it, as in the status bar.
+  problems, previews and the platform request show, and its mode,
+  **development** or **production**. Click an environment to select it, as in
+  the status bar.
+- **Add connection** and **Add flow**, as the commands of the same name.
 - **Check**, **Plan**, **Apply**, **Compare environments**, **Prepare platform
   request**, **Request source metadata**, **Import source metadata…** and
   **Show generated files**. Click one to run it for the project. Check, Plan
@@ -307,7 +351,7 @@ one to the file adds it to the list.
 <Screenshot
   light="/images/vscode/project-view-light.png"
   dark="/images/vscode/project-view-dark.png"
-  alt="The Ingestron tab beside retail's connections/shop.yaml in a workspace with three projects. The Project section lists erp folded, retail open and shop folded. Under retail, Environments shows dev with a check and selected, and prod with a circle, then Check, Plan, Apply, Compare environments, Prepare platform request, Request source metadata, Import source metadata… and Show generated files. The Reference section is folded below."
+  alt="The Ingestron tab beside retail's connections/shop.yaml in a workspace with three projects. The Project section lists erp folded, retail open and shop folded. Under retail, Environments shows dev with a check, selected and development, and prod with a circle and production, then Add connection, Add flow, Check, Plan, Apply, Compare environments, Prepare platform request, Request source metadata, Import source metadata… and Show generated files. The Reference section is folded below."
   caption="A workspace with three projects: retail, the project of the file in the editor, is open, with dev selected and prod beside it, and erp and shop are folded."
 />
 
@@ -330,7 +374,7 @@ Explorer.
 <Screenshot
   light="/images/vscode/reference-light.png"
   dark="/images/vscode/reference-dark.png"
-  alt="The Ingestron tab beside standard.yaml, with the cursor on incremental in load: default: incremental. The Reference section shows default, a field of Standard: how data is loaded when no rule matches and the flow says nothing, its values files, incremental, changes and full with incremental marked, and a Reference link."
+  alt="The Reference section of the Ingestron tab, with the cursor on incremental in load: default: incremental. It shows default, a field of Standard: how data is loaded when no rule matches and the flow says nothing, its values files, incremental, changes and full with incremental marked, and a Reference link."
   caption="The Reference section follows the cursor: here load's default, with its values and the one written marked."
 />
 
@@ -387,7 +431,7 @@ it.
   environment in the status bar: who to ask, the query to run or the call to
   make, filled in for your project, and where to save the result. With more
   than one connection, choose one, or **All connections**. The request opens
-  as an unsaved Markdown document, ready to send; nothing is written to the
+  in a read-only tab, ready to copy and send; nothing is written to the
   project.
 - **Ingestron: Import source metadata…** reads a file into
   `sources/<connection>.yaml`. Run it on a project, and choose the file; or
@@ -434,6 +478,11 @@ recipes are shown in the editor only. `ingestron source request` and
   [Use your own recipe](/docs/reference/recipes#your-own). While a recipe is broken, no other recipe problem
   is shown, and completion offers no recipes.
 
+A source object absent from the imported catalogue is still reported when an
+unrelated document is unfinished, such as an empty contract file. The diagnostic
+checks imported metadata rather than making a live database request. Generation
+remains blocked until the document errors are fixed.
+
 ## Plan, apply and check
 
 **Ingestron: Plan**, **Ingestron: Apply** and **Ingestron: Check** run the
@@ -445,12 +494,15 @@ output panel.
 You can start them from where you are working, as well as from the Command
 Palette. Each acts on the project you started it from:
 
-- **Right-click** a project folder, or a YAML file in a project, in the
-  Explorer for **Ingestron: Check**, **Plan**, **Apply**, **Compare
-  environments**, **Prepare platform request**, **Request source metadata**
-  and **Add assistant files**. A project folder also has **Import source
-  metadata…**, as does any file that is not one of a project's definitions.
-  The files in `build/` do not have the menu.
+- **Right-click** the project root or `project.yaml` in the Explorer for
+  **Check**, **Plan**, **Apply**, environment comparison, platform requests and
+  project setup actions. Other YAML files have actions for their purpose:
+  connection files offer **Request source metadata**; flow files offer
+  **Show generated files** and **Draft contract from metadata**.
+  The `connections/` and `flows/` folders offer **Add connection** and **Add flow**;
+  `sources/` offers **Import source metadata…**. Folders containing those document
+  kinds also get the matching actions when you use a custom layout.
+  Contract files and generated YAML do not receive the project action list.
 - **Editor title buttons**: with a YAML file of a project, or a preview of
   generated files, open, **Plan** and **Apply** are buttons in the editor's
   title bar. **Check**, **Compare environments**, **Prepare platform
@@ -461,7 +513,7 @@ Palette. Each acts on the project you started it from:
 <Screenshot
   light="/images/vscode/context-menu-light.png"
   dark="/images/vscode/context-menu-dark.png"
-  alt="In the Explorer, the projects folder holds erp, retail and shop, folded. The shop folder's menu ends with Check, Plan, Apply, Compare environments, Prepare platform request, Request source metadata, Import source metadata… and Add assistant files, after VS Code's own items."
+  alt="In the Explorer, the projects folder holds erp, retail and shop, folded. The shop folder's menu ends with Add connection, Add flow, Check, Plan, Apply, Compare environments, Prepare platform request, Request source metadata, Import source metadata… and Add assistant files, after VS Code's own items."
   caption="Right-click a project folder in the Explorer: Ingestron's commands come last."
 />
 
@@ -473,8 +525,8 @@ Palette. Each acts on the project you started it from:
 />
 
 <Screenshot
-  light="/images/vscode/plan-light.png"
-  dark="/images/vscode/plan-dark.png"
+  light="/images/vscode/plan-databricks-light.png"
+  dark="/images/vscode/plan-databricks-dark.png"
   alt="The Output panel, Ingestron channel, after Ingestron: Plan: databricks → build/databricks (dev), create databricks.yml, resources/shop.pipeline.yml and src/shop/bronze/orders.sql, then 3 files: 3 create. Ready to apply."
   caption="The Ingestron output panel after Ingestron: Plan: three files to create in the bundle's folder, build/databricks."
 />
@@ -489,6 +541,13 @@ project applies again. The Ingestron output panel logs each run with a line
 for each output folder, such as `databricks (dev, prod): up to date`, with the
 files it changed below it, and a line for each folder that is no longer
 generated.
+
+<Clip
+  light="/images/vscode/generate-on-save-light.mp4"
+  dark="/images/vscode/generate-on-save-dark.mp4"
+  alt="contracts/orders.yaml is open. Clicking Auto-apply: off in the status bar turns it on, and the Ingestron output logs auto-apply on: applying every environment now, then after each save, and databricks (dev): up to date. A column, units, is added to the contract and the file saved: the output logs databricks (dev): applied: 1 update, 2 unchanged, with update src/shop/bronze/orders.sql."
+  caption="Turn auto-apply on from the status bar, then save a contract: the generated file that reads it is updated."
+/>
 
 It applies nothing while the definitions have problems in any environment,
 and says where to see them: for another environment, such as
@@ -506,28 +565,28 @@ workspace.
 
 ## Start a project
 
-**Ingestron: New project** starts from a connection, a starter or a published
-standard.
+**Ingestron: New project** asks three questions, then for the folder.
 
-- **From a connection** asks for a source category, connection, network
-  reachability and supported route. You can search across all sources or
-  within a category.
-- **From a starter** offers the ready-made projects, such as **DuckDB on a
-  laptop**, which [runs locally with DuckDB](/docs/platforms/duckdb).
-- **From a published standard** offers the dated standards installed with the
-  extension, such as **Local medallion on DuckDB**, and makes the same project
-  as `ingestron init --kit`; see
-  [Start from a published standard](/docs/how-to/start-from-a-published-standard).
+- **Where will this project run?** Azure Synapse, Databricks, Azure Data
+  Factory (landing) or DuckDB. **Try a sample project** instead lists complete
+  worked projects, such as DuckDB on a laptop.
+- **Which standard should it follow?** **A new standard for** the platform
+  creates a reviewable local standard and target settings, with no source. A
+  published standard for that platform uses its dated standard and target
+  settings, without the worked source example (`init --kit --empty`). **Your
+  team's standard file** keeps your standard YAML.
+- **Assistant files**, optional: the coding assistants to write files for;
+  press Enter with nothing ticked for none. See
+  [Work with an AI assistant](/docs/tools/assistants).
 
-It then offers a list of coding assistants to write files for, which you may
-skip: press Enter with nothing ticked for none. Nothing else is asked. The
-destination folder comes last, and its name is the
-project's id; the environments are `dev` and `prod`, or the starter's or the
-published standard's, and the standard is the route's, the starter's or the
-published one. The new `README.md` opens in a
-preview, and a message says how many values are still `REPLACE_ME`: the
-README lists each with where to find it. When the folder is outside the
-workspace, the message offers to open it or add it to the workspace. See
+Then choose the folder and **Create the project here**: the folder's name is
+the project's id. The environments are `dev` and `prod`, or the sample's or
+the published standard's, and the standard is the platform's, the sample's or
+the published one. The new `README.md` opens in a preview, and a message says
+how many values are still `REPLACE_ME`: the README lists each with where to
+find it. When the folder is outside the workspace, the message offers to open
+it or add it to the workspace; when it is in the workspace, the message offers
+**Add connection**, which lists only the sources the platform supports. See
 [Create a project](/docs/how-to/start-from-a-template).
 
 **Ingestron: Add assistant files** writes the same files into a project you
@@ -564,3 +623,9 @@ your environments. The Ingestron extension does, as
 ## Every command
 
 <ExtensionCommands />
+
+## Review source metadata and generated files
+
+Field completions insert a YAML delimiter and offer values. On an imported source object, use Go to Definition to inspect its captured metadata; the Reference panel and hover show its columns and capture provenance. If an object is misspelt, the diagnostic distinguishes it from an uncaptured source and offers nearby imported names.
+
+The environment rows show each resolved environment’s effective mode. Compare environments before accepting a new review or staging environment. Requests and comparisons open in named, read-only tabs that refresh in place; use Save As to retain evidence. Plan, Apply and Check write and review local files. They do not deploy or run the generated code.

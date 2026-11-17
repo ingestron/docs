@@ -1,0 +1,323 @@
+Some features need someone who administers the data platform: grants for the
+identity pipelines run as, tag policies, shared storage and runtimes, and the
+values only they know. Write the request from the definitions, so it matches
+what will be deployed:
+
+```sh
+ingestron request --env prod > platform-request.md
+```
+
+Without `--env`, it writes one request for each environment. In VS Code,
+**Ingestron: Prepare platform request** opens the same text for the
+environment in the status bar, in a read-only tab named after the request.
+Running it again refreshes the tab. Copy the text to send it, or use
+**Save As** to keep a copy.
+
+<Only on="synapse">
+
+<Screenshot
+  light="/images/vscode/platform-request-synapse-light.png"
+  dark="/images/vscode/platform-request-synapse-dark.png"
+  alt="A read-only tab, Platform request: shop (dev).md. Under Shared infrastructure it lists the synapse-copy settings landing, key_vault, integration_runtime AutoResolveIntegrationRuntime, runtime_kind azure and paused true, and the synapse-view settings data_source and data_source_location. Under Synapse serverless database: Create the serverless SQL database shop_dev; the views live in it."
+  caption="The start of the request for dev: the settings shared by the copies and the views, then the database to create. The external data source and the report users follow."
+/>
+
+</Only>
+
+<Only on="adf">
+
+<Screenshot
+  light="/images/vscode/platform-request-adf-light.png"
+  dark="/images/vscode/platform-request-adf-dark.png"
+  alt="A read-only tab, Platform request: shop (dev).md. Under Shared infrastructure it lists the adf-copy settings landing, key_vault and integration_runtime ir-shop. Under Schedules: Data Factory trigger tr_shop_sales: every 24 hours, stopped."
+  caption="The start of the request for dev, for a project that copies one SQL Server table through a self-hosted runtime: the copy's shared settings and the trigger, stopped in dev. What must exist before the copies run follows."
+/>
+
+</Only>
+
+<Only on="duckdb">
+
+<Screenshot
+  light="/images/vscode/platform-request-duckdb-light.png"
+  dark="/images/vscode/platform-request-duckdb-dark.png"
+  alt="A read-only tab, Platform request: shop (dev).md. Under Shared infrastructure, its only line: duckdb-table published: ./published."
+  caption="The whole request for the DuckDB starter: the folder the tables are published to."
+/>
+
+</Only>
+
+## What the request holds
+
+Each section appears only when it has something to say:
+
+- **Values to replace:** each value still `REPLACE_ME`, with its file and
+  line. `ingestron check` fails until each is written; the project's
+  `README.md` says where to find each one.
+- **Values to provide:** each environment variable the definitions read,
+  where it is used, whether it is set, and the name the deploying pipeline
+  supplies it as; never its value. See [Values to provide](#values-to-provide).
+- **Shared infrastructure:** the platform's settings for the methods the
+  environment uses, with this environment's values. A secret reads "a
+  secret"; its value is never shown.
+- Each pack's own sections, such as what must exist before deploying, and the
+  schedules and whether each is paused. Ingestron lists these from the
+  definitions; it has not checked that they exist.
+
+<Only on="databricks">
+
+On Databricks it also holds:
+
+- the identity pipelines and jobs run as, and the workspace;
+- **Switched on:** each `databricks.manage` switch the platform turns on, what
+  it does and what it needs on the platform, from the pack's
+  [platform prerequisites](/docs/reference/packs/databricks#platform-prerequisites);
+- **Used by the definitions, but switched off:** features the definitions use
+  while their switch is off, such as a contract's `unique: true` without
+  `databricks.manage.checks`;
+- **SQL to run once (review first):** the generated
+  `prerequisites/<environment>.sql`.
+
+</Only>
+
+<Only on="synapse">
+
+On Synapse it also holds:
+
+- **Switched on:** `synapse.manage.grants`, when a table of the environment
+  is a Synapse view, and what it needs; see
+  [Grant access](/docs/synapse/grant-access);
+- **Used by the definitions, but switched off:** a role on a view without
+  `synapse.manage.grants`.
+
+</Only>
+
+Nothing is sent anywhere: send the request the way your team takes requests.
+
+## What your platform asks for [#what-each-route-asks-for]
+
+Run the request in each project's folder:
+
+```sh
+ingestron request --env dev
+```
+
+<Only on="databricks">
+
+### Databricks
+
+Even the smallest project, with no platform document, gets a request. Create
+one from the `minimal` starter, whose landing folder is still `REPLACE_ME`:
+
+```sh
+ingestron init shop --template minimal --yes
+cd shop
+```
+
+Its request for `dev` is:
+
+<Request name="minimal" />
+
+A platform document whose `databricks:` section names `run_as` and turns on
+`manage` switches adds
+what each switch needs and the SQL to run once; see
+[Before you deploy](/docs/databricks/deploy#prerequisites) in Deploy the Databricks bundle.
+
+</Only>
+
+<Only on="synapse">
+
+### Synapse workspace pipelines
+
+For [your first project](/docs/synapse/first-project), the request names the
+serverless database, the external data source, the report users' permissions,
+and the workspace's access to storage and the Key Vault.
+
+</Only>
+
+<Only on="adf">
+
+### Azure Data Factory
+
+For the project in [Land files only](/docs/adf/land-files-only), where the
+factory copies the files and nothing reads them yet, the whole request for
+`dev` is:
+
+<Request name="landing-only" />
+
+</Only>
+
+<Only on="synapse">
+
+### Synapse serverless views
+
+For the project in [Synapse serverless views](/docs/synapse), the
+request for `dev` adds the database, the external data source, and the
+database user each role is, with the permissions views over files need:
+
+<Request
+  name="synapse-views"
+  sections={["Synapse serverless database", "External data source", "Report users"]}
+/>
+
+</Only>
+
+<Only on="duckdb">
+
+### DuckDB
+
+A DuckDB project on your computer needs nothing from a platform team. For
+[your first project](/docs/duckdb/first-project), the whole request for `dev`
+names only the folder the tables are published to:
+
+```text
+# Platform request: shop (dev)
+
+## Shared infrastructure
+
+- `duckdb-table` `published`: `./published`
+```
+
+</Only>
+
+## Values to provide [#values-to-provide]
+
+A value only the platform team knows, or one each stage of a deployment
+supplies, such as a storage path, can come from an environment variable with
+`${envvar:…}`. A variable that is not set yet does not stop the request: the
+request opens by asking for it.
+
+<Only on="databricks">
+
+In the `shop` project above, read the landing folder from a variable in
+`project.yaml`, in place of its `REPLACE_ME`:
+
+```yaml
+values:
+  landing: ${envvar:LANDING_PATH}
+```
+
+With `LANDING_PATH` set nowhere, `ingestron request --env dev` prints:
+
+```text
+# Platform request: shop (dev)
+
+## Values to provide
+
+These values come from environment variables. The pipeline that deploys the files supplies each one for each environment, under the names given; on your own computer, `.env.dev` (kept out of Git) is read only by packs that take these values when generating, not by those that take them when deploying.
+
+- `LANDING_PATH`, used for `values.landing` in `project.yaml`: not set yet. The deploying pipeline supplies it as `BUNDLE_VAR_landing_path` (databricks).
+
+Until a variable is set, this request shows it as `${envvar:NAME}`, and leaves out what cannot be worked out without it.
+
+Until every variable is set, some checks may not have run: each pack's checks of the whole project, and each method's checks of a table that holds a variable not set. Once the values are set, run `ingestron check` to run them.
+
+Pipelines and jobs run as the identity that deploys the bundle.
+
+## Must exist before deploying
+
+Ingestron has not checked these; the generated files expect them.
+
+- Catalog `dev`, which the deploying identity can use.
+- Schema `dev.bronze`, in which it can create tables and views.
+- Files at `${envvar:LANDING_PATH}`, which the pipeline can read.
+- Serverless compute for pipelines and jobs, turned on in the workspace.
+- No workspace host is set, so `databricks bundle deploy` uses the workspace of the Databricks CLI profile that runs it.
+
+## Schedules
+
+- No schedule: the pipelines run only when someone starts them.
+```
+
+The generated files take such a value when deploying, not when generating:
+the line names what the deploying pipeline sets, here the bundle variable
+`BUNDLE_VAR_landing_path`. [Deploy through environments](/docs/~/deploy-through-environments#values-supplied-when-deploying)
+shows where each goes in the pipeline.
+
+In VS Code, **Ingestron: Prepare platform request** opens the same request:
+
+<Screenshot
+  light="/images/vscode/platform-request-databricks-light.png"
+  dark="/images/vscode/platform-request-databricks-dark.png"
+  alt="A read-only tab, Platform request: shop (dev).md. Under Values to provide, it says the values come from environment variables, which the deploying pipeline supplies, and that .env.dev is read only by packs that take them when generating. It lists LANDING_PATH, used for values.landing in project.yaml: not set yet, which the deploying pipeline supplies as BUNDLE_VAR_landing_path (databricks), and says what is left out until it is set."
+  caption="The request opens with the values still to provide: here LANDING_PATH, not set yet, and the name the deploying pipeline sets."
+/>
+
+- Each variable is listed once, with each field it feeds and its file.
+- Once it is set, the line says where from: the environment Ingestron runs
+  in, `.env.dev` or `.env`. This section never shows a variable's value; the
+  rest of the request shows values as they resolve, as the generated files
+  will.
+- When a flow's `source` holds a variable that is not set, the flow's
+  connection is not known, so the request names the flow and lists nothing
+  its tables need, and leaves out the SQL to run once.
+- A table whose contract or method holds such a variable is left out, and
+  the request names it.
+- Only values can wait until deploying. A variable that decides what is
+  generated or what it is called, such as a flow's `source`, is refused by
+  `ingestron plan` as [`DEPLOY_VALUE`](/docs/reference/errors#DEPLOY_VALUE);
+  write it in `project.yaml` for each environment. The request then leaves out the deploy names and says to
+  run `ingestron plan`.
+
+</Only>
+
+<Only on="adf">
+
+The generated files take such a value when deploying, not when generating:
+the request names the ARM template parameter the deploying pipeline passes.
+A variable that decides what is generated or what it is called is refused by
+`ingestron plan` as [`DEPLOY_VALUE`](/docs/reference/errors#DEPLOY_VALUE);
+write it in `project.yaml` for each environment.
+
+</Only>
+
+<Only on="synapse">
+
+The views take such a value when deploying: the request names the sqlcmd
+variable the deploying pipeline sets. The workspace pipelines take none:
+write their values in `project.yaml` for each environment.
+
+</Only>
+
+<Only on="duckdb">
+
+DuckDB reads such a value when generating, from the environment Ingestron runs
+in, `.env.<environment>` or `.env`, all kept out of Git; the request says
+which.
+
+</Only>
+
+[Environment files](/docs/concepts/yaml-references#use-environment-files)
+says how to set the variables on your computer, and
+[Deploy through environments](/docs/~/deploy-through-environments#values-supplied-when-deploying)
+how to supply them in CI.
+
+## When the definitions have problems
+
+Any other error stops the request. The request is then its title, a note and
+each error, written as `ingestron plan` writes a problem, and the command
+exits with `1`. For an environment the project does not declare:
+
+````text
+# Platform request (nope)
+
+The definitions have problems; fix them first:
+
+```text
+project.yaml:7:3  error  UNKNOWN_ENVIRONMENT
+  Environment "nope" is not declared in project.yaml.
+  Declared environments: dev.
+```
+````
+
+The request reads the value of each variable that is set, so it can find an
+error that `ingestron plan` does not: a value the deploying pipeline supplies,
+written in your environment, that its setting does not accept. Unset variables
+alone never stop the request: with nothing else wrong, the command exits with
+`0`.
+
+## Next
+
+- Move every project to a newer Ingestron together:
+  [Upgrade Ingestron and its packs](/docs/~/upgrade).
+- Keep the standard and templates in Git:
+  [Share templates and standards](/docs/~/share-a-template).

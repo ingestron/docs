@@ -1,0 +1,4 @@
+# A guide: a small project that shows one idea; the docs embed it.
+title: Flow triggers on Data Factory
+summary: "A flow writes its own hourly window and Sunday reload, inside the hours the standard allows, and lands a snapshot of each table."
+order: 23

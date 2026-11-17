@@ -1,0 +1,5 @@
+{
+  "title": "Databricks",
+  "description": "Pipelines that read sources into managed tables, deployed as one bundle.",
+  "pages": ["(start)", "(guides)", "(standards)", "connectors", "(concepts)", "(reference)"]
+}

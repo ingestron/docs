@@ -30,7 +30,8 @@ const packIds = (packs: string[]) => packs.map((pack) => pack.split("@")[0]!);
  * linked to its page.
  * @example <KitList />
  */
-export function KitList() {
+/** With `platform`, only the standards for that platform: their ids start `<platform>/`. */
+export function KitList({ platform }: { platform?: string } = {}) {
   return (
     <TableFrame label="Published standards">
       <table>
@@ -43,20 +44,22 @@ export function KitList() {
           </tr>
         </thead>
         <tbody>
-          {latestKits().map((kit) => (
-            <tr key={kit.id}>
-              <td>
-                <a href={kitPage(kit.id)}>{kit.title}</a>
-              </td>
-              <td>{packIds(kit.packs).map(packName).join(", ")}</td>
-              <td>{kit.summary}</td>
-              <td>
-                <code>
-                  --kit {kit.id}@{kit.version}
-                </code>
-              </td>
-            </tr>
-          ))}
+          {latestKits()
+            .filter((kit) => !platform || kit.id.startsWith(`${platform}/`))
+            .map((kit) => (
+              <tr key={kit.id}>
+                <td>
+                  <a href={kitPage(kit.id)}>{kit.title}</a>
+                </td>
+                <td>{packIds(kit.packs).map(packName).join(", ")}</td>
+                <td>{kit.summary}</td>
+                <td>
+                  <code>
+                    --kit {kit.id}@{kit.version}
+                  </code>
+                </td>
+              </tr>
+            ))}
         </tbody>
       </table>
     </TableFrame>

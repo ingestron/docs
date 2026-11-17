@@ -1,26 +1,34 @@
 // Download cards describe the same resolved samples that the archive builder uses.
 import { listExamples, type ExampleInfo } from "@/lib/examples";
-import { packName } from "@/lib/reference";
+import type { Platform } from "@/lib/platforms";
+import { packName, platformUsedPacks } from "@/lib/reference";
 import { starterCommand } from "@/lib/routes";
 
-/** Matching downloadable projects, with their platforms and connector scope.
- * @example <ExamplesList connector="sqlserver" />
+/** Matching downloadable projects, with their platforms and connector scope; with
+ * `platform`, only the projects its routes build, and a sentence when there is none.
+ * @example <ExamplesList connector="sqlserver" platform="synapse" />
  */
 export function ExamplesList({
   connector,
   feature,
   kind,
+  platform,
 }: {
   connector?: string;
   feature?: string;
   kind?: ExampleInfo["kind"];
+  platform?: Platform["id"];
 }) {
+  const used = platform && platformUsedPacks(platform);
   const examples = listExamples().filter(
     (example) =>
       (!connector || example.facts.connectors.includes(connector)) &&
       (!feature || example.facts.features.includes(feature)) &&
-      (!kind || example.kind === kind),
+      (!kind || example.kind === kind) &&
+      (!used || example.facts.packs.every((pack) => used.has(pack))),
   );
+  if (examples.length === 0 && used)
+    return <p>There is no example project for this source on this platform yet.</p>;
   if (examples.length === 0) throw new Error(`No example for ${connector ?? feature}.`);
   return (
     <div className="example-downloads">

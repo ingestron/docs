@@ -1,0 +1,19 @@
+apiVersion: ingestron.io/v1
+kind: Standard
+id: shop
+packs: [duckdb@2]
+layers:
+  - { name: bronze, does: raw } # every row as it arrived; its checks only count
+  - { name: silver, does: [check] }
+  - { name: gold, does: [check] }
+ingest:
+  settings:
+    duckdb-files: { format: csv } # header row, comma-separated
+governance: # every data product is checked against these before anything is generated
+  products: { require: [owner, purpose] }
+  classification:
+    values: [public, internal, confidential, restricted]
+    columns: required
+    sensitive: [confidential, restricted]
+  access:
+    sensitive: { require: [description, firstLevelApprovers] }

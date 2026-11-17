@@ -9,16 +9,36 @@ files a store pack keeps. For views only, list it first:
 `packs: [synapse@2, adf@2]`; see [Combine packs](/docs/concepts/standards-and-packs#combine-packs-when-their-actions-fit). The settings below come from the
 pack itself.
 
-For a task walkthrough, use [Synapse serverless views](/docs/platforms/synapse).
+For a task walkthrough, use [Synapse serverless views](/docs/synapse).
+For Azure SQL full snapshots in the workspace, use `packs: [synapse@2]` and the `synapse-copy` ingestion method. The supported route generates native workspace artifacts and SQL query review files for each environment; it references an existing Azure runtime. See [Synapse pipelines and serverless views](/docs/synapse) for its limits.
 The pack writes one `views.sql` for every environment, with
 `environments/<environment>.sql` setting each environment's values; run that
 script with sqlcmd when the definitions change. Where a table's layer checks
 its rows, it also writes `checks.sql`, with `checks/<environment>.sql` for each
 environment; run that after each landing to count the checks. See
-[What Ingestron writes](/docs/platforms/synapse#what-you-get). Generation itself
+[What Ingestron writes](/docs/synapse#what-you-get). Generation itself
 creates nothing in Azure.
 
 <PackMethods pack="synapse" />
+
+## Triggers a flow writes [#triggers]
+
+A flow of a `synapse-copy` table may write `ingest.triggers`, `ingest.parameters`
+and a table `ingest.filter`, as for
+[the ADF pack](/docs/reference/packs/adf#triggers); see
+[Run a flow on its own triggers](/docs/how-to/run-a-flow-on-its-own-triggers).
+The route reuses that output, under `workspace/<environment>/trigger/`, with the
+same names, parameters and Windows time zone. What differs:
+
+- The default trigger, the one a flow that writes none gets, is a schedule
+  trigger in UTC with the same frequency, interval and start, and passes no
+  parameters. The standard's `operations.triggers` judges it as a schedule.
+- Every pipeline has concurrency 1, so `operations.concurrency` does not apply.
+- The route copies full snapshots only. A trigger that sets `load: incremental`,
+  or a tumbling window on an incremental table, is a method check problem.
+- A new tumbling window that starts in the past is refused with
+  [`FIRST_WRITE`](/docs/reference/errors#FIRST_WRITE), unless it writes
+  `backfill: true`.
 
 ## Platform configuration
 
@@ -84,7 +104,7 @@ so its SQL is checked against those pages.
   view leaves out included, and table checks over the rows the view keeps. It
   returns one row per check, then raises an error for the first `fail` check
   that fails. It checks nothing unless something runs it after each landing;
-  see [Run and operate](/docs/platforms/synapse#operate). Table checks need
+  see [Run and operate](/docs/synapse/deploy#operate). Table checks need
   nothing turned on: the pack has no `checks` capability.
 - **Text comparisons** ignore spaces at the end of a value, as T-SQL does:
   `'GB '` equals `'GB'`. With the standard's `trim` first this makes no

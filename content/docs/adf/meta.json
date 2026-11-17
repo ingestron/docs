@@ -1,0 +1,5 @@
+{
+  "title": "Azure Data Factory",
+  "description": "A factory that copies sources into landing storage, deployed as an ARM template.",
+  "pages": ["(start)", "(guides)", "(standards)", "connectors", "(concepts)", "(reference)"]
+}

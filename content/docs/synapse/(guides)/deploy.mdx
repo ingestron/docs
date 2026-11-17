@@ -1,0 +1,110 @@
+---
+title: Deploy to Synapse
+description: What the workspace team creates first, publishing the workspace pipelines, running the views script for each environment by hand or from CI, and running the checks.
+---
+
+Ingestron writes the workspace artifacts and the views script, as
+[Azure Synapse](/docs/synapse#what-you-get) shows, and creates nothing in
+Synapse. This page deploys them, one environment at a time.
+
+## Before you deploy [#prerequisites]
+
+Ingestron creates nothing in Synapse. `ingestron request --env dev` lists what
+the team that owns the workspace creates first, with this project's names: the
+serverless database, the external data source with a managed-identity
+credential, the workspace's read access to the storage, and the database user
+each role is, with the permissions views over files need.
+
+<Request
+  name="synapse-views"
+  sections={["Synapse serverless database", "External data source", "Report users"]}
+/>
+
+Run the views with
+sqlcmd (Go), which signs in with Microsoft Entra ID; install it with
+`winget install sqlcmd` or `brew install sqlcmd`, or from its
+[releases](https://github.com/microsoft/go-sqlcmd/releases). See
+[Ask the platform team](/docs/synapse/ask-the-platform-team) for the whole
+request.
+
+## Deploy [#deploy]
+
+For `--via synapse`, review the native JSON under `workspace/<environment>/`:
+`dataset/`, `linkedService/`, `pipeline/` and `trigger/`. Deliver these through
+your existing Synapse workspace publishing process. The Azure integration
+runtime must already exist. The generated schedule triggers are stopped by
+default. Review `queries/<environment>/` as readable SQL companions; those files
+are outside the workspace artifact folders and are not workspace resources.
+Run the environment's serverless SQL wrapper separately when you approve it.
+
+A flow can write its own schedule and tumbling window triggers, which this
+route writes under `trigger/` too; it copies full snapshots only. See
+[Run a flow on its own triggers](/docs/synapse/run-a-flow-on-its-own-triggers#synapse).
+
+<OldAnchor id="generate-then-run-the-views" />
+
+Run `ingestron apply`, then run the environment's views script with sqlcmd
+(Go), from `build/synapse`, signed in with `az login`, here for `dev`:
+
+```sh
+cd build/synapse
+sqlcmd -S <workspace>-ondemand.sql.azuresynapse.net --authentication-method ActiveDirectoryDefault -i environments/dev.sql
+```
+
+Replace `<workspace>` with your Synapse workspace's name. Start sqlcmd in
+`build/synapse`: it reads `views.sql` from the folder it starts in, not from
+the script's folder. `views.sql` holds sqlcmd variables, so Synapse Studio,
+which has no SQLCMD mode, cannot run it. See
+[Authenticate with Microsoft Entra ID in sqlcmd](https://learn.microsoft.com/en-us/sql/tools/sqlcmd/sqlcmd-authentication)
+for the other ways to sign in (checked 5 November 2026).
+
+### From CI [#deploy-from-ci]
+
+GitHub's Ubuntu runners and Azure DevOps' Ubuntu agents have no sqlcmd, so
+each environment's stage installs sqlcmd (Go) at a pinned version, checked by
+its SHA-256, then runs the environment's script. From the GitHub Actions
+template:
+
+<Template
+  file="github-actions/deploy-environment.yml"
+  from='- name: "Synapse: install sqlcmd"'
+  to='-i "environments/$ENVIRONMENT.sql"'
+/>
+
+Do not pass `-X`, which stops sqlcmd reading environment variables, or `-x`,
+which stops it replacing variables.
+[Deploy through environments](/docs/synapse/deploy-through-environments) gives
+the whole pipeline, for GitHub Actions and Azure DevOps.
+
+## Run and operate [#operate]
+
+Loads need nothing more: the workspace pipelines replace the files on their schedule, and each query
+reads the files as they are then. Run the environment's script again whenever
+the definitions change, such as a new table or column. It creates or alters
+every view, so running it again is safe; it drops nothing, so a view for a
+table you removed stays until you drop it.
+
+When a table's layer checks its rows, `ingestron apply` also writes
+`checks.sql`, with `checks/<environment>.sql` for each environment. It counts
+every check's failing rows, returns one row per check, and raises an error
+when a `fail` check fails. A view reads the files each time it is queried, so
+nothing runs the checks by itself: run the script after each landing, from
+`build/synapse`, here for `dev`:
+
+```sh
+sqlcmd -S <workspace>-ondemand.sql.azuresynapse.net --authentication-method ActiveDirectoryDefault -i checks/dev.sql
+```
+
+or from a pipeline's Script activity, with each `$(…)` replaced by the
+environment's value, or as a step in CI. See
+[Check data quality](/docs/synapse/add-quality-checks#synapse).
+
+When a view fails to create or to read its files, see
+[Synapse serverless views](/docs/synapse/troubleshooting) in
+Troubleshooting.
+
+## Next
+
+- [Deploy through environments](/docs/synapse/deploy-through-environments): the same steps from GitHub Actions or Azure DevOps.
+- [Check data quality](/docs/synapse/add-quality-checks): what `checks.sql` counts.
+- [Ask the platform team](/docs/synapse/ask-the-platform-team): the whole request.

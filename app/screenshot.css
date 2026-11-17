@@ -51,12 +51,19 @@
   color: var(--shot-bar-text);
   pointer-events: none;
 }
-/* Never smaller than 80% of the capture (640 px of 800): the editor's 15 px
-   text then shows at 12 px. A narrower screen scrolls the image sideways. */
+/* An editor shot is captured 800 px wide at font 14. Framed at most 720 px
+   wide, its text is never larger than 12.6 px, the size of the site's code
+   blocks, however wide the column grows. */
+.screenshot:not(.screenshot-platform) {
+  max-width: 720px;
+}
+/* Never smaller than 80% of the capture (640 px of 800): the editor's text
+   then shows at 11.2 px. A narrower screen scrolls the image sideways. */
 .screenshot-scroll {
   overflow-x: auto;
 }
-.prose .screenshot img {
+.prose .screenshot img,
+.prose .screenshot video {
   display: block;
   width: 100%;
   max-width: none;
@@ -64,11 +71,11 @@
   height: auto;
   margin: 0;
 }
-.prose .screenshot img.screenshot-dark,
-.dark .prose .screenshot img.screenshot-light {
+.prose .screenshot .screenshot-dark,
+.dark .prose .screenshot .screenshot-light {
   display: none;
 }
-.dark .prose .screenshot img.screenshot-dark {
+.dark .prose .screenshot .screenshot-dark {
   display: block;
 }
 .screenshot figcaption {

@@ -1,0 +1,5 @@
+{
+  "title": "Azure Synapse",
+  "description": "Workspace pipelines that copy Azure SQL, and serverless SQL views over the files.",
+  "pages": ["(start)", "(guides)", "(standards)", "connectors", "(concepts)", "(reference)"]
+}
