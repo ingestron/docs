@@ -283,3 +283,60 @@ For code that calls the packages:
   `@ingestron/standards` 1.1.
 - `@ingestron/authoring` 2.4 adds `importSource`, `sourceRequest` and
   `sourceFileAt` to `ProjectSnapshot`, and `replaceFrom` to a `Suggestion`.
+
+## Ingestron 2.5 [#upgrade-to-2-5]
+
+2.5 lets a project start from the standard and the platform, before any
+source. For a project that changes nothing, the only difference in the files
+it generates is how the SQL is laid out. What you may notice:
+
+- **Start from the standard and the platform.**
+  `ingestron init <id> --platform <synapse|databricks|adf-landing|duckdb>`
+  creates a project with a standard and target settings and no source. `--standard <file>` uses your
+  team's standard, and `--kit <id@version> --empty` a published one without
+  its example. A new project imports only the files it has; the first
+  connection, flow or contract adds its folder. See
+  [Create a project](/docs/how-to/start-from-a-template).
+- **Values built from values.** A value may refer to another, such as
+  `${values.landing_catalog}`; see
+  [YAML references](/docs/concepts/yaml-references#project-values-and-environments).
+  A loop of references is
+  [`VALUE_CYCLE`](/docs/reference/errors#VALUE_CYCLE), which replaces
+  `VALUES_SELF_REFERENCE`.
+- **A flow's own triggers** on Azure Data Factory and Synapse:
+  `ingest.triggers` (schedules and tumbling windows) and `ingest.parameters`,
+  as the standard allows; see
+  [Run a flow on its own triggers](/docs/adf/run-a-flow-on-its-own-triggers).
+  A flow that writes none keeps its default trigger. Trigger time zones use
+  the Windows names from the Unicode CLDR.
+- **Synapse workspace pipelines** copy Azure SQL tables as full snapshots.
+- **Column types from the source metadata.** With Synapse as the standard's
+  first pack, `money` becomes `DECIMAL(19,4)` and `smallmoney`
+  `DECIMAL(10,4)`, and a contract drafted from the metadata keeps such a type
+  as `physicalType`; see [Column types](/docs/synapse#column-types). The
+  SQL Server recipe in `@ingestron/standards` 1.2 gives `money` and
+  `smallmoney` their precision and scale.
+- **Generated SQL** lists each column on its own line on Databricks and
+  DuckDB, and in Synapse's checks. The first `plan` after upgrading shows
+  those files as updated; what they do is unchanged.
+- **Databricks:** a project with no flow yet plans without a problem, and
+  `init --platform databricks` writes `workspace` under `databricks:`.
+- **VS Code 2.4:** **New project** asks where the project runs, which
+  standard and which assistant files; **Add connection** and **Add flow** are
+  in the Project view; each table has one **Generated files** lens, and
+  **Draft contract** beside it when the table has imported metadata; requests
+  open in named, read-only tabs. See [VS Code](/docs/tools/vscode).
+- **Known gap:** in an output folder with no earlier build, a Data Factory
+  tumbling-window trigger whose start is in the past is refused.
+
+For code that calls the packages:
+
+- `@ingestron/config` 1.8: `VALUE_CYCLE` replaces `VALUES_SELF_REFERENCE` in
+  `DiagnosticCode`.
+- `@ingestron/definitions` 1.15 adds a flow's `triggers` and `parameters`,
+  and a source table's `types`: the columns whose metadata type differs from
+  their logical type's.
+- `@ingestron/core` 1.3 adds the platform starters, and reads the recipe
+  catalogue from `@ingestron/standards` 1.2.
+- `@ingestron/authoring` 2.5 adds `replaceTo` to a `Suggestion`: completion
+  inside `${…}` replaces the whole name.
