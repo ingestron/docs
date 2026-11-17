@@ -144,6 +144,13 @@
   font-weight: 750;
   letter-spacing: -0.02em;
 }
+/* The combinations, under the platforms. */
+.hub-body > section > h3 {
+  margin: 2rem 0 0.3rem;
+  color: var(--docs-heading);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
 .hub-lead {
   margin: 0 0 1.25rem;
   color: var(--color-fd-muted-foreground);
@@ -259,4 +266,9 @@
 .prose .reader-path h3 {
   margin-top: 0;
   font-size: 1.1rem;
+}
+
+/* The platform cards, then everything else: a gap between the two groups. */
+.hub-body > section + section {
+  margin-top: 3rem;
 }

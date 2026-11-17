@@ -11,7 +11,7 @@ import { parse } from "yaml";
 import { recipesFolder } from "../lib/recipes";
 import { cli, commands, fences, read, section } from "./pages.js";
 
-const page = read("how-to/describe-a-source.mdx");
+const page = read("shared/describe-a-source.mdx");
 const part = (heading: string) => section(page, heading);
 const lines = commands(page);
 

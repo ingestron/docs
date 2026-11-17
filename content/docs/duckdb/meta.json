@@ -1,0 +1,5 @@
+{
+  "title": "DuckDB",
+  "description": "Tables built from files on one machine, with SQL you can read.",
+  "pages": ["(start)", "(guides)", "(standards)", "(concepts)", "(reference)"]
+}

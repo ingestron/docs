@@ -8,10 +8,9 @@ description: Describe ingestion in YAML your team reviews, and get the Databrick
 <Paths>
   <Path reader="Data engineers" title="Run a project on your laptop, no cloud needed">
     Create the DuckDB starter, generate its SQL and query the tables DuckDB
-    builds from it. [Run it on your laptop](#run-it-on-your-laptop) shows every
-    command.
+    builds from it, with no cloud account and no source.
 
-    [Run your first project on your laptop](/docs/start/first-project)
+    [Run your first project on your laptop](/docs/duckdb/first-project)
 
   </Path>
   <Path reader="Platform teams" title="Make every project follow your rules">
@@ -25,7 +24,7 @@ description: Describe ingestion in YAML your team reviews, and get the Databrick
   </Path>
 </Paths>
 
-Comparing routes first? Read [Choose where your data goes](/docs/start/choose-a-route).
+Not sure where your data should run? [Compare the platforms](/docs/concepts/choose-a-platform); each has its own docs.
 
 ## What Ingestron does
 
@@ -36,140 +35,6 @@ YAML your team reviews. Ingestron applies your organisation's standard and
 writes ordinary platform files, and you deploy them with your platform's own
 tools. Each platform's files come from a pack, the part of Ingestron that
 knows that platform; the packs come inside the command. Nothing in the
-generated files calls Ingestron; the one optional route that runs something
-Ingestron publishes is [named below](#no-dependency-once-its-deployed).
-
-## Run it on your laptop
-
-You need Node.js 22.13 or later and the
-[DuckDB command line](https://duckdb.org/docs/installation/); no cloud account
-and no source. Install Ingestron, then run these in a folder where you can
-create a new one:
-
-```sh
-npm install -g ingestron
-ingestron init shop --template duckdb --yes
-cd shop
-ingestron plan
-ingestron apply
-duckdb -bail ingestron.duckdb -c ".read build/duckdb/dev/run.sql"
-duckdb ingestron.duckdb -c "SELECT * FROM silver.customer_totals ORDER BY customer"
-```
-
-The last command shows a table that DuckDB built from sample orders, with SQL
-that Ingestron generated:
-
-```text
-┌──────────┬────────┬────────┐
-│ customer │ orders │ total  │
-│ varchar  │ int64  │ double │
-├──────────┼────────┼────────┤
-│ Ana      │      2 │  65.75 │
-│ Ben      │      2 │   42.0 │
-│ Chen     │      1 │   8.75 │
-└──────────┴────────┴────────┘
-```
-
-[Run your first project on your laptop](/docs/start/first-project) explains
-each step and each file, then changes the project and breaks it on purpose.
-
-## What you get
-
-### The same files you would write
-
-This is the starter's transform as Ingestron writes it for DuckDB: your SQL,
-with each column cast to the type its contract gives.
-
-<Example name="duckdb" file="build/duckdb/dev/tables/silver.customer_totals.sql" />
-
-The Databricks pack writes the `quality` example's readings table as a
-streaming table in a Databricks pipeline, typed from its contract and checked
-by the rules its contract, its flow and the standard set:
-
-<Example name="quality" file="build/databricks/src/iot/bronze/readings.sql" />
-
-The bundle around it is YAML, Azure Data Factory gets pipeline JSON, and
-Synapse gets view SQL. [How Ingestron works](/docs/start/how-it-works) follows
-a project from the YAML to the platform.
-
-### One build for every environment
-
-Each platform gets one set of files for every environment, laid out the way
-your platform's CI/CD expects: a Databricks bundle with a target per
-environment, a Data Factory factory with a parameter file per environment, and
-one Synapse script with each environment's values. Only what differs between
-environments varies, so a reviewer sees exactly what changes between dev and
-prod, and prod deploys the files that test ran.
-[Deploy through environments](/docs/how-to/deploy-through-environments) gives
-the GitHub Actions and Azure DevOps pipelines.
-
-### No dependency once it's deployed
-
-The generated files need only your platform, so if you stop using Ingestron,
-they still deploy and run, and you edit them yourself from then on. One
-optional route uses something Ingestron publishes:
-DuckDB in Azure runs in a public container image, which you can copy to your
-own registry. [Nothing of Ingestron at run time](/docs/concepts/generated-files#nothing-of-ingestron-at-run-time)
-says what in the files names Ingestron, and what to do with it if you stop.
-
-### Your standards on every project
-
-The platform team writes one standard: the packs, names, layers, types,
-default settings, settings no project may change, and what every data product
-must declare. VS Code marks a break as you type, `ingestron plan` reports
-every one, and `ingestron check` fails the CI build. See
-[Set your organisation's standard](/docs/how-to/configure-a-standard). Or
-start from a [published standard](/docs/how-to/choose-a-published-standard):
-one written for your platform, checked against its documentation and dated.
-
-### Contracts only where you promise something
-
-Ingestron never connects to your sources. It writes a request saying what to
-run or export at each one, and reads the names and types of the columns from
-the file that comes back, never the rows. A table that copies a source as it
-is takes its columns from there, so only the tables your team makes promises
-about, such as who may read them,
-[need a contract](/docs/how-to/describe-a-source#needs-a-contract), and
-Ingestron drafts those. A change at the source
-shows up in the plan before it breaks a load. See
-[Describe a source](/docs/how-to/describe-a-source).
-
-### Reuse your team's work
-
-Start a project from a template your team keeps in Git with
-`ingestron init <name> --template <git url>`, and take the standard from a shared
-repository with `--standard`. A template is a project folder and a standard is
-one YAML file, so you can keep them in any Git repository your team, or anyone
-else, can clone. The packs are open source under Apache-2.0. See
-[Share templates and standards](/docs/how-to/share-a-template).
-
-### A guide for your coding assistant
-
-`ingestron init --assistant` writes `AGENTS.md`, which tells the coding
-assistant you use how to work in the project: change the definitions and
-never the generated files, show you the plan before applying, and stay
-inside the standard. `plan` and `apply` keep it current as the project
-changes. See [Work with an AI assistant](/docs/tools/assistants).
-
-## Where your data can go
-
-Ingestron generates for these routes today. The first is the starter above and
-needs no cloud; `ingestron init` offers each of the others with `--via`:
-
-<RouteTable />
-
-[Choose where your data goes](/docs/start/choose-a-route) says when to choose
-each one and what runs after each load.
-
-## What Ingestron does not do
-
-- It doesn't connect to your sources or your cloud. Its only network calls
-  use your own `git`: to fetch a template, a standard or a published standard
-  from a Git URL you give it, or a published standard that is not installed,
-  and to list the published standards' versions.
-- It doesn't deploy anything. Your platform's tools do, from your CI/CD
-  pipeline.
-- It doesn't read secret values. A `${secret:…}` reference carries only the
-  secret's name.
-- It doesn't send telemetry, from the command line or from VS Code.
-- It doesn't overwrite a file someone edited. It reports a conflict instead.
+generated files calls Ingestron, with one optional exception: DuckDB in Azure runs in a public container image, which you can copy to your own registry.
+[Nothing of Ingestron at run time](/docs/concepts/generated-files#nothing-of-ingestron-at-run-time)
+says what to do with it if you stop.

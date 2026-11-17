@@ -1,0 +1,143 @@
+An environment gives the same project another set of values, such as `dev`,
+`test` and `prod`. It does not change the tools or create anything in the
+cloud. Every environment is generated together, into one set of files per
+platform that a deployment pipeline promotes from one environment to the next.
+
+## Values that differ
+
+Put shared values in `project.yaml` and override only the values that differ
+under each environment. Mappings merge by key; scalar values and lists replace
+the earlier value.
+
+<Only on="databricks">
+
+<Example name="environments" file="project.yaml" />
+
+This example uses workspace and catalog values. The same mechanism works for
+connector endpoints, landing paths and names.
+
+</Only>
+
+<Only on="synapse">
+
+<Example name="synapse-pipelines" file="project.yaml" />
+
+This example gives `prod` its own landing folder, storage and Key Vault. The
+same mechanism works for connector endpoints and names.
+
+</Only>
+
+<Only on="adf">
+
+<Example name="landing-only" file="project.yaml" />
+
+This example gives `prod` its own landing folder and Key Vault. The same
+mechanism works for connector endpoints and names.
+
+</Only>
+
+<Only on="duckdb">
+
+<Example name="duckdb-environments" file="project.yaml" />
+
+This example gives each environment its own folder for the published tables.
+The same mechanism works for the folders the flows read and for names.
+
+</Only>
+
+Read the selected values with `${values.…}` and the environment name with
+`${environment.name}`. The [YAML syntax guide](/docs/concepts/yaml-references)
+explains types, references and file includes.
+
+## Shared platform configuration
+
+The optional `Platform` document holds shared operational and infrastructure
+configuration. Use `settings.<method>` for method-specific infrastructure;
+put access settings in the Connection and table-specific reading choices in
+the Flow. The [settings precedence](/docs/concepts/settings) determines overrides.
+
+<Only on="databricks">
+
+<Example name="retail-filled" file="platform.yaml" />
+
+This example tags every resource, schedules the refresh, says who is told when
+it fails, and gives the workspace, identity and permissions under
+`databricks:`.
+
+</Only>
+
+<Only on="synapse">
+
+<Example name="synapse-pipelines" file="platform.yaml" />
+
+This example supplies the landing storage, Key Vault and runtime for the
+workspace pipelines' method, and the data source for the views' method.
+
+</Only>
+
+<Only on="adf">
+
+<Example name="landing-only" file="platform.yaml" />
+
+This example supplies the landing storage, Key Vault and runtime for the copy
+method.
+
+</Only>
+
+<Only on="duckdb">
+
+<Example name="duckdb-environments" file="platform.yaml" />
+
+This example supplies the folder each environment publishes its tables to.
+
+</Only>
+
+The method reference says which fields each method reads and what must already
+exist before deployment.
+
+`schedule`, `tags` and `alerts` sit at the top of the platform, for every
+pack that runs jobs: when they run, how they are tagged, and who is told when
+a run fails. What only one platform reads goes in that pack's own section,
+under its id.<Only on="databricks"> The workspace, identity, compute,
+permissions and `manage` switches are under `databricks:`; see
+[the `databricks:` section](/docs/reference/packs/databricks#platform).</Only><Only on="synapse">
+The grants switch is under `synapse:`; see
+[Grant access](/docs/synapse/grant-access).</Only> A section for a pack the
+standard does not name is
+[`UNKNOWN_PACK`](/docs/reference/errors#UNKNOWN_PACK).<Only on="adf"> The
+factory's runtime and Key Vault are method settings; see
+[Runtime and Key Vault](/docs/adf#runtime-and-key-vault).</Only> The platform's `accept` list holds the warnings the platform
+team has decided to live with, each with its reason; see
+[Accept a warning](/docs/~/accept-a-warning). Its `principals` say which
+user, group or service principal each contract role is, often per environment
+through a value; see
+[Grant access, mask columns and filter rows](/docs/~/grant-access#roles).
+
+## One set of files for every environment [#one-set-of-files]
+
+<OldAnchor id="separate-generated-output" />
+
+Ingestron fills in each environment's values when it generates, then writes
+each platform's files once for every environment: a value that differs between
+environments becomes a parameter<Only on="databricks"> of the bundle</Only><Only on="adf">
+of the factory</Only><Only on="synapse"> of the views script</Only><Only on="duckdb">
+in the environment's own folder</Only>, set for each environment, and
+everything else is written once. So
+environments may differ only in values; a table or resource present in some
+environments only is
+[`ENVIRONMENTS_DIFFER`](/docs/reference/errors#ENVIRONMENTS_DIFFER).
+[Generated files and ownership](/docs/concepts/generated-files#where-the-files-go)
+shows where each platform's files go.
+
+Some values are not known until deployment, such as a storage account each
+stage of your pipeline supplies. Write them as `${envvar:NAME}`:<Only on="synapse databricks adf">
+they become values the deploying pipeline supplies, not values read when
+generating</Only><Only on="duckdb"> DuckDB reads them when generating, from
+the environment or `.env` files</Only>; see
+[Read an environment variable](/docs/concepts/yaml-references#read-an-environment-variable).
+Generating never reads a secret or tests the deployed infrastructure.
+
+Use [Add an environment](/docs/~/add-an-environment) to create another
+environment and compare the resolved choices, and
+[Deploy through environments](/docs/~/deploy-through-environments) to
+deploy them in turn.

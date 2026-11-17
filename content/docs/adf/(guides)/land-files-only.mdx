@@ -1,0 +1,169 @@
+---
+title: Land files only
+description: Use ADF alone to land one file per table that reports read directly, with no store step.
+---
+
+When reports read the files ADF lands, for example Power BI reading Parquet
+files from storage, ADF can be the whole project. Each flow ends at the files
+ADF lands, and nothing loads them into tables.
+
+<RouteFacts id="adf-landing" />
+
+## What Ingestron writes [#what-you-get]
+
+The ADF pack writes one factory for every environment, as on
+[Azure Data Factory](/docs/adf#what-you-get): linked services for the
+source, the Key Vault and the landing storage, a dataset for each side of the
+copy, a pipeline, its trigger and the integration runtime, with a parameter
+file for each environment.
+
+<BuildTree name="landing-only" folder="build/adf" />
+
+Each Copy activity writes its table to a fixed folder and file, so a report
+can read the same path after every load:
+
+<Example
+  name="landing-only"
+  file="build/adf/factory/pipeline/pl_sales_erp.json"
+  pick="properties.activities[0].outputs"
+/>
+
+The trigger runs the pipeline once a day. It is stopped outside production, so
+`prod`'s parameter file starts it:
+
+<Example name="landing-only" file="build/adf/factory/trigger/tr_sales_erp.json" />
+
+<Example name="landing-only" file="build/adf/parameters/prod.json" />
+
+## What it looks like in the Azure portal [#on-the-platform]
+
+<Screenshot
+  src="/images/platforms/landing-only/storage-01-landing-folders.png"
+  label="Azure portal"
+  checked="2026-11-02"
+  alt="A storage folder with a folder per table: northwind.dbo.Customers, northwind.dbo.Order Details, northwind.dbo.Orders and northwind.dbo.Products."
+  caption="The demo's Northwind project in the storage browser: landing/northwind holds a folder per copied table."
+/>
+
+## Create it [#create-it]
+
+<ToolSteps>
+<Tool name="CLI">
+
+From a parent folder:
+
+```sh
+ingestron init sales --connector sqlserver --via adf-landing --yes
+cd sales
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: New project**, choose **Azure Data Factory**, which copies
+source tables into landing storage, then **A new standard for Azure Data
+Factory** and the folder. The project starts with no source: in the Project
+panel, use **Add connection** for the SQL Server, then **Add flow** for its
+tables, as [Create a project](/docs/~/create-a-project#add-a-connection-and-flow) shows.
+
+</Tool>
+</ToolSteps>
+
+`init` writes `REPLACE_ME`, with a comment, for each value it cannot know,
+such as the server, the tables and the storage account, and `README.md` lists
+them; see [Write the values it cannot know](/docs/adf/create-a-project#write-the-values).
+For another source, choose it from the [connector catalogue](/docs/~/connectors);
+its page lists the routes it supports. The files on this page come from a
+finished project, which you can download:
+
+<ExampleDownload name="landing-only" />
+
+The standard names only the ADF pack, and ends every flow at the landed files:
+
+<Example name="landing-only" file="standard.yaml" />
+
+## Settings that shape it [#settings]
+
+<OldAnchor id="end-flows-at-the-landed-files" />
+
+`store: { default: none }` ends every flow at the landed files. To end one flow
+there, write `store: { uses: none }` in that flow. When nothing chooses a store,
+`ingestron plan` reports it, and the editor offers both changes as fixes. The
+runtime, Key Vault, landing storage and schedule are set as on
+[Azure Data Factory](/docs/adf#runtime-and-key-vault).
+
+### Choose how the files are laid out
+
+Set the layout in the standard, under the method's settings, with `layout` or
+a `path` of your own:
+
+<SettingsSections pack="adf" method="adf-copy" include={["layout", "path"]} level={4} />
+
+Reports that read the current data need `snapshot`: the file's path never
+changes, so a report keeps working after each load.
+
+<Screenshot
+  src="/images/platforms/landing-only/storage-02-customers-file.png"
+  label="Azure portal"
+  checked="2026-11-02"
+  alt="The northwind.dbo.Customers folder holds one file, northwind.dbo.Customers.parquet."
+  caption="With layout: snapshot, the demo's landing/northwind/northwind.dbo.Customers folder holds one file, which each load replaces."
+/>
+
+Ingestron refuses a layout that would lose rows: loads holding only their
+window, written to a file the next load replaces.
+
+## Before you deploy [#prerequisites]
+
+The runtime, the Key Vault and the landing storage must exist before the
+pipeline can run. `ingestron request --env dev` lists them with this project's
+values, and what a deployment does to the runtime:
+
+<Request name="landing-only" sections={["ADF prerequisites"]} />
+
+See [Ask the platform team](/docs/adf/ask-the-platform-team) for the whole
+request.
+
+## Deploy [#deploy]
+
+<OldAnchor id="generate-and-publish" />
+
+Run `ingestron apply`, then build the ARM template from `build/adf/factory` and
+deploy it with each environment's parameter file, as
+[Azure Data Factory](/docs/adf/deploy#deploy) shows, by hand or
+[from CI](/docs/adf/deploy#deploy-from-ci).
+
+## Run and operate [#operate]
+
+Once deployed, the trigger copies every table each window, and each load
+replaces its file. Outside production the trigger is stopped, as the
+[platform defaults](/docs/reference/packs/adf#platform-configuration) say:
+start it in Data Factory, or set `paused: false` for the copy method in the
+platform, when you want the copies to run there. Point reports at the snapshot paths, such as
+`<landing>/erp.dbo.Customers/erp.dbo.Customers.parquet`.
+
+When a copy fails or a trigger does not run, see
+[Azure Data Factory](/docs/adf/troubleshooting) in
+Troubleshooting.
+
+## Limits [#limits]
+
+<OldAnchor id="what-is-not-checked" />
+
+- **No rows are checked or cleansed.** Nothing reads the files before your
+  reports do, so each contract quality rule and flow expectation on these
+  tables is [not applied here](/docs/~/not-applied)
+  ([`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED)), with the hint to add a
+  store step, and so is any cleansing; see
+  [Check data quality](/docs/~/add-quality-checks).
+- **No transforms.** A transform cannot read a table that ends at the landed
+  files: give its flow a store step first.
+
+## Next
+
+- [Run a flow on its own triggers](/docs/adf/run-a-flow-on-its-own-triggers):
+  land a fresh snapshot each hour, and reload on Sundays.
+- [Define a data product](/docs/adf/define-a-data-product): describe the
+  files reports read, for the people who read them.
+- [Check generated files in CI](/docs/adf/check-in-ci): fail a pull request
+  whose factory files are out of date.

@@ -1,0 +1,130 @@
+---
+title: DuckDB
+description: Build tables with DuckDB from files on one machine, and publish each one as Parquet.
+---
+
+DuckDB runs SQL on one machine, with nothing to set up but its command line.
+The DuckDB pack loads files into tables in a local database, runs transforms,
+and publishes each table as Parquet that Power BI and other tools read as
+files.
+
+<RouteFacts id="duckdb" />
+
+To try it, follow [Run your first project on your laptop](/docs/duckdb/first-project).
+
+## What Ingestron writes [#what-you-get]
+
+For each environment it runs, the DuckDB pack writes a folder under
+`build/duckdb/` with `run.sql`, every table in order, `tables/`, each table's
+SQL alone, and a `README.md` that says how to run them. For the **DuckDB on a
+laptop** starter, whose one environment is `dev`:
+
+<BuildTree name="duckdb" folder="build/duckdb" />
+
+Each table's SQL loads its files, casts each column to the contract's type and
+publishes the table as `<schema>.<table>.parquet`:
+
+<Example name="duckdb" file="build/duckdb/dev/tables/bronze.orders.sql" />
+
+## What it looks like in DuckDB [#on-the-platform]
+
+After a run, the tables are in `ingestron.duckdb` in the project folder, and
+their Parquet files in `published/`. From the starter's folder:
+
+```sh
+duckdb ingestron.duckdb -c "SELECT 'bronze.orders' AS name, count(*) AS row_count FROM bronze.orders UNION ALL SELECT 'silver.customer_totals', count(*) FROM silver.customer_totals ORDER BY name"
+```
+
+```text
+┌────────────────────────┬───────────┐
+│          name          │ row_count │
+│        varchar         │   int64   │
+├────────────────────────┼───────────┤
+│ bronze.orders          │         5 │
+│ silver.customer_totals │         3 │
+└────────────────────────┴───────────┘
+```
+
+## Create it [#create-it]
+
+<ToolSteps>
+<Tool name="CLI">
+
+From a parent folder:
+
+```sh
+ingestron init shop --template duckdb --yes
+cd shop
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: New project**, choose the **DuckDB on a laptop** starter,
+then the folder.
+
+</Tool>
+</ToolSteps>
+
+[Run your first project on your laptop](/docs/~/first-project) walks
+through it: it generates the SQL, builds the tables and explains each of the
+project's files. You can also <ExampleDownload name="duckdb" /> and unzip it.
+
+The standard names the DuckDB pack and the files' format:
+
+<Example name="duckdb" file="standard.yaml" />
+
+## Settings that shape it [#settings]
+
+<OldAnchor id="read-files-where-they-are" />
+
+`duckdb-files` reads a files connection's `path` and each table's `object`, a
+file or a pattern. Name the format in the standard; CSV files have a header row
+and commas unless `csv` says otherwise:
+
+<SettingsSections pack="duckdb" method="duckdb-files" include={["format", "csv"]} />
+
+A CSV without a header (`csv.header: false`) binds its columns in the
+contract's order, so the file's columns must be in that order. With a header,
+columns are matched by name.
+
+`duckdb-table` keeps each table by `mode`: `replace`, `append` or `upsert`;
+see [Keep a table current](/docs/duckdb/keep-a-table-current#on-duckdb).
+The `published` folder comes from the platform and must exist. What a cast to
+the contract's type can change is in
+[What each engine makes of it](/docs/duckdb/write-a-transform#what-each-engine-makes-of-it).
+Every method and setting is in the
+[DuckDB pack reference](/docs/reference/packs/duckdb).
+
+## Run and operate [#operate]
+
+Run `run.sql` from the project folder, as the generated `README.md` says:
+
+```sh
+duckdb -bail ingestron.duckdb -c ".read build/duckdb/dev/run.sql"
+```
+
+`-bail` stops at the first error, so a run that fails while building
+publishes nothing. Running again is safe: it rebuilds the tables and replaces
+their files. Keep `ingestron.duckdb` and `published/*.parquet` out of version
+control: they are data, built from the files. When a run fails, see [Troubleshooting](/docs/duckdb/troubleshooting).
+
+## Limits [#limits]
+
+<OldAnchor id="what-a-local-run-cannot-catch" />
+
+- **Rows are checked only where a layer says so.** DuckDB checks rows only in
+  a layer whose `does` lists `check`, and counts them in a `raw` one. In any
+  other layer a flow's `expectations` are an error, and each contract rule is
+  [not applied here](/docs/~/not-applied); see
+  [Check data quality](/docs/duckdb/add-quality-checks#duckdb). Table checks
+  need nothing turned on in the platform.
+
+## Next
+
+- [Keep a table current](/docs/duckdb/keep-a-table-current): keep the current
+  row per key from files of changed rows.
+- [Write a transform](/docs/duckdb/write-a-transform): build a table from
+  others with SQL.
+- [Cleanse data in the right layer](/docs/duckdb/cleanse-data): trim, map and
+  default columns without SQL, in the layer that cleanses.

@@ -1,0 +1,498 @@
+A project is a folder of YAML definitions with a `project.yaml` at its root.
+Start with the standard and target platform, then add the sources and flows that
+belong to your team. A connection describes a source; a flow chooses what to read
+from it. Several flows can use the same connection.
+
+## Start with the standard and target
+
+<ToolSteps>
+<Tool name="VS Code">
+
+Run **Ingestron: New project**. It asks three questions:
+
+1. **Where will this project run?** Choose
+   **<Only on="synapse">Azure Synapse</Only><Only on="databricks">Databricks</Only><Only on="adf">Azure Data Factory</Only><Only on="duckdb">DuckDB</Only>**.
+2. **Which standard should it follow?** A new standard for it (recommended),
+   a published standard for it, or **Your team's standard file**, which keeps
+   your organisation's `standard.yaml`.
+3. Which assistant files to write, optional: the files for the coding
+   assistants you use, or none; see
+   [Add a guide for coding assistants](#project-guide).
+
+Then choose the project folder and **Create the project here**: the folder's
+name becomes the project's id. Cancelling a choice writes nothing.
+
+The new `README.md` opens with a setup checklist. Review `standard.yaml`,
+`platform.yaml` and each environment in `project.yaml` before adding a source.
+Target values Ingestron cannot know are `REPLACE_ME`. Fixed standard settings
+remain owned by the standard. No connection, flow or sample dataset is required
+at this stage.
+
+<Only on="databricks">
+
+<Clip
+  light="/images/vscode/new-project-databricks-light.mp4"
+  dark="/images/vscode/new-project-databricks-dark.mp4"
+  alt="Ingestron: New project. Where will this project run?, filtered to Databricks, which is chosen; then A new standard for Databricks; then the optional assistant files, with nothing ticked; then the folder shop and Create the project here. README.md opens in its preview: shop, Databricks, Direct ingestion and managed tables, and Set up this project: review standard.yaml, platform.yaml and project.yaml, then Add connection, then Add flow."
+  caption="New project for Databricks: the platform, a new standard, no assistant files, then the folder. The README opens with the steps to set the project up."
+/>
+
+</Only>
+
+<Only on="synapse">
+
+<Clip
+  light="/images/vscode/new-project-synapse-light.mp4"
+  dark="/images/vscode/new-project-synapse-dark.mp4"
+  alt="Ingestron: New project. Where will this project run?, filtered to Azure Synapse, which is chosen; then A new standard for Azure Synapse; then the optional assistant files, with nothing ticked; then the folder shop and Create the project here. README.md opens in its preview: shop, Azure Synapse, Workspace pipelines and serverless SQL views, and Set up this project: review standard.yaml, platform.yaml and project.yaml, then Add connection, then Add flow."
+  caption="New project for Azure Synapse: the platform, a new standard, no assistant files, then the folder. The README opens with the steps to set the project up."
+/>
+
+</Only>
+
+<Only on="adf">
+
+<Clip
+  light="/images/vscode/new-project-adf-light.mp4"
+  dark="/images/vscode/new-project-adf-dark.mp4"
+  alt="Ingestron: New project. Where will this project run?, filtered to Azure Data Factory, which is chosen; then A new standard for Azure Data Factory; then the optional assistant files, with nothing ticked; then the folder shop and Create the project here. README.md opens in its preview: shop, Azure Data Factory, Copy source tables into landing storage, and Set up this project: review standard.yaml, platform.yaml and project.yaml, then Add connection, then Add flow."
+  caption="New project for Azure Data Factory: the platform, a new standard, no assistant files, then the folder. The README opens with the steps to set the project up."
+/>
+
+</Only>
+
+<Only on="duckdb">
+
+<Clip
+  light="/images/vscode/new-project-duckdb-light.mp4"
+  dark="/images/vscode/new-project-duckdb-dark.mp4"
+  alt="Ingestron: New project. Where will this project run?, filtered to DuckDB, which is chosen; then A new standard for DuckDB; then the optional assistant files, with nothing ticked; then the folder shop and Create the project here. README.md opens in its preview: shop, DuckDB, Local tables and Parquet files, and Set up this project: review standard.yaml, platform.yaml and project.yaml, then Add connection, then Add flow."
+  caption="New project for DuckDB: the platform, a new standard, no assistant files, then the folder. The README opens with the steps to set the project up."
+/>
+
+</Only>
+
+</Tool>
+<Tool name="CLI">
+
+<Only on="synapse">
+
+```sh
+ingestron init sales --platform synapse --yes
+ingestron init sales --platform synapse --standard ../platform/standard.yaml --yes
+```
+
+</Only>
+
+<Only on="databricks">
+
+```sh
+ingestron init sales --platform databricks --yes
+ingestron init sales --platform databricks --standard ../platform/standard.yaml --yes
+```
+
+</Only>
+
+<Only on="adf">
+
+```sh
+ingestron init sales --platform adf-landing --yes
+ingestron init sales --platform adf-landing --standard ../platform/standard.yaml --yes
+```
+
+</Only>
+
+<Only on="duckdb">
+
+```sh
+ingestron init sales --platform duckdb --yes
+ingestron init sales --platform duckdb --standard ../platform/standard.yaml --yes
+```
+
+</Only>
+
+Run one of these from the parent folder. The first creates a new standard
+for the platform; the second keeps the supplied standard's content. Use
+repeated `--env` flags to choose environments. For a published standard
+without its worked example, use `--kit <id@version> --empty`.
+
+A new project's `imports` list only the files it has, such as `standard.yaml`
+and `platform.yaml`. The first connection, flow or contract you add puts its
+folder in `imports`, such as `connections/*.yaml`, and says so:
+
+```text
+Added connections/northwind.yaml; project.yaml now imports connections/*.yaml. Review the definition, then run plan. No source access or deployment occurred.
+```
+
+When the folder already holds other YAML files, it adds the new file's own
+path instead, so those files stay out of the project.
+
+</Tool>
+</ToolSteps>
+
+## Add a connection and flow
+
+<ToolSteps>
+<Tool name="VS Code">
+
+1. Run **Ingestron: Add connection**, or choose **Add connection** in the Project
+   panel. Select a supported connector and reachability, name the connection,
+   then answer each setting it asks for; `connections/<name>.yaml` opens with
+   your answers. Secret prompts accept named `${secret:NAME}` references, and a
+   value you leave out stays `REPLACE_ME`.
+2. Request or import source metadata. A connection can exist without a flow.
+3. Run **Ingestron: Add flow**. Choose the connection, select imported source
+   objects and name the flow; it suggests the connection's name. Without a
+   catalogue you can enter an object name, then add metadata or a contract.
+   The new flow opens in `flows/`. Methods come from the project's standard
+   packs and supported connector/reachability combinations.
+4. Review the YAML with completions, hovers and Reference. Run Plan and inspect the
+   generated files, then use local Apply and Check.
+
+<Only on="databricks">
+
+<Clip
+  light="/images/vscode/add-source-databricks-light.mp4"
+  dark="/images/vscode/add-source-databricks-dark.mp4"
+  alt="In the Project panel, Add connection: the connector SQL Server, reachable publicly, named sales, with the Unity Catalog connection sales_uc; connections/sales.yaml opens. Then Add flow: the connection sales, the object sales.dbo.orders, and the flow id changed from the suggested sales to orders. flows/orders.yaml opens: source sales, ingest uses lakeflow-connect, and the table orders with object sales.dbo.orders, which has one problem until the source is described."
+  caption="Add connection, then Add flow, from the Project panel. The flow's one problem goes once the source is described: see Describe a source."
+/>
+
+</Only>
+
+<Only on="synapse">
+
+<Clip
+  light="/images/vscode/add-source-synapse-light.mp4"
+  dark="/images/vscode/add-source-synapse-dark.mp4"
+  alt="In the Project panel, Add connection: the connector Azure SQL Database, reachable publicly, named sales; the server and user stay REPLACE_ME and the password is the secret reference sales-password; connections/sales.yaml opens. Then Add flow: the connection sales, the object sales.dbo.orders, and the flow id changed from the suggested sales to orders. flows/orders.yaml opens: source sales, ingest uses synapse-copy, and the table orders with object sales.dbo.orders, which has one problem until the source is described."
+  caption="Add connection, then Add flow, from the Project panel. The flow's one problem goes once the source is described: see Describe a source."
+/>
+
+</Only>
+
+<Only on="adf">
+
+<Clip
+  light="/images/vscode/add-source-adf-light.mp4"
+  dark="/images/vscode/add-source-adf-dark.mp4"
+  alt="Add connection, its connector list filtered to SQL Server: reachable privately, named sales; the server and user stay REPLACE_ME; connections/sales.yaml opens. Then Add flow: the connection sales, the object sales.dbo.orders, and the flow id changed from the suggested sales to orders. flows/orders.yaml opens: source sales, ingest uses adf-copy, and the table orders with object sales.dbo.orders, which has one problem until the source is described."
+  caption="Add connection, then Add flow, from the Project panel. The flow's one problem goes once the source is described: see Describe a source."
+/>
+
+</Only>
+
+</Tool>
+<Tool name="CLI">
+
+From the project folder:
+
+```sh
+ingestron connection add northwind --connector azure-sql-database --connectivity public
+ingestron source request --connection northwind
+ingestron flow add orders --connection northwind --object 'northwind.dbo.Orders'
+ingestron plan
+```
+
+Configure the connection settings before requesting metadata. `connection add`
+accepts repeated `--set <setting>=<value>` flags. If several ingestion methods
+match, `connection add` and `flow add` require `--method <id>`. Existing files and ids are refused.
+Plan performs the full contract and settings
+validation. These commands do not connect to the source, deploy or run assets.
+
+</Tool>
+</ToolSteps>
+
+To try a complete worked project first, choose **Try a sample project**; see
+[Start from a starter](#start-from-a-starter). See also
+[Compare the platforms](/docs/concepts/choose-a-platform) and
+[Install the command and the extension](/docs/~/install).
+
+## Start from a connection
+
+In a terminal, you can also start from the source: Ingestron offers only the
+routes the source supports, for how it can be reached;
+[Compare the platforms](/docs/concepts/choose-a-platform) shows the platform
+combinations for each source. In VS Code, choose the platform first, then
+**Add connection**: it lists only what that platform supports.
+
+From the parent folder where you want the project, run:
+
+```sh
+ingestron init sales
+```
+
+Choose the source category, connector, network reachability and route.
+When only one route is supported, Ingestron selects it. In a terminal it then
+asks, last, which assistant files to write; press Enter for none, as
+[the project guide](#project-guide) below explains. Nothing else is asked: the
+project's id is the folder's name, its environments are `dev` and `prod`, and
+its standard is the route's own.
+
+To choose them with flags, as a script would:
+
+<Only on="synapse">
+
+`--via` is `synapse`, the workspace pipelines:
+
+```sh
+ingestron init sales --connector azure-sql-database --connectivity public --via synapse --yes
+```
+
+</Only>
+
+<Only on="databricks">
+
+`--via` is `databricks`, Databricks reading the source itself:
+
+```sh
+ingestron init sales --connector sqlserver --connectivity public --via databricks --yes
+```
+
+</Only>
+
+<Only on="adf">
+
+`--via` is `adf-landing`:
+
+```sh
+ingestron init sales --connector postgresql --connectivity private --via adf-landing --yes
+```
+
+</Only>
+
+<Only on="duckdb">
+
+DuckDB on its own reads files in the project, not a source, so it offers no
+route from a connection. To load a database into DuckDB tables, choose a
+combination under **Combined** in the platform picker.
+
+</Only>
+
+`--yes` takes the default of each choice not given as a flag. `--env` gives
+other environments, `--name` another id, and
+`--standard ../platform/standard.yaml` your organisation's standard, or
+`--kit` a [published one](/docs/~/start-from-a-published-standard#with-a-connection).
+
+The project holds the connection, its example flows and contracts, and the
+platform settings the route needs. What Ingestron cannot know, such as the
+source's server, the tables to copy, the storage account or the integration
+runtime, is written as `REPLACE_ME`, with a comment above it saying what it
+is; see [Write the values it cannot know](#write-the-values).
+
+## Start from a starter [#start-from-a-starter]
+
+A starter is a complete project, often with several tables and a transform.
+[Starters and templates](/docs/reference/templates#built-in-templates) lists the starters
+and what each sets up.
+
+<ToolSteps>
+<Tool name="CLI">
+
+Name a starter, a folder or a Git URL with `--template`:
+
+```sh
+ingestron init sales --template retail
+ingestron init sales --template ../templates/lakehouse
+ingestron init sales --template https://github.com/acme/data-templates.git#lakehouse
+```
+
+`--template` cannot be combined with `--connector`, `--connectivity` or
+`--via`. After `#` comes the folder inside the repository. Git uses your
+own credentials. The environments are the starter's own; `--env`,
+`--standard` and `--set` work as they do from a connection.
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: New project** and choose **Try a sample project**, then the
+sample, then the folder to create it in.
+
+</Tool>
+</ToolSteps>
+
+To make a template of your own, see [Share templates and standards](/docs/~/share-a-template).
+
+### From a downloaded example
+
+The **Examples** section of a connector's page offers project ZIPs. Extract
+one into an empty folder, and open the folder that holds `project.yaml`. The
+archive contains the synthetic definitions and contracts, without generated files,
+so you can generate it locally without access to the source. A starter's
+download is what `init` writes from it, with `REPLACE_ME` where a value is
+yours and a `README.md` that lists them. Code blocks there name the project and
+the relative path of each file shown.
+
+A multi-connector project demonstrates several sources together. To start
+with only one connection, [start from a connection](#start-from-a-connection)
+instead.
+
+## Use your standard
+
+A project has one standard, including when it uses several packs.
+Creation validates every environment before writing files. See
+[Set your organisation's standard](/docs/~/configure-a-standard) for
+allowed methods, settings ownership and fixed policies.
+
+## Write the values it cannot know [#write-the-values]
+
+<OldAnchor id="make-it-yours" />
+
+`init` writes `README.md`, which lists each value still `REPLACE_ME`, with its
+file and line, what it is, where to find it and the environments it is for,
+then the Key Vault secrets to create, how to deploy each output folder, and
+how to ask the platform team. It is yours: Ingestron never writes it again.
+`init` ends by saying how many there are, such as:
+
+```text
+7 values are still REPLACE_ME: README.md lists each one and where to find it.
+```
+
+Write each value in place, where the comment above it says. A value that
+differs between environments, such as the storage account, is already under
+`environments.<name>.values` in `project.yaml`. Or give the values when you
+create the project, each by the name README.md shows, with `--set`, and
+`--set <environment>.<name>` for one environment:
+
+<Only on="synapse">
+
+```sh
+ingestron init sales --connector azure-sql-database --connectivity public --via synapse --yes \
+  --set source_server=sql-sales.database.windows.net --set prod.storage_account=salesprod
+```
+
+</Only>
+
+<Only on="databricks">
+
+```sh
+ingestron init sales --connector sqlserver --connectivity public --via databricks --yes \
+  --set source_uc_connection=erp_sqlserver
+```
+
+</Only>
+
+<Only on="adf">
+
+```sh
+ingestron init sales --connector postgresql --connectivity private --via adf-landing --yes \
+  --set source_server=pg.example.invalid --set prod.storage_account=salesprod
+```
+
+</Only>
+
+<Only on="duckdb">
+
+A DuckDB project reads files in its own folder, so `init --platform duckdb`
+and the DuckDB starter leave nothing as `REPLACE_ME`.
+
+</Only>
+
+A name the project does not have is refused, with the names it has. Until
+every value is written, `ingestron plan` and `apply` warn about each, with
+[`REPLACE_ME`](/docs/reference/errors#REPLACE_ME), and still write the files;
+`ingestron check` fails, so nothing with a `REPLACE_ME` passes CI, and
+`ingestron request` lists them first. `plan` counts each place a value is
+written, where `init` counts names, so a value written for `dev` and for
+`prod` counts once for `init` and twice for `plan`.
+
+<Only on="synapse">
+
+For the project above, `init` counts 4 values and plan ends:
+
+```text
+5 places are still REPLACE_ME; ingestron check fails until each is written.
+```
+
+</Only>
+
+<Only on="databricks">
+
+For the project above, plan ends:
+
+```text
+2 places are still REPLACE_ME; ingestron check fails until each is written.
+```
+
+</Only>
+
+<Only on="adf">
+
+For the project above, `init` counts 6 values and plan ends:
+
+```text
+7 places are still REPLACE_ME; ingestron check fails until each is written.
+```
+
+</Only>
+
+Then make the rest yours:
+
+1. Keep secrets out of the YAML. A connection's password is already a
+   `${secret:name}` reference, such as `${secret:sales-postgresql-password}`;
+   create the secret in Key Vault under that name, as README.md says. See
+   [YAML references and placeholders](/docs/concepts/yaml-references).
+2. Adapt each contract to the columns and keys of its object; the tables and
+   contracts README.md names are examples. See
+   [Describe a table with a contract](/docs/~/write-a-contract), and the
+   **Read with …** section of the connector's page for its reading options.
+   A table that copies the source as it is can do without a contract,
+   [unless the platform manages its access](/docs/~/describe-a-source#needs-a-contract): import the source's
+   metadata instead, and draft the contracts that are needed from it; see
+   [Describe a source](/docs/~/describe-a-source).
+3. Check the environments, platform and standard. Use the connector reference<Only on="adf">,
+   [Azure Data Factory](/docs/adf) for the factory's infrastructure, and
+   [ADF resource names](/docs/~/name-things-your-way#adf-resource-names)
+   for name defaults and overrides</Only><Only on="synapse databricks duckdb">, and
+   [Name tables and resources](/docs/~/name-things-your-way) for name
+   defaults and overrides</Only>.
+4. Arrange the source credentials and platform permissions the route needs.
+   Local generation does not need them.
+
+`init` never replaces an existing file. If any target file already exists,
+it lists the clashes and writes nothing. Two files are exceptions. An existing
+`README.md` is kept, and `init` prints the values to replace instead. An
+existing `.gitignore` gains only the lines it lacks: those that keep `.env`
+files out of Git<Only on="adf">, and the folders Microsoft's build writes</Only>. See
+[Environment files](/docs/concepts/yaml-references#use-environment-files)
+for what those files are for.
+
+To grow the project later, see [Add a source and its tables](/docs/~/add-a-source).
+
+## Add a guide for coding assistants [#project-guide]
+
+`ingestron init --assistant <names>` writes a project guide as the project is
+created, and `ingestron assistant add <names>` adds it to a project you
+already have. Without `--assistant`, `init` asks which assistant files to
+write, last and only in a terminal; an empty answer is `none`, and `--yes`
+skips the question. Without a terminal, nothing is asked
+and nothing is written. The guide is `AGENTS.md`, written from the project's own files:
+what the project is, what it may change and which commands to run, and, when
+the project has connections, how to
+[prepare a source's columns file](/docs/~/describe-a-source#assistant).
+`ingestron plan` and `ingestron apply` keep its Ingestron section current.
+[Work with an AI assistant](/docs/tools/assistants) lists the files each
+assistant gets, and what the guide says.
+
+## Review and generate
+
+From the project folder, run `ingestron plan --no-diff`, or use
+**Ingestron: Plan** in VS Code. A new project or an unchanged download has no
+generated files yet, so the plan lists every file as one to create, after a
+warning for each value still `REPLACE_ME`. After reviewing the plan, run Apply to write the files; see
+[Plan, apply and review](/docs/~/plan-and-generate).
+
+Inspect the source objects, credential references, landing paths and
+destination names in the generated files. Generation validates the
+definitions; neither creation nor Apply connects to the source or deploys
+anything.
+
+Next, add a source: [Add a source and its tables](/docs/~/add-a-source).
+Each source's fields and routes are in the [connector catalogue](/docs/~/connectors).
+
+<Only on="adf">
+
+For pipeline design, see [Shape ADF pipelines](/docs/adf/pipelines), and for
+resource names, [ADF resource names](/docs/~/name-things-your-way#adf-resource-names).
+
+</Only>

@@ -1,0 +1,4 @@
+# A guide: a small project that shows one idea; the docs embed it.
+title: Define a data product on Data Factory
+summary: "The data products example on Azure Data Factory: one product over landed files, its governance, and its passport."
+order: 21

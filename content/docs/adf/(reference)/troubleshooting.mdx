@@ -1,0 +1,80 @@
+---
+title: Troubleshooting
+description: Find a problem on Azure Data Factory by what you see, then its cause and fix.
+---
+
+Problems with the factory: building it, deploying it and its copies. For the command, definitions, source metadata and the editor, see
+[Troubleshooting](/docs/troubleshooting).
+
+## A connection is missing a setting
+
+**Symptom:** the plan stops before any file is written:
+
+```text
+flows/postgresql.yaml:15:5  error  METHOD_CHECK
+  "adf-table" for table "postgresql_records": the connection needs "settings.server" as non-empty text.
+```
+
+**Cause:** the connector needs a setting the connection does not give, or the
+connection gives one the connector does not accept
+(`the connection setting "ssl" is not supported for postgresql`).
+
+**Fix:** add the setting to the connection, or remove the one the message says
+is not supported. Find your connector in the [catalogue](/docs/~/connectors); its
+page, such as [PostgreSQL](/docs/~/connectors/postgresql), lists the connection
+fields. See [Azure Data Factory](/docs/adf).
+
+## A pipeline fails when it runs
+
+**Symptom:** `plan` and `apply` succeed, but a deployed pipeline fails in Data
+Factory before it copies, or while it reads the source or writes the landing
+folder.
+
+**Cause:** Ingestron generates the factory's files. It does not provision the
+runtime, the Key Vault or the storage, and does not test credentials or
+network access. Whatever is missing, such as the runtime, a secret, the
+identity's access to the Key Vault or the landing storage, or the source
+permissions and runtime prerequisites, fails only when the pipeline runs.
+
+**Fix:** run `ingestron request --env dev`, or **Ingestron: Prepare platform
+request** in VS Code. Its **ADF prerequisites** section lists, with this
+project's values, the integration runtime, the Key Vault, the landing folder
+and the source's permissions that must exist. Give the list to the team that
+creates them. See
+[Before you deploy](/docs/adf/deploy#prerequisites).
+
+## Every plan and check prints a notice about a runtime [#runtime-notice]
+
+**Symptom:** `plan`, `apply` and `check` print a warning before the folders,
+and still succeed:
+
+```text
+adf: warnings
+(project)  warning  PACK_NOTICE
+  Integration runtime `shir-erp` (self-hosted): the deployment writes it by name and type, as Data Factory Studio does; where it creates it, register a node, with network access and any required source drivers, before the copies run.
+```
+
+**Cause:** the factory holds each integration runtime its linked services
+use, and an ARM deployment sets a runtime's whole resource. The
+[`PACK_NOTICE`](/docs/reference/errors#PACK_NOTICE) says what a deployment
+does to it. It is a warning, so it shows on every run, in CI too.
+
+**Fix:** nothing to change in the definitions. Before the first deployment to
+a factory that already has the runtime, run `az deployment group what-if` with
+the template and that environment's parameter file, and describe a linked or
+Azure runtime with the method's `runtime` setting; see
+[Runtime and Key Vault](/docs/adf#runtime-and-key-vault).
+
+## Development triggers do not run
+
+**Symptom:** the pipelines are in the factory, but a `dev` copy never starts
+on its schedule.
+
+**Cause:** triggers start only in `prod` and `production`
+([platform defaults](/docs/reference/packs/adf#platform-configuration)). The
+trigger file in `factory/trigger/` says `"runtimeState": "Stopped"`, and
+`parameters/prod.json` sets the trigger's state to `"Started"`.
+
+**Fix:** start the trigger in Data Factory when you want development copies to
+run, or set `paused: false` for the copy method in the platform and generate
+again, which starts it in every environment. Check `start` first: a started trigger runs every window since `start`. See [Retry and pause](/docs/adf/pipelines#retry-and-pause).

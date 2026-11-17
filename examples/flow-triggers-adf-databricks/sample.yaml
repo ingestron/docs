@@ -1,0 +1,4 @@
+# A guide: a small project that shows one idea; the docs embed it.
+title: Flow triggers on Data Factory into Databricks
+summary: An ERP flow that writes an hourly tumbling window and a weekly full reload, inside the hours the standard allows.
+order: 17

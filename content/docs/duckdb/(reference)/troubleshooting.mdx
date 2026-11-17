@@ -1,0 +1,74 @@
+---
+title: Troubleshooting
+description: Find a problem on DuckDB by what you see, then its cause and fix.
+---
+
+Problems with `run.sql` and the DuckDB command line. For the command,
+definitions, source metadata and the editor, see
+[Troubleshooting](/docs/troubleshooting).
+
+## Upsert needs a primary key
+
+**Symptom:**
+
+```text
+flows/erp.yaml:6:13  error  METHOD_CHECK
+  "duckdb-table" for table "invoices": upsert needs the contract's primaryKey.
+```
+
+**Cause:** `history: latest`, the method's `upsert`, replaces rows with the
+same key, and the contract names no key. `sequence` has to be a column of the
+contract too.
+
+**Fix:** mark the key column `primaryKey: true` in the contract. See
+[Keep a table current](/docs/duckdb/keep-a-table-current).
+
+## A run keeps going after an error
+
+**Symptom:** a DuckDB error is printed, but the run carries on, and some tables
+and Parquet files exist although another table failed.
+
+**Cause:** as the generated `README.md` says, without `-bail` DuckDB carries on
+after an error and commits what it built. With `-bail`, a run that fails while
+building publishes nothing.
+
+**Fix:** run it as the generated `README.md` says, from the project folder:
+
+```sh
+duckdb -bail ingestron.duckdb -c ".read build/duckdb/dev/run.sql"
+```
+
+## A check stops the run [#a-check-stops-the-run]
+
+**Symptom:** the run prints its checks, each with its failing rows, then stops
+with:
+
+```text
+Invalid Input Error: The check "<check>" failed for <n> rows of <table>, so nothing is published.
+```
+
+or, for a check over the whole table,
+`The table check "<check>" failed on <table>, so nothing is published.`
+
+**Cause:** a check whose action is `fail` found rows that fail it. The run
+stops before it inserts them: with `-bail`, nothing is published and no table
+changes.
+
+**Check:** the table the run printed just before the error lists each check,
+its action and its `failing_rows`. Query the files the table reads for the
+rows the check describes.
+
+**Fix:** correct the data and run again. If such rows should be kept and
+counted, or left out, change the check's action to `warn` or `drop`; see
+[Check data quality](/docs/duckdb/add-quality-checks).
+
+## Publishing fails after the tables are built
+
+**Symptom:** the run reaches the step that publishes and fails there, or no
+`<schema>.<table>.parquet` file appears.
+
+**Cause:** `run.sql` publishes each table to the `published` folder in
+`platform.yaml`, and that folder must exist.
+
+**Fix:** create the folder, such as `published/`, or correct the setting, and
+run again. Running again is safe.

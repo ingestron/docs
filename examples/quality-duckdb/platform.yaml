@@ -1,0 +1,6 @@
+apiVersion: ingestron.io/v1
+kind: Platform
+id: lab
+settings:
+  duckdb-table:
+    published: abfss://published@iotlab.dfs.core.windows.net/iot

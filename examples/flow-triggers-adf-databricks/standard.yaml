@@ -1,0 +1,29 @@
+apiVersion: ingestron.io/v1
+kind: Standard
+id: erp
+packs: [databricks@2, adf@2]
+naming:
+  # One catalog per environment, such as erp_dev
+  catalog: erp_{{ environment }}
+layers:
+  # Each window's file holds the rows changed in it; keep the current version.
+  - { name: bronze, history: latest }
+  - silver
+  - gold
+load:
+  default: incremental # copy the rows changed since the last copy, by each flow's cursor
+ingest:
+  settings:
+    adf-copy:
+      # The default trigger, for a flow that writes none; these flows write their own
+      every: { frequency: Hour, interval: 1 }
+      start: 2026-12-01T00:00:00Z
+operations:
+  # Flows write their own triggers; without this, the standard keeps one schedule
+  schedule: { per: flow }
+  triggers:
+    types: [schedule, tumbling-window]
+    timezone: Europe/London # the zone flows' triggers and these hours are read in
+    environments:
+      # Dev has no limit. In prod no run may start while the source's backup runs
+      prod: { hours: { from: "02:45", to: "02:15" } }

@@ -1,15 +1,15 @@
 # Serve files as SQL
 
-ADF copies the ERP's tables into storage, one file per table, and Synapse
-serverless SQL shows them to reports as views: `packs: [synapse@2, adf@2]` and
-`store: { default: synapse-view }` in `standard.yaml`. Synapse is listed first
-even though ADF runs first: the first pack names and types the views; ADF only
-copies.
+The Synapse workspace pipelines copy the ERP's Azure SQL tables into storage,
+one file per table, and serverless SQL shows them to reports as views:
+`packs: [synapse@2]`, `ingest: { default: synapse-copy }` and
+`store: { default: synapse-view }` in `standard.yaml`.
 
 `ingestron apply` writes:
 
-- `build/adf/`: the copy pipeline, its trigger, linked services and datasets,
-  and a parameter file for each environment;
+- `build/synapse/workspace/<environment>/`: the copy pipeline, its trigger,
+  linked services and datasets, as the workspace's Git integration lays them
+  out;
 - `build/synapse/checks.sql`, with `checks/<environment>.sql`: the checks of
   the contracts' required columns, counted each time it runs. `bronze` keeps
   the rows as they arrived and only counts its checks, and `silver` and `gold`

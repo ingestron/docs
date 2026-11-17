@@ -59,13 +59,21 @@ AGENTS.md: written
 </Tool>
 <Tool name="VS Code">
 
-**Ingestron: New project** asks, after what to start from and before the
-folder, **New project: AI assistant files (optional)**. Tick any of **GitHub
+**Ingestron: New project** asks, after where the project runs and which
+standard or sample, and before the folder, **New project: AI assistant files
+(optional)**. Tick any of **GitHub
 Copilot**, **Claude Code**, **Codex**, **Cursor** and **Another tool that
 reads AGENTS.md**, or press Enter with nothing ticked for none.
 
+<Screenshot
+  light="/images/vscode/assistant-files-light.png"
+  dark="/images/vscode/assistant-files-dark.png"
+  alt="The picker New project: AI assistant files (optional), saying Choose any, or press Enter for none, with 0 selected. Its choices, none ticked: GitHub Copilot, Claude Code, Codex, Cursor, and Another tool that reads AGENTS.md."
+  caption="The assistant files step of New project: tick the assistants you use, or press Enter for none."
+/>
+
 For a project you already have, run **Ingestron: Add assistant files** from
-the Command Palette, or right-click the project's folder, or one of its files,
+the Command Palette, or right-click the project root or `project.yaml`
 in the Explorer. Tick one or more. The Ingestron output panel lists each file,
 and a notification offers **Open AGENTS.md**. If a file could not be written,
 a warning says so, and the output panel says why.

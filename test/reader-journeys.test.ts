@@ -26,7 +26,7 @@ import { RouteTable } from "../components/reference/route-table";
 import { exampleFolder, listExamples } from "../lib/examples";
 import { routeRows } from "../lib/routes";
 import { parse } from "yaml";
-import { anchors, cli, copy, fences, merge, read, section } from "./pages.js";
+import { anchors, cli, copy, fences, merge, read, section, platformFile } from "./pages.js";
 
 // Starters and connections are created and planned; resolving them takes seconds.
 vi.setConfig({ testTimeout: 60_000 });
@@ -57,7 +57,7 @@ describe("platform pages", () => {
   it("each ends with a Next list of three links chosen for it, not one list for all", () => {
     const lists = new Map<string, string>();
     for (const page of pages) {
-      const text = read(`platforms/${page}.mdx`);
+      const text = read(platformFile(page));
       const next = section(text, "## Next");
       expect(text.trimEnd().endsWith(next.trimEnd()), `${page}: Next is last`).toBe(true);
       const links = [...next.matchAll(/^- \[[^\]]+\]\((\/docs\/[^)]+)\)/gm)].map(
@@ -82,9 +82,12 @@ describe("routes", () => {
   });
 
   it("lists every route, from plan-and-generate's deploy step and the template page's next step", () => {
-    expect(read("how-to/plan-and-generate.mdx")).toContain("<RouteList deploy />");
-    expect(read("how-to/start-from-a-template.mdx")).toContain("<RouteList />");
-    expect(read("how-to/plan-and-generate.mdx")).not.toContain('href: "/docs/reference/packs"');
+    // Each platform's plan-and-generate lists its own routes' deploy steps.
+    expect(read("shared/plan-and-generate.mdx")).toContain('<RouteList deploy platform="~" />');
+    expect(read("synapse/plan-and-generate.mdx")).toContain(
+      '<RouteList deploy platform="synapse" />',
+    );
+    expect(read("shared/plan-and-generate.mdx")).not.toContain('href: "/docs/reference/packs"');
     const deploy = renderToStaticMarkup(createElement(RouteList, { deploy: true }));
     const guides = renderToStaticMarkup(createElement(RouteList));
     for (const row of routeRows()) {
@@ -95,7 +98,7 @@ describe("routes", () => {
   });
 
   it("says what DuckDB in Azure has run, on its page, and no route carries a status", () => {
-    const page = read("platforms/duckdb-in-azure.mdx");
+    const page = read("adf-duckdb/load-with-adf.mdx");
     const ran = section(page, "### What has run in Azure");
     expect(ran).toContain('<OldAnchor id="checked-against-live-azure-not-yet" />');
     expect(ran).toContain("ingestron 1.8 on 2 November 2026, in one demo\nsubscription");
@@ -161,7 +164,7 @@ describe("connector pages", () => {
 });
 
 describe("how-to/add-quality-checks", () => {
-  const page = read("how-to/add-quality-checks.mdx");
+  const page = read("shared/add-quality-checks.mdx");
   const prose = (text: string) => text.replace(/\s+/g, " ");
 
   /** Plans a copy of a sample after giving one table an expectation, the way the guide adds one. */
@@ -175,20 +178,31 @@ describe("how-to/add-quality-checks", () => {
     return cli(cwd, ["plan", "--no-diff"]).output;
   }
 
-  it("lists first what Synapse cannot apply in the quality example, as the page shows", () => {
-    const engines = section(page, "## What each engine does [#engines]");
-    const planned = cli(copy("quality"), ["plan", "--no-diff"]);
+  it("lists first what Synapse cannot apply in its quality example, as the page shows", () => {
+    const engines = section(
+      read("synapse/add-quality-checks.mdx"),
+      "## What each engine does [#engines]",
+    );
+    const planned = cli(copy("quality-synapse"), ["plan", "--no-diff"]);
     expect(planned.code).toBe(0);
     expect(planned.output.startsWith(fences(engines, "text")[0]!)).toBe(true);
-    expect(engines).toContain("<QualityEngines />");
+    // Each platform's copy shows its own engine's column.
+    for (const id of ["databricks", "synapse", "duckdb"])
+      expect(read(`${id}/add-quality-checks.mdx`)).toContain(
+        `<QualityEngines packs={["${id}"]} />`,
+      );
   });
 
   it("says where DuckDB and Synapse check rows, as the CLI reports it", () => {
     const layers = prose(section(page, "## Say which layers check [#layers]"));
-    expect(layers).toContain(
-      "DuckDB and Synapse run checks only in a layer whose `does` lists `check` or is `raw`",
+    for (const id of ["synapse", "duckdb"])
+      expect(prose(read(`${id}/add-quality-checks.mdx`))).toContain(
+        "Checks run only in a layer whose `does` lists `check` or is `raw`",
+      );
+    expect(prose(read("databricks/add-quality-checks.mdx"))).toContain(
+      "checks the tables of a layer without `does` as it always has",
     );
-    expect(layers).toContain("Databricks checks them as it always has");
+    expect(layers).toContain("LAYER_RESPONSIBILITY");
 
     // Databricks checks the quality example's expectation; it is in a layer that checks.
     expect(plan(exampleFolder("quality"), "flows/readings.yaml", "readings")).not.toContain(
@@ -228,17 +242,17 @@ describe("how-to/add-quality-checks", () => {
     expect(landing).toContain(
       'Expectation "has_rows" isn\'t applied on adf: the table ends at the landed files, and nothing checks them.',
     );
-    expect(prose(read("platforms/landing-only.mdx"))).toContain(
+    expect(prose(read("adf/land-files-only.mdx"))).toContain(
       "each contract quality rule and flow expectation on these tables is",
     );
   });
 
   it("is linked from the DuckDB page, which says where checks run there", () => {
-    const duckdb = read("platforms/duckdb.mdx");
+    const duckdb = read("duckdb/index.mdx");
     expect(prose(duckdb)).toContain(
       "DuckDB checks rows only in a layer whose `does` lists `check`",
     );
-    expect(duckdb).toContain("(/docs/how-to/add-quality-checks#duckdb)");
+    expect(duckdb).toContain("(/docs/duckdb/add-quality-checks#duckdb)");
   });
 });
 
@@ -268,7 +282,7 @@ describe("concepts/generated-files", () => {
       );
     };
     // adf-copy: every pipeline starts with Ingestron's line; adf-table: none without the tables'.
-    expect(annotations("synapse-views")).toEqual([
+    expect(annotations("landing-only")).toEqual([
       ["Generated by Ingestron from the sales definitions"],
     ]);
     expect(annotations("connection-first-adf")).toEqual([undefined]);
@@ -323,7 +337,7 @@ describe("small promises", () => {
 });
 
 describe("platforms/databricks", () => {
-  const page = read("platforms/databricks.mdx");
+  const page = read("databricks/index.mdx");
 
   it("deploys one bundle, target by target, from build/databricks", () => {
     const cwd = copy("retail");
@@ -339,7 +353,7 @@ describe("platforms/databricks", () => {
     expect(bundle.targets.prod.mode).toBe("production");
     expect(existsSync(join(cwd, "build/dev"))).toBe(false);
 
-    const deployPage = read("platforms/databricks-deploy.mdx");
+    const deployPage = read("databricks/deploy.mdx");
     const deploy = section(deployPage, "## Deploy");
     expect(fences(deploy, "sh")[0]).toBe(
       "cd build/databricks\ndatabricks bundle validate -t dev\ndatabricks bundle deploy -t dev\n",
@@ -356,10 +370,10 @@ describe("platforms/databricks", () => {
       readFileSync(join(exampleFolder("environments"), "platform.yaml"), "utf8"),
     );
     expect(platform.databricks.workspace.root_path).toMatch(/^\/Workspace\/Shared\//);
-    expect(section(page, "## Deploy and run")).toContain("(/docs/platforms/databricks-deploy)");
+    expect(section(page, "## Deploy and run")).toContain("(/docs/databricks/deploy)");
     const ci = section(deployPage, "### From CI");
     expect(ci).toContain('file="github-actions/deploy-environment.yml"');
-    expect(ci).toContain("(/docs/how-to/deploy-through-environments)");
+    expect(ci).toContain("(/docs/databricks/deploy-through-environments)");
   });
 
   it("says only dev is in development mode, and the schedule runs only in prod", () => {

@@ -1,0 +1,11 @@
+apiVersion: ingestron.io/v1
+kind: Platform
+id: azure
+settings:
+  synapse-copy: # shared infrastructure, referenced by name
+    landing: abfss://landing@${values.storage_account}.dfs.core.windows.net/erp
+    key_vault: https://${values.key_vault}.vault.azure.net
+    integration_runtime: AutoResolveIntegrationRuntime # the workspace's Azure runtime
+  synapse-view:
+    data_source: landing
+    data_source_location: abfss://landing@${values.storage_account}.dfs.core.windows.net

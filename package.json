@@ -20,7 +20,8 @@
     "secrets:check": "node scripts/scan-secrets.mjs",
     "licences:check": "node scripts/check-licences.mjs",
     "dco:check": "node scripts/check-dco.mjs",
-    "sync:vscode": "node scripts/sync-vscode-commands.mjs"
+    "sync:vscode": "node scripts/sync-vscode-commands.mjs",
+    "stubs": "tsx scripts/platform-stubs.ts"
   },
   "dependencies": {
     "@ingestron/authoring": "^2.4.0",

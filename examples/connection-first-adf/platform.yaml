@@ -12,5 +12,5 @@ settings:
       key_vault_linked_service: ls_${project.id}_secrets
       landing_linked_service: ls_${project.id}_lake
       landing_dataset: ds_${project.id}_parquet
-# Databricks refreshes hourly, at half past, to read the files Data Factory lands
+# The refresh schedule: hourly, at half past
 schedule: { cron: 0 30 * * * ?, timezone: UTC }

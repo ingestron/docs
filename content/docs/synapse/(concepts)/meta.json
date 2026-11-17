@@ -1,0 +1,6 @@
+{
+  "title": "Concepts",
+  "description": "How environments and the platform document work on Azure Synapse, and what it cannot apply.",
+  "root": true,
+  "pages": ["environments-and-platform", "not-applied"]
+}

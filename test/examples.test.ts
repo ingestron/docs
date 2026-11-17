@@ -13,7 +13,7 @@ import {
 } from "../lib/examples.js";
 import { connectorExample, watermarkExample } from "../lib/connector-page.js";
 import { connectorEntries, connectorIds } from "../lib/reference.js";
-import { contentFile, contentFolder } from "../lib/content-files.js";
+import { read } from "./pages.js";
 
 describe("examples", () => {
   it("includes every connector example preview in its downloadable archive", () => {
@@ -31,7 +31,7 @@ describe("examples", () => {
       }
       // The examples a connector's own notes show.
       const page = readFileSync(
-        join(process.cwd(), "content/docs/connectors", `${id}.mdx`),
+        join(process.cwd(), "content/shared/connectors", `${id}.mdx`),
         "utf8",
       );
       for (const [, name, file] of page.matchAll(/<Example name="([^"]+)" file="([^"]+)"/g))
@@ -44,7 +44,7 @@ describe("examples", () => {
   }, 30_000);
   it("lists every sample with a title, summary and the facts found by resolving it", () => {
     const examples = listExamples();
-    expect(examples).toHaveLength(27);
+    expect(examples).toHaveLength(39);
     for (const example of examples) {
       expect(example.title, example.name).not.toBe("");
       expect(example.summary, example.name).toMatch(/\.$/);
@@ -53,7 +53,12 @@ describe("examples", () => {
   });
 
   it("checks the rows of the guides that keep tables on DuckDB and Synapse, by their layers' duties", () => {
-    for (const name of ["duckdb-local", "data-products", "synapse-views"]) {
+    for (const name of [
+      "duckdb-local",
+      "data-products-duckdb",
+      "synapse-views",
+      "synapse-pipelines",
+    ]) {
       expect(readExampleFile(name, "standard.yaml"), name).toContain("does: raw");
       const cwd = mkdtempSync(join(tmpdir(), `docs-duties-${name}-`));
       cpSync(exampleFolder(name), cwd, { recursive: true });
@@ -62,12 +67,12 @@ describe("examples", () => {
       expect(output, name).not.toContain("NOT_APPLIED");
     }
     // The passport says what checks each table, and no check goes unenforced.
-    const passport = readExampleFile("data-products", "build/products/dev/customers.md");
+    const passport = readExampleFile("data-products-duckdb", "build/products/dev/customers.md");
     const quality = passport.slice(passport.indexOf("## Quality"), passport.indexOf("## Fresh"));
     expect(quality).toContain("Counted only by DuckDB");
     expect(quality).not.toContain("Not enforced");
     // The role DuckDB cannot grant is accepted, and the passport still says so.
-    expect(readExampleFile("data-products", "platform.yaml")).toContain("feature: grants");
+    expect(readExampleFile("data-products-duckdb", "platform.yaml")).toContain("feature: grants");
     expect(passport).toContain("Not enforced on DuckDB: DuckDB has no access control.");
   }, 30_000);
 
@@ -112,10 +117,7 @@ describe("examples", () => {
       join(cwd, "flows/web.yaml"),
       readExampleFile("standards-and-conventions", "exercises/fixed-setting.yaml"),
     );
-    const page = readFileSync(
-      join(contentFolder, contentFile("how-to/configure-a-standard.mdx")),
-      "utf8",
-    );
+    const page = read("how-to/configure-a-standard.mdx");
     // "Plan again:", the command the page shows, then what it prints.
     const [, command, shown] =
       /Plan again:\n\n```sh\ningestron (.*)\n```\n\n```text\n([\s\S]*?)```/.exec(page) ?? [];

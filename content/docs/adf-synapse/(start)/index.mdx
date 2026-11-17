@@ -1,0 +1,48 @@
+---
+title: Data Factory into Synapse
+description: Azure Data Factory copies each source into landing storage, and Synapse serverless SQL shows the landed files as views, from one project.
+---
+
+Use this combination when the source is one the Synapse workspace pipelines do
+not copy, or when a factory already copies your sources. Azure Data Factory
+copies each table into ADLS Gen2 landing storage through an integration
+runtime, on its schedule. Synapse serverless SQL shows the landed files as
+views. Nothing runs or is stored after each load: Synapse reads the files each
+time someone queries a view.
+
+<RouteFacts id="adf-synapse" />
+
+To try it on your computer first, follow
+[Your first project](/docs/adf-synapse/first-project).
+
+## What each part writes [#what-you-get]
+
+One project, with one standard that lists both packs, writes two sets of
+files:
+
+- **The factory**, in `build/adf`: the integration runtime, linked services
+  for the Key Vault, the source and the landing storage, datasets for the
+  source and the landing storage, the copy pipeline and its trigger, and a
+  parameter file for each environment.
+- **The views**, in `build/synapse`: one script that creates or alters every
+  view, and a script for each environment that sets its values and runs it.
+
+Each view reads the file its table lands in, with the columns typed from the
+contract:
+
+<Example name="synapse-views" file="build/synapse/views.sql" />
+
+## The rest is each platform's
+
+Everything else works as it does on each platform alone:
+
+- **Data Factory:** [the factory's settings](/docs/adf#runtime-and-key-vault),
+  [schedules, retries and landing paths](/docs/adf/pipelines), and
+  [a flow's own triggers](/docs/adf/run-a-flow-on-its-own-triggers).
+- **Synapse:** [keep a table current](/docs/synapse/keep-a-table-current),
+  [write a transform](/docs/synapse/write-a-transform),
+  [check data quality](/docs/synapse/add-quality-checks) and
+  [grant access](/docs/synapse/grant-access).
+- **Standards:** the standard lists both packs, so each pack's rules apply to
+  its files; see [Synapse standards](/docs/synapse/configure-a-standard)
+  and [Data Factory standards](/docs/adf/configure-a-standard).

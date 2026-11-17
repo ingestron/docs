@@ -1,0 +1,6 @@
+{
+  "title": "Guides",
+  "description": "Loading the landed files into DuckDB, and deploying both.",
+  "root": true,
+  "pages": ["load-with-adf", "deploy"]
+}

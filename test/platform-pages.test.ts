@@ -22,10 +22,11 @@ import {
   read,
   requestUses,
   section,
+  platformFile,
 } from "./pages.js";
 
 describe("platforms/databricks", () => {
-  const page = read("platforms/databricks.mdx");
+  const page = read("databricks/index.mdx");
 
   it("creates the retail project, or the same with --set, from one parent folder, and plans each as the page says", () => {
     const create = section(page, "## Create it");
@@ -54,10 +55,10 @@ describe("platforms/databricks", () => {
 });
 
 describe("platforms/adf", () => {
-  const page = read("platforms/adf.mdx");
+  const page = read("adf/index.mdx");
 
   it("lists the ADF prerequisites the platform request prints", () => {
-    const prerequisites = section(read("platforms/adf-deploy.mdx"), "## Before you deploy");
+    const prerequisites = section(read("adf/deploy.mdx"), "## Before you deploy");
     const written = /`(ingestron request [^`]+)`/.exec(prerequisites);
     expect(written, "the request command, in the prose").not.toBeNull();
     // The page shows the request's last section, rendered from the starter.
@@ -74,32 +75,16 @@ describe("platforms/adf", () => {
     ).toBe(true);
   });
 
-  it("creates the starter, or the same with --set, from one parent folder, and plans each as the page says", () => {
+  it("creates a project from the source, and plans the example as the page shows it", () => {
     const create = section(page, "## Create it");
-    const prose = create.replace(/\s+/g, " ");
-    const [bare, cd, filled, cdAgain, plan] = commands(create);
-    expect([cd, cdAgain]).toEqual(["cd erp", "cd erp"]);
+    const [init, cd] = commands(create);
+    expect(cd).toBe("cd erp");
     const first = mkdtempSync(join(tmpdir(), "docs-adf-erp-"));
-    const created = cli(first, bare!.split(" ").slice(1));
-    expect(created.code).toBe(0);
-    expect(prose).toContain(`\`${created.output.trimEnd().split("\n").at(-1)}\``);
-    const unfilled = cli(join(first, "erp"), plan!.split(" ").slice(1));
-    expect(unfilled.code).toBe(0);
-    expect(prose).toContain(`\`${unfilled.output.trimEnd().split("\n").at(-1)}\``);
-    // With --set for each value, on the day the sample was made, it is the sample.
-    const second = mkdtempSync(join(tmpdir(), "docs-adf-erp-"));
-    const sample = exampleFolder("private-sql-server-filled");
-    const day = /start: (\S+)/.exec(readFileSync(join(sample, "standard.yaml"), "utf8"))![1]!;
-    let output = "";
-    const code = run(filled!.split(" ").slice(1), {
-      cwd: second,
-      write: (text) => (output += text),
-      now: () => new Date(day),
-    });
-    expect(code, output).toBe(0);
-    const cwd = join(second, "erp");
-    expect(definitions(cwd)).toEqual(definitions(sample));
-    const planned = cli(cwd, plan!.split(" ").slice(1));
+    const created = cli(first, init!.split(" ").slice(1));
+    expect(created.code, created.output).toBe(0);
+    // The files on the page are the example's, with its values written.
+    const cwd = copy("adf-private-sql-server");
+    const planned = cli(cwd, ["plan", "--no-diff"]);
     expect(planned.code).toBe(0);
     expect(planned.output.trim()).toBe(fences(create, "text")[0]!.trim());
     // The notice is a warning: check still passes once applied.
@@ -108,10 +93,7 @@ describe("platforms/adf", () => {
   });
 
   it("stops only the copies with paused under the method's settings, as Shape ADF pipelines says", () => {
-    const retry = section(read("platforms/adf-pipelines.mdx"), "### Retry and pause").replace(
-      /\s+/g,
-      " ",
-    );
+    const retry = section(read("adf/pipelines.mdx"), "### Retry and pause").replace(/\s+/g, " ");
     expect(retry).toContain("set `paused: true` under `settings.adf-copy` in the platform");
     const fragment = "settings:\n  adf-copy:\n    paused: true\n";
     const cwd = copy("private-sql-server-filled");
@@ -133,7 +115,7 @@ describe("platforms/adf", () => {
   });
 
   it("deploys with each environment's parameter file, in the order the CI template uses", () => {
-    const deploy = section(read("platforms/adf-deploy.mdx"), "## Deploy");
+    const deploy = section(read("adf/deploy.mdx"), "## Deploy");
     const [build] = fences(deploy, "sh");
     expect(build).toContain("@microsoft/azure-data-factory-utilities@1.0.3");
     expect(build).toContain("export build/adf/factory <dev factory resource ID> arm");
@@ -150,7 +132,7 @@ describe("platforms/adf", () => {
 
 describe("platforms/adf-pipelines", () => {
   it("shows the Northwind example's standard, whose pipeline has the design the page describes", () => {
-    const page = read("platforms/adf-pipelines.mdx");
+    const page = read("adf/pipelines.mdx");
     expect(page).toContain('<Example name="northwind" file="standard.yaml" pick="ingest" />');
     expect(fences(page, "yaml"), "no hand-written YAML").toEqual([]);
     const cwd = copy("northwind");
@@ -183,7 +165,7 @@ describe("platforms/duckdb", () => {
     skip,
   }) => {
     if (!duckdb) skip();
-    const shown = section(read("platforms/duckdb.mdx"), "## What it looks like in DuckDB");
+    const shown = section(read("duckdb/index.mdx"), "## What it looks like in DuckDB");
     const cwd = copy("duckdb");
     expect(cli(cwd, ["apply", "--no-diff"]).code).toBe(0);
     const run = (args: string[]) =>
@@ -204,7 +186,7 @@ describe("each restructured platform page's Create it", () => {
   it.each(["synapse", "landing-only", "duckdb", "duckdb-in-azure"])(
     "%s: creates a project that plans, with the page's commands",
     (page) => {
-      const create = commands(section(read(`platforms/${page}.mdx`), "## Create it"));
+      const create = commands(section(read(platformFile(page)), "## Create it"));
       const init = command(create, "init");
       expect(create[1], "then into the project").toBe(`cd ${init[1]}`);
       const parent = mkdtempSync(join(tmpdir(), `docs-create-${page}-`));
@@ -226,7 +208,7 @@ function pipelineFile(output: string): string {
 }
 
 describe("how-to/deploy-through-environments", () => {
-  const page = read("how-to/deploy-through-environments.mdx");
+  const page = read("shared/deploy-through-environments.mdx");
 
   it("renders each part of a template it names, and links each platform's deploy section", () => {
     const templates = [...page.matchAll(/<Template\s([\s\S]*?)\/>/g)].map(([, props]) => ({
@@ -237,16 +219,19 @@ describe("how-to/deploy-through-environments", () => {
     expect(templates.map((template) => template.file)).toEqual([
       "github-actions/deploy.yml",
       "github-actions/deploy-environment.yml",
-      "github-actions/deploy-environment.yml",
       "azure-devops/azure-pipelines.yml",
       "azure-devops/templates/deploy-environment.yml",
     ]);
     for (const { file, from, to } of templates)
       expect(readTemplateExtract(file, from, to), `${file} › ${from}`).not.toBe("");
-    for (const platform of ["adf-deploy", "databricks-deploy", "synapse", "duckdb-in-azure"]) {
-      expect(page).toContain(`(/docs/platforms/${platform}#deploy)`);
-      expect(section(read(`platforms/${platform}.mdx`), "### From CI")).toContain(
-        "(/docs/how-to/deploy-through-environments)",
+    for (const [platform, url, file] of [
+      ["adf", "/docs/adf/deploy", "adf/deploy.mdx"],
+      ["databricks", "/docs/databricks/deploy", "databricks/deploy.mdx"],
+      ["synapse", "/docs/synapse/deploy", "synapse/deploy.mdx"],
+    ]) {
+      expect(page).toContain(`(${url}#deploy)`);
+      expect(section(read(file!), "### From CI"), file).toContain(
+        `(/docs/${platform}/deploy-through-environments)`,
       );
     }
   });
@@ -266,7 +251,24 @@ describe("how-to/deploy-through-environments", () => {
     for (const [, name] of code(github).matchAll(/\$\{\{ vars\.([A-Z_]+) \}\}/g)) {
       expect(github.split("\njobs:")[0], name).toContain(name!);
     }
-    expect(listed).toContain('from="# Variables to set in each GitHub environment:"');
+    // Each platform's page names the variables its own steps read, and no other's.
+    expect(listed).toContain("`AZURE_CLIENT_ID`, `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID`");
+    for (const [platform, own] of [
+      ["databricks", ["DATABRICKS_CLIENT_ID"]],
+      ["synapse", ["SYNAPSE_SERVER"]],
+      ["adf", ["ADF_RESOURCE_GROUP", "ADF_FACTORY_NAME", "ADF_DEV_FACTORY_ID"]],
+    ] as const) {
+      const text = read(`${platform}/deploy-through-environments.mdx`);
+      for (const name of own) expect(text, `${platform}: ${name}`).toContain(name);
+      for (const other of [
+        "DATABRICKS_CLIENT_ID",
+        "SYNAPSE_SERVER",
+        "ADF_RESOURCE_GROUP",
+        "DUCKDB_ACCOUNT",
+      ])
+        if (!(own as readonly string[]).includes(other))
+          expect(text, `${platform}: ${other}`).not.toContain(other);
+    }
     const devops = readFileSync(
       join(process.cwd(), "ci-templates/azure-devops/templates/deploy-environment.yml"),
       "utf8",

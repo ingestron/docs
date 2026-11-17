@@ -1,0 +1,5 @@
+{
+  "title": "Data Factory into Synapse",
+  "description": "A factory copies each source into landing storage; Synapse serves it as views.",
+  "pages": ["(start)", "(guides)", "connectors"]
+}

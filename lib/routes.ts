@@ -26,11 +26,12 @@ export interface RouteRow {
 
 /** The guide for each route, by its `--via` value. */
 export const routeGuides: Record<string, string> = {
-  databricks: "platforms/databricks",
-  "adf-databricks": "platforms/adf",
-  "adf-synapse": "platforms/synapse",
-  "adf-duckdb": "platforms/duckdb-in-azure",
-  "adf-landing": "platforms/landing-only",
+  databricks: "databricks",
+  synapse: "synapse",
+  "adf-databricks": "adf-databricks/load-with-adf",
+  "adf-synapse": "adf-synapse/load-with-adf",
+  "adf-duckdb": "adf-duckdb/load-with-adf",
+  "adf-landing": "adf/land-files-only",
 };
 
 /** The starter that needs no source and no cloud. */
@@ -45,14 +46,14 @@ const written: Record<string, Written> = {
     afterLoad:
       "You run `run.sql` with the DuckDB command line: it rebuilds the tables and publishes them as Parquet.",
     deploy: "Nothing. It runs where you are.",
-    deployAt: "/docs/start/first-project#4-build-the-tables",
+    deployAt: "/docs/duckdb/first-project#4-build-the-tables",
     deployStep: "Build the tables",
   },
   databricks: {
     choose: "Databricks can reach the source, and the tables live in Databricks.",
     afterLoad: "Nothing more. The Databricks pipeline that reads the source writes the tables.",
     deploy: "The Databricks CLI: `databricks bundle deploy -t <environment>`.",
-    deployAt: "/docs/platforms/databricks-deploy#deploy",
+    deployAt: "/docs/databricks/deploy#deploy",
     deployStep: "Deploy",
   },
   "adf-databricks": {
@@ -61,7 +62,16 @@ const written: Record<string, Written> = {
     afterLoad: "Databricks pipelines read the landed files into tables, on their own schedule.",
     deploy:
       "An ARM deployment of the factory for each environment, and `databricks bundle deploy -t <environment>`.",
-    deployAt: "/docs/platforms/adf-deploy#deploy",
+    deployAt: "/docs/adf-databricks/deploy#deploy",
+    deployStep: "Deploy",
+  },
+  synapse: {
+    choose: "Azure SQL full snapshots and serverless SQL reports belong in one Synapse workspace.",
+    afterLoad:
+      "Synapse workspace pipelines copy Parquet snapshots; serverless views read those files when queried.",
+    deploy:
+      "Native Synapse workspace artifacts for each environment, and sqlcmd for the serverless SQL wrappers.",
+    deployAt: "/docs/synapse/deploy#deploy",
     deployStep: "Deploy",
   },
   "adf-synapse": {
@@ -70,7 +80,7 @@ const written: Record<string, Written> = {
     afterLoad: "Nothing. Synapse serverless SQL reads the files each time a report queries a view.",
     deploy:
       "An ARM deployment of the factory for each environment, and `sqlcmd` running the environment's script when the definitions change.",
-    deployAt: "/docs/platforms/synapse#deploy",
+    deployAt: "/docs/adf-synapse/deploy#deploy",
     deployStep: "Deploy",
   },
   "adf-duckdb": {
@@ -80,14 +90,14 @@ const written: Record<string, Written> = {
       "A Container Apps job you create runs the DuckDB SQL in Ingestron's public runner image; ADF can start it after the copies.",
     deploy:
       "An ARM deployment of the factory for each environment, and copying the environment's DuckDB folder to storage.",
-    deployAt: "/docs/platforms/duckdb-in-azure#deploy",
+    deployAt: "/docs/adf-duckdb/deploy#deploy",
     deployStep: "Deploy",
   },
   "adf-landing": {
     choose: "Reports read the landed files themselves, such as Power BI reading Parquet.",
     afterLoad: "Nothing. The copied files are the result.",
     deploy: "An ARM deployment of the factory for each environment.",
-    deployAt: "/docs/platforms/landing-only#deploy",
+    deployAt: "/docs/adf/land-files-only#deploy",
     deployStep: "Deploy",
   },
 };
@@ -114,7 +124,7 @@ export function routeRows(): RouteRow[] {
       title: template.title,
       option: `--template ${starter}`,
       packs: sampleFacts(template.folder).packs.map((pack) => pack.split("@")[0]!),
-      guide: "platforms/duckdb",
+      guide: "duckdb",
       ...words(starter),
     },
     ...allRoutes().map(({ via, title }) => ({

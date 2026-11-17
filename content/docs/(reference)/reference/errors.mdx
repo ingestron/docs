@@ -31,3 +31,14 @@ These come from reading the YAML files and resolving `${…}` references,
 before the definitions are checked.
 
 <LoadingCodes />
+
+## Problems with the output folder [#output-folder]
+
+These are about the files Ingestron would write, not about the definitions.
+`plan` finds `BAD_PATH`, `BAD_MANIFEST` and `FIRST_WRITE` and shows each under
+the files of the output folder it concerns, as `problem   <CODE>`. A plan with
+a problem is not clean: `plan` exits with `1` and `apply` writes nothing to
+that folder. The other codes are `apply`'s, found as it writes. Each entry says
+which command reports it.
+
+<OutputFolderProblems />

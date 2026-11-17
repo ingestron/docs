@@ -6,6 +6,9 @@ import { join } from "node:path";
 /** The folder that holds the pages. */
 export const contentFolder = join(process.cwd(), "content/docs");
 
+/** The folder that holds the guides several platforms share, which their pages include. */
+export const sharedFolder = join(process.cwd(), "content/shared");
+
 let files: Map<string, string> | undefined;
 
 /**
@@ -16,13 +19,16 @@ let files: Map<string, string> | undefined;
  */
 export function contentFile(path: string): string {
   if (existsSync(join(contentFolder, path))) return path;
+  // A platform's path opens at its folder's index page: `adf.mdx` is `adf/index.mdx`.
+  const index = path.replace(/\.mdx$/, "/index.mdx");
+  if (index !== path && existsSync(join(contentFolder, index))) return index;
   files ??= new Map(
     readdirSync(contentFolder, { recursive: true, encoding: "utf8" }).map((file) => [
       withoutGroups(file.replaceAll("\\", "/")),
       file,
     ]),
   );
-  return files.get(withoutGroups(path)) ?? path;
+  return files.get(withoutGroups(path)) ?? files.get(withoutGroups(index)) ?? path;
 }
 
 /** A path with its folder groups, such as `(build)/`, left out. */

@@ -1,0 +1,6 @@
+{
+  "title": "Get started",
+  "description": "What Data Factory and Synapse each write, and a first project.",
+  "root": true,
+  "pages": ["index", "first-project"]
+}

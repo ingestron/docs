@@ -15,10 +15,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { run } from "@ingestron/cli";
 import { afterAll, describe, expect, it } from "vitest";
-import { contentFile, contentFolder } from "../lib/content-files.js";
+import { read } from "./pages.js";
 
-const read = (path: string) => readFileSync(join(contentFolder, contentFile(path)), "utf8");
-const page = read("start/first-project.mdx");
+const page = read("duckdb/first-project.mdx");
 /** The one setup line: Ingestron installed globally from npm, so every command is `ingestron …`. */
 const install = "npm install -g ingestron";
 
@@ -264,27 +263,9 @@ describe("Run your first project on your laptop", () => {
 });
 
 describe("the home page's first run", () => {
-  const home = read("index.mdx");
-  const steps = ["## 1. Create the project", "## 2. Plan", "## 3. Apply", "## 4. Build the tables"];
-
-  it("installs first, then uses the first project's commands, in order", () => {
-    // The install, every command of steps 1 to 3, then step 4's build and query.
-    const commands = steps.flatMap((heading) =>
-      fences(section(page, heading), "sh")[0]!.trimEnd().split("\n"),
-    );
-    const run = section(home, "## Run it on your laptop");
-    expect(fence(run, "sh").trimEnd().split("\n")).toEqual([install, ...commands]);
-  });
-
-  it("shows the rows the first project builds", () => {
-    const run = section(home, "## Run it on your laptop");
-    expect(fence(run, "text")).toBe(fences(section(page, "## 4. Build the tables"), "text")[0]);
-  });
-
-  it("names the starting point and links to the first project", () => {
-    const run = section(home, "## Run it on your laptop");
-    expect(run).toContain("/docs/start/first-project");
-    expect(run).toContain("Node.js 22.13");
-    expect(run).toContain("DuckDB command line");
+  it("links to the first project rather than repeating its commands", () => {
+    const home = read("index.mdx");
+    expect(home).toContain("(/docs/duckdb/first-project)");
+    expect(home).not.toContain("```sh");
   });
 });

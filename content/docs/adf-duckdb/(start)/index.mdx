@@ -1,0 +1,46 @@
+---
+title: Data Factory into DuckDB
+description: Azure Data Factory copies each source into landing storage, then starts a Container Apps job in which DuckDB rebuilds the tables and publishes them as Parquet, from one project.
+---
+
+Use this combination when you want DuckDB's tables built in Azure after each
+load. Azure Data Factory copies each table into ADLS Gen2 landing storage
+through an integration runtime, then starts an Azure Container Apps job and
+waits for it. The job runs the SQL Ingestron writes: DuckDB reads every landed
+file, rebuilds every table and publishes each one to storage as Parquet.
+
+<RouteFacts id="adf-duckdb" />
+
+To try it on your computer first, follow
+[Your first project](/docs/adf-duckdb/first-project).
+
+## What each part writes [#what-you-get]
+
+One project, with one standard that lists both packs, writes two sets of
+files:
+
+- **The factory**, in `build/adf`: the integration runtime, linked services
+  for the Key Vault, the source and the landing storage, datasets for the
+  source and the landing storage, the copy pipeline and its trigger, and a
+  parameter file for each environment. With `after_copy`, a parent pipeline
+  runs the copies and then the job.
+- **The SQL**, in `build/duckdb/<environment>`: `run.sql`, which builds every
+  table from the landed files and publishes it, and each table's SQL.
+
+The job pulls the public image `ghcr.io/ingestron/duckdb-runner:1`, so you
+need no container registry. [Load with Azure Data Factory](/docs/adf-duckdb/load-with-adf)
+creates the job and connects it to the factory.
+
+## The rest is each platform's
+
+Everything else works as it does on each platform alone:
+
+- **Data Factory:** [the factory's settings](/docs/adf#runtime-and-key-vault),
+  [schedules, retries and landing paths](/docs/adf/pipelines), and
+  [a flow's own triggers](/docs/adf/run-a-flow-on-its-own-triggers).
+- **DuckDB:** [keep a table current](/docs/duckdb/keep-a-table-current),
+  [write a transform](/docs/duckdb/write-a-transform) and
+  [check data quality](/docs/duckdb/add-quality-checks).
+- **Standards:** the standard lists both packs, so each pack's rules apply to
+  its files; see [DuckDB standards](/docs/duckdb/configure-a-standard)
+  and [Data Factory standards](/docs/adf/configure-a-standard).

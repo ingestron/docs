@@ -11,6 +11,19 @@ import { exampleFiles, listExamples, readExampleFile } from "./examples";
 import { connectorEntries, packName, type ConnectorEntry } from "./reference";
 import { connectorRecipes } from "./recipes";
 import { routeGuides } from "./routes";
+import { noteShownOn, platformById, type Platform } from "./platforms";
+import { sharedFolder } from "./content-files";
+
+/** A platform, when a page is that platform's copy; undefined for every platform at once. */
+type On = Platform["id"] | undefined;
+
+/**
+ * A guide's link: the platform's own page, or, for every platform, its old URL,
+ * which lists them. A combination's connector pages link the guides of the
+ * platform that reads the source, its first part: Data Factory's.
+ */
+const guide = (on: On, name: string, old = name) =>
+  on ? `/docs/${platformById(on).parts?.[0] ?? on}/${name}` : `/docs/how-to/${old}`;
 
 /** What a part of the page shows after its words. */
 export type PartKind =
@@ -37,6 +50,8 @@ export interface Part {
   after: string[];
   /** Notes placed here are paragraphs: they continue this part. */
   slot?: string;
+  /** The sample whose files the part shows, where it is not the same on every site. */
+  example?: string;
 }
 
 /** A section's items in order: parts, and the slot for notes with their own headings. */
@@ -63,6 +78,14 @@ const catalogues: Record<string, string> = { adf: "adf-native-connectors" };
 
 /** The worked example of table watermarks that every `adf-copy` page shows. */
 export const watermarkExample = "private-sql-server";
+
+/**
+ * The watermark example a site shows: the starter, whose tables Databricks
+ * keeps, on its own combination; elsewhere the same copies with Data Factory
+ * alone, so the page names no other platform.
+ */
+export const watermarkExampleOn = (on?: string) =>
+  on === undefined || on === "adf-databricks" ? watermarkExample : "adf-private-sql-server";
 
 const definitions = new Map<string, { file: string; data: Record<string, unknown> }[]>();
 /** A sample's connection and flow files, read once. */
@@ -112,10 +135,11 @@ export function connectorExample(
   return { connection: { name, file: connection.file }, flow: { name, file: flow.file } };
 }
 
-/** The routes a connector's entry starts, once each, with their guides. */
-function routesOf(id: string, entry: ConnectorEntry) {
+/** The routes a connector's entry starts, once each, with their guides; only a platform's, with `on`. */
+function routesOf(id: string, entry: ConnectorEntry, on?: On) {
   return projectRoutes(id)
     .filter((route) => route.method === entry.connector.method)
+    .filter((route) => !on || platformById(on).routes.includes(route.via))
     .filter((route, index, all) => all.findIndex((other) => other.via === route.via) === index)
     .map(({ via, title }) => {
       const guide = routeGuides[via];
@@ -125,21 +149,26 @@ function routesOf(id: string, entry: ConnectorEntry) {
 }
 
 /** Lines for the routes the connector has, from words written per route. */
-function byRoute(id: string, entry: ConnectorEntry, words: Record<string, string>) {
-  return routesOf(id, entry).flatMap((route) =>
+function byRoute(id: string, entry: ConnectorEntry, words: Record<string, string>, on?: On) {
+  return routesOf(id, entry, on).flatMap((route) =>
     words[route.via] === undefined ? [] : [{ ...route, text: words[route.via]! }],
   );
 }
 
-const windows = "[time window](/docs/platforms/adf-pipelines#define-the-time-windows)";
+const windows = "[time window](/docs/adf/pipelines#define-the-time-windows)";
 
 /** How the source is reached, before the connection is written. */
 function access({ pack, connector }: ConnectorEntry): string[] {
   const vendor = `[${connector.title} in the ${packName(pack)} documentation](${connector.docs})`;
   if (pack === "adf")
     return [
-      `Prepare [source access, the runtime and credentials](/docs/platforms/adf-deploy#prerequisites), then check the vendor's prerequisites for permissions, drivers, versions and authentication in ${vendor}.`,
-      "Name the runtime, Key Vault and landing storage in the platform's method settings; see [Runtime and Key Vault](/docs/platforms/adf#runtime-and-key-vault).",
+      `Prepare [source access, the runtime and credentials](/docs/adf/deploy#prerequisites), then check the vendor's prerequisites for permissions, drivers, versions and authentication in ${vendor}.`,
+      "Name the runtime, Key Vault and landing storage in the platform's method settings; see [Runtime and Key Vault](/docs/adf#runtime-and-key-vault).",
+    ];
+  if (connector.method === "synapse-copy")
+    return [
+      "Prepare an existing Synapse workspace Azure integration runtime, landing storage and Key Vault. Grant its identity access to storage and secret references; see [Synapse prerequisites](/docs/synapse/deploy#prerequisites).",
+      `Give the SQL reader access to the selected tables. Use SQL authentication and a Key Vault password reference; read ${vendor} for the source requirements.`,
     ];
   if (connector.method === "lakeflow-connect")
     return [
@@ -156,6 +185,8 @@ function access({ pack, connector }: ConnectorEntry): string[] {
 
 /** What the reader replaces in the example connection, by method: ADF's hold an endpoint and an account. */
 const replace: Record<string, string> = {
+  "synapse-copy":
+    "replace the Azure SQL endpoint, reader account and Key Vault secret name with yours",
   "lakeflow-connect": "replace the Unity Catalog connection's name in `uc_connection` with yours",
   files: "replace the folder in `path` with yours",
 };
@@ -173,7 +204,7 @@ function exampleWords({ pack, connector }: ConnectorEntry): string[] {
   ];
 }
 
-function reading(id: string, entry: ConnectorEntry): Part {
+function reading(id: string, entry: ConnectorEntry, on?: On): Part {
   const { pack, connector } = entry;
   const part = {
     kind: "reading" as const,
@@ -182,6 +213,15 @@ function reading(id: string, entry: ConnectorEntry): Part {
     after: [],
   };
   switch (connector.method) {
+    case "synapse-copy":
+      return {
+        ...part,
+        title: "Full snapshots in the workspace",
+        before: [
+          "The Synapse pipeline reads the selected Azure SQL columns into a Parquet snapshot. A stopped schedule trigger is generated by default. Serverless views read the latest snapshot without a second copy.",
+          "This Preview route supports public or workspace reachability and SQL authentication. Incremental cursors, self-hosted runtimes and environment-variable deployment values are not supported.",
+        ],
+      };
     case "adf-table":
       return {
         ...part,
@@ -212,11 +252,16 @@ function reading(id: string, entry: ConnectorEntry): Part {
           `With \`mode: new\`, each ${windows} copies the files that changed in it; \`mode: all\` copies every matching file in every window. \`files\` picks which files in the folder and its sub-folders to copy. All tables of one connection use one linked service, pipeline and trigger, so they share runtime and schedule settings.`,
           "ADF copies the files as they are, keeping their names and folders. Set `format` to the files' format.",
         ],
-        routes: byRoute(id, entry, {
-          "adf-databricks":
-            "Databricks reads the landed files in that format. `options` configures its reader, for example CSV headers, and with `schema_hints` on, the contract's column types are passed to it.",
-          "adf-landing": "Nothing reads the files: the landed files are the result.",
-        }),
+        routes: byRoute(
+          id,
+          entry,
+          {
+            "adf-databricks":
+              "Databricks reads the landed files in that format. `options` configures its reader, for example CSV headers, and with `schema_hints` on, the contract's column types are passed to it.",
+            "adf-landing": "Nothing reads the files: the landed files are the result.",
+          },
+          on,
+        ),
       };
     case "lakeflow-connect":
       return {
@@ -231,7 +276,7 @@ function reading(id: string, entry: ConnectorEntry): Part {
         ...part,
         title: "How it reads",
         before: [
-          "Databricks reads the files where they are with Auto Loader, into a [streaming table](/docs/reference/packs/databricks#streaming-table) that reads each file once. To keep only the current row per key from change records, see [Keep a table current](/docs/how-to/keep-a-table-current#on-databricks).",
+          "Databricks reads the files where they are with Auto Loader, into a [streaming table](/docs/reference/packs/databricks#streaming-table) that reads each file once. To keep only the current row per key from change records, see [Keep a table current](/docs/databricks/keep-a-table-current#on-databricks).",
         ],
       };
   }
@@ -239,7 +284,7 @@ function reading(id: string, entry: ConnectorEntry): Part {
 }
 
 /** What the destination keeps from repeated copies, for the ADF methods. */
-function current(id: string, entry: ConnectorEntry): Part | undefined {
+function current(id: string, entry: ConnectorEntry, on?: On): Part | undefined {
   const { pack, connector } = entry;
   const lead: Record<string, string> = {
     "adf-table": "A row missing from a later copy does not mean it was deleted.",
@@ -253,8 +298,8 @@ function current(id: string, entry: ConnectorEntry): Part | undefined {
     throw new Error(`No words on keeping tables current for ${connector.method}.`);
   const databricks =
     connector.method === "adf-files"
-      ? "Auto Loader reads each file once by default. Choose how the table keeps the rows inside those files, separately from which files ADF copies; see [On Databricks](/docs/how-to/keep-a-table-current#on-databricks)."
-      : "Databricks reads the landed files into a streaming table. With `history: none`, its default, repeated copies add repeated rows; `history: latest` keeps the current row per key and `history: full` keeps every version, ordered by the `sequence` column you choose. See [On Databricks](/docs/how-to/keep-a-table-current#on-databricks)." +
+      ? "Auto Loader reads each file once by default. Choose how the table keeps the rows inside those files, separately from which files ADF copies; see [On Databricks](/docs/databricks/keep-a-table-current#on-databricks)."
+      : "Databricks reads the landed files into a streaming table. With `history: none`, its default, repeated copies add repeated rows; `history: latest` keeps the current row per key and `history: full` keeps every version, ordered by the `sequence` column you choose. See [On Databricks](/docs/databricks/keep-a-table-current#on-databricks)." +
         (connector.method === "adf-copy"
           ? " `sequence` decides which version wins; it is separate from the copy's cursor, though often the same column. ADF and Databricks run on separate schedules."
           : "");
@@ -263,14 +308,19 @@ function current(id: string, entry: ConnectorEntry): Part | undefined {
     id: `${pack}-current`,
     title: "Keep the destination current",
     before: [lead[connector.method]!],
-    routes: byRoute(id, entry, {
-      "adf-databricks": databricks,
-      "adf-synapse":
-        "A view reads the landed files each time it is queried and shows them as they are: it cannot keep a current row per key. See [On Synapse](/docs/how-to/keep-a-table-current#on-synapse).",
-      "adf-duckdb":
-        "The DuckDB table's `history` decides what it keeps; see [On DuckDB](/docs/how-to/keep-a-table-current#on-duckdb).",
-      "adf-landing": "The landed files are the result: nothing merges them.",
-    }),
+    routes: byRoute(
+      id,
+      entry,
+      {
+        "adf-databricks": databricks,
+        "adf-synapse":
+          "A view reads the landed files each time it is queried and shows them as they are: it cannot keep a current row per key. See [On Synapse](/docs/synapse/keep-a-table-current#on-synapse).",
+        "adf-duckdb":
+          "The DuckDB table's `history` decides what it keeps; see [On DuckDB](/docs/duckdb/keep-a-table-current#on-duckdb).",
+        "adf-landing": "The landed files are the result: nothing merges them.",
+      },
+      on,
+    ),
     after: [],
   };
 }
@@ -312,7 +362,7 @@ function connectSection(entry: ConnectorEntry): Section {
   };
 }
 
-function readSection(id: string, entry: ConnectorEntry): Section {
+function readSection(id: string, entry: ConnectorEntry, on?: On): Section {
   const { pack, connector } = entry;
   const items: Item[] = [
     {
@@ -321,12 +371,12 @@ function readSection(id: string, entry: ConnectorEntry): Section {
         id: `${pack}-tables`,
         title: "Choose the tables",
         before: [
-          "The connection's `id` is the flow's `source`. Each entry under `tables` names a destination table and its source `object`, here with a contract that lists the columns and keys you expect. A table that copies the source as it is can leave out `contract` and take its columns from the [source metadata](/docs/how-to/describe-a-source) instead, [unless the platform manages its access](/docs/how-to/describe-a-source#needs-a-contract). Replace the synthetic object and contract with yours before deploying.",
+          `The connection's \`id\` is the flow's \`source\`. Each entry under \`tables\` names a destination table and its source \`object\`, here with a contract that lists the columns and keys you expect. A table that copies the source as it is can leave out \`contract\` and take its columns from the [source metadata](${guide(on, "describe-a-source")}) instead, [unless the platform manages its access](${guide(on, "describe-a-source")}#needs-a-contract). Replace the synthetic object and contract with yours before deploying.`,
         ],
         after: [],
       },
     },
-    { part: reading(id, entry) },
+    { part: reading(id, entry, on) },
   ];
   if (connector.method === "adf-copy")
     items.push({
@@ -334,8 +384,11 @@ function readSection(id: string, entry: ConnectorEntry): Section {
         kind: "watermarks",
         id: `${pack}-watermarks`,
         title: "A different cursor per table",
+        example: watermarkExampleOn(on),
         before: [
-          "In this example, the standard copies changed rows once an hour, and the flow reads them by `modified_at`. Customers take the flow's cursor. Invoices give their own, `updated_at`, and order their changes by it too. The same hourly trigger serves both tables.",
+          watermarkExampleOn(on) === watermarkExample
+            ? "In this example, the standard copies changed rows once an hour, and the flow reads them by `modified_at`. Customers take the flow's cursor. Invoices give their own, `updated_at`, and order their changes by it too. The same hourly trigger serves both tables."
+            : "In this example, the standard copies changed rows once an hour, and the flow reads them by `modified_at`. Customers take the flow's cursor. Invoices give their own, `updated_at`. The same hourly trigger serves both tables.",
           ...watermarkNote(id),
         ],
         after: [],
@@ -351,7 +404,7 @@ function readSection(id: string, entry: ConnectorEntry): Section {
       after: [],
     },
   });
-  const keep = current(id, entry);
+  const keep = current(id, entry, on);
   if (keep) items.push({ part: keep });
   return {
     id: `${pack}-ingestion`,
@@ -374,28 +427,30 @@ function watermarkNote(id: string): string[] {
   ];
 }
 
-/** The connector's page, section by section, in reading order. */
-export function connectorSections(id: string): Section[] {
-  const entries = connectorEntries(id);
-  if (entries.length === 0) throw new Error(`No pack reads connector "${id}".`);
+/** The connector's page, section by section, in reading order; with `on`, one platform's copy:
+ * only the packs and routes that platform loads it with. */
+export function connectorSections(id: string, on?: On): Section[] {
+  const entries = connectorEntries(id).filter((entry) => routesOf(id, entry, on).length > 0);
+  if (entries.length === 0)
+    throw new Error(`No pack reads connector "${id}"${on ? ` on ${on}` : ""}.`);
   const title = entries[0]!.connector.title;
   return [
     {
       id: "routes",
       title: "Routes",
       before: [
-        `These are the routes a project can take for ${title}, by the pack that reads the source. To compare them, see [Choose where your data goes](/docs/start/choose-a-route). Create it gives the command that starts a project on each route; \`init\` asks which source and how it is reached, and, in a terminal, which assistant files to write, and writes \`REPLACE_ME\` for each value it cannot know, as [Start from a connection](/docs/how-to/start-from-a-template#start-from-a-connection) describes.`,
+        `These are the routes a project can take for ${title}, by the pack that reads the source. To compare them, see [Compare the platforms](/docs/concepts/choose-a-platform). Create it gives the command that starts a project on each route; \`init\` asks which source and how it is reached, and, in a terminal, which assistant files to write, and writes \`REPLACE_ME\` for each value it cannot know, as [Start from a connection](${guide(on, "create-a-project", "start-from-a-template")}#start-from-a-connection) describes.`,
       ],
       items: [],
     },
-    ...entries.flatMap((entry) => [connectSection(entry), readSection(id, entry)]),
+    ...entries.flatMap((entry) => [connectSection(entry), readSection(id, entry, on)]),
     ...(connectorRecipes(id).length > 0
       ? [
           {
             id: "source-metadata",
             title: "Source metadata",
             before: [
-              `Ingestron never connects to ${title}. Someone who can reach it saves what its tables look like, their columns, types and key, and \`ingestron source import\` reads the file. A table that copies the source as it is can then do without a contract, [unless the platform manages its access](/docs/how-to/describe-a-source#needs-a-contract). \`ingestron source request\` prints this step for your project; see [Describe a source](/docs/how-to/describe-a-source).`,
+              `Ingestron never connects to ${title}. Someone who can reach it saves what its tables look like, their columns, types and key, and \`ingestron source import\` reads the file. A table that copies the source as it is can then do without a contract, [unless the platform manages its access](${guide(on, "describe-a-source")}#needs-a-contract). \`ingestron source request\` prints this step for your project; see [Describe a source](${guide(on, "describe-a-source")}).`,
             ],
             items: [],
           },
@@ -405,16 +460,16 @@ export function connectorSections(id: string): Section[] {
       id: "examples",
       title: "Examples",
       before: [
-        "These projects use synthetic values; a starter's download is what `init` writes from it, with `REPLACE_ME` where a value is yours and a README.md that lists them. Choose a download for your route, then [adapt and generate it](/docs/how-to/start-from-a-template#write-the-values). Multi-connector projects contain other sources too; to start with only this connection, use [Create a project](/docs/how-to/start-from-a-template#start-from-a-connection).",
+        `These projects use synthetic values; a starter's download is what \`init\` writes from it, with \`REPLACE_ME\` where a value is yours and a README.md that lists them. Choose a download for your route, then [adapt and generate it](${guide(on, "create-a-project", "start-from-a-template")}#write-the-values). Multi-connector projects contain other sources too; to start with only this connection, use [Create a project](${guide(on, "create-a-project", "start-from-a-template")}#start-from-a-connection).`,
       ],
       items: [{ slot: "examples" }],
     },
   ];
 }
 
-/** Every slot a note can go in on the connector's page. */
-export function connectorSlots(id: string): string[] {
-  return connectorSections(id).flatMap((section) =>
+/** Every slot a note can go in on the connector's page, or on one platform's copy of it. */
+export function connectorSlots(id: string, on?: On): string[] {
+  return connectorSections(id, on).flatMap((section) =>
     section.items.flatMap((item) =>
       "slot" in item ? [item.slot] : item.part.slot ? [item.part.slot] : [],
     ),
@@ -428,8 +483,8 @@ export const settingsAnchor = "settings";
  * For each heading in a connector's MDX file, the slot of the note it is in.
  * Headings are found outside code blocks, in the order MDX numbers them.
  */
-export function noteHeadingSlots(id: string): string[] {
-  const text = readFileSync(join(process.cwd(), "content/docs/connectors", `${id}.mdx`), "utf8");
+export function noteHeadingSlots(id: string, on?: On): string[] {
+  const text = readFileSync(join(sharedFolder, "connectors", `${id}.mdx`), "utf8");
   const slots: string[] = [];
   let slot: string | undefined;
   let fenced = false;
@@ -441,7 +496,7 @@ export function noteHeadingSlots(id: string): string[] {
     if (line.startsWith("</ConnectorNote>")) slot = undefined;
     if (/^#{1,6} /.test(line)) {
       if (!slot) throw new Error(`connectors/${id}.mdx: a heading outside a ConnectorNote.`);
-      slots.push(slot);
+      if (!on || noteShownOn(slot, on)) slots.push(slot);
     }
   }
   return slots;
@@ -452,16 +507,16 @@ export function noteHeadingSlots(id: string): string[] {
  * headings where their slots are. `notes` is the MDX file's own table of
  * contents, which holds only the notes' headings.
  */
-export function connectorToc(id: string, notes: TOCItemType[]): TOCItemType[] {
-  const slots = noteHeadingSlots(id);
+export function connectorToc(id: string, notes: TOCItemType[], on?: On): TOCItemType[] {
+  const slots = noteHeadingSlots(id, on);
   if (slots.length !== notes.length)
     throw new Error(`connectors/${id}.mdx: ${notes.length} headings, ${slots.length} in notes.`);
-  const known = connectorSlots(id);
+  const known = connectorSlots(id, on);
   const unknown = slots.filter((slot) => !known.includes(slot));
   if (unknown.length > 0)
     throw new Error(`connectors/${id}.mdx: no slot ${unknown.join(", ")} on this page.`);
   const inSlot = (slot: string) => notes.filter((_, index) => slots[index] === slot);
-  return connectorSections(id).flatMap((section) => [
+  return connectorSections(id, on).flatMap((section) => [
     { title: section.title, url: `#${section.id}`, depth: 2 },
     ...section.items.flatMap((item) =>
       "slot" in item
@@ -487,14 +542,70 @@ export function sourceCategories(): string[] {
   return [...new Set(projectSources().map((source) => source.category))];
 }
 
-/** The catalogue's table of contents: its own headings, then a heading per category. */
-export function catalogueToc(own: TOCItemType[]): TOCItemType[] {
+/** A platform's catalogue's table of contents: its own headings, then a heading per category it has. */
+export function catalogueToc(own: TOCItemType[], on: Platform["id"]): TOCItemType[] {
+  const routes = platformById(on).routes;
+  const categories = new Set(
+    projectSources()
+      .filter((source) => projectRoutes(source.id).some((route) => routes.includes(route.via)))
+      .map((source) => source.category),
+  );
   return [
     ...own,
-    ...sourceCategories().map((name) => ({
-      title: name,
-      url: `#${categoryAnchor(name)}`,
-      depth: 2,
-    })),
+    ...sourceCategories()
+      .filter((name) => categories.has(name))
+      .map((name) => ({
+        title: name,
+        url: `#${categoryAnchor(name)}`,
+        depth: 2,
+      })),
   ];
+}
+
+/** What each route does with a source, for a connector page's description. */
+function routeClause(via: string, method: string, title: string): string {
+  // The Files connector is called "Files": its files are just "the files".
+  const files = /files$/i.test(title) ? "the files" : `${title} files`;
+  const what =
+    method === "adf-copy"
+      ? `a full table or a time window of ${title}`
+      : method === "adf-files"
+        ? files
+        : `${title} tables`;
+  const landed = `Azure Data Factory lands ${what} in storage`;
+  switch (via) {
+    case "databricks":
+      return method === "files"
+        ? `Databricks reads ${files} where they are, with Auto Loader`
+        : `Lakeflow Connect captures ${title} changes directly in Databricks`;
+    case "synapse":
+      return `a Synapse pipeline lands ${title} tables in storage, and serverless SQL views read the landed files`;
+    case "adf-databricks":
+      return `${landed}, and Databricks reads the landed files into tables`;
+    case "adf-synapse":
+      return `${landed}, and Synapse serverless SQL views read the landed files`;
+    case "adf-duckdb":
+      return `${landed}, and DuckDB builds tables from the landed files`;
+    case "adf-landing":
+      return `${landed}: the landed files are the result`;
+  }
+  throw new Error(`No description for the route "${via}".`);
+}
+
+/**
+ * A platform's connector page's description: each of the platform's routes for
+ * the source, in New project's order, from the route facts.
+ * @example connectorDescription("sqlserver", "synapse") // "Azure Data Factory copies …"
+ */
+export function connectorDescription(id: string, on: Platform["id"]): string {
+  const entries = connectorEntries(id);
+  const title = entries[0]?.connector.title;
+  if (!title) throw new Error(`No pack reads connector "${id}".`);
+  const clauses = projectRoutes(id)
+    .filter((route) => platformById(on).routes.includes(route.via))
+    .filter((route, index, all) => all.findIndex((other) => other.via === route.via) === index)
+    .map((route) => routeClause(route.via, route.method, title));
+  if (clauses.length === 0) throw new Error(`${on} does not load "${id}".`);
+  const text = clauses.join(", or ");
+  return `${text[0]!.toUpperCase()}${text.slice(1)}.`;
 }

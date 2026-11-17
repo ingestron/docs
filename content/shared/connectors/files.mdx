@@ -1,0 +1,46 @@
+<ConnectorPage id="files" platform="~">
+
+<ConnectorNote at="databricks-reading">
+
+With `schema_hints` on, the contract's column types are passed as schema hints,
+so the table gets the types you reviewed rather than guessed ones. For CSV with
+a header, set `options: { header: true }`.
+
+</ConnectorNote>
+
+<ConnectorNote at="adf-reading">
+
+The connection's `path` is the file share, and each table's `object` is a
+folder under that share. The runtime must be self-hosted.
+
+</ConnectorNote>
+
+<ConnectorNote at="examples">
+
+### Example: a private CSV share [#private-csv-share]
+
+This complete example reads store files from a private share. The connection
+names the share and credentials, and the flow selects the folder and CSV
+reading options:
+
+<Example name="private-files" file="connections/share.yaml" />
+
+<Example name="private-files" file="flows/stores.yaml" />
+
+<Only on="adf-databricks">
+
+The standard supplies the shared schedule:
+
+<Example name="private-files" file="standard.yaml" />
+
+</Only>
+
+<Only on="databricks adf adf-synapse adf-duckdb">
+
+In your project, the shared schedule is in your standard's `ingest.settings`.
+
+</Only>
+
+</ConnectorNote>
+
+</ConnectorPage>

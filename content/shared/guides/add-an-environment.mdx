@@ -1,0 +1,279 @@
+1. Add it to `environments` in `project.yaml`, with the values that differ:
+
+<Only on="databricks">
+
+<Example name="environments" file="project.yaml" />
+
+</Only>
+
+<Only on="synapse">
+
+<Example name="synapse-pipelines" file="project.yaml" />
+
+Here `prod` is the environment with values of its own.
+
+</Only>
+
+<Only on="adf">
+
+<Example name="landing-only" file="project.yaml" />
+
+Here `prod` is the environment with values of its own.
+
+</Only>
+
+<Only on="duckdb">
+
+<Example name="duckdb-environments" file="project.yaml" />
+
+Here `prod` is the environment with values of its own.
+
+</Only>
+
+2. Read those values in the definitions with `${values.…}`, and use
+   `${environment.name}` where the environment's name belongs:
+
+<Only on="databricks">
+
+<Example name="environments" file="platform.yaml" />
+
+</Only>
+
+<Only on="synapse">
+
+<Example name="synapse-pipelines" file="platform.yaml" />
+
+</Only>
+
+<Only on="adf">
+
+<Example name="landing-only" file="platform.yaml" />
+
+</Only>
+
+<Only on="duckdb">
+
+<Example name="duckdb-environments" file="platform.yaml" />
+
+</Only>
+
+3. Generate it. Every environment is generated together, so plan and apply
+   take no environment:
+
+<ToolSteps>
+<Tool name="CLI">
+
+```sh
+ingestron plan
+ingestron apply
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: Plan**, then **Ingestron: Apply**, from the Command Palette (⇧⌘P on macOS, Ctrl+Shift+P elsewhere). The output is in the Ingestron output panel. To see the new environment's problems and previews, click the environment in the status bar, or run **Ingestron: Select environment**, and choose the new one.
+
+<Screenshot
+  light="/images/vscode/environment-switch-light.png"
+  dark="/images/vscode/environment-switch-dark.png"
+  alt="The picker Environment for problems, previews and the platform request, listing dev development, test production and prod production. Below, the status bar shows Ingestron: dev."
+  caption="The environment in the status bar, and its picker: each environment with its mode. Problems, previews and the platform request follow the one you choose."
+/>
+
+</Tool>
+</ToolSteps>
+
+<Only on="databricks">
+
+The new environment gets no folder of its own. It joins the files the bundle
+already has: a `test` target in `databricks.yml`, with the values that differ
+between environments:
+
+<Example name="environments" file="build/databricks/databricks.yml" pick="targets.test" />
+
+Only an environment named `dev` is in development mode; every other one,
+`test` included, is in production mode. A platform can set `databricks.mode`
+itself; see the
+[platform defaults](/docs/reference/packs/databricks#platform-configuration).
+
+</Only>
+
+<Only on="synapse">
+
+The new environment gets its own script, `environments/test.sql`, beside the
+others, and on the workspace route its own `workspace/test/` folder; `views.sql`
+is shared by every environment.
+
+</Only>
+
+<Only on="adf">
+
+The new environment gets its own parameter file, `parameters/test.json`; the
+factory is shared by every environment.
+
+</Only>
+
+<Only on="duckdb">
+
+The new environment gets its own folder, `build/duckdb/test/`, with its
+`run.sql` and tables.
+
+</Only>
+
+See [Where the files go](/docs/concepts/generated-files#where-the-files-go).
+
+<Only on="databricks adf duckdb">
+
+Schedules run only in an environment named `prod` or `production`, so
+`test`'s schedules are paused; a platform can set `schedule.paused` itself.
+
+</Only>
+
+<Only on="synapse">
+
+The workspace route's triggers stay stopped in every environment while
+`platform.yaml` sets `paused: true`, as a new Synapse project does; start each
+in the workspace when you approve it.
+
+</Only>
+Environments may differ only in values, such as names, paths and hosts: a table
+built in one environment only is refused as
+[`ENVIRONMENTS_DIFFER`](/docs/reference/errors#ENVIRONMENTS_DIFFER).
+
+To deploy the new environment, add it to your deployment pipeline as
+[Deploy through environments](/docs/~/deploy-through-environments#add-an-environment)
+shows.
+
+## Check what differs
+
+Before deploying, see what the new environment changes compared with one you
+know:
+
+<Only on="databricks">
+
+```sh
+ingestron compare --env dev --env test
+```
+
+For the example above, it prints:
+
+```text
+# dev ↔ test: finance
+
+## Platform
+
+- `mode`: `development` → `production`
+- `workspace.root_path`: `/Workspace/Shared/.bundle/finance/dev` → `/Workspace/Shared/.bundle/finance/test`
+- `tags.environment`: `dev` → `test`
+- `sections.databricks.workspace.root_path`: `/Workspace/Shared/.bundle/finance/dev` → `/Workspace/Shared/.bundle/finance/test`
+
+## Table journals
+
+- `full name`: `finance_dev.bronze.journals` → `finance_test.bronze.journals`
+- `ingest.connection.settings.path`: `/Volumes/dev_landing/finance/files/ledger` → `/Volumes/test_landing/finance/files/ledger`
+```
+
+</Only>
+
+<Only on="synapse">
+
+```sh
+ingestron compare --env dev --env prod
+```
+
+For the example above, it prints:
+
+```text
+# dev ↔ prod: sales
+
+## Platform
+
+- `mode`: `development` → `production`
+
+## Table orders
+
+- `full name`: `sales_dev.bronze.orders` → `sales_prod.bronze.orders`
+- `ingest.settings.landing`: `abfss://landing@saleslakedev.dfs.core.windows.net/erp` → `abfss://landing@saleslakeprod.dfs.core.windows.net/erp`
+- `ingest.settings.key_vault`: `https://kv-sales-dev.vault.azure.net` → `https://kv-sales-prod.vault.azure.net`
+- `store.settings.data_source_location`: `abfss://landing@saleslakedev.dfs.core.windows.net` → `abfss://landing@saleslakeprod.dfs.core.windows.net`
+```
+
+</Only>
+
+<Only on="adf">
+
+```sh
+ingestron compare --env dev --env prod
+```
+
+For the example above, it prints:
+
+```text
+# dev ↔ prod: sales
+
+## Platform
+
+- `mode`: `development` → `production`
+
+## Table customers
+
+- `lands at`: `abfss://landing@saleslakedev.dfs.core.windows.net/erp/erp.dbo.Customers/erp.dbo.Customers.parquet` → `abfss://landing@saleslakeprod.dfs.core.windows.net/erp/erp.dbo.Customers/erp.dbo.Customers.parquet`
+- `ingest.settings.landing`: `abfss://landing@saleslakedev.dfs.core.windows.net/erp` → `abfss://landing@saleslakeprod.dfs.core.windows.net/erp`
+- `ingest.settings.key_vault`: `https://kv-sales-dev.vault.azure.net` → `https://kv-sales-prod.vault.azure.net`
+
+## Table invoices
+
+- `lands at`: `abfss://landing@saleslakedev.dfs.core.windows.net/erp/erp.dbo.Invoices/erp.dbo.Invoices.parquet` → `abfss://landing@saleslakeprod.dfs.core.windows.net/erp/erp.dbo.Invoices/erp.dbo.Invoices.parquet`
+- `ingest.settings.landing`: `abfss://landing@saleslakedev.dfs.core.windows.net/erp` → `abfss://landing@saleslakeprod.dfs.core.windows.net/erp`
+- `ingest.settings.key_vault`: `https://kv-sales-dev.vault.azure.net` → `https://kv-sales-prod.vault.azure.net`
+```
+
+</Only>
+
+<Only on="duckdb">
+
+```sh
+ingestron compare --env dev --env prod
+```
+
+For the example above, it prints:
+
+```text
+# dev ↔ prod: shop
+
+## Platform
+
+- `mode`: `development` → `production`
+
+## Table orders
+
+- `store.settings.published`: `./published/dev` → `./published/prod`
+
+## Table customer_totals
+
+- `store.settings.published`: `./published/dev` → `./published/prod`
+```
+
+</Only>
+
+`compare` resolves both environments first, with every value and default in
+place, and lists only what differs:
+
+- **Platform:** the platform document's values, and the defaults that follow
+  from the environment, such as `mode`.<Only on="databricks"> The values of a pack's own section,
+  such as `databricks:` in the example, show twice: as the pack reads them, such as
+  `workspace.root_path`, and as written, under `sections.databricks`. Compared with `prod`, it also shows
+  `schedule.paused`, because only `prod` runs its schedule.</Only>
+- **Names:** the pipeline and job names, which are not per table.
+- **Table:** one section for each table that differs: its full name, each
+  step's method and settings, the connection's settings and the table's
+  checks.
+
+A value one environment has and the other lacks shows as `not set`. A
+`${secret:…}` reference shows as `a secret`, never its value. Without `--env`,
+`compare` takes the first two environments in `project.yaml`. The output is
+Markdown, so you can paste it into a pull request. When either environment has
+problems, it lists them instead and exits with `1`.
+
+In VS Code, run **Ingestron: Compare environments**. With more than two
+environments it asks which two.

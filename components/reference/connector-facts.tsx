@@ -3,32 +3,55 @@ import { Fragment, type ReactNode } from "react";
 import { projectRoutes } from "@ingestron/core";
 import { ingestionRows } from "@/lib/connector-settings";
 import { listExamples } from "@/lib/examples";
-import { connectorEntries, packName, type ConnectorEntry } from "@/lib/reference";
+import { platformById, type Platform } from "@/lib/platforms";
+import {
+  connectorEntries,
+  packName,
+  platformUsedPacks,
+  type ConnectorEntry,
+} from "@/lib/reference";
 import { connectorCommand, starter, starterCommand } from "@/lib/routes";
 
-/** A compact summary of each pack that reads the connector, the routes it starts and the command for each, then the starters that read it.
- * @example <ConnectorFacts id="sqlserver" />
+/** A compact summary of each pack that reads the connector, the routes it starts and the command for each, then the starters that read it; with `platform`, only that platform's.
+ * @example <ConnectorFacts id="sqlserver" platform="synapse" />
  */
-export function ConnectorFacts({ id }: { id: string }) {
-  const entries = connectorEntries(id);
+export function ConnectorFacts({ id, platform }: { id: string; platform?: Platform["id"] }) {
+  const entries = connectorEntries(id).filter((entry) => routesOf(id, entry, platform).length > 0);
   if (entries.length === 0) throw new Error(`No pack reads connector "${id}".`);
   return (
     <div className="connector-routes">
       {entries.map((entry) => (
-        <Route key={entry.pack} id={id} entry={entry} />
+        <Route key={entry.pack} id={id} entry={entry} platform={platform} />
       ))}
-      <Starters id={id} />
+      <Starters id={id} platform={platform} />
     </div>
   );
 }
 
-function Route({ id, entry }: { id: string; entry: ConnectorEntry }) {
+/** The routes an entry starts, on one platform when given. */
+function routesOf(id: string, { connector }: ConnectorEntry, platform?: Platform["id"]) {
+  return projectRoutes(id).filter(
+    (route) =>
+      route.method === connector.method &&
+      (!platform || platformById(platform).routes.includes(route.via)),
+  );
+}
+
+function Route({
+  id,
+  entry,
+  platform,
+}: {
+  id: string;
+  entry: ConnectorEntry;
+  platform?: Platform["id"];
+}) {
   const { pack, connector } = entry;
   return (
     <section>
       <h3>{packName(pack)}</h3>
       <dl className="connector-summary">
-        {routeFacts(id, entry).map(([label, value]) => (
+        {routeFacts(id, entry, platform).map(([label, value]) => (
           <Fragment key={label}>
             <dt>{label}</dt>
             <dd>{value}</dd>
@@ -46,11 +69,13 @@ function Route({ id, entry }: { id: string; entry: ConnectorEntry }) {
 
 function routeFacts(
   id: string,
-  { pack, connector, connectivity }: ConnectorEntry,
+  entry: ConnectorEntry,
+  platform?: Platform["id"],
 ): [string, ReactNode][] {
+  const { pack, connector, connectivity } = entry;
   const { reading, maturity } = connector;
   const modes = ingestionRows(id, pack).find((field) => field.path.join(".") === "mode")?.values;
-  const routes = projectRoutes(id).filter((route) => route.method === connector.method);
+  const routes = routesOf(id, entry, platform);
   if (routes.length === 0) throw new Error(`No route reads "${id}" with ${connector.method}.`);
   const facts: [string, ReactNode][] = [
     [
@@ -88,10 +113,12 @@ function routeFacts(
   return facts;
 }
 
-/** The built-in starters whose connections use the connector, the one with no cloud first. */
-function Starters({ id }: { id: string }) {
+/** The built-in starters whose connections use the connector, the one with no cloud first; on a platform, those its routes build. */
+function Starters({ id, platform }: { id: string; platform?: Platform["id"] }) {
+  const used = platform && platformUsedPacks(platform);
   const starters = listExamples()
     .filter((example) => example.template && example.facts.connectors.includes(id))
+    .filter((example) => !used || example.facts.packs.every((pack) => used.has(pack)))
     .sort((a, b) => Number(b.template === starter) - Number(a.template === starter));
   if (starters.length === 0) return null;
   return (

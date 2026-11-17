@@ -1,0 +1,11 @@
+apiVersion: ingestron.io/v1
+kind: Flow
+id: readings
+source: sensors
+tables:
+  readings:
+    object: readings
+    contract: iot.readings
+    expectations:
+      # SQL the engine runs over each row
+      - { name: plausible_temperature, check: temperature BETWEEN -60 AND 80, action: fail }

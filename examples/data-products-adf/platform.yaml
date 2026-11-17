@@ -1,0 +1,8 @@
+apiVersion: ingestron.io/v1
+kind: Platform
+id: azure
+settings:
+  adf-copy: # shared infrastructure, referenced by name
+    landing: abfss://landing@shopdev.dfs.core.windows.net/shop
+    key_vault: https://kv-shop-dev.vault.azure.net
+    integration_runtime: AutoResolveIntegrationRuntime

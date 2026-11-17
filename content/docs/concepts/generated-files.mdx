@@ -38,7 +38,7 @@ that runs on DuckDB alone, such as a laptop environment with
 Environments may differ only in values, such as names, paths and hosts. A
 table built in some environments only, or a resource name that differs, is
 [`ENVIRONMENTS_DIFFER`](/docs/reference/errors#ENVIRONMENTS_DIFFER). Each
-platform page's [What Ingestron writes](/docs/platforms/databricks#what-you-get)
+platform page's [What Ingestron writes](/docs/databricks#what-you-get)
 section shows its files, and
 [Deploy through environments](/docs/how-to/deploy-through-environments) deploys
 them, one environment after another.
@@ -97,7 +97,7 @@ platform, or after upgrading from the folder per environment of version 1,
 files as your own, as
 [Check generated files in CI](/docs/how-to/check-in-ci) shows.
 
-The one exception is [Run DuckDB in Azure](/docs/platforms/duckdb-in-azure).
+The one exception is DuckDB in Azure; see [Load with Azure Data Factory](/docs/adf-duckdb/load-with-adf) on Data Factory into DuckDB.
 Its Container Apps job runs the public image `ghcr.io/ingestron/duckdb-runner`,
 which Ingestron publishes. You can copy the image to your own registry, and pin
 it, as that page shows.

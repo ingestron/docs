@@ -7,9 +7,8 @@
     "standards-and-packs",
     "settings",
     "layers",
-    "not-applied",
-    "environments-and-platform",
     "yaml-references",
-    "generated-files"
+    "generated-files",
+    "choose-a-platform"
   ]
 }

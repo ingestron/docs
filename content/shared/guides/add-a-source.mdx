@@ -1,0 +1,302 @@
+A project grows by adding files. `imports` in `project.yaml` lists the files
+to load, by pattern, so a new file that a pattern matches is part of the
+project with no other change.
+
+<Only on="duckdb">
+
+<Example name="duckdb" file="project.yaml" />
+
+</Only>
+
+<Only on="synapse adf">
+
+After [your first project](/docs/~/first-project), `project.yaml` imports
+`standard.yaml`, `platform.yaml` and every file in `connections/`, `flows/`
+and `contracts/`.
+
+</Only>
+
+<Only on="databricks">
+
+After [your first project](/docs/~/first-project), `project.yaml` imports
+`standard.yaml` and every file in `connections/`, `flows/` and `contracts/`.
+
+</Only>
+
+A file that no pattern matches is not part of the project, and nothing is
+generated from it. VS Code warns on such a file (`NOT_IMPORTED`), and its
+quick fix adds the folder to `imports`. A project imports only the folders it
+was created with: add `transforms/*.yaml` before its first transform. Adding a
+connection, flow or contract with Ingestron imports its folder for you, if no
+import includes it yet.
+
+In VS Code, **Add connection** and **Add flow** in the Project panel write
+the connection and the flow for you, offering only the connectors and methods
+your platform supports; see
+[Add a connection and flow](/docs/~/create-a-project#add-a-connection-and-flow).
+This page shows the files they write, and how to grow them by hand.
+
+## Add a table from a source you already read
+
+These steps add a customers table to the `shop` project from
+[your first project](/docs/~/first-project). Work in the `shop` folder, after
+you applied it there; if you cleaned it up, create and apply it again first.
+
+1. Save a few rows of the customers table as `samples/customers.csv`:
+
+   ```csv
+   customer_id,name,region
+   1,Ana,North
+   2,Ben,South
+   3,Chen,North
+   ```
+
+2. Draft its contract from the file:
+
+   <Only on="duckdb databricks">
+
+   ```sh
+   ingestron contract samples/customers.csv --name shop.customers
+   ```
+
+   ```text
+   Wrote contracts/shop.customers.yaml. Review the types, then add keys, required columns and descriptions.
+   ```
+
+   </Only>
+
+   <Only on="synapse adf">
+
+   ```sh
+   ingestron contract samples/customers.csv --name customers
+   ```
+
+   ```text
+   Wrote contracts/customers.yaml. Review the types, then add keys, required columns and descriptions.
+   ```
+
+   </Only>
+
+   In VS Code, right-click the file and choose **Ingestron: Draft contract from
+   sample**. Then mark `customer_id` with `primaryKey: true` and
+   `required: true`, as [Describe a table with a contract](/docs/~/write-a-contract)
+   explains.
+
+3. Add the table to the flow that reads the same source. In
+   `flows/orders.yaml`, add it under `tables`, below `orders`:
+
+   <Only on="duckdb">
+
+   {/* prettier-ignore */}
+   ```yaml
+     customers: { object: customers.csv, contract: shop.customers }
+   ```
+
+   The key, `customers`, is the table's name. `object` is the file in the
+   connection's folder, and `contract` is the contract's `id`. In VS Code,
+   completion under `tables` offers each contract no table uses yet as a
+   table. It fills in `object` with the contract's table name, `customers`:
+   change it to the file, `customers.csv`.
+
+   </Only>
+
+   <Only on="databricks">
+
+   {/* prettier-ignore */}
+   ```yaml
+     customers: { object: customers, contract: shop.customers }
+   ```
+
+   The key, `customers`, is the table's name. `object` is the folder under the
+   connection's path that the files arrive in, and `contract` is the
+   contract's `id`. In VS Code, completion under `tables` offers each contract
+   no table uses yet as a table.
+
+   </Only>
+
+   <Only on="synapse adf">
+
+   {/* prettier-ignore */}
+   ```yaml
+     customers:
+       object: sales.dbo.customers
+       contract: customers
+   ```
+
+   The key, `customers`, is the table's name. `object` is the table in the
+   database, and `contract` is the contract's `id`. In VS Code, completion
+   under `tables` offers each contract no table uses yet as a table.
+
+   </Only>
+
+4. Plan:
+
+   ```sh
+   ingestron plan --no-diff
+   ```
+
+   <Only on="duckdb">
+
+   ```text
+   Not applied on this platform
+   dev:
+   contracts/orders.yaml:11:59  warning  NOT_APPLIED
+     The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.
+     Add `check` to the layer's `does` to apply it here.
+   contracts/shop.customers.yaml:12:80  warning  NOT_APPLIED
+     The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.
+     Add `check` to the layer's `does` to apply it here.
+   duckdb → build/duckdb (dev)
+   update    dev/run.sql
+   create    dev/tables/bronze.customers.sql
+
+   5 files: 1 create, 1 update, 3 unchanged. Ready to apply.
+   ```
+
+   The new table lands in `bronze`, the [first layer](/docs/concepts/layers),
+   like `orders`. Its required `customer_id` is not checked there, as
+   `order_id` is not: the starter's layers do not say they check rows; see
+   [Not applied here](/docs/~/not-applied). Apply, then run `run.sql`
+   again to build it.
+
+   </Only>
+
+   <Only on="databricks">
+
+   ```text
+   databricks → build/databricks (dev)
+   create    src/shop/bronze/customers.sql
+
+   4 files: 1 create, 3 unchanged. Ready to apply.
+   ```
+
+   The new table is a second streaming table in the same pipeline, in
+   `bronze`, the [first layer](/docs/concepts/layers), like `orders`. Apply,
+   and deploy the bundle again to create it.
+
+   </Only>
+
+   <Only on="synapse">
+
+   ```text
+   synapse → build/synapse (dev, prod)
+   create    queries/dev/pl_shop_sales/copy_customers.sql
+   create    queries/prod/pl_shop_sales/copy_customers.sql
+   update    views.sql
+   update    workspace/dev/pipeline/pl_shop_sales.json
+   update    workspace/prod/pipeline/pl_shop_sales.json
+
+   21 files: 2 create, 3 update, 16 unchanged. Ready to apply.
+   ```
+
+   The connection's pipeline now copies both tables, and `views.sql` has a
+   view for each. Apply, and deploy the workspace and the views again.
+
+   </Only>
+
+   <Only on="adf">
+
+   ```text
+   adf → build/adf (dev, prod)
+   update    factory/pipeline/pl_shop_sales.json
+
+   11 files: 1 update, 10 unchanged. Ready to apply.
+   ```
+
+   The connection's pipeline now copies both tables, in the same window. Apply,
+   and deploy the factory again.
+
+   </Only>
+
+Every table in a flow reads the flow's connection with the same ingest method.
+A table can change that method's settings with its own `ingest.with`.
+
+## Add another source
+
+Each source is a connection, in `connections/`, and the flows that read it, in
+`flows/`.
+
+1. Write the connection: its `id`, the `connector`, how it can be reached
+   (`connectivity`) and its `settings`. The [connector's page](/docs/~/connectors)
+   lists its settings and the routes that read it.
+
+   <Only on="duckdb">
+
+   This is the `shop` connection:
+
+   <Example name="duckdb" file="connections/shop.yaml" />
+
+   </Only>
+
+   <Only on="databricks">
+
+   This is the `shop` connection of the Minimal starter:
+
+   <Example name="minimal" file="connections/shop.yaml" />
+
+   </Only>
+
+   <Only on="synapse adf">
+
+   Your first project's `connections/sales.yaml` is one.
+
+   </Only>
+
+   In VS Code, a new, empty file in `connections/` offers a connection for
+   each connector, with the settings it needs. Keep credentials out of the
+   file: use `${secret:…}` or `${envvar:…}`; see
+   [YAML references and placeholders](/docs/concepts/yaml-references).
+
+2. Write a flow whose `source` is the connection's `id`, with a table for each
+   object, as in `flows/orders.yaml` above. A table takes its columns from its
+   contract, or, without one, from the source's metadata, which you import from
+   a file someone who can reach the source saves; see
+   [Describe a source](/docs/~/describe-a-source).
+
+3. Plan. The plan checks that a method of your standard's packs reads the
+   connector, and says what is missing.
+
+   <Only on="duckdb">
+
+   DuckDB on its own reads files in the project, so a flow that reads a
+   database connection, such as PostgreSQL, stops the plan with
+   `CONNECTOR_NOT_SUPPORTED`. To load a database into DuckDB tables, choose a
+   combination under **Combined** in the platform picker.
+
+   </Only>
+
+   When a method needs settings that nobody set, the plan names them, with a
+   fix that adds each one where it belongs.
+
+To see working files for a connector on your route first, create a project
+for it in another folder with `ingestron init`, as
+[Create a project](/docs/~/create-a-project#start-from-a-connection)
+shows. Copy its connection, flow and contracts, and the `values` they read
+from its `project.yaml`, renaming any value your project already has.
+
+## Start beside what you already run
+
+`plan` and `apply` write only to the output folder, `build/` by default, so a
+project owns only the files it generated. Each platform's files are in a
+folder of their own under `build/`; see
+[Generated files and ownership](/docs/concepts/generated-files). A first project can hold one source
+while the rest of your platform stays as it is:
+
+- **Keep the project in a folder of its own,** in your repository or in a new
+  one. Commands run from that folder, or name it with `--definitions`.
+- **Choose names that do not clash** with what is deployed; see
+  [Name tables and resources](/docs/~/name-things-your-way).
+- **Keep your own files out of `build/`.** `ingestron check` fails on a file
+  there that it did not generate. If you keep files there on purpose, run
+  `ingestron check --allow-extra`; see
+  [Check generated files in CI](/docs/~/check-in-ci).
+
+<Only on="synapse databricks duckdb">
+
+To read tables you already have without taking them over, a transform can name
+a table another team keeps, and Ingestron never creates or changes it. See
+[Read a table another team owns](/docs/~/write-a-transform#read-a-table-another-team-owns).
+
+</Only>
+
+Then add the next source when you are ready, as above.

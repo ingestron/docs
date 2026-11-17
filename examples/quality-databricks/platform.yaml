@@ -1,0 +1,5 @@
+apiVersion: ingestron.io/v1
+kind: Platform
+id: lab
+databricks:
+  manage: { checks: true } # Databricks runs table checks after each refresh

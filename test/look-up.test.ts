@@ -149,7 +149,7 @@ describe("reference/templates", () => {
     expect(page).toContain('<SamplesCatalogue kind="guide" />');
     for (const link of [
       "(/docs/start/first-project)",
-      "(/docs/platforms/adf)",
+      "(/docs/adf)",
       "(/docs/how-to/start-from-a-template#from-a-downloaded-example)",
       "(/docs/how-to/share-a-template)",
     ])
@@ -159,7 +159,7 @@ describe("reference/templates", () => {
     expect(page).toContain("## Built-in templates [#built-in-templates]");
   });
 
-  it("creates a project from a starter in the CLI, and says VS Code's From a starter lists the same", () => {
+  it("creates a project from a starter in the CLI, and says VS Code's Try a sample project lists the same", () => {
     const [create] = commands(
       section(page, "## Create a project from a starter [#create-a-project-from-a-starter]"),
     );
@@ -167,7 +167,7 @@ describe("reference/templates", () => {
     const result = cli(parent, args(create!));
     expect(result.code, result.output).toBe(0);
     expect(existsSync(join(parent, "my-project", "project.yaml"))).toBe(true);
-    expect(page).toContain("**From a starter**");
+    expect(page).toContain("**Try a sample project**");
     // VS Code lists builtInTemplates(), the table's rows.
     const table = renderToStaticMarkup(createElement(BuiltInTemplates));
     for (const template of builtInTemplates())
@@ -194,15 +194,15 @@ describe("reference/templates", () => {
 describe("reference/packs", () => {
   const index = read("reference/packs/index.mdx");
   const reference = read("reference/packs/duckdb.mdx");
-  const platform = read("platforms/duckdb.mdx");
+  const platform = read("duckdb/index.mdx");
 
-  it("is reference only: the packs and what each writes, and the route table lives on choose-a-route", () => {
+  it("is reference only: the packs and what each writes, and the route table lives on choose-a-platform", () => {
     for (const pack of ["databricks", "adf", "synapse", "duckdb"])
       expect(index).toContain(`(/docs/reference/packs/${pack})`);
-    expect(index).toContain("(/docs/start/choose-a-route)");
+    expect(index).toContain("(/docs/concepts/choose-a-platform)");
     for (const gone of ["Supported combinations", "Required packs", "Container Apps", "<DocLinks"])
       expect(index).not.toContain(gone);
-    expect(read("start/choose-a-route.mdx")).toContain("<RouteTable detail />");
+    expect(read("concepts/choose-a-platform.mdx")).toContain("<RouteTable detail />");
   });
 
   it("leaves the DuckDB explanation to the platform page and the how-tos, and each page links to the other", () => {
@@ -219,18 +219,18 @@ describe("reference/packs", () => {
     const flat = (text: string) => text.replace(/\s+/g, " ");
     const homes: [string, string][] = [
       [
-        "how-to/keep-a-table-current.mdx",
+        "shared/keep-a-table-current.mdx",
         "`append` adds each file's rows once: it reads each file name once",
       ],
-      ["platforms/duckdb.mdx", "A CSV without a header"],
-      ["how-to/write-a-transform.mdx", "A cast can change a value"],
-      ["platforms/duckdb.mdx", "`runs-on: duckdb`"],
-      ["how-to/keep-a-table-current.mdx", "Running again is safe in every mode"],
+      ["duckdb/index.mdx", "A CSV without a header"],
+      ["shared/write-a-transform.mdx", "A cast can change a value"],
+      ["adf-duckdb/load-with-adf.mdx", "`runs-on: duckdb`"],
+      ["shared/keep-a-table-current.mdx", "Running again is safe in every mode"],
     ];
     for (const [home, text] of homes) expect(flat(read(home)), `${home}: ${text}`).toContain(text);
-    expect(platform).toContain("(/docs/how-to/keep-a-table-current#on-duckdb)");
-    expect(platform).toContain("(/docs/how-to/write-a-transform#what-each-engine-makes-of-it)");
-    expect(reference).toContain("(/docs/platforms/duckdb)");
+    expect(platform).toContain("(/docs/duckdb/keep-a-table-current#on-duckdb)");
+    expect(platform).toContain("(/docs/duckdb/write-a-transform#what-each-engine-makes-of-it)");
+    expect(reference).toContain("(/docs/duckdb)");
     expect(platform).toContain("(/docs/reference/packs/duckdb)");
     // What the reference page keeps: the pack's job, its order in `packs`, and its files.
     for (const text of [

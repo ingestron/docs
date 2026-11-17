@@ -93,7 +93,9 @@ table named from the imported metadata, and with `--needed`, for every table
 that needs a contract and names none. It resolves for the environment `--env`
 names, or the first one. It writes `contracts/<connection>.<table>.yaml`,
 never replaces a file that is there, and prints the `contract:` line to add to
-the flow. A draft says what to review: its types, which columns are required
+the flow. When no import matches a new contract, it adds `contracts/*.yaml` to
+`imports`, or the contract's own path when `contracts/` holds other YAML files,
+and says so. A draft says what to review: its types, which columns are required
 and its key.
 
 The document an import writes is in [Documents](/docs/reference/documents#source-metadata),

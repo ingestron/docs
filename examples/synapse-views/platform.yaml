@@ -5,10 +5,10 @@ principals: # the database user each role is, per environment
   finance-analysts: ${values.finance_analysts}
   data-engineers: ${values.data_engineers}
 settings:
-  adf-copy: # shared infrastructure, referenced by name
+  synapse-copy: # shared infrastructure, referenced by name
     landing: ${values.landing}
     key_vault: ${values.key_vault}
-    integration_runtime: shir-erp
+    integration_runtime: AutoResolveIntegrationRuntime # the workspace's Azure runtime
   synapse-view: # the external data source the views read through
     data_source: landing
     data_source_location: ${values.storage}

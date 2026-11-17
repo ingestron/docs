@@ -1,0 +1,40 @@
+apiVersion: ingestron.io/v1
+kind: Flow
+id: erp
+source: erp
+ingest:
+  # Pipeline parameters of this flow. Each needs a default, for runs started by hand
+  parameters:
+    min_date: { type: date, default: "2020-01-01" }
+  triggers:
+    # Each hour, a new snapshot of each table; the workspace runs each window once
+    - name: hourly
+      type: tumbling-window
+      every: { frequency: Hour, interval: 1 }
+      start: 2026-12-01T00:00:00Z
+      # Wait five minutes after the window closes, for late rows
+      delay: 5m
+      # Say that the workspace may run every window since `start` again when this is deployed
+      backfill: true
+    # Sundays at 03:00 (Europe/London, the standard's time zone): copy the
+    # invoices again from min_date
+    - name: weekly-reload
+      type: schedule
+      every: { frequency: Week, interval: 1 }
+      start: 2026-12-01T00:00:00Z
+      at: { weekdays: [Sunday], hours: [3], minutes: [0] }
+      parameters:
+        min_date:
+          expression: "@formatDateTime(addDays(trigger().scheduledTime, -30), 'yyyy-MM-dd')"
+tables:
+  customers:
+    # The source table: its database and schema, database.schema.Customers
+    object: erp.dbo.Customers
+    contract: erp.customers
+  invoices:
+    # The source table: its database and schema, database.schema.Invoices
+    object: erp.dbo.Invoices
+    contract: erp.invoices
+    ingest:
+      # Written as plain SQL, so each run's value is escaped as a date
+      filter: invoice_date >= {{ parameters.min_date }}

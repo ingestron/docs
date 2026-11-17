@@ -1,0 +1,23 @@
+# The same ERP as the sql-server starter, but the workspace cannot reach it. ADF copies
+# the changed rows through a self-hosted integration runtime into a landing
+# folder; Databricks keeps the tables current from those files.
+id: erp
+environments:
+  dev:
+    values:
+      # Storage account (ADLS Gen2) that the landing folder is in: its name
+      storage_account: erplakedev
+      # Key Vault that holds the source's secrets: its name, not its URL
+      key_vault: kv-erp-dev
+  prod:
+    values:
+      # Storage account (ADLS Gen2) that the landing folder is in: its name
+      storage_account: erplakeprod
+      # Key Vault that holds the source's secrets: its name, not its URL
+      key_vault: kv-erp-prod
+imports:
+  - standard.yaml
+  - platform.yaml
+  - connections/*.yaml
+  - flows/*.yaml
+  - contracts/*.yaml

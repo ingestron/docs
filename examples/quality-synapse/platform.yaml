@@ -1,0 +1,11 @@
+apiVersion: ingestron.io/v1
+kind: Platform
+id: lab
+settings:
+  synapse-copy:
+    landing: abfss://landing@iotlab.dfs.core.windows.net/iot
+    key_vault: https://kv-iot.vault.azure.net
+    integration_runtime: AutoResolveIntegrationRuntime
+  synapse-view: # the external data source the view reads through
+    data_source: landing
+    data_source_location: abfss://landing@iotlab.dfs.core.windows.net

@@ -1,0 +1,22 @@
+# An ERP that only a self-hosted integration runtime reaches. The factory copies
+# the changed rows each hour into a landing folder, and the files are the result.
+id: erp
+environments:
+  dev:
+    values:
+      # Storage account (ADLS Gen2) that the landing folder is in: its name
+      storage_account: erplakedev
+      # Key Vault that holds the source's secrets: its name, not its URL
+      key_vault: kv-erp-dev
+  prod:
+    values:
+      # Storage account (ADLS Gen2) that the landing folder is in: its name
+      storage_account: erplakeprod
+      # Key Vault that holds the source's secrets: its name, not its URL
+      key_vault: kv-erp-prod
+imports:
+  - standard.yaml
+  - platform.yaml
+  - connections/*.yaml
+  - flows/*.yaml
+  - contracts/*.yaml

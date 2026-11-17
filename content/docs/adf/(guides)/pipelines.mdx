@@ -1,0 +1,279 @@
+---
+title: Shape ADF pipelines
+description: Schedule the copies, choose how pipelines copy their tables, retry failed copies, add audit columns and file resources in the factory.
+---
+
+Your standard decides how the generated pipelines look in ADF Studio, and
+when they run. Every setting on this page is optional: without them, each
+pipeline has one Copy activity per table, every 24 hours. This page applies to every route that starts with ADF; set
+up the copies first with [Azure Data Factory](/docs/adf).
+
+## What Ingestron writes [#what-you-get]
+
+The Northwind example copies four tables with one ForEach, retries each copy,
+adds audit columns and files its resources in one folder. Its ADF files:
+
+<BuildTree name="northwind" folder="build/adf" />
+
+The pipeline's `tables` parameter holds each table's query and landing folder,
+so nothing is read at run time:
+
+<Example
+  name="northwind"
+  file="build/adf/factory/pipeline/pl_northwind_northwind.json"
+  pick="properties.parameters.tables.defaultValue[0]"
+/>
+
+The Copy inside the ForEach carries the retry policy:
+
+<Example
+  name="northwind"
+  file="build/adf/factory/pipeline/pl_northwind_northwind.json"
+  pick="properties.activities[0].typeProperties.activities[0].policy"
+/>
+
+And it adds the audit columns to every row it lands:
+
+<Example
+  name="northwind"
+  file="build/adf/factory/pipeline/pl_northwind_northwind.json"
+  pick="properties.activities[0].typeProperties.activities[0].typeProperties.source.additionalColumns"
+/>
+
+## What it looks like in Azure Data Factory [#on-the-platform]
+
+<Screenshot
+  src="/images/platforms/adf-pipelines/adf-10-activity-runs.png"
+  label="Azure Data Factory"
+  checked="2026-11-02"
+  alt="One run's activities: for_each_table, a ForEach, and four copy_table Copy data activities, all Succeeded."
+  caption="One run of the demo's Northwind pipeline in ADF's monitoring view: the ForEach for_each_table, and the four copy_table copies it ran, all succeeded."
+/>
+
+## Settings that shape it [#settings]
+
+Write the pipeline settings under the method's settings in the standard, as
+the Northwind example does; a flow can override them with
+`ingest: { with: … }`, except where a pipeline's tables must agree.
+
+<ExampleDownload name="northwind" />
+
+<Example name="northwind" file="standard.yaml" pick="ingest" />
+
+Run `ingestron apply` and open the pipeline in ADF Studio, or read the files
+above, to see the result. Every value of these settings is in the
+[ADF pack reference](/docs/reference/packs/adf#adf-copy-pattern).
+
+### Define the time windows [#define-the-time-windows]
+
+Every ADF method's copies run from tumbling window triggers, which divide time into
+consecutive, non-overlapping windows. `start` is the first window's start, in
+UTC, and `every` sets each window's length. A full selection copies again each
+window; an incremental copy filters the watermark column by the window's
+bounds; file copies in `new` mode select the files changed in it.
+
+<SettingsSections pack="adf" method="adf-copy" include={["every", "start"]} level={4} />
+
+These settings describe the default trigger. When a flow needs an hourly copy
+and a weekly reload, or its own hours and time zone, it writes its own
+triggers instead; see
+[Run a flow on its own triggers](/docs/adf/run-a-flow-on-its-own-triggers).
+
+### Retry and pause [#retry-and-pause]
+
+A retry repeats a failed window; it does not move that window's bounds.
+Triggers start only in `prod` or `production`; in every other environment
+they stay stopped. `paused` keeps a trigger stopped there too, and
+`paused: false` starts one elsewhere. Without it, the trigger follows the
+platform's `schedule.paused`; see the
+[platform defaults](/docs/reference/packs/adf#platform-configuration).
+
+<SettingsSections pack="adf" method="adf-copy" include={["retries", "paused"]} level={4} />
+
+The standard's [`operations`](/docs/reference/intent#operations) gives every
+ADF table that sets neither its `retries`, from `retries.count`, and its Copy
+activity's timeout, from `timeout`; see what the
+[ADF pack does with each intent value](/docs/reference/packs/adf#intent).
+
+To stop only the copies, for example while the source database is down for
+maintenance, set `paused: true` under `settings.adf-copy` in the platform,
+beside the method's other settings, or under the method your flows use.
+
+### Tables that share a schedule
+
+SQL-family tables in one connection and source database share their runtime,
+encryption, schedule, retries and paused state. File tables in one connection
+share their runtime and schedule. Give tables that need their own settings
+separate connections. Native full-copy sources get a pipeline per table. The
+tables of a flow that writes its own triggers or parameters leave their
+connection's pipeline and share one of their own, named with the flow,
+because ADF attaches triggers and parameters to a pipeline.
+
+### Copy every table with one ForEach
+
+`pattern: foreach` gives each connection's pipeline one ForEach activity,
+`for_each_table`, with one parameterised Copy inside, `copy_table`. The
+pipeline's `tables` parameter lists the tables to copy. Its default value is
+the generated list, so each table's query and landing folder are in the
+pipeline's JSON and in Git. Nothing is read at run time, and no control table is
+needed.
+
+To copy only some tables again, trigger the pipeline with a shorter `tables`
+value: copy the entries you need from the parameter's default, with all of each
+entry's keys (`table`, `object`, `connection`, `query`, `watermark`, `folder`
+and `file`), because the copy reads them from each item and a missing key fails
+the run.
+
+The pipeline also has `windowStart` and `windowEnd` parameters with no default.
+The tumbling window trigger fills them. A rerun you start by hand must give
+both, as the start and end of the window to copy again, in UTC; with an empty
+value the copies may fail.
+
+<Screenshot
+  src="/images/platforms/adf-pipelines/adf-04-foreach-settings.png"
+  label="Azure Data Factory"
+  checked="2026-11-02"
+  alt="The ForEach's Settings tab: Sequential off, Batch count 4, Items @pipeline().parameters.tables."
+  caption="The demo's for_each_table in ADF Studio: four tables at a time, over the pipeline's tables parameter."
+/>
+
+`parallel` sets how many tables are copied at once; its range and default are
+in the [`parallel`](/docs/reference/packs/adf#adf-copy-parallel) reference. The
+pattern is offered for `adf-copy` sources (the SQL Server family).
+Incremental tables carry their watermark column, and the Copy adds the window
+filter when it runs. A `path` with date or `{run}` tokens needs one Copy
+activity per table: use `pattern: activities`.
+
+The tables of one pipeline share `pattern`, `parallel`, `activity` and
+`audit_columns`. When a flow changes one of them for a single table,
+`ingestron plan` names the tables that differ.
+
+### Retry a failed copy
+
+`activity` is the Copy activity's policy, for every ADF method:
+
+<SettingsSections pack="adf" method="adf-copy" include={["activity"]} level={4} />
+
+<Screenshot
+  src="/images/platforms/adf-pipelines/adf-05-copy-general.png"
+  label="Azure Data Factory"
+  checked="2026-11-02"
+  alt="The Copy activity copy_table's General tab: its description, Timeout 0.01:00:00, Retry 2, Retry interval 60 seconds."
+  caption="The demo's copy_table in ADF Studio: its description, a one-hour timeout and two retries a minute apart, from activity."
+/>
+
+No generated file holds a value ADF would refuse: a `timeout` under ADF's own
+minimum is reported as a settings problem. These retries happen inside the
+run; `retries` at the method's top level still retries the whole window from
+the trigger (see [Retry and pause](/docs/adf/pipelines#retry-and-pause)). With
+[`after_copy`](/docs/reference/packs/adf#adf-copy-after-copy),
+window retries move onto the copies, and your `activity` values
+win.
+
+### Add audit columns
+
+`audit_columns` adds columns to every landed row, by name. A value is one of the
+run values ADF fills in when it runs, or text:
+
+<SettingsSections pack="adf" method="adf-copy" include={["audit_columns"]} level={4} />
+
+The `audit` [intent](/docs/reference/intent) adds the same kind of column in
+words every pack reads, such as `audit: [loaded_at, run_id]` on a flow or a
+layer: ADF adds those its copy can fill, each named `_<value>`, and leaves the
+file values, such as `source_file`, to the pack that reads the files.
+
+<Screenshot
+  src="/images/platforms/adf-pipelines/adf-06-copy-audit-columns.png"
+  label="Azure Data Factory"
+  checked="2026-11-02"
+  alt="Additional columns on the copy's source: _loaded_at from @pipeline().TriggerTime, _run_id from @pipeline().RunId, _source from @item().object."
+  caption="The demo's audit columns on the copy's source in ADF Studio, each an expression ADF fills in when it runs."
+/>
+
+The `run.` and `source.` names are matched in any case, so `RUN.ID` means
+`run.id`, and the pipeline uses the lower-case form. Text that starts with
+`run.` or `source.` but is not one of these names is refused, and so is text
+that starts with `@` or holds `@{`, which ADF would read as an expression.
+
+`run.parameters.<name>` holds the pipeline's parameter of that name, as text:
+one the flow declares under `ingest.parameters`, or `windowStart`,
+`windowEnd`, or `load` when a trigger of the flow sets it. A name the flow does
+not have is refused, naming the column.
+
+`run.window_start` and `run.window_end` come from the `windowStart` and
+`windowEnd` parameters. A manual run that leaves either empty lands an empty
+text in that column, which the packs that read the files cannot cast to a
+timestamp. Give both when you start a run by hand.
+
+Names start with a letter or underscore, must not repeat a contract column or
+each other in another case, and must not be `_ingestron_file` or
+`_rescued_data`, which the packs that read the files use.
+A pack that reads the landed files keeps the columns after the contract's,
+with timestamps typed. Each data product passport lists them with its
+columns, typed as the contract's are.
+
+Audit columns are offered for `adf-copy` and for native table copies that read
+columns by name. Files copied as they are have no rows to add to, and sources
+read by path, or Microsoft 365, are refused for now.
+
+### Name landing files by a parameter [#parameters-in-paths]
+
+A `path` pattern may hold `{parameters.<name>}`, for a parameter the flow
+declares or for `windowStart`, `windowEnd` or `load`. It becomes part of the
+sink path when the run starts, so each trigger can land its files apart, such
+as `{object}/{parameters.load}/{object}_{run}.parquet`. A date is written
+`yyyy-MM-dd`, a datetime without colons, and text has `/`, `\` and `..`
+replaced by `_`, so a value typed by hand cannot change the folder structure.
+The packs that read the files see the token as `*`, like the date tokens. A name
+the flow does not have is refused. The `path` setting is
+[listed above](#settings).
+
+### File resources in the factory
+
+`folder` puts the project's pipelines and datasets in a factory folder, such as
+`ingestron/erp`; every ADF table in a project uses the same folder.
+`annotations` adds tags to a pipeline, after Ingestron's own. The tables of one
+pipeline share them, so each flow can tag its pipeline with its source system.
+
+<Screenshot
+  src="/images/platforms/adf-pipelines/adf-08-pipeline-properties.png"
+  label="Azure Data Factory"
+  checked="2026-11-02"
+  alt="The pipeline's properties: name pl_northwind_northwind, a description of the four copies, and the annotations Generated by Ingestron and northwind."
+  caption="The demo's pl_northwind_northwind in ADF Studio: its generated description, and the annotations Generated by Ingestron and northwind."
+/>
+
+Under `pattern: foreach`, each run of `copy_table` carries its table's name as
+a user property, so the run's monitoring view shows which table each copy was.
+
+<Screenshot
+  src="/images/platforms/adf-pipelines/adf-10-activity-runs-table.png"
+  label="Azure Data Factory"
+  checked="2026-11-02"
+  alt="The User properties column of a run's activities, with the table values customers, products, order_details and orders."
+  caption="The User properties of one run's copies in ADF's monitoring view: the table each copy_table copied."
+/>
+
+Every generated pipeline and Copy activity has a description, so the factory
+explains itself without opening the definitions.
+
+### Name resources [#name-resources]
+
+<OldAnchor id="choose-where-the-name-belongs" />
+<OldAnchor id="name-shared-resources" />
+<OldAnchor id="give-the-pipeline-an-environment-specific-name" />
+<OldAnchor id="review-a-rename-before-applying" />
+
+Each linked service, dataset, pipeline, trigger and activity has a default
+name, which `resource_names` changes; a name is the same in every environment.
+Where each name goes, which tables share a resource and safe renames are in
+[ADF resource names](/docs/~/name-things-your-way#adf-resource-names).
+
+## Next
+
+- [ADF resource names](/docs/~/name-things-your-way#adf-resource-names):
+  name each linked service, dataset, pipeline and trigger.
+- [Deploy the factory](/docs/adf/deploy#deploy): build the ARM template
+  and deploy it to each environment's factory.
+- [Plan, apply and review](/docs/adf/plan-and-generate): see what a change
+  of settings does to each pipeline before you write it.

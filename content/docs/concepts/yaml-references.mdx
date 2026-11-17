@@ -12,9 +12,9 @@ Quotation marks do not disable references: a quoted YAML string is still resolve
 
 | Write                                | Meaning                                                                                         | Where to use it                                                |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `${values.landing}`                  | A project value after environment overrides                                                     | Definition values                                              |
-| `${values.cluster.workers}`          | A nested value                                                                                  | Definition values                                              |
-| `${values.hosts.0}`                  | The first item in a value list                                                                  | Definition values                                              |
+| `${values.landing}`                  | A project value after environment overrides                                                     | Values and definitions                                         |
+| `${values.cluster.workers}`          | A nested value                                                                                  | Values and definitions                                         |
+| `${values.hosts.0}`                  | The first item in a value list                                                                  | Values and definitions                                         |
 | `${environment.name}`                | The selected environment, such as `dev`                                                         | Values and definitions                                         |
 | `${project.id}` or `${project.name}` | The project ID or optional display name                                                         | Values and definitions                                         |
 | `${file:query.sql}`                  | Contents of a project file                                                                      | Whole value, or embedded when the result is scalar             |
@@ -23,6 +23,7 @@ Quotation marks do not disable references: a quoted YAML string is still resolve
 | `${envvar:SOURCE_HOST}`              | A value the deploying pipeline supplies, or text from an environment variable or an `.env` file | Non-secret values each stage or machine sets; see below        |
 | `{{ environment }}` or `{{ table }}` | A naming pattern evaluated with naming context                                                  | Standard or platform `naming` only                             |
 | `{{ tables.orders }}`                | A declared input's generated name                                                               | SQL transform code supported by the selected method            |
+| `{{ parameters.min_date }}`          | A pipeline parameter of the flow, put in the source query as a typed, escaped value             | A flow table's `ingest.filter` only                            |
 | `$${bundle.target}`                  | Literal `${bundle.target}` text after YAML loading                                              | Text intended for another tool; see transform exceptions below |
 
 Project `id`, `name` and `imports` are read literally. YAML mapping keys are not
@@ -43,11 +44,16 @@ Use the merged value in a definition:
 For `dev`, this path resolves to `/Volumes/dev_landing/finance/files/ledger`;
 for `prod`, it resolves to `/Volumes/prod_landing/finance/files/ledger`.
 
-Values cannot reference other values with `${values.…}`, including indirectly
-through included YAML. That reports
-[`VALUES_SELF_REFERENCE`](/docs/reference/errors#VALUES_SELF_REFERENCE).
-Compose text in the definition that consumes those values instead. Values may
-use `${project.…}`, `${environment.…}`, `${file:…}`, `${envvar:…}` and `${secret:…}`.
+A value can be built from other values. Here `landing` reads
+`landing_catalog`, so each environment changes only the catalog. A reference
+reads the values after the environment's overrides are merged, whichever
+value is written first. A value cannot lead back to itself, directly or
+through other values or included YAML: that reports
+[`VALUE_CYCLE`](/docs/reference/errors#VALUE_CYCLE) with the chain, such as
+`values.a → values.b → values.a`. An environment's value replaces the default
+of the same name, so it cannot build on it: write
+`catalog: ${values.catalog}_prod` under an environment and you get a cycle.
+Give the shared part its own name instead.
 
 ## Preserve the value's type
 
@@ -136,8 +142,8 @@ supplied when deploying it names what the deploying pipeline sets instead.
 <Screenshot
   light="/images/vscode/envvar-info-light.png"
   dark="/images/vscode/envvar-info-dark.png"
-  alt="In project.yaml, landing: ${envvar:LANDING_PATH} has a blue wavy underline. Its hover says LANDING_PATH isn't set, to add it to .env.dev or set it before running Ingestron, with the code ENVVAR_MISSING."
-  caption="In VS Code, a variable that is set nowhere is information, not an error: for DuckDB, the hover names .env.dev, the file to add it to."
+  alt="In project.yaml, landing: ${envvar:LANDING_PATH} has a blue wavy underline. Its hover says LANDING_PATH is supplied when deploying, as BUNDLE_VAR_landing_path (databricks); plan does not read it, so it needs no .env.dev entry; code ENVVAR_MISSING."
+  caption="In VS Code, a variable that is set nowhere is information, not an error. In this Databricks project, which takes the value when deploying, the hover names BUNDLE_VAR_landing_path, which the deploying pipeline sets."
 />
 
 A value read when generating becomes ordinary text and may reach generated
