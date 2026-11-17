@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 import { headerTabs, siteSections } from "../lib/areas.js";
-import { platformSections, sectionsOf, switchTarget } from "../lib/platforms.js";
+import { platformIds, platformSections, sectionsOf, switchTarget } from "../lib/platforms.js";
 import { siteScript } from "../lib/site-script.js";
 import { tree } from "./tree.js";
 
@@ -83,11 +83,14 @@ describe("the header's tabs", () => {
     expect(platformSections.length).toBe(6);
   });
 
-  it("are hidden for other platforms by the stylesheet", () => {
+  // Every site, the combinations such as adf-synapse included: a site with no
+  // rule shows every platform's tabs.
+  it("are hidden for other platforms by the stylesheet, on every site", () => {
     const css = readFileSync(join(process.cwd(), "app/navigation.css"), "utf8");
     expect(css).toContain(":root:not([data-site]) a[data-platform]");
-    for (const id of ["synapse", "databricks", "adf", "duckdb"])
-      expect(css).toContain(
+    expect(platformIds).toContain("adf-synapse");
+    for (const id of platformIds)
+      expect(css, id).toContain(
         `:root[data-site="${id}"] a[data-platform]:not([data-platform="${id}"])`,
       );
   });
@@ -115,6 +118,14 @@ describe("the script before the first paint", () => {
     expect(run("/docs/reference/cli", null)).toBeUndefined();
     expect(run("/docs/reference/cli", "oracle")).toBeUndefined();
     expect(run("/docs/reference/cli", "synapse", true)).toBeUndefined();
+  });
+
+  it("marks a combined site, such as adf-synapse, by its whole id", () => {
+    for (const id of platformIds) {
+      expect(run(`/docs/${id}`, null), id).toBe(id);
+      expect(run(`/docs/${id}/connectors`, "synapse"), id).toBe(id);
+    }
+    expect(run("/docs/reference/cli", "adf-duckdb")).toBe("adf-duckdb");
   });
 
   // In the root layout's <head>, which a page change never renders again: a

@@ -79,12 +79,16 @@
 /* The tab row, and the phone menu's section list, hold every platform's own
    sections; <html data-site>, set before the first paint
    (lib/site-script.ts), shows one platform's. With no platform chosen, only
-   Concepts and Reference show. */
+   Concepts and Reference show. Each site in lib/platforms.ts needs its rule
+   here, the combinations too (test/site-switch.test.ts). */
 :root:not([data-site]) a[data-platform],
 :root[data-site="synapse"] a[data-platform]:not([data-platform="synapse"]),
 :root[data-site="databricks"] a[data-platform]:not([data-platform="databricks"]),
 :root[data-site="adf"] a[data-platform]:not([data-platform="adf"]),
-:root[data-site="duckdb"] a[data-platform]:not([data-platform="duckdb"]) {
+:root[data-site="duckdb"] a[data-platform]:not([data-platform="duckdb"]),
+:root[data-site="adf-databricks"] a[data-platform]:not([data-platform="adf-databricks"]),
+:root[data-site="adf-synapse"] a[data-platform]:not([data-platform="adf-synapse"]),
+:root[data-site="adf-duckdb"] a[data-platform]:not([data-platform="adf-duckdb"]) {
   display: none;
 }
 

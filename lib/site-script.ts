@@ -8,5 +8,5 @@ import { platformIds } from "./platforms";
 /** The script's source, for a <script> before the header. */
 export function siteScript(): string {
   const ids = JSON.stringify(platformIds);
-  return `(function(){try{var ids=${ids};var m=/^\\/docs\\/([a-z]+)(?:\\/|$)/.exec(location.pathname);var id=m&&ids.indexOf(m[1])>-1?m[1]:null;if(!id){var s=null;try{s=localStorage.getItem("ingestron-platform")}catch(e){}if(s&&ids.indexOf(s)>-1)id=s}if(id)document.documentElement.dataset.site=id}catch(e){}})();`;
+  return `(function(){try{var ids=${ids};var m=/^\\/docs\\/([a-z-]+)(?:\\/|$)/.exec(location.pathname);var id=m&&ids.indexOf(m[1])>-1?m[1]:null;if(!id){var s=null;try{s=localStorage.getItem("ingestron-platform")}catch(e){}if(s&&ids.indexOf(s)>-1)id=s}if(id)document.documentElement.dataset.site=id}catch(e){}})();`;
 }
