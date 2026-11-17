@@ -26,7 +26,7 @@ import {
   packs,
   platformSectionFields,
 } from "../lib/reference";
-import { cli, fences, read, section } from "./pages.js";
+import { cli, commands, fences, read, section } from "./pages.js";
 
 const html = (element: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(element);
 
@@ -305,8 +305,8 @@ describe("published standards", () => {
     git("add", "-A");
     git("commit", "-qm", "init");
 
-    const choose = read("how-to/choose-a-published-standard.mdx");
-    const listed = cli(project, ["standard", "list"]);
+    const choose = read("duckdb/choose-a-published-standard.mdx");
+    const listed = cli(project, ["standard", "list", "--platform", "duckdb"]);
     expect(listed.code).toBe(0);
     const reached = "Could not reach the catalogue; showing the kits installed with ingestron.\n";
     expect(listed.output.startsWith(reached)).toBe(true);
@@ -315,7 +315,7 @@ describe("published standards", () => {
       fences(section(choose, "## List them"), "text")[0],
     );
 
-    const upgrade = read("how-to/upgrade-a-standard.mdx");
+    const upgrade = read("duckdb/upgrade-a-standard.mdx");
     const [refused, printed] = fences(upgrade, "text");
     const install = cli(project, ["standard", "install", "duckdb/local-medallion@2026-11-10"]);
     expect(install.code).toBe(0);
@@ -329,5 +329,27 @@ describe("published standards", () => {
     expect(stopped.code).toBe(1);
     expect(stopped.output).toBe(refused);
     expect(readFileSync(standard, "utf8").endsWith("# a change\n")).toBe(true);
+  });
+});
+
+describe("each platform's page for starting from a published standard", () => {
+  const words = (line: string) => line.split(" ");
+
+  it("creates the Databricks project and prints what its page shows", () => {
+    const page = read("databricks/start-from-a-published-standard.mdx");
+    const steps = section(page, "## Create the project");
+    const [init] = commands(steps).filter((line) => line.startsWith("ingestron init"));
+    const parent = mkdtempSync(join(tmpdir(), "docs-kit-dbx-"));
+    const { code, output } = cli(parent, words(init!).slice(1));
+    expect(code, output).toBe(0);
+    for (const line of fences(steps, "text")[0]!.trim().split("\n").filter(Boolean))
+      expect(output, line).toContain(line);
+  });
+
+  it("sends DuckDB's readers to a starter, and a database to the combinations", () => {
+    const page = read("duckdb/start-from-a-published-standard.mdx");
+    const steps = section(page, "## With a connection [#with-a-connection]");
+    expect(commands(steps)).toEqual([]);
+    expect(steps.replace(/\s+/g, " ")).toContain("**Combined** in the platform picker");
   });
 });

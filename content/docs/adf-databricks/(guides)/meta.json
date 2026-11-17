@@ -1,0 +1,6 @@
+{
+  "title": "Guides",
+  "description": "Loading the landed files into Databricks, and deploying both.",
+  "root": true,
+  "pages": ["load-with-adf", "run-a-flow-on-its-own-triggers", "deploy"]
+}

@@ -1,0 +1,13 @@
+# A web shop's orders and customers: the workspace pipelines copy them from Azure
+# SQL, and the views are published as two governed data products.
+id: shop
+environments:
+  dev: {}
+imports:
+  - standard.yaml
+  - platform.yaml
+  - connections/*.yaml
+  - flows/*.yaml
+  - transforms/*.yaml
+  - contracts/*.yaml
+  - products/*.yaml

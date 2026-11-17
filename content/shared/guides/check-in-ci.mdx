@@ -1,0 +1,165 @@
+Commit the `build/` folder with your definitions. In CI, run `ingestron check`
+from the definitions project folder on every pull request: it fails when
+someone changed the definitions without generating, so the files you deploy
+are always what the definitions say. It needs only Node.js 22.13 or later:
+each template installs an exact version of the command from npm,
+`npm install -g ingestron@2.4.0`, then runs it. Change the version when you
+upgrade, as
+[Upgrade Ingestron and its packs](/docs/~/upgrade#choose-the-version-you-run)
+shows, so a new release never fails a pull request that changed nothing.
+
+To deploy what the check passed, one environment after another, see
+[Deploy through environments](/docs/~/deploy-through-environments): its
+pipelines run this check first.
+
+## GitHub Actions
+
+Save as `.github/workflows/ingestron-check.yml`:
+
+<Template
+  file="github-actions/ingestron-check.yml"
+  from="# Fails the build"
+  to="- run: ingestron check"
+/>
+
+## Azure DevOps
+
+Save as `ingestron-check.yml` and add it as a pipeline:
+
+<Template
+  file="azure-devops/ingestron-check.yml"
+  from="# Fails the build"
+  to="displayName: ingestron check"
+/>
+
+## Give the check its variables
+
+<Only on="synapse databricks adf">
+
+The check needs no deployment values: a value written as `${envvar:NAME}` is
+supplied when deploying, not read when generating. Only data product
+passports read such values when generating. If they do, set `NAME` in the
+pipeline's variables and pass it to the step that runs `ingestron check`.
+
+</Only>
+
+<Only on="duckdb">
+
+DuckDB reads a value written as `${envvar:NAME}` when generating, and so do
+data product passports, so the check needs it too: set `NAME` in the
+pipeline's variables and pass it to the step that runs `ingestron check`.
+
+</Only>
+
+A value in the process environment
+wins over `.env` files, and `.env` files are not committed, so CI has none.
+See [Environment files](/docs/concepts/yaml-references#use-environment-files).
+
+## Run it locally
+
+Both files, and the deploy pipelines, are in the
+[`ci-templates/`](https://github.com/ingestron/docs/tree/main/ci-templates)
+folder of this site's repository. Locally, after
+[installation](/docs/~/install), use the equivalent command:
+
+<ToolSteps>
+<Tool name="CLI">
+
+```sh
+ingestron check
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: Check** from the Command Palette (⇧⌘P on macOS, Ctrl+Shift+P elsewhere) before you commit. The result is in the Ingestron output panel. Use the command in CI itself.
+
+<Only on="databricks">
+
+<Screenshot
+  light="/images/vscode/check-databricks-light.png"
+  dark="/images/vscode/check-databricks-dark.png"
+  alt="The Output panel, Ingestron channel, after Ingestron: Check: databricks: up to date."
+  caption="The Ingestron output panel after Ingestron: Check: the bundle in build/databricks matches the definitions."
+/>
+
+</Only>
+
+<Only on="synapse">
+
+<Screenshot
+  light="/images/vscode/check-synapse-light.png"
+  dark="/images/vscode/check-synapse-dark.png"
+  alt="The Output panel, Ingestron channel, after Ingestron: Check: synapse: up to date."
+  caption="The Ingestron output panel after Ingestron: Check: the files in build/synapse match the definitions."
+/>
+
+</Only>
+
+<Only on="adf">
+
+<Screenshot
+  light="/images/vscode/check-adf-light.png"
+  dark="/images/vscode/check-adf-dark.png"
+  alt="The Output panel, Ingestron channel, after Ingestron: Check: adf: warnings, then the PACK_NOTICE warning about the self-hosted integration runtime ir-shop, then adf: up to date."
+  caption="The Ingestron output panel after Ingestron: Check: the warning first, then the factory in build/adf matches the definitions."
+/>
+
+</Only>
+
+<Only on="duckdb">
+
+<Screenshot
+  light="/images/vscode/check-duckdb-light.png"
+  dark="/images/vscode/check-duckdb-dark.png"
+  alt="The Output panel, Ingestron channel, after Ingestron: Check: under Not applied on this platform, for dev, the NOT_APPLIED warning at contracts/orders.yaml:11:59 for the notNull rule, then duckdb: up to date."
+  caption="The Ingestron output panel after Ingestron: Check: the warning first, then the files in build/duckdb match the definitions."
+/>
+
+</Only>
+
+</Tool>
+</ToolSteps>
+
+It writes nothing. It prints `up to date` for each output folder, such as
+
+<Only on="databricks">`databricks: up to date`</Only>
+<Only on="synapse">`synapse: up to date`</Only>
+<Only on="adf">`adf: up to date`</Only>
+<Only on="duckdb">`duckdb: up to date`</Only>, and exits with `0`. Warnings, printed before it, do
+not change that. It exits with `1` when:
+
+- a value is still `REPLACE_ME`, as `ingestron init` writes it where it cannot
+  know the value. `plan` and `apply` only warn about it; `check` reports it as
+  [`REPLACE_ME`](/docs/reference/errors#REPLACE_ME), an error, so nothing
+  deploys with one. Write it, as the project's `README.md` says.
+- the output differs from what the definitions generate today. It lists
+  what differs; run `ingestron apply` locally and commit the result.
+- a file in an output folder was not generated, such as a SQL file someone
+  added beside the generated ones. A pipeline that reads the whole folder
+  would deploy it too. `check` names each such file, after its output
+  folder and `not generated`. Move the file out of
+  `build/`, or put what it does into the definitions. Run `ingestron check --allow-extra` only if
+  you keep your own files there on purpose.
+
+- a folder under `build/` was generated before but is not any more, for
+  example after you remove a platform's last table, or after upgrading from
+  the folder per environment of version 1:
+
+  ```text
+  build/prod: no longer generated. Delete the folder, or delete its .generated.json to keep it as your own.
+  ```
+
+  Ingestron never deletes it for you. Stop anything that deploys from it,
+  then delete it.
+
+<Only on="adf">
+
+A project with a self-hosted integration runtime also prints its
+[`PACK_NOTICE`](/docs/reference/errors#PACK_NOTICE) warning on every check,
+under `adf: warnings`; it does not fail the check.
+
+</Only>
+
+`check` compares files. It does not say that the platform accepts them or
+that anyone approved them; keep code review for that.

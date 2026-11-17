@@ -14,7 +14,8 @@
 //      are a folder listing and a DuckDB result table. A dotenv file is a
 //      `dotenv` fence, so rule 4 places it.
 //   4. Any other language (yaml, json, csv, dotenv, sql, python) is a file the
-//      reader writes: "write".
+//      reader writes: "write"; with a title under `build/`, a file Ingestron
+//      generates: "writes".
 //   5. An <Example> under `build/` is a file Ingestron generates: "writes".
 //      Any other <Example> file is "write".
 
@@ -37,7 +38,7 @@ export function blockKind(lang: string | undefined, title?: unknown, meta?: stri
   if (lang && commandLanguages.has(lang)) return "run";
   if (!lang || outputLanguages.has(lang))
     return typeof title === "string" && title ? "write" : "prints";
-  return "write";
+  return typeof title === "string" && title.startsWith("build/") ? "writes" : "write";
 }
 
 /** The kind of an `<Example>` file, by its path in the project. */

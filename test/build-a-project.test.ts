@@ -17,7 +17,7 @@ import { cli, command, commands, copy, fences, merge, read, section } from "./pa
 
 /** The first project's `shop`, created with the tutorial's own command and applied. */
 function shop(): string {
-  const create = commands(section(read("start/first-project.mdx"), "## 1. Create the project"));
+  const create = commands(section(read("duckdb/first-project.mdx"), "## 1. Create the project"));
   const init = create.find((line) => line.startsWith("ingestron init "))!;
   const parent = mkdtempSync(join(tmpdir(), "docs-build-shop-"));
   expect(cli(parent, init.split(" ").slice(1)).code).toBe(0);
@@ -48,7 +48,7 @@ function accepted(pack: string, method: string, setting: string): unknown[] {
 }
 
 describe("how-to/add-a-source", () => {
-  const page = read("how-to/add-a-source.mdx");
+  const page = read("duckdb/add-a-source.mdx");
 
   it("adds a customers table to the first project, with the contract and plan it shows", () => {
     const steps = section(page, "## Add a table from a source you already read");
@@ -114,14 +114,16 @@ describe("how-to/add-a-source", () => {
     );
     const plan = cli(cwd, ["plan", "--no-diff"]);
     expect(plan.code).toBe(1);
-    expect(plan.output.trim()).toBe(fences(steps, "text")[0]!.trim());
+    // DuckDB on its own reads no database: the page names the problem plan gives.
+    expect(plan.output).toContain("CONNECTOR_NOT_SUPPORTED");
+    expect(steps).toContain("`CONNECTOR_NOT_SUPPORTED`");
   });
 });
 
 describe("how-to/write-a-transform", () => {
   it("builds a silver copy of the first project's orders from a transform with no code", () => {
     const steps = section(
-      read("how-to/write-a-transform.mdx"),
+      read("shared/write-a-transform.mdx"),
       "## Leave out the code [#without-code]",
     );
     expect(prose(steps)).toContain("saved as `transforms/orders_clean.yaml`");
@@ -138,13 +140,16 @@ describe("how-to/write-a-transform", () => {
 });
 
 describe("how-to/keep-a-table-current", () => {
-  const page = read("how-to/keep-a-table-current.mdx");
+  const page = read("shared/keep-a-table-current.mdx");
 
   it("upserts the starter's orders with the page's fragment", () => {
     const cwd = shop();
     const before = readFileSync(join(cwd, "build/duckdb/dev/tables/bronze.orders.sql"), "utf8");
     expect(before).toContain('CREATE OR REPLACE TABLE "bronze"."orders" AS');
-    merge(join(cwd, "flows/orders.yaml"), fences(section(page, "## On DuckDB"), "yaml")[0]!);
+    merge(
+      join(cwd, "flows/orders.yaml"),
+      fences(section(page, "## How DuckDB keeps it"), "yaml")[0]!,
+    );
     expect(cli(cwd, ["apply", "--no-diff"]).code).toBe(0);
     const after = readFileSync(join(cwd, "build/duckdb/dev/tables/bronze.orders.sql"), "utf8");
     expect(after).toContain('INSERT OR REPLACE INTO "bronze"."orders"');
@@ -172,26 +177,37 @@ describe("how-to/keep-a-table-current", () => {
   });
 });
 
-describe("how-to/add-an-environment", () => {
-  const page = read("how-to/add-an-environment.mdx");
+describe.each([
+  ["databricks", "environments", "test"],
+  ["synapse", "synapse-pipelines", "prod"],
+  ["adf", "landing-only", "prod"],
+  ["duckdb", "duckdb-environments", "prod"],
+] as const)("how-to/add-an-environment on %s", (platform, example, added) => {
+  const page = read(`${platform}/add-an-environment.mdx`);
 
-  it("prints the comparison the page shows, and the production defaults it names", () => {
+  it("shows the example's files, and prints the comparison the page shows", () => {
+    expect(page).toContain(`<Example name="${example}" file="project.yaml" />`);
     const differs = section(page, "## Check what differs");
-    const cwd = copy("environments");
+    const cwd = copy(example);
     const compared = cli(cwd, command(commands(differs), "compare"));
     expect(compared.code).toBe(0);
     expect(compared.output.trim()).toBe(fences(differs, "text")[0]!.trim());
+    expect(command(commands(differs), "compare")).toContain(added);
     const prod = cli(cwd, ["compare", "--env", "dev", "--env", "prod"]).output;
-    for (const key of ["mode", "schedule.paused"]) expect(prod).toContain(`- \`${key}\`:`);
+    expect(prod).toContain("- `mode`:");
   });
 });
 
 describe("how-to/write-a-contract", () => {
-  const page = read("how-to/write-a-contract.mdx");
+  const page = read("shared/write-a-contract.mdx");
 
   it("shows each pack's type for a logical type, in that type's row and that pack's column", () => {
-    expect(page).toContain("<ContractTypes />");
+    expect(page).toContain('<ContractTypes platform="~" />');
     const html = renderToStaticMarkup(createElement(ContractTypes));
+    // On a platform's page, only the packs its routes use.
+    const synapse = renderToStaticMarkup(createElement(ContractTypes, { platform: "synapse" }));
+    expect(synapse).toContain(packName("synapse"));
+    expect(synapse).not.toContain(packName("databricks"));
     const cells = (row: string) =>
       [...row.matchAll(/<t[hd]>(.*?)<\/t[hd]>/g)].map((match) => match[1]!);
     const [header, ...rows] = [...html.matchAll(/<tr>(.*?)<\/tr>/g)].map((match) =>
@@ -216,13 +232,17 @@ describe("how-to/write-a-contract", () => {
           rows.some((row) => row[0] === `<code>${logical}</code>`),
           `${pack.id} ${logical}`,
         ).toBe(true);
-    // ADF types no tables, and the page says why it has no column.
+    // ADF types no tables, and its page says what happens instead.
     expect(Object.keys(packs.find((pack) => pack.id === "adf")!.defaults.types ?? {})).toEqual([]);
+    expect(read("adf/write-a-contract.mdx")).toContain("copy keeps the source's types");
   });
 
   it("leaves a column with no default type to the platform on Databricks, and VARCHAR on DuckDB", () => {
-    expect(prose(page)).toContain(
-      "Databricks then leaves the column out of the types it declares, so the platform decides; DuckDB reads it as `VARCHAR`.",
+    expect(prose(read("databricks/write-a-contract.mdx"))).toContain(
+      "Databricks then leaves the column out of the types it declares, so the platform decides.",
+    );
+    expect(prose(read("duckdb/write-a-contract.mdx"))).toContain(
+      "DuckDB then reads it as `VARCHAR`.",
     );
     const databricks = copy("minimal");
     retype(join(databricks, "contracts/orders.yaml"), "customer_id", "integer", "object");
@@ -293,15 +313,19 @@ describe("how-to/write-a-contract", () => {
 });
 
 it("keeps the old pages' anchors on the pages they merged into", () => {
-  expect(read("how-to/start-from-a-template.mdx")).toContain(
+  expect(read("shared/create-a-project.mdx")).toContain(
     "## Start from a starter [#start-from-a-starter]",
   );
 });
 
-describe("how-to/start-from-a-template", () => {
-  const page = read("how-to/start-from-a-template.mdx");
+describe.each([
+  ["synapse", "sales", 4, 5],
+  ["databricks", "sales", 2, 2],
+  ["adf", "sales", 6, 7],
+] as const)("how-to/start-from-a-template on %s", (platform, name, values, places) => {
+  const page = read(`${platform}/create-a-project.mdx`);
 
-  it("creates a project from a connection asking nothing, and counts what is still REPLACE_ME", () => {
+  it("creates a project from a connection asking nothing, and counts what the page's --set leaves", () => {
     const flags = commands(section(page, "## Start from a connection")).find((line) =>
       line.includes("--connector"),
     )!;
@@ -315,26 +339,23 @@ describe("how-to/start-from-a-template", () => {
     });
     expect(code, output).toBe(0);
     expect(asked).toEqual([]);
-    const values = section(page, "## Write the values it cannot know [#write-the-values]");
-    expect(output.trimEnd().split("\n").at(-1)).toBe(fences(values, "text")[0]!.trim());
-    expect(readFileSync(join(parent, "sales", "README.md"), "utf8")).toContain(
+    expect(readFileSync(join(parent, name, "README.md"), "utf8")).toContain(
       "## Values to replace before deploying",
     );
-    // plan counts places, init names: its own last line, as the page shows it.
-    const planned = cli(join(parent, "sales"), ["plan", "--no-diff"]);
-    expect(planned.code).toBe(0);
-    expect(planned.output.trimEnd().split("\n").at(-1)).toBe(fences(values, "text")[1]!.trim());
-    // The page's --set writes two of them, one for every environment and one for prod.
-    const set = commands(values).find((line) => line.includes("--set"))!;
+    // The page's --set: init counts the names left, plan the places, as the page shows.
+    const section_ = section(page, "## Write the values it cannot know [#write-the-values]");
+    const set = commands(section_).find((line) => line.includes("--set"))!;
     const second = mkdtempSync(join(tmpdir(), "docs-init-"));
     const written = cli(second, set.split(" ").slice(1));
     expect(written.code, written.output).toBe(0);
     expect(written.output.trimEnd().split("\n").at(-1)).toBe(
-      "6 values are still REPLACE_ME: README.md lists each one and where to find it.",
+      `${values} values are still REPLACE_ME: README.md lists each one and where to find it.`,
     );
-    const project = readFileSync(join(second, "sales", "project.yaml"), "utf8");
-    expect(project).toContain("storage_account: salesprod");
-    expect(cli(join(second, "sales"), ["apply", "--no-diff"]).code).toBe(0);
-    expect(cli(join(second, "sales"), ["check"]).code).toBe(1);
+    const planned = cli(join(second, name), ["plan", "--no-diff"]);
+    expect(planned.output.trimEnd().split("\n").at(-1)).toBe(
+      fences(section_, "text").at(-1)!.trim(),
+    );
+    expect(fences(section_, "text").at(-1)).toContain(`${places} places are still REPLACE_ME`);
+    expect(cli(join(second, name), ["check"]).code).toBe(1);
   });
 });

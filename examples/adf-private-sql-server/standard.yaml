@@ -1,0 +1,14 @@
+apiVersion: ingestron.io/v1
+kind: Standard
+id: erp
+packs: [adf@2] # the factory copies each table into landing storage, and the flows end there
+store:
+  default: none # the landed files are the result
+load:
+  default: incremental # copy the rows changed since the last copy, by each flow's cursor
+ingest:
+  settings:
+    adf-copy:
+      # the schedule; where it lands is the platform's
+      every: { frequency: Hour, interval: 1 }
+      start: 2026-11-06T00:00:00Z

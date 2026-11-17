@@ -1,0 +1,4 @@
+# A guide: a small project that shows one idea; the docs embed it.
+title: Check data quality on DuckDB
+summary: "One contract's checks on a readings table, run by DuckDB."
+order: 26

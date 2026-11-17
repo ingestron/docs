@@ -8,9 +8,11 @@
 // with the `label` it needs and the date it was `checked` against the
 // platform, which ends the caption. A platform shot is cropped to its subject
 // and shown at its own size, never larger, in a frame no wider than the
-// image, and links to the image to open it full size.
-import { readFileSync } from "node:fs";
+// image, and links to the image to open it full size. A short recording of
+// the editor is a `Clip`, in the same frame.
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import type { ReactNode } from "react";
 import { ScreenshotScroll } from "@/components/screenshot-scroll";
 
 /** A PNG's size in pixels, from its header: the build fails if the file is missing. */
@@ -118,6 +120,90 @@ export function Screenshot({
     />
   ));
   return (
+    <Frame platform={platform} bar={bar} name={name} text={text}>
+      {platform ? (
+        <a className="screenshot-open" href={captures.src} aria-label={`Open full size: ${name}`}>
+          {shown}
+        </a>
+      ) : (
+        shown
+      )}
+    </Frame>
+  );
+}
+
+/**
+ * A short screen recording in the editor's frame: a `light` and a `dark` MP4,
+ * each with a PNG of its last frame beside it, of the same name, as the
+ * poster. It is silent and plays only when the reader starts it, so nothing
+ * moves on the page by itself, and it loads nothing until then.
+ * @example <Clip light="/images/vscode/quick-fix-clip-light.mp4" dark="/images/vscode/quick-fix-clip-dark.mp4" caption="…" alt="…" />
+ */
+export function Clip({
+  light,
+  dark,
+  caption,
+  alt,
+}: {
+  /** The light theme's MP4; its poster is the PNG of the same name. */
+  light: string;
+  /** The dark theme's MP4, the same size as the light one. */
+  dark: string;
+  /** Says what the clip shows. */
+  caption: string;
+  /** Describes the clip, step by step, for a reader who cannot see it; the caption when left out. */
+  alt?: string;
+}) {
+  const clips = [
+    { src: light, className: "screenshot-light" },
+    { src: dark, className: "screenshot-dark" },
+  ].map((clip) => ({ ...clip, poster: clip.src.replace(/\.mp4$/, ".png") }));
+  for (const clip of clips) {
+    if (!existsSync(join(process.cwd(), "public", clip.src))) {
+      throw new Error(`Clip: no such file ${clip.src}`);
+    }
+  }
+  const [size, other] = clips.map((clip) => pngSize(clip.poster));
+  if (size.width !== other.width || size.height !== other.height) {
+    throw new Error(`Clip: ${light} and ${dark} differ in size`);
+  }
+  const name = alt ?? caption;
+  return (
+    <Frame platform={false} bar="VS Code · Ingestron" name={name} text={caption}>
+      {clips.map((clip) => (
+        <video
+          key={clip.src}
+          className={clip.className}
+          src={clip.src}
+          poster={clip.poster}
+          aria-label={name}
+          width={size.width}
+          height={size.height}
+          controls
+          muted
+          playsInline
+          preload="none"
+        />
+      ))}
+    </Frame>
+  );
+}
+
+/** The window round a screenshot or a clip: the bar, the scrolling frame and the caption. */
+function Frame({
+  platform,
+  bar,
+  name,
+  text,
+  children,
+}: {
+  platform: boolean;
+  bar: string;
+  name: string;
+  text: string;
+  children: ReactNode;
+}) {
+  return (
     <figure className={platform ? "screenshot screenshot-platform" : "screenshot"}>
       <div className="screenshot-frame">
         <div className="screenshot-bar" aria-hidden="true">
@@ -129,21 +215,10 @@ export function Screenshot({
           <span className="screenshot-label">{bar}</span>
         </div>
         {/* On a narrow screen the image keeps a readable size and scrolls in a
-            frame named after the shot, which takes focus only while it scrolls. */}
-        <ScreenshotScroll label={name}>
-          {/* With two captures, the page shows one of them with CSS, as it does the logo. */}
-          {platform ? (
-            <a
-              className="screenshot-open"
-              href={captures.src}
-              aria-label={`Open full size: ${name}`}
-            >
-              {shown}
-            </a>
-          ) : (
-            shown
-          )}
-        </ScreenshotScroll>
+            frame named after the shot, which takes focus only while it scrolls.
+            With two captures, the page shows one of them with CSS, as it does
+            the logo. */}
+        <ScreenshotScroll label={name}>{children}</ScreenshotScroll>
       </div>
       <figcaption>{text}</figcaption>
     </figure>

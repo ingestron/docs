@@ -1,0 +1,6 @@
+{
+  "title": "Choose your platform",
+  "description": "A page's old URL: it links to the page's version for each platform.",
+  "root": true,
+  "pages": ["..."]
+}

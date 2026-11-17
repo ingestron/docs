@@ -1,0 +1,6 @@
+{
+  "title": "Reference",
+  "description": "Problems you may meet on Databricks, with their causes and fixes.",
+  "root": true,
+  "pages": ["troubleshooting"]
+}

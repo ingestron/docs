@@ -1,0 +1,193 @@
+Your definitions say what each table should have: a check and its action, a
+cleansing operation, a quarantine, a way of keeping history, who may read it.
+The engine that
+keeps the table does the work, in its own SQL. When that engine cannot do one
+of these things, Ingestron says so at the line that asks for it, with the
+engine's reason. That state is **not applied here**, the warning
+[`NOT_APPLIED`](/docs/reference/errors#NOT_APPLIED).
+
+It is always a warning. The files are still written and run; the table goes
+without that feature on that engine. The same definitions can be applied
+in full on one engine and not on another.
+
+## What it covers [#what-it-covers]
+
+Each table is judged against the pack that keeps it: its store step, or its
+ingest step when that step writes the table or the table ends at the landed
+files. Another pack in the same standard does not count. Not applied can be:
+
+- a contract rule's kind<Only on="synapse">, such as `pattern`, since
+  serverless T-SQL has no regular expressions</Only>; an action<Only on="synapse">,
+  such as `fail`, since a view cannot stop a load</Only>; or a table check;
+- a cleansing operation, `deduplicate`, or a time zone conversion<Only on="synapse">,
+  including the
+  [zones Synapse cannot convert](/docs/reference/packs/synapse#quality-and-cleansing)</Only>;
+- quarantine, or the results of the checks;
+- a value of [intent](/docs/reference/intent#support), such as `load.mode` on a
+  method that reads the source itself;
+- a contract field the pack does not apply yet;
+- a role's grant, its `write`, exact grants, a mask or a row filter<Only on="duckdb">:
+  any of them, since DuckDB has no access control</Only><Only on="synapse">,
+  such as a mask, since a view over files cannot mask</Only>; a table one pack
+  keeps and another serves is judged by both;
+- cleansing a table that ends at the landed files, since nothing reads those
+  files before your reports do.
+
+What the pack applies, and why it does not, is on its page under
+**Quality and cleansing**, **Access** and **Intent**:
+
+<Only on="databricks">
+  [the Databricks pack](/docs/reference/packs/databricks#quality-and-cleansing) (its
+  [access](/docs/reference/packs/databricks#access))
+</Only>
+<Only on="duckdb">
+  [the DuckDB pack](/docs/reference/packs/duckdb#quality-and-cleansing) (its
+  [access](/docs/reference/packs/duckdb#access))
+</Only>
+<Only on="synapse">
+  [the Synapse pack](/docs/reference/packs/synapse#quality-and-cleansing) (its
+  [access](/docs/reference/packs/synapse#access))
+</Only>
+<Only on="adf">
+  [the Azure Data Factory pack](/docs/reference/packs/adf#quality-and-cleansing) (its
+  [access](/docs/reference/packs/adf#access))
+</Only>
+.
+
+## Where it shows [#where-it-shows]
+
+**In `check`, `plan` and `apply`,** under its own heading,
+`Not applied on this platform`, after the other problems and warnings,
+grouped by the environments that have it. For example:
+
+<Only on="duckdb">
+
+This is what the [first project](/docs/duckdb/first-project) prints:
+
+```text
+Not applied on this platform
+dev:
+contracts/orders.yaml:11:59  warning  NOT_APPLIED
+  The notNull rule isn't applied on duckdb: it is applied only in a layer whose does lists check.
+  Add `check` to the layer's `does` to apply it here.
+```
+
+</Only>
+
+<Only on="synapse">
+
+A contract's `pattern` rule, in the
+[quality example](/docs/synapse/add-quality-checks):
+
+```text
+Not applied on this platform
+synapse:
+contracts/readings.yaml:14:40  warning  NOT_APPLIED
+  The pattern rule isn't applied on synapse: serverless T-SQL has no regular expressions.
+```
+
+</Only>
+
+<Only on="databricks">
+
+A value of the standard a method does not use, from
+[a published standard with a connection](/docs/databricks/start-from-a-published-standard#with-a-connection):
+
+```text
+Not applied on this platform
+dev, prod:
+standard.yaml:28:12  warning  NOT_APPLIED
+  load.mode: files isn't applied on databricks: Managed ingestion reads the source, not files.
+```
+
+</Only>
+
+<Only on="adf">
+
+Cleansing asked of a table that ends at the landed files:
+
+```text
+Not applied on this platform
+dev, prod:
+flows/orders.yaml:13:27  warning  NOT_APPLIED
+  Cleansing "case" of "customer" isn't applied on adf: the table ends at the landed files, and nothing cleanses them.
+  Add a store step to have it cleansed.
+```
+
+</Only>
+
+Each message says what is not applied, on which pack, and why. A warning never
+changes the exit code, so `check` in CI still passes.
+
+**In VS Code,** as a warning at the same line, with the same message. A
+warning the platform [accepts](/docs/~/accept-a-warning) is not shown.
+
+**In a data product's passport,** in its Quality section: each check the
+engine does not apply is listed with its rule in words, then `Not enforced:`
+and the reason, and each cleansing operation it does not apply says
+`is not applied:` and the reason. Its Who may use it section says
+`Not enforced on <engine>:` and the reason for each role, mask or filter the
+engine does not apply; see
+[Read the passport](/docs/~/define-a-data-product#read-the-passport).
+The passport says this whether or not the warning is accepted: accepting a
+warning quiets it, and does not make the check run or the role granted.
+
+<Only on="synapse duckdb">
+
+## A layer that does not check [#layers]
+
+The most common case is a table in a layer that does not say it checks: your
+engine runs checks only in a layer whose `does` lists `check`, or is `raw`,
+where checks only count. The hint
+says what to add. Write each layer as an object with what it does:
+
+```yaml
+layers:
+  - { name: bronze, does: raw } # every row as it arrived; checks only count
+  - { name: silver, does: [check] }
+```
+
+With these layers the first project's plan lists no warning, and `run.sql`
+counts the orders that have no `order_id`. See
+[Say which layers check](/docs/~/add-quality-checks#layers) and
+[What a layer does](/docs/concepts/layers#what-a-layer-does).
+
+</Only>
+
+## How it differs from other warnings [#other-warnings]
+
+- **Most warnings** say something in your definitions could be better: a
+  setting has moved ([`SETTING_MOVED`](/docs/reference/errors#SETTING_MOVED)),
+  `deduplicate` is redundant ([`DEDUPLICATE_MODE`](/docs/reference/errors#DEDUPLICATE_MODE)),
+  or quarantine has nothing to keep
+  ([`QUARANTINE_UNUSED`](/docs/reference/errors#QUARANTINE_UNUSED)). Not
+  applied says your definitions are fine and this engine cannot do what they
+  ask, so it is listed apart.
+- **[`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF)** says the
+  engine can do it, but the platform has not turned it on<Only on="databricks">,
+  such as table checks without `databricks.manage.checks`, tags without
+  `databricks.manage.tags`, or a contract's roles without
+  `databricks.manage.grants`</Only><Only on="synapse">, such as a contract's
+  roles without `synapse.manage.grants`</Only>. Its fix turns it on
+  in `platform.yaml`, and the hint says what it needs. Not applied has no
+  switch to turn.
+- **[`QUALITY_RULE_NOT_CHECKED`](/docs/reference/errors#QUALITY_RULE_NOT_CHECKED)**
+  says no engine could check a rule as it is written, such as a `custom` rule
+  or one with no comparison.
+- **[`PREVIEW_FEATURE`](/docs/reference/errors#PREVIEW_FEATURE)** says the
+  feature is applied, but it is in preview on the platform, and the standard
+  asks for generally available features only.
+
+## What to do [#what-to-do]
+
+Read the reason, then choose one:
+
+- **Move it where it is applied.** Add the duty to the layer's `does`, as the
+  hint says<Only on="databricks">; check a table that Lakeflow Connect writes
+  in a transform in the next layer</Only>; give a table that ends at the
+  landed files a store step.
+- **Choose another method or pack** that applies it, if your platform has one.
+- **Remove it,** when the table can do without it.
+- **Accept it,** when you have looked at it and decided to live with it, with
+  the reason in `platform.yaml`; see
+  [Accept a warning](/docs/~/accept-a-warning).

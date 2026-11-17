@@ -10,59 +10,41 @@ import { RouteFacts } from "../components/reference/route-facts";
 import { RouteTable } from "../components/reference/route-table";
 import { allRoutes, packName, routePacks } from "../lib/reference";
 import { routeRows } from "../lib/routes";
+import { movedPages } from "../lib/platforms";
 import { redirectFor } from "../worker/redirects.js";
-import { section } from "./pages.js";
+import { read, section } from "./pages.js";
 import { contentFile, contentFolder } from "../lib/content-files.js";
-
-const read = (path: string) => readFileSync(join(contentFolder, contentFile(path)), "utf8");
 
 it("opens with one learning path, then areas by the reader's job, with no index pages", () => {
   const root = JSON.parse(read("meta.json"));
   expect(root.pages).not.toContain("tutorials");
-  // The home page, then the seven areas; each area is a root folder (test/areas.test.ts).
+  // The home page, a site for each platform (test/platform-paths.test.ts), then
+  // the product-wide areas; each section and area is a root folder (test/areas.test.ts).
   expect(root.pages).toEqual([
     "index",
-    "start",
-    "how-to/(build)",
-    "platforms",
-    "how-to/(standards)",
+    "synapse",
+    "databricks",
+    "adf",
+    "duckdb",
+    "adf-databricks",
+    "adf-synapse",
+    "adf-duckdb",
     "concepts",
     "connectors",
     "(reference)",
   ]);
   // Get started lists its pages in reading order, not an index page of links.
-  expect(JSON.parse(read("start/meta.json")).pages).toEqual([
+  expect(JSON.parse(read("synapse/(start)/meta.json")).pages).toEqual([
+    "index",
+    "install",
     "first-project",
     "how-it-works",
-    "choose-a-route",
-    "install",
   ]);
   expect(existsSync(join(contentFolder, contentFile("start/index.mdx")))).toBe(false);
-  // The guides keep their how-to/ URLs in two folder groups: Build a project, and Standards and teams.
-  expect(JSON.parse(read("how-to/(build)/meta.json")).pages).toEqual([
-    "start-from-a-template",
-    "add-a-source",
-    "describe-a-source",
-    "write-a-contract",
-    "write-a-transform",
-    "keep-a-table-current",
-    "add-quality-checks",
-    "cleanse-data",
-    "define-a-data-product",
-    "grant-access",
-    "add-an-environment",
-    "plan-and-generate",
-    "check-in-ci",
-    "deploy-through-environments",
-  ]);
-  expect(JSON.parse(read("how-to/(standards)/meta.json")).pages).toEqual([
+  // The standards guides are in each platform's Standards section.
+  expect(JSON.parse(read("synapse/(standards)/meta.json")).pages as string[]).toEqual([
     "configure-a-standard",
-    "choose-a-published-standard",
-    "start-from-a-published-standard",
-    "upgrade-a-standard",
-    "kits",
     "name-things-your-way",
-    "ask-the-platform-team",
     "accept-a-warning",
     "share-a-template",
     "upgrade",
@@ -72,14 +54,13 @@ it("opens with one learning path, then areas by the reader's job, with no index 
     "standards-and-packs",
     "settings",
     "layers",
-    "not-applied",
-    "environments-and-platform",
     "yaml-references",
     "generated-files",
+    "choose-a-platform",
   ]);
   // The two section indexes are gone, and their URLs land on each section's first page.
   for (const [section, first] of [
-    ["how-to", "how-to/start-from-a-template"],
+    ["how-to", "how-to/configure-a-standard"],
     ["concepts", "concepts/definitions"],
   ] as const) {
     expect(existsSync(join(contentFolder, contentFile(`${section}/index.mdx`))), section).toBe(
@@ -104,6 +85,7 @@ it("opens with one learning path, then areas by the reader's job, with no index 
     "recipes",
     "templates",
     "versions",
+    "release-notes",
   ]);
   expect(JSON.parse(read("tools/meta.json")).pages).toEqual(["vscode", "assistants"]);
   // The reference, tools and examples indexes are gone, and their URLs land on a page.
@@ -133,8 +115,8 @@ it("merges the downloaded-example guide and moves the contract guide, keeping th
   for (const [old, target, heading] of [
     [
       "how-to/use-an-example",
-      "/docs/how-to/start-from-a-template#start-from-a-starter",
-      "## Start from a starter [#start-from-a-starter]",
+      "/docs/reference/templates#create-a-project-from-a-starter",
+      "## Create a project from a starter [#create-a-project-from-a-starter]",
     ],
     [
       "how-to/draft-a-contract-from-a-sample",
@@ -144,10 +126,13 @@ it("merges the downloaded-example guide and moves the contract guide, keeping th
   ] as const) {
     expect(existsSync(join(contentFolder, contentFile(`${old}.mdx`))), old).toBe(false);
     expect(redirectFor(new URL(`https://docs.ingestron.io/docs/${old}`))).toBe(target);
-    expect(read(`${target.slice("/docs/".length).split("#")[0]}.mdx`)).toContain(heading);
+    // A guide's old URL forwards its #section to the reader's platform version.
+    const path = target.slice("/docs/".length).split("#")[0]!;
+    const moved = movedPages[path];
+    expect(read(moved ? `shared/${moved}.mdx` : `${path}.mdx`)).toContain(heading);
   }
   // What the downloaded-example guide said lives on: the download, and adapting it.
-  const create = read("how-to/start-from-a-template.mdx");
+  const create = read("shared/guides/create-a-project.mdx");
   for (const text of [
     "### From a downloaded example",
     '<OldAnchor id="make-it-yours" />',
@@ -156,7 +141,7 @@ it("merges the downloaded-example guide and moves the contract guide, keeping th
   ])
     expect(create).toContain(text);
   // The contract prose moved from the document reference to the guide.
-  const contract = read("how-to/write-a-contract.mdx");
+  const contract = read("shared/write-a-contract.mdx");
   for (const field of ["physicalName", "primaryKeyPosition", "QUALITY_RULE_NOT_CHECKED"])
     expect(contract).toContain(field);
   expect(read("reference/documents.mdx")).toContain("(/docs/how-to/write-a-contract)");
@@ -190,12 +175,12 @@ it("merges the worked standard and the naming concept into their guides, keeping
   expect(naming).toContain("title: Name tables and resources");
   for (const text of [
     "<NamingVariables />",
-    "<PackNaming />",
+    '<PackNaming platform="~" />',
     "{% if source %}",
     "BAD_NAME",
     "BAD_PATTERN",
     "DUPLICATE_NAME",
-    "## ADF resource names",
+    "## Resource names [#adf-resource-names]",
     "### Choose where the name belongs",
     '<OldAnchor id="review-a-rename-before-applying" />',
     "Ingestron renames files, not data.",
@@ -207,36 +192,31 @@ it("merges the worked standard and the naming concept into their guides, keeping
   for (const identity of ["Project and definition IDs", "Project table name", "Contract link"])
     expect(definitions).toContain(`| ${identity}`);
   // Each new page is linked where its subject first comes up.
-  expect(read("how-to/write-a-transform.mdx")).toContain("[second layer](/docs/concepts/layers)");
-  expect(read("how-to/add-a-source.mdx")).toContain("[first layer](/docs/concepts/layers)");
-  expect(read("how-to/check-in-ci.mdx")).toContain(
-    "(/docs/how-to/upgrade#choose-the-version-you-run)",
-  );
+  expect(read("shared/write-a-transform.mdx")).toContain("[second layer](/docs/concepts/layers)");
+  expect(read("shared/add-a-source.mdx")).toContain("[first layer](/docs/concepts/layers)");
+  expect(read("shared/check-in-ci.mdx")).toContain("(/docs/~/upgrade#choose-the-version-you-run)");
 });
 
 it("starts each kind of reader on the home page, before its value story", () => {
   const home = read("index.mdx");
   const start = section(home, "## Start here");
   for (const [reader, links] of [
-    ["Data engineers", ["#run-it-on-your-laptop", "/docs/start/first-project"]],
+    ["Data engineers", ["/docs/duckdb/first-project"]],
     ["Platform teams", ["/docs/how-to/configure-a-standard", "/docs/how-to/ask-the-platform-team"]],
   ] as const) {
     const path = start.split("<Path ").find((item) => item.startsWith(`reader="${reader}"`));
     expect(path, reader).toBeDefined();
     for (const link of links) expect(path, `${reader} → ${link}`).toContain(`(${link})`);
   }
-  expect(start).toContain("(/docs/start/choose-a-route)");
-  // The ways in come first, then what Ingestron does and the laptop run.
+  expect(start).toContain("(/docs/concepts/choose-a-platform)");
+  // The ways in, then what Ingestron does, and nothing more: each platform's
+  // docs, Compare the platforms and How Ingestron works carry the rest.
   const headings = home.split("\n").filter((line) => line.startsWith("## "));
-  expect(headings.slice(0, 3)).toEqual([
-    "## Start here",
-    "## What Ingestron does",
-    "## Run it on your laptop",
-  ]);
+  expect(headings).toEqual(["## Start here", "## What Ingestron does"]);
 });
 
 it("runs the first project with no cloud account, source or deployment", () => {
-  const first = read("start/first-project.mdx");
+  const first = read("duckdb/first-project.mdx");
   expect(first).toContain("No cloud account");
   expect(first).toContain('<Example name="duckdb" file="build/duckdb/dev/run.sql" />');
   const commands = [...first.matchAll(/^```sh\n([\s\S]*?)^```$/gm)].flatMap((match) =>
@@ -252,14 +232,14 @@ it("runs the first project with no cloud account, source or deployment", () => {
 
 it("installs Ingestron first, then runs every command as ingestron, never through npx", () => {
   // The home page, the first project and Install a tool install globally from npm.
-  for (const page of ["index.mdx", "start/first-project.mdx", "start/install.mdx"]) {
+  for (const page of ["duckdb/first-project.mdx", "start/install.mdx"]) {
     const sh = [...read(page).matchAll(/^```sh\n([\s\S]*?)^```$/gm)].map((match) => match[1]!);
     expect(
       sh.some((block) => block.startsWith("npm install -g ingestron\n")),
       page,
     ).toBe(true);
   }
-  expect(read("start/first-project.mdx")).toContain("Node.js 22.13 or later");
+  expect(read("duckdb/first-project.mdx")).toContain("Node.js 22.13 or later");
   expect(read("start/install.mdx")).toContain("Node.js 22.13 or later");
   // No page, component or CI template runs it through npx.
   const files = [
@@ -282,9 +262,9 @@ it("installs Ingestron first, then runs every command as ingestron, never throug
 it("keeps the front door's claims to what is shown and measured", () => {
   for (const page of [
     "index.mdx",
-    "start/first-project.mdx",
+    "duckdb/first-project.mdx",
     "start/how-it-works.mdx",
-    "start/choose-a-route.mdx",
+    "concepts/choose-a-platform.mdx",
   ]) {
     const text = read(page);
     expect(text, page).not.toMatch(/\b(just|simply|seamless(ly)?)\b/i);
@@ -292,7 +272,7 @@ it("keeps the front door's claims to what is shown and measured", () => {
     expect(text, page).not.toMatch(/\bcommunity\b/i);
   }
   // No dependency once deployed, with the one exception named where the claim is made.
-  expect(read("start/how-it-works.mdx")).toContain("ghcr.io/ingestron/duckdb-runner:1");
+  expect(read("adf-duckdb/index.mdx")).toContain("ghcr.io/ingestron/duckdb-runner:1");
   expect(read("index.mdx")).toContain("DuckDB in Azure runs in a public container image");
 });
 
@@ -314,7 +294,7 @@ it("makes YAML reference syntax reachable from every page and from concepts", ()
     "{{",
   ])
     expect(syntax).toContain(form);
-  expect(syntax).toContain("VALUES_SELF_REFERENCE");
+  expect(syntax).toContain("VALUE_CYCLE");
   expect(syntax).toContain("UNKNOWN_CODE_VALUE");
 });
 
@@ -323,16 +303,12 @@ it("explains environment files where the editor and the other pages send readers
   expect(syntax).toContain("## Use environment files");
   for (const text of [".env.<environment>", ".env.example", "!.env.example", "ENV_FILE_LINE"])
     expect(syntax).toContain(text);
-  for (const page of [
-    "tools/vscode.mdx",
-    "how-to/check-in-ci.mdx",
-    "how-to/start-from-a-template.mdx",
-  ])
+  for (const page of ["tools/vscode.mdx", "shared/check-in-ci.mdx", "shared/create-a-project.mdx"])
     expect(read(page)).toContain("/docs/concepts/yaml-references#use-environment-files");
 });
 
 it("separates the core workflow from today's supported platform combinations", () => {
-  const routes = read("start/choose-a-route.mdx");
+  const routes = read("concepts/choose-a-platform.mdx");
   expect(routes).toContain("<RouteTable detail />");
   expect(routes).toContain("## Reachability");
   expect(routes).toContain("Naming another platform in the\nYAML does not add one.");
@@ -341,42 +317,40 @@ it("separates the core workflow from today's supported platform combinations", (
   // The starter, then every route New project offers, each with its guide.
   expect(rows).toHaveLength(1 + allRoutes().length);
   expect(rows[0]).toContain("<code>--template duckdb</code>");
-  expect(rows[0]).toContain('href="/docs/platforms/duckdb"');
+  expect(rows[0]).toContain('href="/docs/duckdb"');
   allRoutes().forEach(({ via, title }, index) => {
     expect(rows[index + 1]).toContain(title);
     expect(rows[index + 1]).toContain(`<code>--via ${via}</code>`);
-    expect(rows[index + 1]).toMatch(/href="\/docs\/platforms\/[a-z-]+"/);
+    expect(rows[index + 1]).toMatch(
+      /href="\/docs\/(synapse|databricks|adf|duckdb|adf-databricks|adf-synapse|adf-duckdb)(\/[a-z-]+)?"/,
+    );
   });
   expect(html).toContain("ADF ingestion, ending at the landed files");
-  expect(html).toContain('href="/docs/platforms/duckdb-in-azure"');
-  expect(read("index.mdx")).toContain("<RouteTable />");
+  expect(html).toContain('href="/docs/adf-duckdb/load-with-adf"');
+  expect(read("concepts/choose-a-platform.mdx")).toContain("<RouteTable detail />");
   // The combinations live here, with the packs each route needs; the pack index is reference only.
   allRoutes().forEach(({ via }, index) =>
     expect(rows[index + 1], `${via} packs`).toContain(routePacks(via).map(packName).join(" + ")),
   );
   const packs = read("reference/packs/index.mdx");
-  expect(packs).toContain("(/docs/start/choose-a-route)");
+  expect(packs).toContain("(/docs/concepts/choose-a-platform)");
   expect(packs).not.toContain("Supported combinations");
   expect(packs).not.toContain("Required packs");
-  expect(read("platforms/duckdb-in-azure.mdx")).toContain("ghcr.io/ingestron/duckdb-runner:1");
-  expect(read("how-to/plan-and-generate.mdx")).toContain("does not deploy");
+  expect(read("adf-duckdb/load-with-adf.mdx")).toContain("ghcr.io/ingestron/duckdb-runner:1");
+  expect(read("shared/plan-and-generate.mdx")).toContain("does not deploy");
 });
 
 it("gives each route a platform page that opens with what runs, what deploys and how to create it", () => {
-  expect(JSON.parse(read("meta.json")).pages).toContain("platforms");
-  expect(JSON.parse(read("platforms/meta.json")).root).toBe(true);
-  const platforms = JSON.parse(read("platforms/meta.json")).pages as string[];
-  expect(platforms).toEqual([
-    "duckdb",
-    "duckdb-in-azure",
-    "databricks",
-    "databricks-deploy",
-    "synapse",
-    "adf",
-    "adf-deploy",
-    "adf-pipelines",
-    "landing-only",
-  ]);
+  // Each platform is a path of its own (test/platform-paths.test.ts); the old
+  // Platforms area is gone, and its pages redirect into the paths.
+  expect(JSON.parse(read("meta.json")).pages).not.toContain("platforms");
+  for (const [old, now] of [
+    ["synapse", "/docs/synapse"],
+    ["databricks-deploy", "/docs/databricks/deploy"],
+    ["landing-only", "/docs/adf/land-files-only"],
+    ["duckdb-in-azure", "/docs/adf-duckdb/load-with-adf"],
+  ])
+    expect(redirectFor(new URL(`https://docs.ingestron.io/docs/platforms/${old}`))).toBe(now);
   // Moved or merged, not copied: the old guides are gone, and their URLs redirect.
   for (const old of [
     "how-to/run-locally-with-duckdb",
@@ -398,14 +372,15 @@ it("gives each route a platform page that opens with what runs, what deploys and
     expect(existsSync(join(contentFolder, contentFile(`${old}.mdx`))), old).toBe(false);
   for (const [id, page] of [
     ["duckdb", "duckdb"],
-    ["adf-duckdb", "duckdb-in-azure"],
+    ["adf-duckdb", "adf-duckdb/load-with-adf"],
     ["databricks", "databricks"],
-    ["adf-synapse", "synapse"],
-    ["adf-databricks", "adf"],
-    ["adf-landing", "landing-only"],
+    ["adf-synapse", "adf-synapse/load-with-adf"],
+    ["synapse", "synapse"],
+    ["adf-databricks", "adf-databricks/load-with-adf"],
+    ["adf-landing", "adf/land-files-only"],
   ] as const) {
-    const text = read(`platforms/${page}.mdx`);
-    expect(routeRows().find((row) => row.id === id)?.guide, id).toBe(`platforms/${page}`);
+    const text = read(`${page}.mdx`);
+    expect(routeRows().find((row) => row.id === id)?.guide, id).toBe(page);
     // Before the first heading, so it is the first thing a reader meets.
     expect(text.split("\n## ")[0], page).toContain(`<RouteFacts id="${id}" />`);
     const row = routeRows().find((item) => item.id === id)!;
@@ -418,16 +393,15 @@ it("gives each route a platform page that opens with what runs, what deploys and
     expect(facts).toContain(row.option);
   }
   expect(existsSync(join(contentFolder, contentFile("platforms/index.mdx")))).toBe(false);
-  // The ADF page is the setup for every route ADF feeds, and says so before its first heading.
-  const adf = read("platforms/adf.mdx").split("\n## ")[0]!;
-  for (const via of ["adf-synapse", "adf-duckdb", "adf-landing"]) {
-    expect(adf, via).toContain(`(/docs/${routeRows().find((row) => row.id === via)!.guide})`);
-    expect(adf, via).toContain(`\`${via}\``);
-  }
+  // The ADF page names no other platform: it links its own route's page, and
+  // points to the combinations in the picker before its first heading.
+  const adf = read("adf/index.mdx").split("\n## ")[0]!;
+  expect(adf).toContain(`(/docs/${routeRows().find((row) => row.id === "adf-landing")!.guide})`);
+  expect(adf).toContain("**Combined** in the platform picker");
 });
 
 it("keeps the Databricks worked example: dev and prod, with its break in troubleshooting", () => {
-  const page = read("platforms/databricks.mdx");
+  const page = read("databricks/index.mdx");
   const create = section(page, "## Create it");
   for (const file of ["standard.yaml", "project.yaml", "flows/shop.yaml"])
     expect(create).toContain(`<Example name="retail-filled" file="${file}" />`);
@@ -441,11 +415,18 @@ it("keeps the Databricks worked example: dev and prod, with its break in trouble
 
 it("compares each source on the route page across every route New project offers", () => {
   const ids = JSON.parse(
-    /<RouteComparison ids=\{(\[[^\]]*\])\}/.exec(read("start/choose-a-route.mdx"))![1]!,
+    /<RouteComparison ids=\{(\[[^\]]*\])\}/.exec(read("concepts/choose-a-platform.mdx"))![1]!,
   ) as string[];
   const html = renderToStaticMarkup(createElement(RouteComparison, { ids }));
   const headers = [...html.matchAll(/<th(?: [^>]*)?>(.*?)<\/th>/g)].map((match) => match[1]!);
-  const vias = ["databricks", "adf-databricks", "adf-synapse", "adf-duckdb", "adf-landing"];
+  const vias = [
+    "databricks",
+    "adf-databricks",
+    "adf-synapse",
+    "adf-duckdb",
+    "adf-landing",
+    "synapse",
+  ];
   expect(headers).toHaveLength(1 + vias.length);
   vias.forEach((via, index) => expect(headers[index + 1]).toContain(via));
   const rows = [...html.matchAll(/<tr>(.*?)<\/tr>/g)].map((match) => match[1]!);
@@ -473,14 +454,14 @@ it("links each platform page once beside a connector: Routes first, then only th
   const count = (list: string[], href: string) => list.filter((item) => item === href).length;
   const sqlserver = links("sqlserver");
   expect(projectRoutes("sqlserver").map((route) => route.via)).toContain("databricks");
-  expect(count(sqlserver, "/docs/platforms/databricks")).toBe(1);
-  expect(count(sqlserver, "/docs/platforms/adf")).toBe(1);
-  expect(count(sqlserver, "/docs/platforms/adf-pipelines")).toBe(1);
+  expect(count(sqlserver, "/docs/databricks")).toBe(1);
+  expect(count(sqlserver, "/docs/adf")).toBe(1);
+  expect(count(sqlserver, "/docs/adf/pipelines")).toBe(1);
   expect(count(sqlserver, "/docs/how-to/name-things-your-way")).toBe(1);
   const postgresql = links("postgresql");
   expect(projectRoutes("postgresql").map((route) => route.via)).not.toContain("databricks");
-  expect(count(postgresql, "/docs/platforms/databricks")).toBe(1);
-  expect(count(postgresql, "/docs/platforms/adf")).toBe(1);
+  expect(count(postgresql, "/docs/databricks")).toBe(1);
+  expect(count(postgresql, "/docs/adf")).toBe(1);
   for (const list of [sqlserver, postgresql])
     expect(new Set(list).size, "no page linked twice").toBe(list.length);
 });

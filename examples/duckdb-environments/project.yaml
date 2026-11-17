@@ -1,0 +1,17 @@
+# One DuckDB project, two environments on the same machine: each reads the
+# same samples and publishes its tables to a folder of its own.
+id: shop
+values:
+  published: ./published/dev
+environments:
+  dev: {}
+  prod:
+    values:
+      published: ./published/prod
+imports:
+  - standard.yaml
+  - platform.yaml
+  - connections/*.yaml
+  - flows/*.yaml
+  - transforms/*.yaml
+  - contracts/*.yaml

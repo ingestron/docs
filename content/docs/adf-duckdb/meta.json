@@ -1,0 +1,5 @@
+{
+  "title": "Data Factory into DuckDB",
+  "description": "A factory copies each source into landing storage; DuckDB builds the tables in Azure.",
+  "pages": ["(start)", "(guides)", "connectors"]
+}

@@ -1,0 +1,7 @@
+apiVersion: ingestron.io/v1
+kind: Flow
+id: erp
+source: erp
+ingest: { uses: synapse-copy }
+tables:
+  orders: { object: sales.dbo.Orders }

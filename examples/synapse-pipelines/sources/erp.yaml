@@ -1,0 +1,10 @@
+apiVersion: ingestron.io/v1
+kind: SourceMetadata
+id: erp
+connection: erp
+tables:
+  - object: sales.dbo.Orders
+    captured: { at: "2026-11-14T00:00:00Z", from: document, file: synthetic-specification.yaml }
+    columns:
+      - { name: OrderID, sourceType: int, logicalType: integer, required: false }
+      - { name: Total, sourceType: money, logicalType: number, required: false }

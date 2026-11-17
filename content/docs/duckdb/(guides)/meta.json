@@ -1,0 +1,24 @@
+{
+  "title": "Guides",
+  "description": "Each task, from sources and tables to schedules and deployment.",
+  "root": true,
+  "pages": [
+    "---Set up---",
+    "create-a-project",
+    "plan-and-generate",
+    "---Sources---",
+    "add-a-source",
+    "describe-a-source",
+    "write-a-contract",
+    "---Tables---",
+    "write-a-transform",
+    "keep-a-table-current",
+    "cleanse-data",
+    "add-quality-checks",
+    "define-a-data-product",
+    "---Run and deploy---",
+    "add-an-environment",
+    "check-in-ci",
+    "ask-the-platform-team"
+  ]
+}

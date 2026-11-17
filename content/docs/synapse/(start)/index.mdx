@@ -1,0 +1,240 @@
+---
+title: Azure Synapse
+description: Workspace pipelines that copy Azure SQL snapshots, and serverless SQL views over the files, for every environment.
+---
+
+On Synapse, the workspace's own pipelines copy Azure SQL Database tables into
+storage as full Parquet snapshots, and serverless SQL shows the copies as
+views: a transform becomes a view over other views, and Synapse reads the
+files each time a report queries a view. Nothing else is kept or refreshed.
+
+The pipelines use SQL authentication through a Key Vault password reference,
+public or workspace connectivity, and an Azure integration runtime the
+workspace already has.
+
+<RouteFacts id="synapse" />
+
+To try it on your computer first, follow
+[Your first Synapse project](/docs/synapse/first-project).
+
+## What Ingestron writes [#what-you-get]
+
+The workspace's files are under `build/synapse/workspace/<environment>/`, as
+its Git integration lays them out: linked services, datasets, a pipeline and
+a stopped schedule trigger. The integration runtime is referenced by name,
+never written or changed. Beside them, `build/synapse/queries/<environment>/`
+shows each copy's source query on its own, to review; it stays outside the
+workspace folder.
+
+The views are one script for every environment, with a short script for each
+environment that sets its values. Where a table's layer checks its rows, it
+also writes `checks.sql`, with `checks/<environment>.sql` for each
+environment, which counts the checks when it runs; see
+[Run and operate](/docs/synapse/deploy#operate):
+
+<BuildTree name="synapse-views" folder="build/synapse" />
+
+`views.sql` starts by switching to the environment's database, a sqlcmd
+variable, because the databases differ between environments; everything the
+same in every environment is written as it is:
+
+<Example name="synapse-views" file="build/synapse/views.sql" from="USE [" to="GO" />
+
+Each copied table becomes a view over its landed file, read through the
+external data source `landing`, with the contract's column types:
+
+<Example
+  name="synapse-views"
+  file="build/synapse/views.sql"
+  from="CREATE OR ALTER VIEW [bronze].[customers]"
+  to="GO"
+/>
+
+A transform becomes a view over its inputs' views, with its SQL inside:
+
+<Example
+  name="synapse-views"
+  file="build/synapse/views.sql"
+  from="CREATE OR ALTER VIEW [silver].[customer_totals]"
+  to="GO"
+/>
+
+Each environment's script sets the variables and includes `views.sql`. It
+stops at the first error:
+
+<Example name="synapse-views" file="build/synapse/environments/prod.sql" />
+
+A value only the deploying pipeline knows, written as `${envvar:NAME}`, is a
+variable that the script leaves unset, and the pipeline sets as an
+environment variable `NAME`; see
+[Supplied when deploying](/docs/concepts/yaml-references#supplied-when-deploying).
+
+## What it looks like in Azure Synapse [#on-the-platform]
+
+<Screenshot
+  src="/images/platforms/synapse/synapse-01-views.png"
+  label="Azure Synapse"
+  checked="2026-11-02"
+  alt="The serverless database northwind_dev in Synapse Studio, with the views bronze.customers, bronze.order_details, bronze.orders, bronze.products and silver.daily_sales."
+  caption="The demo's Northwind project in Synapse Studio: the serverless database northwind_dev holds a view per copied table in bronze, and the daily_sales transform in silver."
+/>
+
+<Screenshot
+  src="/images/platforms/synapse/synapse-04-sales-chart.png"
+  label="Azure Synapse"
+  checked="2026-11-02"
+  alt="A query over silver.daily_sales grouped by country, shown as a column chart of revenue from USA down to Canada."
+  caption="A report's query over the silver.daily_sales view, as a chart: Synapse read the landed files when the query ran."
+/>
+
+## Create it [#create-it]
+
+<ToolSteps>
+<Tool name="VS Code">
+
+Run **Ingestron: New project**, choose **Azure Synapse**, then **A new
+standard for Azure Synapse**, then the folder. Review the standard, platform
+and environment settings. Then choose **Add connection** in the Project panel:
+**Azure SQL Database** and its reachability. Request or import its metadata,
+then choose **Add flow** for the tables to copy.
+
+</Tool>
+<Tool name="CLI">
+
+```sh
+ingestron init sales --platform synapse --yes
+cd sales
+ingestron connection add erp --connector azure-sql-database --connectivity public
+ingestron flow add erp --connection erp --object 'erp.dbo.Orders'
+```
+
+</Tool>
+</ToolSteps>
+
+See [Create a project](/docs/synapse/create-a-project) for each step.
+The synthetic example uses only the Synapse pack:
+
+<Example name="synapse-pipelines" file="standard.yaml" />
+<Example name="synapse-pipelines" file="connections/erp.yaml" />
+<Example name="synapse-pipelines" file="flows/erp.yaml" />
+
+The rest of this page uses a finished project with two tables, a transform
+and grants:
+
+<ExampleDownload name="synapse-views" />
+
+The standard copies with the workspace pipelines, keeps every table as a view, and says what each layer does with its rows
+([What a layer does](/docs/concepts/layers#what-a-layer-does)):
+
+<Example name="synapse-views" file="standard.yaml" />
+
+The platform names the external data source the views read through, turns
+on grants, and says which database user each role is:
+
+<Example name="synapse-views" file="platform.yaml" />
+
+A transform's SQL is T-SQL over its inputs' views, written
+`{{ tables.<input> }}`:
+
+<Example name="synapse-views" file="transforms/customer_totals.yaml" />
+
+## Settings that shape it [#settings]
+
+Every setting of the Synapse methods is in the
+[Synapse pack reference](/docs/reference/packs/synapse).
+
+<OldAnchor id="list-synapse-first-and-keep-tables-as-views" />
+<OldAnchor id="name-the-external-data-source" />
+<OldAnchor id="write-a-transform-as-a-view" />
+
+`store: { default: synapse-view }` keeps every table as a view over its landed
+files. The database is named by the standard's `naming.catalog`, here the
+Synapse pack's default, `{{ project }}_{{ environment }}`; see
+[Name tables and resources](/docs/~/name-things-your-way).
+
+`data_source` and `data_source_location` name the external data source in
+every view, and every file a view reads must be under the location:
+
+<SettingsSections
+  pack="synapse"
+  method="synapse-view"
+  include={["data_source", "data_source_location"]}
+/>
+
+`layout: snapshot` lands one file per table, so each view shows the current
+data; a view over files that each load adds shows every load's rows. What a view's
+SQL can do is in
+[What each engine makes of it](/docs/synapse/write-a-transform#what-each-engine-makes-of-it).
+
+### Column types [#column-types]
+
+The standard's first pack decides the column types. With Synapse first,
+source metadata keeps a column's precision: `money` becomes `DECIMAL(19,4)`,
+`smallmoney` `DECIMAL(10,4)`, and a decimal keeps its precision and scale. A
+type the standard sets still wins, and a contract's `physicalType` wins over
+its `logicalType`. A contract drafted from the metadata writes these exact
+types as `physicalType`, so it keeps them; see
+[Describe a source](/docs/~/describe-a-source).
+
+### Who may read the views [#grants]
+
+With `synapse.manage.grants`, `views.sql` grants each view to the roles its
+contract and its layer name, right after the view, in its own database:
+
+<Example
+  name="synapse-views"
+  file="build/synapse/views.sql"
+  from="GRANT SELECT ON OBJECT::[bronze].[customers]"
+  to="GO"
+/>
+
+Serverless SQL has no data masking or row-level security, so a masked column
+or a row filter is [not applied here](/docs/~/not-applied). See
+[On Synapse](/docs/synapse/grant-access#on-synapse) for exact grants and what
+each reader needs.
+
+### Views or tables
+
+A view cannot merge changes or keep history. For that, keep the table with a
+store pack and serve it with `synapse-serve`; see
+[Keep a table current](/docs/synapse/keep-a-table-current#on-synapse).
+
+|                             | Views (Synapse)                              | Tables (a store pack, served with `synapse-serve`) |
+| --------------------------- | -------------------------------------------- | -------------------------------------------------- |
+| Runs after each load        | Nothing                                      | The store pack's job                               |
+| Cost                        | Data scanned each time a report reads a view | The job's run time, plus data scanned when read    |
+| Merge, history              | No: the files as they are                    | Yes                                                |
+| Heavy joins over large data | Recomputed on every read                     | Computed once per load                             |
+
+## Limits [#limits]
+
+- **Checks only where a layer checks, and no `fail`.** In a layer whose `does`
+  lists `check`, the view leaves out the rows a `drop` check fails, and
+  `checks.sql` counts every check, but only when something runs it. A view
+  cannot stop a load, keep the rows it leaves out, or keep results, and
+  serverless T-SQL has no regular expressions: each is
+  [not applied here](/docs/~/not-applied). See
+  [Check data quality](/docs/synapse/add-quality-checks#synapse).
+- **No merge or history.** A view shows the files as they are; see
+  [Views or tables](#views-or-tables).
+- **Grants, but no masks or row filters.** A reader who may query a view over
+  files can also read the files under the data source directly.
+- **Environments may differ only in values.** A table built in some
+  environments only, or a transform whose code differs in more than a value,
+  is [`ENVIRONMENTS_DIFFER`](/docs/reference/errors#ENVIRONMENTS_DIFFER). A
+  value that differs cannot hold `'`, `]` or a line break, and a value
+  supplied when deploying must be a whole value.
+- **What has been tried.** The screenshots show the demo deployed with
+  ingestron 1.8. The 2.x views
+  scripts have been run with sqlcmd (Go) v1.10.0 and the ODBC sqlcmd against a
+  local SQL engine, not yet against a Synapse workspace, and the workspace
+  pipelines have not yet been published to one.
+
+## Next
+
+- [Write a transform](/docs/synapse/write-a-transform): build another view from
+  the views you have.
+- [Define a data product](/docs/synapse/define-a-data-product): describe the
+  views reports use, for the people who read them.
+- [Ask the platform team](/docs/synapse/ask-the-platform-team): send the
+  request for the database and its access.

@@ -1,0 +1,4 @@
+# A guide: a small project that shows one idea; the docs embed it.
+title: Define data products on Synapse
+summary: "The data products example on Synapse: two products, their governance, and a passport each."
+order: 20

@@ -225,3 +225,20 @@ pre code > .line {
   display: block;
   margin-top: 0.3rem;
 }
+
+/* Above a platform page: which platform it is for, and the same page on the others. */
+/* A guide's old URL: one line per platform version. */
+.platform-chooser {
+  list-style: none;
+  padding: 0;
+}
+.platform-chooser li {
+  margin-block: 0.5rem;
+}
+.platform-chooser a {
+  font-weight: 600;
+}
+.platform-continue {
+  margin-block: 0 1rem;
+  font-weight: 600;
+}

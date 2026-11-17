@@ -1,0 +1,50 @@
+---
+title: Deploy both
+description: Deploy each environment's factory, then its Databricks bundle target, by hand or from CI.
+---
+
+Ingestron writes the factory and the bundle and deploys neither. Deploy each
+environment's factory first, then the bundle's target: the pipelines read only
+what the factory lands.
+
+## Before you deploy [#prerequisites]
+
+`ingestron request --env dev` lists what both need, with this project's
+values: the integration runtime, Key Vault and landing storage for the factory,
+then the workspace, catalog and identities for the bundle. Each platform's
+page says more about its part:
+[the factory](/docs/adf/deploy#prerequisites) and
+[the bundle](/docs/databricks/deploy#prerequisites).
+
+## Deploy [#deploy]
+
+1. Run `ingestron apply`.
+2. Build the factory's ARM template once and deploy it with the environment's
+   parameter file, as in
+   [Build the template and deploy it](/docs/adf/deploy#build-and-deploy).
+3. Deploy the bundle's target for the environment from `build/databricks`, as
+   in [Deploy the Databricks bundle](/docs/databricks/deploy#deploy):
+
+   ```sh
+   cd build/databricks
+   databricks bundle deploy -t dev
+   ```
+
+The factory's triggers and the bundle's job are stopped outside production.
+`paused: true` in the platform's `schedule` stops both in production too; to
+stop only the copies, see
+[Retry and pause](/docs/adf/pipelines#retry-and-pause).
+
+### From CI [#deploy-from-ci]
+
+Each environment's stage in the CI templates deploys the factory, then the
+bundle, in that order. Each platform's page gives its steps:
+[the factory](/docs/adf/deploy#deploy-from-ci) and
+[the bundle](/docs/databricks/deploy#deploy-from-ci).
+
+## Next
+
+- [Load with Azure Data Factory](/docs/adf-databricks/load-with-adf): what each
+  part writes, and the settings that shape it.
+- [Run the factory](/docs/adf/deploy#operate) and
+  [run the refresh](/docs/databricks/deploy#operate).

@@ -3,7 +3,9 @@
 // every documentation link the editor shows lands on its page and anchor.
 // Every redirect lands on a built page and anchor, and no redirect starts
 // from a page that is still built. Every page URL built before the
-// areas came in is still built, and each area's sidebar lists only its pages.
+// areas came in is still built or redirects, and each area's sidebar lists
+// only its pages. A link to a guide's old URL, which forwards its #section to
+// the reader's platform version, lands when some platform version has it.
 // Every page opens with a skip link to an element it has, every table and
 // code block scrolls in a named frame, and the Fumadocs markup the keyboard
 // fixes rely on is there. Nothing built or downloadable holds a regional name
@@ -13,8 +15,17 @@ import { docsLinks } from "@ingestron/authoring";
 import { join, relative } from "node:path";
 import { unzipSync } from "fflate";
 import { baseOptions } from "../lib/layout.shared";
-import { categoryAnchor, sourceCategories } from "../lib/connector-page";
-import { connectorEntries, connectorIds } from "../lib/reference";
+import { catalogueToc } from "../lib/connector-page";
+import { connectorEntries, connectorIds, connectorsFor } from "../lib/reference";
+import {
+  allowedOn,
+  leakWords,
+  movedPages,
+  pageName,
+  platforms,
+  sharedPages,
+  type Platform,
+} from "../lib/platforms";
 import { patterns, redirectFor, redirects } from "../worker/redirects.js";
 
 const out = join(process.cwd(), "out");
@@ -60,9 +71,14 @@ for (const page of htmlFiles(out)) {
   const target = redirectFor(new URL(path, "https://docs.ingestron.io"));
   if (target !== undefined) broken.add(`redirect source ${path} is still a built page → ${target}`);
 }
-// No URL moved: test/page-urls.txt lists the pages main built before the areas.
+// No URL is lost: test/page-urls.txt lists the pages main built before the
+// areas; each is built, or redirects to a built page.
 const urls = readFileSync(join(process.cwd(), "test/page-urls.txt"), "utf8").trim().split("\n");
-for (const url of urls) problem(url, "page built before the areas");
+for (const url of urls)
+  problem(
+    redirectFor(new URL(url, "https://docs.ingestron.io")) ?? url,
+    "page built before the areas",
+  );
 // The home page's cards and ways in link to built pages and anchors.
 for (const [, href] of readFileSync(join(out, "docs.html"), "utf8").matchAll(
   /href="(\/docs[^"]*#[^"]+)"/g,
@@ -72,13 +88,14 @@ sidebars();
 const framed = keyboard();
 fumadocsMarkup();
 const scanned = noRegionalNames();
+const pure = onlyTheirPlatforms();
 
 if (broken.size > 0) {
   console.log(`✗ ${broken.size} broken links:\n${[...broken].join("\n")}`);
   process.exit(1);
 }
 console.log(
-  `✓ every internal link resolves, ${sections} links to a section land on it, all ${editorLinks.length} editor links land, all ${urls.length} pages built before the areas are built, each sidebar lists only its area, every page has a skip link, ${framed} named frames and the markup the keyboard fixes use, and none of ${scanned} built and downloadable files holds a regional name`,
+  `✓ every internal link resolves, ${sections} links to a section land on it, all ${editorLinks.length} editor links land, all ${urls.length} pages built before the areas are built or redirect, each sidebar lists only its area, every page has a skip link, ${framed} named frames and the markup the keyboard fixes use, none of ${scanned} built and downloadable files holds a regional name, and each of ${pure} site pages names only the platforms its site is for`,
 );
 
 /**
@@ -89,6 +106,11 @@ console.log(
  * the phone menu repeats above the pages, are left out.
  */
 function sidebars(): void {
+  const moved = new Set([
+    ...Object.keys(movedPages).map((old) => `/docs/${old}`),
+    "/docs/connectors",
+    ...connectorIds().map((id) => `/docs/connectors/${id}`),
+  ]);
   const options = baseOptions();
   // The menu's links come first, before the area's pages.
   const menu = (options.links ?? []).map((link) => ("url" in link ? link.url : ""));
@@ -103,23 +125,33 @@ function sidebars(): void {
       broken.add(`${path} has no sidebar`);
       continue;
     }
-    found++;
-    const links = [
-      ...html.slice(start, html.indexOf("</aside>", start)).matchAll(/href="([^"]+)"/g),
-    ]
+    // The section's group above the tree (components/section-companion.tsx)
+    // links the section's other half, so it is left out here.
+    const aside = html
+      .slice(start, html.indexOf("</aside>", start))
+      .replace(/<nav class="section-companion"[\s\S]*?<\/nav>/, "");
+    const links = [...aside.matchAll(/href="([^"]+)"/g)]
       .map((match) => match[1]!)
       .filter(
         (href, index) => href.startsWith("/") && !(index < menu.length && href === menu[index]),
       );
+    if (!moved.has(path)) found++;
+    const connectorPage = /^\/docs\/([a-z]+)\/connectors\/[^/#]+$/;
     for (const href of links)
-      if (href.startsWith("/docs/connectors/")) broken.add(`sidebar of ${path} lists ${href}`);
-    const own = path.startsWith("/docs/connectors/") ? "/docs/connectors" : path;
+      if (connectorPage.test(href)) broken.add(`sidebar of ${path} lists ${href}`);
+    // A guide's old URL is in no area, and its sidebar lists nothing.
+    if (moved.has(path)) {
+      if (links.length > 0) broken.add(`sidebar of ${path} lists ${links.join(" ")}`);
+      found++;
+      continue;
+    }
+    // A connector page's sidebar is its platform's catalogue and categories.
+    const platform = /^\/docs\/([a-z]+)\/connectors(?:\/|$)/.exec(path)?.[1] as
+      Platform["id"] | undefined;
+    const own = platform ? `/docs/${platform}/connectors` : path;
     if (!links.includes(own)) broken.add(`sidebar of ${path} does not list ${own}`);
-    if (own === "/docs/connectors") {
-      const expected = [
-        "/docs/connectors",
-        ...sourceCategories().map((name) => `/docs/connectors#${categoryAnchor(name)}`),
-      ];
+    if (platform) {
+      const expected = [own, ...catalogueToc([], platform).map((item) => `${own}${item.url}`)];
       if (links.join(" ") !== expected.join(" "))
         broken.add(
           `sidebar of ${path} is ${links.join(" ")}, not the catalogue and its categories`,
@@ -135,7 +167,8 @@ function sidebars(): void {
     }
   }
   // out/docs holds every page but the home page, which is out/docs.html.
-  if (found !== urls.length - 1) broken.add(`${found} sidebars for ${urls.length - 1} area pages`);
+  const built = pages.length;
+  if (found !== built) broken.add(`${found} sidebars for ${built} pages`);
 }
 
 /**
@@ -192,6 +225,17 @@ function fumadocsMarkup(): void {
         broken.add(`${path}: no menu button for #nd-sidebar-mobile in the header`);
       if (!/data-header-tabs/.test(header))
         broken.add(`${path}: no [data-header-tabs] in the header`);
+      // The platform picker: named for the page's platform, or "Choose a platform"
+      // until the browser knows the reader's; and the platforms' tabs, marked.
+      const platform = platforms.find(
+        (item) => path === `/docs/${item.id}` || path.startsWith(`/docs/${item.id}/`),
+      );
+      const named = platform ? `Platform: ${platform.title}` : "Choose a platform";
+      if (!header.includes(`class="platform-picker-button" aria-label="${named}"`))
+        broken.add(`${path}: no platform picker named "${named}" in the header`);
+      for (const item of platforms)
+        if (!header.includes(`data-platform="${item.id}"`))
+          broken.add(`${path}: no ${item.id} tabs in the header`);
     }
     // Fumadocs' Heading marks its headings group/heading; headings other
     // components draw, such as the error codes and the contents' title, have none.
@@ -266,6 +310,35 @@ function htmlFiles(folder: string): string[] {
 /** Adds a problem unless the link's page, and its anchor if it has one, are built. */
 function problem(link: string, what: string): void {
   const [path = "", anchor] = link.split("#");
+  // A connector's old URL, or the old catalogue's, lists the platforms' pages; its anchor is on them.
+  const old = /^\/docs\/connectors(?:\/([^/]+))?$/.exec(path);
+  if (old && anchor) {
+    const connector = old[1];
+    const versions = platforms
+      .filter((platform) => !connector || connectorsFor(platform.id).includes(connector))
+      .map((platform) =>
+        join(
+          out,
+          "docs",
+          platform.id,
+          "connectors",
+          connector ? `${connector}.html` : "index.html",
+        ),
+      )
+      .map((file) => (existsSync(file) ? file : file.replace(/\/index\.html$/, ".html")));
+    if (!versions.some((file) => existsSync(file) && hasId(readFileSync(file, "utf8"), anchor)))
+      broken.add(`${what} → ${link} (no platform's page has the anchor)`);
+    return;
+  }
+  const key = movedPages[path.replace(/^\/docs\//, "")];
+  if (key && anchor) {
+    const versions = sharedPages[key]!.platforms.map((id) =>
+      join(out, "docs", id, `${pageName(key)}.html`),
+    );
+    if (!versions.some((file) => existsSync(file) && hasId(readFileSync(file, "utf8"), anchor)))
+      broken.add(`${what} → ${link} (no platform version has the anchor)`);
+    return;
+  }
   const page = [`${join(out, path)}.html`, join(out, path, "index.html")].find(existsSync);
   if (!page) broken.add(`${what} → ${link} (no page)`);
   else if (anchor && !hasId(readFileSync(page, "utf8"), anchor))
@@ -285,11 +358,16 @@ function pagePath(file: string): string {
 
 /**
  * Where the patterns send the old connector chapter URLs: every chapter that
- * was built, one per pack that reads the connector, and its examples. A
+ * was built, one per pack that reads the connector, and its examples; and the
+ * connector pages a platform lost to a combination. A
  * pattern no probe matches is a problem, so no pattern goes unchecked.
  */
 function patternTargets(): string[] {
   const probes = connectorIds().flatMap((id) => [
+    // A connector page a platform lost to a combination.
+    ...(["databricks", "synapse", "duckdb"] as const)
+      .filter((platform) => !connectorsFor(platform).includes(id))
+      .map((platform) => `/docs/${platform}/connectors/${id}`),
     `/docs/connectors/${id}/examples`,
     ...connectorEntries(id).flatMap(({ pack }) => [
       `/docs/connectors/${id}/${pack}-connection`,
@@ -304,4 +382,65 @@ function patternTargets(): string[] {
     if (target === undefined) broken.add(`old chapter ${path} does not redirect`);
     return target ?? path;
   });
+}
+
+/**
+ * Each site's built pages name only the platforms the site is for
+ * (lib/platforms.ts's allowedOn), in what the components render too: the
+ * article only, since the header's picker and tabs name every site. A
+ * site's pages may name the sources its connectors read, such as Azure
+ * Synapse Analytics read as a source. test/platform-leak.test.ts checks the pages' text before building.
+ * Returns how many pages it checked.
+ */
+function onlyTheirPlatforms(): number {
+  // Sentences the packs and published standards write, which name another
+  // platform: product findings, to remove once they change.
+  const productText = [
+    "Databricks lists them under Identity and access; on Synapse, it is a database user.",
+    "so it pauses with the Databricks job",
+  ];
+  let checked = 0;
+  for (const site of platforms) {
+    const folder = join(out, "docs", site.id);
+    if (!existsSync(folder)) continue;
+    const files = [...htmlFiles(folder), `${folder}.html`].filter((file) => existsSync(file));
+    for (const file of files) {
+      const html = readFileSync(file, "utf8");
+      const start = html.indexOf('id="nd-page"');
+      if (start === -1) continue;
+      const end = html.indexOf("</article>", start);
+      let text = html
+        .slice(start, end === -1 ? undefined : end)
+        .replace(/<script[\s\S]*?<\/script>/g, " ")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/&amp;/g, "&")
+        .replace(/&quot;/g, '"')
+        .replace(/&#x27;|&#39;/g, "'")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">");
+      // The sources the site's connectors read may be named, by title and id:
+      // Azure Synapse Analytics or Databricks Delta read as a source.
+      for (const id of connectorsFor(site.id)) {
+        const title = connectorEntries(id)[0]!.connector.title;
+        text = text.replaceAll(title, " ").replaceAll(id, " ");
+      }
+      text = text.replace(/\bDatabricks Delta\b/g, " ");
+      for (const product of productText) text = text.replaceAll(product, " ");
+      checked++;
+      // A connector's own page may name the platform its source is, such as
+      // the Databricks workspace that Azure Databricks Delta Lake reads from.
+      const own = /\/connectors\/([a-z0-9-]+)\.html$/.exec(file)?.[1];
+      const ownTitle = own ? (connectorEntries(own)[0]?.connector.title ?? "") : "";
+      for (const [other, words] of Object.entries(leakWords)) {
+        if (allowedOn(site.id).includes(other)) continue;
+        if (ownTitle && new RegExp(words.source, "i").test(ownTitle)) continue;
+        const found = text.match(words);
+        if (found)
+          broken.add(
+            `${pagePath(file)} names ${other} ${found.length}× (${[...new Set(found)].join(", ")})`,
+          );
+      }
+    }
+  }
+  return checked;
 }

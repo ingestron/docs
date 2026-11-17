@@ -12,19 +12,19 @@ copies as they are, and Synapse cannot read the JSON Microsoft 365 lands. List
 the other pack first, as in `packs: [databricks@2, adf@2]`; see
 [Combine packs](/docs/concepts/standards-and-packs#combine-packs-when-their-actions-fit).
 On its own, `packs: [adf@2]` with `store: { default: none }` ends each table at
-the landed files; see [Land files only](/docs/platforms/landing-only). The
+the landed files; see [Land files only](/docs/adf/land-files-only). The
 settings below come from the pack itself.
 
-For a task walkthrough, use [Azure Data Factory](/docs/platforms/adf),
+For a task walkthrough, use [Azure Data Factory](/docs/adf),
 [Set your organisation's standard](/docs/how-to/configure-a-standard),
-[Shape ADF pipelines](/docs/platforms/adf-pipelines) or
+[Shape ADF pipelines](/docs/adf/pipelines) or
 [ADF resource names](/docs/how-to/name-things-your-way#adf-resource-names).
 The reference below keeps the method and setting anchors used by editor help.
 
 The pack writes one factory for every environment, with a parameter file per
-environment; see [What Ingestron writes](/docs/platforms/adf#what-you-get).
+environment; see [What Ingestron writes](/docs/adf#what-you-get).
 After generation and review,
-[deploy it as an ARM template](/docs/platforms/adf-deploy#deploy). Generation itself
+[deploy it as an ARM template](/docs/adf/deploy#deploy). Generation itself
 deploys nothing.
 
 <PackMethods pack="adf" />
@@ -86,6 +86,64 @@ no access to judge, unless a view serves it.
 
 <IntentSupport pack="adf" part="access" />
 
+## Triggers a flow writes [#triggers]
+
+A flow's `ingest.triggers` and `ingest.parameters` are fields of the
+[Flow document](/docs/reference/documents#flow); the standard's rules are
+under `operations.triggers` in the
+[Standard document](/docs/reference/documents#standard). For the task, see
+[Run a flow on its own triggers](/docs/how-to/run-a-flow-on-its-own-triggers).
+What the pack writes:
+
+- A **schedule** trigger is a `ScheduleTrigger` with one `pipelines` entry,
+  whose `parameters` is always present. Its `recurrence` has `frequency`
+  (`Minute`, `Hour`, `Day`, `Week` or `Month`), `interval` (1 to 1000),
+  `startTime`, `endTime` when written, `timeZone` and, from `at`, a `schedule`
+  of `weekDays`, `monthDays`, `monthlyOccurrences`, `hours` and `minutes`.
+  `timeZone` is the Windows name of the trigger's IANA zone, such as
+  `GMT Standard Time` for `Europe/London`; a zone with no Windows name is
+  refused. In UTC the times end in `Z`; in any other zone they do not.
+- A **tumbling-window** trigger is a `TumblingWindowTrigger` on exactly one
+  pipeline, in UTC with no `timeZone`, by `Minute`, `Hour` or `Month`, with
+  windows of at least 5 minutes. `delay` is `hh:mm:ss`. `maxConcurrency` (1 to 50) is the trigger's `concurrency`, else the standard's
+  `operations.concurrency.max_runs`, else 1. `retryPolicy` is its `retries`,
+  else the standard's `operations.retries`, with an interval of at least 30
+  seconds. It passes `windowStart` and `windowEnd` from
+  `@trigger().outputs.windowStartTime` and `windowEndTime`. A dependency on
+  itself needs a negative `offset`, and a trigger depends on at most five
+  others. The flow's triggers carry the annotation `ingestron:flow-trigger`,
+  and `ingestron:backfill` when they write `backfill: true`.
+- A schedule trigger passes `windowStart` and `windowEnd` too: from its
+  `lookback`, the window `[scheduledTime − lookback, scheduledTime)`, and with
+  `load: full` or no lookback both are `@trigger().scheduledTime`.
+- Each trigger's `parameters` are passed as written: a literal as it is, and
+  `{ expression }` as an ADF expression of type `Expression`. The system
+  variables an expression may use are `@trigger().scheduledTime` and
+  `@trigger().startTime` on both kinds, and
+  `@trigger().outputs.windowStartTime` and `windowEndTime` on a tumbling window.
+- A trigger is named `tr_<pipeline>_<name>`, and a tumbling window
+  `tr_<pipeline>_<name>_<size>`, such as `tr_erp_erp_erp_hourly_h1`, because ADF
+  cannot edit a published window's frequency or interval.
+- Pipeline parameters are typed `String` (`string`, `date`, `datetime`), `Int`,
+  `Float` or `Bool`. The source `filter` is written as an expression with each
+  `{{ parameters.<name> }}` rendered as a typed, escaped value.
+
+Where Microsoft's pages disagree, the pack takes the stricter reading: a
+flow's tumbling window is `Minute`, `Hour` or `Month` only, `hours` are 0 to 23
+and `minutes` 0 to 59, and `interval` is 1 to 1000 for both kinds. The default
+trigger keeps every value it accepted before. A local time the clocks skip
+runs after the change, and one they repeat runs once, at its first
+occurrence; the pages do not say, so the allowed-hours check assumes it.
+
+The properties come from Microsoft's pages on
+[schedule triggers](https://learn.microsoft.com/en-us/azure/data-factory/how-to-create-schedule-trigger),
+[tumbling window triggers](https://learn.microsoft.com/en-us/azure/data-factory/how-to-create-tumbling-window-trigger),
+[pipeline execution and triggers](https://learn.microsoft.com/en-us/azure/data-factory/concepts-pipeline-execution-triggers),
+[tumbling window dependencies](https://learn.microsoft.com/en-us/azure/data-factory/tumbling-window-trigger-dependency)
+and [system variables](https://learn.microsoft.com/en-us/azure/data-factory/control-flow-system-variables),
+read on **15 November 2026**. The Windows zone names come from the Unicode
+CLDR's `windowsZones.xml`, read on **17 November 2026**.
+
 ## Native configuration sources
 
 <details>
@@ -93,7 +151,7 @@ no access to judge, unless a view serves it.
 
 The native properties and current connector versions were checked against these
 Microsoft references on **28 October 2026**. Connection fields and method settings
-are rendered from pack metadata; see [Azure Data Factory](/docs/platforms/adf).
+are rendered from pack metadata; see [Azure Data Factory](/docs/adf).
 
 - [ADF naming rules](https://learn.microsoft.com/en-us/azure/data-factory/naming-rules)
 - [Source control and publishing](https://learn.microsoft.com/en-us/azure/data-factory/source-control)

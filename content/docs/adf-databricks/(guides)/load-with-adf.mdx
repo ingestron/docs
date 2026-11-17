@@ -1,0 +1,83 @@
+---
+title: Load with Azure Data Factory
+description: Let Azure Data Factory copy a source Databricks cannot reach into landing storage, and read the landed files into Databricks tables.
+---
+
+When Databricks cannot reach a source, such as a database on a private
+network, Azure Data Factory copies it into ADLS Gen2 landing storage through
+an integration runtime. The Databricks pack then writes the pipelines that read
+the landed files into tables, on their own schedule.
+
+<RouteFacts id="adf-databricks" />
+
+The factory is described on [Azure Data Factory](/docs/adf): its runtime,
+Key Vault, schedules and pipelines are the same whatever reads the files. This
+page covers what Databricks adds.
+
+## Create it [#create-it]
+
+<ToolSteps>
+<Tool name="CLI">
+
+From a parent folder, start from the starter that copies a private SQL Server:
+
+```sh
+ingestron init erp --template private-sql-server --yes
+cd erp
+```
+
+For your own source, name its connector and the route instead:
+
+```sh
+ingestron init sales --connector postgresql --connectivity private --via adf-databricks --yes
+```
+
+</Tool>
+<Tool name="VS Code">
+
+Run **Ingestron: New project**, choose **Try a sample project**, then
+**Private SQL Server through Azure Data Factory**, then the folder. For your
+own source, create the project in a terminal with the command on the CLI tab,
+then open its folder in VS Code.
+
+<Screenshot
+  light="/images/vscode/new-project-sample-adf-databricks-light.png"
+  dark="/images/vscode/new-project-sample-adf-databricks-dark.png"
+  alt="The picker New project: sample project, filtered to Private SQL Server through Azure Data Factory. The one match, private-sql-server: two packs, ADF copies a private SQL Server into landing storage and Databricks keeps the tables."
+  caption="Type the sample's name to find it among the others."
+/>
+
+</Tool>
+</ToolSteps>
+
+The [connector catalogue](/docs/~/connectors) lists every source and whether ADF
+reads it. The project with its values written is a download:
+
+<ExampleDownload name="private-sql-server-filled" />
+
+## What Databricks writes [#what-you-get]
+
+Each landed table becomes a streaming table that reads each new file once,
+with Auto Loader, from the landing path ADF writes to:
+
+<Example name="private-sql-server-filled" file="build/databricks/src/erp/bronze/customers.sql" />
+
+A native table copy lands the whole selection each window, so with the default
+store repeated copies add repeated rows. Choose `history: latest` or `full`
+to keep the current row per key or every version; see
+[Keep a table current](/docs/databricks/keep-a-table-current). A SQL-family
+copy can land only the rows changed in each window, `load: incremental`; see
+[Choose the source and its tables](/docs/adf#choose-the-source-and-its-tables).
+
+## Deploy [#deploy]
+
+Deploy the factory first, as in [Deploy the factory](/docs/adf/deploy#deploy),
+then the bundle, as in [Deploy the Databricks bundle](/docs/databricks/deploy#deploy).
+The request lists what both need: see
+[Ask the platform team](/docs/databricks/ask-the-platform-team).
+
+## Next
+
+- [Shape ADF pipelines](/docs/adf/pipelines): schedules, retries and landing paths.
+- [Keep a table current](/docs/databricks/keep-a-table-current): current rows or history from repeated copies.
+- [Deploy through environments](/docs/databricks/deploy-through-environments).

@@ -32,7 +32,7 @@ This example uses a pack for copying and another for downstream storage:
 <Example name="private-sql-server" file="standard.yaml" />
 
 Its `layers` and `load` are intent, below. [Choose where your data
-goes](/docs/start/choose-a-route) lists the routes and the packs each one
+goes](/docs/concepts/choose-a-platform) lists the routes and the packs each one
 uses; [Packs and methods](/docs/reference/packs) lists each pack's methods and
 capabilities.
 
@@ -77,12 +77,12 @@ laptop. There, an ingest that lands files with another pack is replaced by the
 named pack's method that reads those landed files, and a serve step from
 another pack is left out. A store or transform that belongs to another pack is
 a [`RUNS_ON`](/docs/reference/errors#RUNS_ON) error, and a table another pack ingests straight into a table is
-left out with a warning. [Run a cloud project locally](/docs/platforms/duckdb#run-a-cloud-project-locally)
+left out with a warning. [Run a cloud project locally](/docs/adf-duckdb/load-with-adf#run-a-cloud-project-locally)
 shows it.
 
 The connection-first builder writes an explicit `ingest.uses` for the chosen
 route. You can inspect that choice in the flow without learning the builder's
-interface. [Reachability](/docs/start/choose-a-route#reachability) explains the `connectivity` values.
+interface. [Reachability](/docs/concepts/choose-a-platform#reachability) explains the `connectivity` values.
 
 ## Combine packs when their actions fit
 

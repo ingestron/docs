@@ -1,0 +1,309 @@
+A contract says what a table holds: its columns, their types, which columns
+make the key and which must always have a value. Ingestron reads it to type
+the table's columns, to keep rows by their key and to check them. Contracts
+use the [Open Data Contract Standard](https://bitol-io.github.io/open-data-contract-standard/)
+(ODCS) v3.1.0 unchanged, so other tools can read them too.
+
+A flow table needs a contract only where a person must say what the source
+cannot: when its layer cleanses or checks rows, when it is a data product's
+output, when the platform manages its grants or masks, or when it has its own
+`expectations`. Any other flow table can take its columns and key from the
+source's metadata instead; see
+[Describe a source](/docs/~/describe-a-source#needs-a-contract). A
+transform always names a contract.
+
+Each contract is a file in `contracts/`.
+
+<Only on="duckdb">
+
+This one, from [your first project](/docs/duckdb/first-project), describes the
+orders table:
+
+<Example name="duckdb" file="contracts/orders.yaml" />
+
+A flow's table names its contract by `id`, and so does a transform:
+
+<Example name="duckdb" file="flows/orders.yaml" />
+
+</Only>
+
+<Only on="databricks">
+
+This one, from [your first project](/docs/databricks/first-project), describes
+the orders table:
+
+<Example name="minimal" file="contracts/orders.yaml" />
+
+A flow's table names its contract by `id`, and so does a transform:
+
+<Example name="minimal" file="flows/orders.yaml" />
+
+</Only>
+
+<Only on="synapse adf">
+
+[Your first project](/docs/~/first-project) drafted one for the orders table
+from a sample, and its flow names it by `id`, as a transform does too:
+
+```yaml title="flows/orders.yaml"
+tables:
+  orders:
+    object: sales.dbo.orders
+    contract: orders
+```
+
+</Only>
+
+The contract's `schema` entry whose `name` is the table's name is used, or the
+only entry when there is one. A contract with several entries and none named
+like the table is an error
+([`CONTRACT_TABLE`](/docs/reference/errors#CONTRACT_TABLE)).
+
+## What Ingestron reads
+
+Ingestron reads:
+
+- for each column: `name`, `logicalType`, `physicalType`, `physicalName`,
+  `required`, `primaryKey`, `primaryKeyPosition` and `description`;
+- for each column's values: `logicalTypeOptions`, such as `minLength`,
+  `pattern` or `minimum`, `unique`, and its `quality` rules;
+- for the table: the schema entry's `description`, for the table's comment,
+  and its `quality` rules;
+- the table's and each column's `tags`, and each column's `classification`,
+  which it keeps for packs that tag tables, and which choose masks and row
+  filters;
+- the contract's `roles`, who may use its tables, which a pack can grant.
+
+[Data contract](/docs/reference/documents#data-contract) lists every ODCS
+field.
+
+What each pack does with a field, or why it does not yet, is on its page:
+
+<Only on="synapse">
+
+[Synapse](/docs/reference/packs/synapse#contract-fields).
+
+</Only>
+
+<Only on="databricks">
+
+[Databricks](/docs/reference/packs/databricks#contract-fields).
+
+</Only>
+
+<Only on="adf">
+
+[Azure Data Factory](/docs/reference/packs/adf#contract-fields).
+
+</Only>
+
+<Only on="duckdb">
+
+[DuckDB](/docs/reference/packs/duckdb#contract-fields).
+
+</Only>
+
+A field is judged for
+each table that uses the contract, against the pack that keeps that table. A
+field that pack does not apply yet is
+[not applied here](/docs/~/not-applied), a warning at that field.
+
+## Give each column a type
+
+<Only on="synapse databricks duckdb">
+
+Write the `logicalType`, and the first pack in the standard's `packs` gives the
+column its platform type:
+
+<ContractTypes platform="~" />
+
+Where a cell says **no default**, Ingestron gives the column no type unless its
+`physicalType` or the standard's `types` sets one.
+
+</Only>
+
+<Only on="databricks">
+
+Databricks then leaves the column out of the types it declares, so the
+platform decides.
+
+</Only>
+
+<Only on="duckdb">
+
+DuckDB then reads it as `VARCHAR`.
+
+</Only>
+
+<Only on="adf">
+
+Write the `logicalType`. Azure Data Factory's copy keeps the source's types in
+the landed files; the contract's types are what a pack that reads the files
+applies, and what the source's metadata is compared with.
+
+</Only>
+
+To change a type for every contract in a project, set it under `types` in the
+standard, such as `types: { number: DECIMAL(38,6) }`; see
+[Which setting wins](/docs/concepts/settings). To give one column a type of its
+own, write its `physicalType`:
+
+<Example name="environments" file="contracts/journals.yaml" />
+
+## Read a column under another name
+
+When a column has a different name at the source, write that name as its
+`physicalName`. The table keeps `name`, and the column is read under
+`physicalName`:
+
+<Example name="northwind" file="contracts/order_details.yaml" />
+
+## Keys and required columns
+
+- `primaryKey: true` marks the table's key. With several key columns,
+  `primaryKeyPosition` orders them. The key is what `upsert` and `history`
+  keep the current row by; see [Keep a table current](/docs/~/keep-a-table-current).
+- `required: true` says the column always has a value. A required column
+  gets a check that it is not null, with the standard's `quality.required`
+  action, run where the table's layer checks rows; see
+  [Check data quality](/docs/~/add-quality-checks).
+
+## Rules about the data
+
+These become checks on each row, with the standard's `quality.default`
+action, run where the table's layer checks rows:
+
+- A column's `logicalTypeOptions`: `minLength` and `maxLength`, `pattern`,
+  `minimum`, `maximum`, `exclusiveMinimum` and `exclusiveMaximum`,
+  `multipleOf`, `minItems`, `maxItems` and `uniqueItems`. Each check is named
+  after the column and the option in snake case, such as `customer_id_minimum`
+  or `name_min_length`, and a null value passes.
+  `format` and the other options only document the column.
+- A column's `quality` rules that allow no failing row: `nullValues`,
+  `missingValues` and `invalidValues` (with `validValues` or `pattern`) when
+  they must be 0.
+
+Other rules compare a count over all rows, such as a row count or a share of
+nulls, which a check of one row cannot. So does `unique: true`, which says no
+value repeats. These are **table checks**, counted once the table is built.
+
+<Only on="synapse duckdb">
+
+They are counted in the platform's own run, wherever the table's layer checks
+rows.
+
+</Only>
+
+<Only on="databricks">
+
+They are counted after each refresh only when the platform turns on
+`databricks.manage.checks`; otherwise each is
+[`CAPABILITY_OFF`](/docs/reference/errors#CAPABILITY_OFF), a warning with a
+fix that turns it on.
+
+</Only>
+
+<Only on="adf">
+
+Nothing checks the landed files, and plan does not warn: the rule documents
+the table until a platform that reads the files checks it.
+
+</Only>
+
+A rule no engine could check as written, such as a `custom` rule, which
+only another engine could run, or one with no comparison, is
+[`QUALITY_RULE_NOT_CHECKED`](/docs/reference/errors#QUALITY_RULE_NOT_CHECKED),
+a warning, and stays as documentation. A `text` rule is documentation and is
+never reported. What each engine applies is in
+[Check data quality](/docs/~/add-quality-checks#engines).
+
+A contract says what the data must hold, not how to tidy it: trimming text or
+converting time zones belongs to the table that cleanses it; see
+[Cleanse data in the right layer](/docs/~/cleanse-data).
+
+## Tags and classification
+
+A table's `tags`, a column's `tags` and its `classification` are kept for
+packs that tag tables.
+
+<Only on="databricks">
+
+Databricks sets them as Unity Catalog tags after each refresh when the
+platform turns on `databricks.manage.tags`; see
+[Databricks contract fields](/docs/reference/packs/databricks#contract-fields).
+The classification is set under the key the standard's
+`governance.classification.tag` gives, `classification` by default.
+
+</Only>
+
+<Only on="synapse adf duckdb">
+
+Your platform's pack does not tag tables, so they document the columns, and
+plan does not warn about them.
+
+</Only>
+
+A column's classification also chooses its mask, from the standard's
+`governance.masks`, and a row filter can match a column by its tag or its
+classification. The contract's `roles` say who may use its tables. See
+[Grant access, mask columns and filter rows](/docs/~/grant-access).
+
+## Draft from a sample [#draft-from-a-sample]
+
+When a source sends files, start its contract from a sample instead of typing
+every column:
+
+```sh
+ingestron contract exports/orders.csv --name shop.orders
+```
+
+In VS Code, right-click the file in the Explorer and choose
+**Ingestron: Draft contract from sample**, or run it from the Command Palette
+with the file open.
+
+Ingestron reads the header and up to 1,000 rows of a CSV file (comma,
+semicolon or tab separated) or a JSON file (an array of objects, or one
+object per line), and writes `contracts/<name>.yaml` with each column's name
+and the narrowest logical type every value fits: `integer`, `number`,
+`boolean`, `date`, `timestamp`, `array`, `object`, else `string`. A value
+with a leading zero, such as the code `00123`, stays a `string`, because as a
+number it would lose its zeros. It never overwrites a contract, and the draft
+holds no values from the sample.
+
+A sample cannot prove which columns are keys or always present, so the draft
+is `status: draft` with neither. Review the types, then add `primaryKey`,
+`required` and descriptions, and link it from a table with `contract`.
+[Add a source and its tables](/docs/~/add-a-source#add-a-table-from-a-source-you-already-read)
+drafts one and links it.
+
+## Draft from source metadata [#draft-from-source-metadata]
+
+Once the project has the source's metadata, draft a flow table's contract
+from it, with each column's type, whether it can be null and the source's key.
+
+In VS Code, click **Draft contract** above a metadata-based table. You can also
+put the cursor inside the table and run **Ingestron: Draft contract from metadata**.
+This works even when the standard does not require a contract. The action creates
+`contracts/<connection>.<table>.yaml`, adds its `contract:` reference and opens the
+draft. It saves the flow and `project.yaml` unless they had unsaved changes,
+which it keeps unsaved and names. Existing contract files are refused. When no import includes the new
+contract, it adds `contracts/*.yaml` to `imports`, or the contract's own path
+when `contracts/` holds other YAML files. One undo reverts the conversion; unrelated tables and
+the source `object:` are preserved.
+
+Review the draft's types, required columns and keys, add descriptions and quality
+rules, save the draft, then run Plan. The imported metadata remains
+as the observation used for source comparison. Declared contract requirements
+may introduce quality warnings when the table's layer does not run those checks.
+
+From a terminal in the project folder:
+
+```sh
+ingestron contract --from-metadata erp.payments
+```
+
+`erp.payments` is the flow's id and the table's key. `--needed` instead
+drafts every table that needs a contract and names none. Each draft is
+`contracts/<connection>.<table>.yaml`, never replacing a file that is there.
+[Describe a source](/docs/~/describe-a-source) gets the metadata and
+drafts one, step by step.

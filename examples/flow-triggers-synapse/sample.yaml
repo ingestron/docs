@@ -1,0 +1,4 @@
+# A guide: a small project that shows one idea; the docs embed it.
+title: Flow triggers on Synapse
+summary: "A flow writes its own hourly window and Sunday reload in the workspace, inside the hours the standard allows, and views show each snapshot."
+order: 24

@@ -1,6 +1,7 @@
 // The names and layers each pack gives a project whose standard sets none, from the packs' own defaults.
 import type { Naming } from "@ingestron/definitions";
-import { packName, packs } from "@/lib/reference";
+import type { Platform } from "@/lib/platforms";
+import { packName, packs, platformUsedPacks } from "@/lib/reference";
 import { TableFrame } from "@/components/table-frame";
 
 /** The patterns a standard's `naming` can set, in the order the document reference lists them. */
@@ -11,12 +12,15 @@ const names: (keyof Naming)[] = ["catalog", "schema", "table", "pipeline", "job"
  * factory's resources with its methods' `resource_names` instead, so its
  * naming defaults name nothing it generates.
  */
-const naming = () => packs.filter((pack) => pack.id !== "adf");
+const allNaming = () => packs.filter((pack) => pack.id !== "adf");
 
 /** One row per name, one column per pack that names tables.
  * @example <PackNaming />
  */
-export function PackNaming() {
+/** With `platform`, only the packs that platform's routes use. */
+export function PackNaming({ platform }: { platform?: Platform["id"] } = {}) {
+  const used = platform && platformUsedPacks(platform);
+  const naming = () => allNaming().filter((pack) => !used || used.has(pack.id));
   return (
     <TableFrame label="Default names, by pack">
       <table>

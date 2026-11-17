@@ -1,0 +1,10 @@
+apiVersion: ingestron.io/v1
+kind: Connection
+id: erp
+description: The ERP's Azure SQL database.
+connector: azure-sql-database
+connectivity: public
+settings:
+  server: erp-sql.database.windows.net
+  user: ingest_reader
+  password: ${secret:erp-erp-password} # a Key Vault secret name

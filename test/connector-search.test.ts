@@ -5,7 +5,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it, vi } from "vitest";
 import { ConnectorPage } from "../components/reference/connector-page";
 import { ProjectSources } from "../components/reference/project-sources";
-import { connectorIds } from "../lib/reference.js";
+import { platforms } from "../lib/platforms.js";
+import { connectorsFor } from "../lib/reference.js";
 import { extraStructure, searchTitle } from "../lib/search.js";
 
 vi.mock("@/components/example", () => ({ Example: () => null }));
@@ -14,14 +15,16 @@ vi.mock("@/components/example", () => ({ Example: () => null }));
 vi.setConfig({ testTimeout: 30_000 });
 
 it("names a connector's page as a connector in results, and leaves other pages' titles alone", () => {
-  expect(searchTitle("/docs/connectors/files", "Files")).toBe("Files connector");
-  expect(searchTitle("/docs/connectors/sqlserver", "SQL Server")).toBe("SQL Server connector");
-  expect(searchTitle("/docs/connectors", "Connectors")).toBe("Connectors");
-  expect(searchTitle("/docs/platforms/adf", "Azure Data Factory")).toBe("Azure Data Factory");
+  expect(searchTitle("/docs/databricks/connectors/files", "Files")).toBe("Files connector");
+  expect(searchTitle("/docs/synapse/connectors/sqlserver", "SQL Server")).toBe(
+    "SQL Server connector",
+  );
+  expect(searchTitle("/docs/synapse/connectors", "Connectors")).toBe("Connectors");
+  expect(searchTitle("/docs/adf", "Azure Data Factory")).toBe("Azure Data Factory");
 });
 
 it("indexes connection fields at their pack's anchors on the page", () => {
-  const data = extraStructure("/docs/connectors/rest");
+  const data = extraStructure("/docs/adf/connectors/rest");
   expect(data.contents).toContainEqual(
     expect.objectContaining({
       heading: "adf-connection-client_secret",
@@ -31,22 +34,25 @@ it("indexes connection fields at their pack's anchors on the page", () => {
   expect(data.headings.map((heading) => heading.id)).toContain("adf-connection-client_secret");
 });
 
-it("keeps Databricks connection fields apart from ADF credentials on a page with both", () => {
-  const data = extraStructure("/docs/connectors/sqlserver");
-  const under = (prefix: string) =>
-    data.contents.filter((item) => item.heading?.startsWith(prefix)).map((item) => item.content);
-  expect(under("databricks-connection-").some((text) => text.includes("uc_connection"))).toBe(true);
-  expect(under("databricks-").some((text) => text.includes("host_name_in_certificate"))).toBe(
-    false,
-  );
-  expect(under("adf-connection-").some((text) => text.includes("host_name_in_certificate"))).toBe(
-    true,
-  );
-  expect(under("adf-").some((text) => text.includes("uc_connection"))).toBe(false);
+it("indexes each site's own connection fields: Databricks's on Databricks, the factory's on its combination", () => {
+  const under = (url: string, prefix: string) =>
+    extraStructure(url)
+      .contents.filter((item) => item.heading?.startsWith(prefix))
+      .map((item) => item.content);
+  const databricks = "/docs/databricks/connectors/sqlserver";
+  expect(
+    under(databricks, "databricks-connection-").some((text) => text.includes("uc_connection")),
+  ).toBe(true);
+  expect(under(databricks, "adf-")).toEqual([]);
+  const combined = "/docs/adf-databricks/connectors/sqlserver";
+  expect(
+    under(combined, "adf-connection-").some((text) => text.includes("host_name_in_certificate")),
+  ).toBe(true);
+  expect(under(combined, "databricks-connection-")).toEqual([]);
 });
 
 it("indexes only the ingestion options rendered for Microsoft 365", () => {
-  const data = extraStructure("/docs/connectors/microsoft-365");
+  const data = extraStructure("/docs/adf/connectors/microsoft-365");
   expect(data.contents).toContainEqual(
     expect.objectContaining({
       heading: "adf-table-source-options-allowed-groups",
@@ -57,7 +63,7 @@ it("indexes only the ingestion options rendered for Microsoft 365", () => {
 });
 
 it("indexes the words the page writes per method, such as SQL Server's watermark", () => {
-  const data = extraStructure("/docs/connectors/sqlserver");
+  const data = extraStructure("/docs/adf/connectors/sqlserver");
   expect(data.contents).toContainEqual(
     expect.objectContaining({
       heading: "adf-reading",
@@ -68,14 +74,15 @@ it("indexes the words the page writes per method, such as SQL Server's watermark
   expect(data.contents.some((item) => /`|\]\(/.test(item.content))).toBe(false);
 });
 
-it("points every search heading at an id the page renders", () => {
-  for (const id of connectorIds()) {
-    const html = renderToStaticMarkup(createElement(ConnectorPage, { id }));
-    for (const heading of extraStructure(`/docs/connectors/${id}`).headings)
-      expect(html, `${id}: #${heading.id}`).toContain(`id="${heading.id}"`);
-  }
-  const catalogue = renderToStaticMarkup(createElement(ProjectSources));
-  const headings = extraStructure("/docs/connectors").headings;
+it("points every search heading at an id the page renders, on each platform's copy", () => {
+  for (const { id: platform } of platforms)
+    for (const id of connectorsFor(platform)) {
+      const html = renderToStaticMarkup(createElement(ConnectorPage, { id, platform }));
+      for (const heading of extraStructure(`/docs/${platform}/connectors/${id}`).headings)
+        expect(html, `${platform}/${id}: #${heading.id}`).toContain(`id="${heading.id}"`);
+    }
+  const catalogue = renderToStaticMarkup(createElement(ProjectSources, { platform: "adf" }));
+  const headings = extraStructure("/docs/adf/connectors").headings;
   expect(headings.map((heading) => heading.id)).toContain("files-and-storage");
   for (const heading of headings) expect(catalogue).toContain(`id="${heading.id}"`);
-}, 30_000);
+}, 120_000);

@@ -9,7 +9,7 @@ pack turns it into its platform's terms, and says what it cannot do. Every
 part is optional: a project that writes none builds as it did before.
 
 This is the standard of the
-[local medallion](/docs/how-to/kits/duckdb-local-medallion) published
+[local medallion](/docs/duckdb/local-medallion) published
 standard. Its `layers`, with what each layer `does`, `load`, `cleanse`,
 `quality` and `features` are intent; `ingest` is a method setting:
 
@@ -60,7 +60,7 @@ name, is [`BAD_SETTING`](/docs/reference/errors#BAD_SETTING).
   another value is [`FIXED_SETTING`](/docs/reference/errors#FIXED_SETTING).
 
 This flow of the
-[streaming lakehouse](/docs/how-to/kits/databricks-lakehouse-streaming)
+[streaming lakehouse](/docs/databricks/lakehouse-streaming)
 published standard says which change to an order is newest, and which change
 is a delete:
 
@@ -201,13 +201,19 @@ Without `features`, nothing is reported. Published standards say
 
 `operations` is the policy for running what is generated: one schedule for
 the project (`schedule: { per: project }`), what starts a run (`trigger`),
-`retries`, a `timeout`, `alerts` and `concurrency`. Without it, the project
+`retries`, a `timeout`, `alerts` and `concurrency`. With `schedule: { per: flow }`
+and `triggers`, flows write their own Data Factory or Synapse triggers, within
+the trigger types, time zone and hours the standard sets; see
+[Run a flow on its own triggers](/docs/how-to/run-a-flow-on-its-own-triggers). Without it, the project
 runs on one schedule, and the platform's alerts are sent when a run fails. Values that differ per
 environment belong in the platform: the cron and time zone in `schedule`, who
 is told in `alerts`, and the tags in `tags`. `require_tags` names tags the
 platform must give; one missing is
 [`BAD_SETTING`](/docs/reference/errors#BAD_SETTING) at the platform's `tags`.
 
-The first pack in the standard's list that runs jobs applies `operations`:
-the Databricks refresh job, or the Data Factory triggers and copies. When no
-pack of the standard runs jobs, each value is `NOT_APPLIED`.
+Each `operations` value is applied by the first pack in the standard's list
+that applies it: the Databricks refresh job, or the Data Factory triggers and
+copies. With `packs: [databricks@2, adf@2]`, Data Factory applies
+`schedule: { per: flow }`, which the Databricks job does not. A value no pack
+applies is judged by the first pack that runs jobs. When no pack of the
+standard runs jobs, each value is `NOT_APPLIED`.

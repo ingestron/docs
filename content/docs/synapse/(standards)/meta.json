@@ -1,0 +1,12 @@
+{
+  "title": "Standards",
+  "description": "One standard for every Azure Synapse project: your own, or a published one, shared from Git.",
+  "root": true,
+  "pages": [
+    "configure-a-standard",
+    "name-things-your-way",
+    "accept-a-warning",
+    "share-a-template",
+    "upgrade"
+  ]
+}

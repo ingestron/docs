@@ -9,6 +9,8 @@ import { MarkdownTable } from "@/components/table-frame";
 import { BuildTree, Example, ExampleDownload, Request, Template } from "@/components/example";
 import { FlowDiagram } from "@/components/flow-diagram";
 import { OldAnchor } from "@/components/old-anchor";
+import { ConnectorChooser } from "@/components/connector-chooser";
+import { PlatformChooser } from "@/components/platform-chooser";
 import { Path, Paths } from "@/components/hub";
 import { RouteComparison } from "@/components/reference/route-comparison";
 import { RouteFacts } from "@/components/reference/route-facts";
@@ -38,7 +40,7 @@ import {
 } from "@/components/reference/pack-intent";
 import { KitFacts, KitFile, KitIntent, KitList } from "@/components/reference/kits";
 import { RecipeCatalog, RecipeList, RecipePlaceholders } from "@/components/reference/recipes";
-import { ErrorCodes, LoadingCodes } from "@/components/reference/error-codes";
+import { ErrorCodes, LoadingCodes, OutputFolderProblems } from "@/components/reference/error-codes";
 import { ExtensionCommands } from "@/components/reference/extension-commands";
 import { ExamplesList } from "@/components/reference/examples-list";
 import { PackMethods } from "@/components/reference/pack-methods";
@@ -52,7 +54,7 @@ import {
   PackNames,
   PlatformChecks,
 } from "@/components/reference/versions";
-import { Screenshot } from "@/components/screenshot";
+import { Clip, Screenshot } from "@/components/screenshot";
 import { Tool, ToolSteps } from "@/components/tool-steps";
 
 export function getMDXComponents(components?: MDXComponents) {
@@ -72,12 +74,15 @@ export function getMDXComponents(components?: MDXComponents) {
     table: MarkdownTable,
     NamingVariables,
     DocLinks,
+    PlatformChooser,
+    ConnectorChooser,
     Example,
     ExampleDownload,
     BuildTree,
     Request,
     Template,
     Screenshot,
+    Clip,
     Tool,
     ToolSteps,
     SettingsTable,
@@ -93,6 +98,7 @@ export function getMDXComponents(components?: MDXComponents) {
     DefaultLayers,
     SamplesCatalogue,
     ErrorCodes,
+    OutputFolderProblems,
     LoadingCodes,
     DocumentFields,
     ContractFields,

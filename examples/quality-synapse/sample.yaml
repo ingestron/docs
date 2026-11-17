@@ -1,0 +1,4 @@
+# A guide: a small project that shows one idea; the docs embed it.
+title: Check data quality on Synapse
+summary: "One contract's checks on a readings view, counted by the script Synapse runs."
+order: 27

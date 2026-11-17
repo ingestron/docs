@@ -1,0 +1,19 @@
+apiVersion: ingestron.io/v1
+kind: Standard
+id: iot
+packs: [databricks@2]
+layers:
+  - name: bronze
+    does: [check, quarantine] # checks its rows, and keeps the ones a check leaves out
+  - silver
+quality:
+  required: drop # a row missing a required value is left out
+  default: warn # every other check counts the rows that fail it
+  quarantine: true # rows a drop check leaves out go to <table>_quarantine
+  results: true # each check's result is kept where the engine can keep it
+ingest:
+  default: files
+  settings:
+    files: { format: csv }
+store:
+  default: streaming-table

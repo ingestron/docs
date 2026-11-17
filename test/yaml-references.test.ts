@@ -72,16 +72,20 @@ it("preserves an escaped external placeholder and requires an explicitly supplie
   ).toBe("/Volumes/dev/source");
 });
 
-it("rejects composing values from other values as documented", () => {
+it("builds values from other values and reports a cycle as documented", () => {
   const folder = fixture();
   edit(folder, "project.yaml", (doc) => {
-    doc.values.landing = "${values.other}";
+    doc.values.root = "/Volumes/${values.volume}";
+    doc.values.volume = "landing";
+    doc.values.landing = "${values.root}/files";
   });
-  expect(
-    loadDefinitions(folder, { packs: [databricks], environment: "dev" }).diagnostics.map(
-      (item) => item.code,
-    ),
-  ).toContain("VALUES_SELF_REFERENCE");
+  const load = () => loadDefinitions(folder, { packs: [databricks], environment: "dev" });
+  expect(load().diagnostics.filter((item) => item.severity === "error")).toEqual([]);
+  expect(load().model?.tables[0]?.ingest?.connection.settings.path).toBe("/Volumes/landing/files");
+  edit(folder, "project.yaml", (doc) => {
+    doc.values.volume = "${values.landing}";
+  });
+  expect(load().diagnostics.map((item) => item.code)).toContain("VALUE_CYCLE");
 });
 
 it("reads .env and .env.<environment> in the documented order", () => {

@@ -1,0 +1,24 @@
+apiVersion: ingestron.io/v1
+kind: Standard
+id: shop
+packs: [adf@2]
+layers:
+  - { name: bronze, does: raw } # every row as it arrived; its checks only count
+  - { name: silver, does: [check] }
+  - { name: gold, does: [check] }
+ingest:
+  default: adf-copy # the factory copies each table into landing storage
+  settings:
+    adf-copy:
+      layout: snapshot # each load replaces one file per table
+      every: { frequency: Hour, interval: 24 }
+      start: 2026-10-01T00:00:00Z
+store: { default: none } # the landed files are the product
+governance: # every data product is checked against these before anything is generated
+  products: { require: [owner, purpose] }
+  classification:
+    values: [public, internal, confidential, restricted]
+    columns: required
+    sensitive: [confidential, restricted]
+  access:
+    sensitive: { require: [description, firstLevelApprovers] }

@@ -40,7 +40,7 @@ const joined = (text: string) =>
 
 /** The page's request command, run in a folder: its exit code and output. */
 const request = (page: string, cwd: string, environment?: string) => {
-  const args = command(commands(section(page, "## What each route asks for")), "request");
+  const args = command(commands(section(page, "## What your platform asks for")), "request");
   if (environment) args[args.indexOf("--env") + 1] = environment;
   return cli(cwd, args);
 };
@@ -71,7 +71,7 @@ function repository(files: Record<string, string>): string {
 }
 
 describe("how-to/ask-the-platform-team", () => {
-  const page = read("how-to/ask-the-platform-team.mdx");
+  const page = read("shared/ask-the-platform-team.mdx");
 
   it("prints the smallest project's request, from the minimal starter, as the page shows", () => {
     // The page renders the starter's request; a project created from it prints the same.
@@ -81,11 +81,10 @@ describe("how-to/ask-the-platform-team", () => {
     expect(printed.output.trim()).toBe(exampleRequest("minimal"));
   });
 
-  it("prints what the ADF, Synapse and DuckDB routes add, from each platform page's project", () => {
+  it("prints what the ADF and Synapse routes add, from each platform page's project", () => {
     for (const [heading, guide, sample, whole] of [
-      ["### Azure Data Factory", "platforms/landing-only", "landing-only", true],
-      ["### Synapse serverless views", "platforms/synapse", "synapse-views", false],
-      ["### DuckDB in Azure", "platforms/duckdb-in-azure", "duckdb-local", false],
+      ["### Azure Data Factory", "adf/land-files-only", "landing-only", true],
+      ["### Synapse serverless views", "synapse", "synapse-views", false],
     ] as const) {
       const route = section(page, heading);
       // The project is the one the linked platform page works with.
@@ -103,6 +102,15 @@ describe("how-to/ask-the-platform-team", () => {
         );
       else expect(printed.output.trim(), heading).toBe(exampleRequest(sample));
     }
+  });
+
+  it("prints DuckDB's first project's whole request, as its page shows it", () => {
+    const duckdb = section(read("duckdb/ask-the-platform-team.mdx"), "### DuckDB");
+    const parent = mkdtempSync(join(tmpdir(), "docs-request-duckdb-"));
+    expect(cli(parent, ["init", "shop", "--template", "duckdb", "--yes"]).code).toBe(0);
+    const printed = cli(join(parent, "shop"), ["request", "--env", "dev"]);
+    expect(printed.code).toBe(0);
+    expect(printed.output.trim()).toBe(fences(duckdb, "text")[0]!.trim());
   });
 
   it("asks for a variable that is not set yet, then says where it is set, never its value", () => {
@@ -145,18 +153,20 @@ describe("how-to/configure-a-standard", () => {
   const page = read("how-to/configure-a-standard.mdx");
 
   it("starts a project with the platform team's standard from a path, saying where it came from", () => {
-    const start = section(page, "## Start each project from it");
+    // On Synapse: the command its page gives, with the standard a new Synapse project gets.
+    const start = section(
+      read("synapse/configure-a-standard.mdx"),
+      "## Start each project from it",
+    );
     const init = joined(start).find((line) => line.startsWith("ingestron init "))!;
     const path = /--standard (\S+)/.exec(init)![1]!;
     const parent = mkdtempSync(join(tmpdir(), "docs-standard-path-"));
     const cwd = join(parent, "projects");
     mkdirSync(cwd);
-    // A standard for the route the command chooses: ADF copies, Databricks stores.
+    // A standard for the route the command chooses: the one `init --platform synapse` writes.
     mkdirSync(join(cwd, path, ".."), { recursive: true });
-    const standard = readFileSync(
-      join(exampleFolder("connection-first-adf"), "standard.yaml"),
-      "utf8",
-    );
+    expect(cli(parent, ["init", "team", "--platform", "synapse", "--yes"]).code).toBe(0);
+    const standard = readFileSync(join(parent, "team", "standard.yaml"), "utf8");
     writeFileSync(join(cwd, path), standard);
     const created = cli(cwd, init.split(" ").slice(1));
     expect(created.code, created.output).toBe(0);
@@ -242,8 +252,8 @@ describe("how-to/name-things-your-way", () => {
           pack.defaults.naming[row[0] as keyof typeof pack.defaults.naming],
         ),
       );
-    expect(page).toContain("<PackNaming />");
-    expect(page).toContain("[ADF resource names](#adf-resource-names)");
+    expect(page).toContain('<PackNaming platform="~" />');
+    expect(page).toContain("[Resource names](#adf-resource-names)");
   });
 
   it("creates the table under the full name the page gives, in the generated file it embeds", () => {
@@ -278,11 +288,11 @@ describe("how-to/name-things-your-way", () => {
 });
 
 describe("how-to/upgrade", () => {
-  const page = read("how-to/upgrade.mdx");
+  const page = read("duckdb/upgrade.mdx");
 
   /** The first project, created with its page's own command. */
   function shop(): string {
-    const create = commands(section(read("start/first-project.mdx"), "## 1. Create the project"));
+    const create = commands(section(read("duckdb/first-project.mdx"), "## 1. Create the project"));
     const init = create.find((line) => line.startsWith("ingestron init "))!;
     const parent = mkdtempSync(join(tmpdir(), "docs-upgrade-shop-"));
     expect(cli(parent, init.split(" ").slice(1)).code).toBe(0);
@@ -346,6 +356,6 @@ describe("how-to/upgrade", () => {
       expect(readFileSync(join(process.cwd(), "ci-templates", file), "utf8"), file).toContain(
         `: npm install -g ingestron@${bundle}\n`,
       );
-    expect(read("how-to/check-in-ci.mdx")).toContain(`\`npm install -g ingestron@${bundle}\``);
+    expect(read("shared/check-in-ci.mdx")).toContain(`\`npm install -g ingestron@${bundle}\``);
   });
 });

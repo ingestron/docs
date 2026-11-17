@@ -231,9 +231,12 @@ describe("the platform request", () => {
   });
 
   it("shows the named sections, each with its heading, in the order asked for", () => {
-    const shown = requestSections("synapse-views", "dev", ["Report users", "Schedules"]);
+    const shown = requestSections("synapse-views", "dev", [
+      "Report users",
+      "Synapse workspace pipelines",
+    ]);
     expect(shown).toMatch(/^## Report users\n\n- `sales-data-engineers-dev`: in `sales_dev`/);
-    expect(shown).toContain("\n\n## Schedules\n\n- Data Factory trigger `tr_sales_erp`");
+    expect(shown).toContain("\n\n## Synapse workspace pipelines\n\n");
     expect(shown).not.toContain("## ADF prerequisites");
     const request = block(Request({ name: "duckdb-local", sections: ["DuckDB job"] }));
     expect(request.kind).toBe("prints");

@@ -1,13 +1,13 @@
 // The screenshot frame (components/screenshot.tsx) in each of its forms, and
 // the site's VS Code images: each one framed, captured in both themes, and used.
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { checkedOn, Screenshot } from "../components/screenshot";
+import { checkedOn, Clip, Screenshot } from "../components/screenshot";
 import { overflows } from "../lib/keyboard";
-import { contentFolder } from "../lib/content-files.js";
+import { contentFolder, sharedFolder } from "../lib/content-files.js";
 
 const light = "/images/vscode/problems-light.png";
 const dark = "/images/vscode/problems-dark.png";
@@ -94,9 +94,9 @@ describe("the screenshot frame", () => {
       render({ src: light, light, dark, caption: "x", checked: "2026-11-02" } as never),
     ).toThrow(/not both/);
     expect(() => render({ light, caption: "x" } as never)).toThrow(/both light and dark/);
-    expect(() => render({ light, dark: "/images/vscode/check-dark.png", caption: "x" })).toThrow(
-      /differ in size/,
-    );
+    expect(() =>
+      render({ light, dark: "/images/vscode/check-databricks-dark.png", caption: "x" }),
+    ).toThrow(/differ in size/);
     expect(() =>
       render({
         src: "/images/vscode/missing.png",
@@ -105,6 +105,70 @@ describe("the screenshot frame", () => {
         checked: "2026-11-02",
       }),
     ).toThrow(/no such file/);
+  });
+});
+
+describe("a clip", () => {
+  const clipLight = "/images/vscode/quick-fix-clip-light.mp4";
+  const clipDark = "/images/vscode/quick-fix-clip-dark.mp4";
+  const renderClip = (props: Parameters<typeof Clip>[0]) =>
+    renderToStaticMarkup(createElement(Clip, props));
+  const videos = (html: string) => [...html.matchAll(/<video [^>]*>/g)].map(([tag]) => tag);
+
+  it("shows a light and a dark video in the editor's frame, each with its last frame as the poster", () => {
+    const html = renderClip({
+      light: clipLight,
+      dark: clipDark,
+      caption: "A quick fix.",
+      alt: "The light bulb, then the fix.",
+    });
+    const [first, second] = videos(html);
+    expect(videos(html)).toHaveLength(2);
+    expect(first).toContain('class="screenshot-light"');
+    expect(first).toContain(`src="${clipLight}"`);
+    expect(first).toContain('poster="/images/vscode/quick-fix-clip-light.png"');
+    expect(second).toContain('class="screenshot-dark"');
+    expect(second).toContain('poster="/images/vscode/quick-fix-clip-dark.png"');
+    expect(first).toContain(`width="${pngWidth("/images/vscode/quick-fix-clip-light.png")}"`);
+    expect(first).toContain('aria-label="The light bulb, then the fix."');
+    expect(html).toContain('<figure class="screenshot">');
+    expect(html).toContain('<span class="screenshot-label">VS Code · Ingestron</span>');
+    expect(html).toContain("<figcaption>A quick fix.</figcaption>");
+  });
+
+  it("plays only when the reader starts it, silent, and loads nothing until then", () => {
+    const [first] = videos(renderClip({ light: clipLight, dark: clipDark, caption: "x" }));
+    expect(first).toContain("controls");
+    expect(first).toContain('preload="none"');
+    expect(first).toMatch(/muted/);
+    expect(first).toMatch(/playsInline/i);
+    expect(first).not.toMatch(/autoplay/i);
+  });
+
+  it("refuses a clip without its poster, or captures that differ in size", () => {
+    expect(() =>
+      renderClip({ light: "/images/vscode/missing-light.mp4", dark: clipDark, caption: "x" }),
+    ).toThrow(/no such file/);
+    expect(() =>
+      renderClip({
+        light: clipLight,
+        dark: "/images/vscode/add-source-adf-dark.mp4",
+        caption: "x",
+      }),
+    ).toThrow(/differ in size/);
+  });
+});
+
+describe("an editor shot's size on the page", () => {
+  // Captured 800 CSS px wide at font 14, so at most 720 px the editor's text
+  // shows at 12.6 px or less, the size of the site's code blocks, however
+  // wide the window is; at the 640 px floor it is 11.2 px.
+  it("is framed at most 720 px wide, and never shrunk below 640 px", () => {
+    const css = readFileSync("app/screenshot.css", "utf8");
+    expect(css).toMatch(/\.screenshot:not\(\.screenshot-platform\) \{[^}]*max-width: 720px/);
+    expect(css).toMatch(
+      /\.prose \.screenshot img,\s*\.prose \.screenshot video \{[^}]*min-width: 640px/,
+    );
   });
 });
 
@@ -142,7 +206,7 @@ describe("the VS Code screenshots", () => {
           ? [readFileSync(join(folder, entry.name), "utf8")]
           : [],
     );
-  const site = pages(contentFolder).join("\n");
+  const site = [...pages(contentFolder), ...pages(sharedFolder)].join("\n");
   const files = readdirSync("public/images/vscode");
 
   it("are all framed", () => {
@@ -151,16 +215,26 @@ describe("the VS Code screenshots", () => {
   });
 
   it("each come in both themes, 1600 pixels wide, and a page uses every one", () => {
-    const names = new Set(files.map((file) => file.replace(/-(light|dark)\.png$/, "")));
+    const names = new Set(files.map((file) => file.replace(/-(light|dark)\.(png|mp4)$/, "")));
     for (const name of names) {
+      // A clip's PNG is its poster: the page names the video, not the poster.
+      const kind = files.includes(`${name}-light.mp4`) ? "mp4" : "png";
       for (const theme of ["light", "dark"]) {
         const path = `/images/vscode/${name}-${theme}.png`;
         expect(files, path).toContain(`${name}-${theme}.png`);
+        expect(files, path).toContain(`${name}-${theme}.${kind}`);
         expect(pngWidth(path), path).toBe(1600);
       }
-      expect(site, name).toContain(`light="/images/vscode/${name}-light.png"`);
-      expect(site, name).toContain(`dark="/images/vscode/${name}-dark.png"`);
+      expect(site, name).toContain(`light="/images/vscode/${name}-light.${kind}"`);
+      expect(site, name).toContain(`dark="/images/vscode/${name}-dark.${kind}"`);
     }
+  });
+
+  it("are each, as a clip, at most 3 MB", () => {
+    for (const file of files.filter((name) => name.endsWith(".mp4")))
+      expect(statSync(join("public/images/vscode", file)).size, file).toBeLessThanOrEqual(
+        3 * 1024 * 1024,
+      );
   });
 });
 

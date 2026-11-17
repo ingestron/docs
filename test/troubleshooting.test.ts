@@ -21,9 +21,30 @@ import { describe, expect, it } from "vitest";
 import { redirectFor } from "../worker/redirects.js";
 import { cli, copy, fences, read, section } from "./pages.js";
 import { contentFile, contentFolder } from "../lib/content-files.js";
+import { movedPages } from "../lib/platforms.js";
 
-const page = read("troubleshooting.mdx");
-const entry = (heading: string) => section(page, `### ${heading}`);
+// The shared page, then each platform's: its entries are its `##` sections.
+const shared = read("troubleshooting.mdx");
+const platformPages = ["synapse", "databricks", "adf", "duckdb"].map((id) =>
+  read(`${id}/troubleshooting.mdx`),
+);
+// A combination's troubleshooting is in its Deploy both page, as `####` sections.
+const combinedPages = ["adf-duckdb"].map((id) => read(`${id}/deploy.mdx`));
+const page = [shared, ...platformPages].join("\n");
+function entry(heading: string): string {
+  for (const [text, level] of [
+    [shared, "###"],
+    ...platformPages.map((text) => [text, "##"]),
+    ...combinedPages.map((text) => [text, "####"]),
+  ] as const) {
+    try {
+      return section(text, `${level} ${heading}`);
+    } catch {
+      // Not on this page.
+    }
+  }
+  throw new Error(`No troubleshooting page has the entry "${heading}".`);
+}
 
 /** The trimmed lines of a command's output. */
 const lines = (output: string) => output.split("\n").map((line) => line.trim());
@@ -75,7 +96,7 @@ describe("the command", () => {
     expect(text).toContain("`npm config set prefix ~/.npm-global`");
     expect(fences(read("start/install.mdx"), "sh")[0]).toMatch(/^npm install -g ingestron\n/);
     // The pages that install send a reader here.
-    for (const from of ["start/install.mdx", "start/first-project.mdx"])
+    for (const from of ["start/install.mdx", "duckdb/first-project.mdx"])
       expect(read(from), from).toContain("(/docs/troubleshooting#ingestron-command-not-found)");
   });
 });
@@ -748,7 +769,7 @@ describe("Databricks", () => {
     expect(code).toBe(1);
     quotes("A change mode needs a key or a sequence column", output);
     const keyless = copy("change-data");
-    const contract = read("how-to/keep-a-table-current.mdx");
+    const contract = read("shared/keep-a-table-current.mdx");
     expect(contract).toContain("primary");
     edit(keyless, "contracts/accounts.yaml", (text) => text.replace(/\s*primaryKey: true,?/g, ""));
     expect(cli(keyless, ["plan", "--no-diff"]).output).toContain(
@@ -799,6 +820,9 @@ describe("links", () => {
       .filter((line) => /^#{2,4} /.test(line))
       .map((line) => /\[#([^\]]+)\]$/.exec(line)?.[1] ?? slug(line.replace(/^#+ /, "")));
   const pageOf = (path: string) => {
+    // A guide's old URL forwards its #section to the reader's platform version.
+    const moved = movedPages[path];
+    if (moved) return read(`shared/${moved}.mdx`);
     for (const candidate of [`${path}.mdx`, `${path}/index.mdx`]) {
       if (existsSync(join(contentFolder, contentFile(candidate)))) return read(candidate);
     }
@@ -824,6 +848,7 @@ describe("links", () => {
 
   it("point at this page's own entries", () => {
     const own = anchors(page);
+    // Each platform's page links its own entries by anchor too.
     const inPage = [...page.matchAll(/\]\((#[^)\s]+)\)/g)].map((match) => match[1]!.slice(1));
     expect(inPage.length).toBeGreaterThan(0);
     for (const anchor of inPage) expect(own).toContain(anchor);
@@ -840,10 +865,13 @@ describe("links", () => {
       "ENV_FILE_LINE",
     ])
       expect(page).toContain(`(/docs/reference/errors#${code})`);
-    const headings = page.split("\n").filter((line) => line.startsWith("### "));
+    const headings = [
+      ...shared.split("\n").filter((line) => line.startsWith("### ")),
+      ...platformPages.flatMap((text) => text.split("\n").filter((line) => line.startsWith("## "))),
+    ];
     expect(headings.length).toBeGreaterThanOrEqual(25);
     for (const heading of headings) {
-      const text = entry(heading.slice(4));
+      const text = entry(heading.replace(/^#+ /, "").replace(/ \[#[^\]]+\]$/, ""));
       expect(text, heading).toContain("**Symptom:**");
       expect(text, heading).toContain("**Fix:**");
     }

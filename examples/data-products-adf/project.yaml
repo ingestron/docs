@@ -1,0 +1,12 @@
+# A web shop's orders and customers: the factory copies them from Azure SQL into
+# landing storage, and the landed customers are a governed data product.
+id: shop
+environments:
+  dev: {}
+imports:
+  - standard.yaml
+  - platform.yaml
+  - connections/*.yaml
+  - flows/*.yaml
+  - contracts/*.yaml
+  - products/*.yaml

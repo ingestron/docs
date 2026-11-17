@@ -14,7 +14,7 @@ import {
   transformerBlockKind,
   type BlockKind,
 } from "../lib/block-kind";
-import { contentFolder } from "../lib/content-files.js";
+import { contentFolder, sharedFolder } from "../lib/content-files.js";
 
 const file = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
 
@@ -25,7 +25,7 @@ function pageFences() {
       const path = join(folder, name);
       return statSync(path).isDirectory() ? pages(path) : path.endsWith(".mdx") ? [path] : [];
     });
-  return pages(contentFolder).flatMap((page) =>
+  return [...pages(contentFolder), ...pages(sharedFolder)].flatMap((page) =>
     [...readFileSync(page, "utf8").matchAll(/^( *)```(\S*)([^\n]*)\n([\s\S]*?)^\1```$/gm)].map(
       (match) => {
         const meta = match[3]!.trim();
@@ -51,6 +51,10 @@ describe("the kind of a block", () => {
       expect(blockKind(lang), lang).toBe("write");
     expect(blockKind("text")).toBe("prints");
     expect(blockKind("text", ".gitignore")).toBe("write");
+    // A named file under build/ is one Ingestron generates, as an <Example> there is.
+    expect(blockKind("sql", "build/synapse/views.sql")).toBe("writes");
+    expect(blockKind("json", "build/adf/factory/trigger/t.json")).toBe("writes");
+    expect(blockKind("yaml", "flows/orders.yaml")).toBe("write");
     expect(blockKind("plaintext")).toBe("prints");
     expect(exampleKind("flows/orders.yaml")).toBe("write");
     expect(exampleKind("transforms/store_sales.sql")).toBe("write");
@@ -143,14 +147,20 @@ describe("the kinds on the real pages", () => {
       guide.map((fence) => /^kind="([a-z]+)" title="[^"]+\.md"$/.exec(fence.meta)?.[1]),
     ).toEqual(["plain", "plain", "writes"]);
     const marked = all.filter((fence) => !guide.includes(fence));
-    // A payload a server returns; the source metadata an import writes outside build/; and a
+    // A payload a server returns; the source metadata an import writes outside build/; a
     // contract Ingestron drafts that is the reader's to edit from then on, so neither a file
-    // the reader writes nor a generated one.
+    // the reader writes nor a generated one; a line of generated SQL, not the whole file; and
+    // the files a starter creates, shown as they are.
     expect(marked.map((fence) => [fence.page.split("/").pop(), fence.meta])).toEqual([
       ["rest.mdx", 'kind="plain"'],
+      ["cleanse-data.mdx", 'kind="plain"'],
+      ["cleanse-data.mdx", 'kind="plain"'],
       ["describe-a-source.mdx", 'kind="writes" title="sources/erp.yaml"'],
       ["describe-a-source.mdx", 'kind="writes" title="sources/erp.yaml"'],
       ["describe-a-source.mdx", 'kind="plain" title="contracts/erp.payments.yaml"'],
+      ["first-project.mdx", 'title="connections/shop.yaml" kind="plain"'],
+      ["first-project.mdx", 'title="flows/orders.yaml" kind="plain"'],
+      ["first-project.mdx", 'title="contracts/orders.yaml" kind="plain"'],
     ]);
   });
 });

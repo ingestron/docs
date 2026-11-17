@@ -1,0 +1,25 @@
+apiVersion: ingestron.io/v1
+kind: Standard
+id: erp
+packs: [synapse@2] # the workspace pipelines copy each table; serverless SQL shows it
+layers:
+  - { name: bronze, does: [check] } # checks.sql counts the contracts' rules
+store:
+  default: synapse-view # a view over each landed file
+ingest:
+  default: synapse-copy
+  settings:
+    synapse-copy:
+      layout: snapshot # one file per table, replaced by each run
+      # The default trigger, for a flow that writes none; these flows write their own
+      every: { frequency: Hour, interval: 1 }
+      start: 2026-12-01T00:00:00Z
+operations:
+  # Flows write their own triggers; without this, the standard keeps one schedule
+  schedule: { per: flow }
+  triggers:
+    types: [schedule, tumbling-window]
+    timezone: Europe/London # the zone flows' triggers and these hours are read in
+    environments:
+      # Dev has no limit. In prod no run may start while the source's backup runs
+      prod: { hours: { from: "02:45", to: "02:15" } }
