@@ -293,6 +293,6 @@ describe("reference/versions", () => {
     expect(tools).toContain(`\`@microsoft/azure-data-factory-utilities\` ${adf}`);
     expect(tools).toContain(`Databricks CLI ${databricks}`);
     expect(tools).toContain(`sqlcmd (Go) ${sqlcmd}`);
-    expect(tools).toContain("`ingestron@2.4.0`");
+    expect(tools).toContain("`ingestron@2.5.0`");
   });
 });
